@@ -5,6 +5,7 @@
 #include "mavlink.h"
 #include "logger_iface.hpp"
 #include "rc_iface.hpp"
+#include "power_module_iface.hpp"
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
 #include "tm_queue.hpp"
@@ -23,6 +24,16 @@ class SystemManager {
             IRCReceiver *rcDriver,
 			IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
+            IMessageQueue<TMMessage_t> *tmQueue,
+            IMessageQueue<char[100]> *smLoggerQueue
+        );
+
+        SystemManager(
+            ISystemUtils *systemUtilsDriver,
+            IIndependentWatchdog *iwdgDriver,
+            ILogger *loggerDriver,
+            IRCReceiver *rcDriver,
+			IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue
         );
