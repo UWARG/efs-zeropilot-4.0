@@ -47,6 +47,7 @@ bool PowerModule::writeRegister(
                                 I2C_HandleTypeDef *hi2c) {
 
     return HAL_I2C_Mem_Write_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
+    //return HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size, 100) == HAL_OK;
 
 }
 
@@ -57,6 +58,7 @@ bool PowerModule::readRegister(
                                 I2C_HandleTypeDef *hi2c) {
 
     return HAL_I2C_Mem_Read_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
+    //return HAL_I2C_Mem_Read(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size, 100) == HAL_OK;
 
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 #include "power_module_iface.hpp"
 #include "power_module_defines.hpp"
 #include <cmath> 
