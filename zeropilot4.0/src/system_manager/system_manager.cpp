@@ -9,6 +9,7 @@ SystemManager::SystemManager(
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
+	IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue) :
@@ -16,7 +17,26 @@ SystemManager::SystemManager(
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
+		pmDriver(pmDriver),
         amRCQueue(amRCQueue),
+        tmQueue(tmQueue),
+        smLoggerQueue(smLoggerQueue),
+        smSchedulingCounter(0) {}
+
+SystemManager::SystemManager(
+    ISystemUtils *systemUtilsDriver,
+    IIndependentWatchdog *iwdgDriver,
+    ILogger *loggerDriver,
+    IRCReceiver *rcDriver,
+	IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
+    IMessageQueue<TMMessage_t> *tmQueue,
+    IMessageQueue<char[100]> *smLoggerQueue) :
+        systemUtilsDriver(systemUtilsDriver),
+        iwdgDriver(iwdgDriver),
+        loggerDriver(loggerDriver),
+        rcDriver(rcDriver),
+        pmDriver(nullptr),
+		amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0) {}
@@ -72,6 +92,11 @@ void SystemManager::smUpdate() {
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
         sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
+    }
+
+    if (pmDriver) {
+        PMData_t pmData;
+        bool pmDataValid = pmDriver->readData(&pmData);
     }
 
     // Log if new messages
