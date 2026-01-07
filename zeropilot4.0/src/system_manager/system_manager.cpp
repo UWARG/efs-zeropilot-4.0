@@ -11,7 +11,8 @@ SystemManager::SystemManager(
     IRCReceiver *rcDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *smLoggerQueue,
+    IKillSwitch *killSwitchDriver):
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
@@ -19,12 +20,41 @@ SystemManager::SystemManager(
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0) {}
+        smSchedulingCounter(0),
+        killSwitchDriver(killSwitchDriver),
+        killState(KillState::ARMED) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
+//killswitch
+if (killSwitchDriver != nullptr) {
+    // Transition
+    if (killState != KillState::KILLED && killSwitchDriver->isPressed()) {
+        killState = KillState::KILLED;
+        if (loggerDriver) {
+            loggerDriver->log("Kill switch engaged");
+        }
+        killSwitchDriver->buzzerOn();
+    }
+    // latched killed state 
+    if (killState == KillState::KILLED) {
+        RCMotorControlMessage_t stopMsg{};
+        stopMsg.roll = 0;
+        stopMsg.pitch = 0;
+        stopMsg.yaw = 0;
+        stopMsg.throttle = 0;
+        stopMsg.arm = false;
+        stopMsg.flapAngle = 0;
+
+        if (amRCQueue) {
+            amRCQueue->push(&stopMsg);
+        }
+        // killed
+        return;
+    }
+}
     // Get RC data from the RC receiver and passthrough to AM if new
     static int oldDataCount = 0;
     static bool rcConnected = true;
