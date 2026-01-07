@@ -32,7 +32,7 @@ static constexpr float CHARGE_LSB = CURRENT_LSB;
 
 //config values
 static constexpr uint16_t CONFIG_VALUE = 0x8000;  
-static constexpr uint16_t ADC_CONFIG_VALUE = 0b1111000000000010; //0b 1111 000 000 000 010, continuous reading and 16 samples averaged
+static constexpr uint16_t ADC_CONFIG_VALUE = 0xF002; //0b 1111 000 000 000 010, continuous reading and 16 samples averaged
 
 
 
