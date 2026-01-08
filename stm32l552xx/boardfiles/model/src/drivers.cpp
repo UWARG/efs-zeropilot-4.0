@@ -59,9 +59,8 @@ MotorControl *steeringMotorHandle = nullptr;
 GPS *gpsHandle = nullptr;
 RCReceiver *rcHandle = nullptr;
 RFD *rfdHandle = nullptr;
-PowerModule *pmHandle = nullptr;
-
 IMU *imuHandle = nullptr;
+PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;

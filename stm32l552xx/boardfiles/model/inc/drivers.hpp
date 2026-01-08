@@ -31,10 +31,9 @@ extern MotorControl *steeringMotorHandle;
 
 extern RCReceiver *rcHandle;
 extern GPS *gpsHandle;
-extern PowerModule *pmHandle;
-
 extern RFD *rfdHandle;
 extern IMU *imuHandle;
+extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
