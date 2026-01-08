@@ -21,11 +21,11 @@ class FBWAMapping : public Flightmode {
     
     private:
 
-        // Roll integral limits ******
+        // Roll integral limits
         inline const static float ROLL_INTEGRAL_MIN_LIM = -50.0f;
         inline const static float ROLL_INTEGRAL_MAX_LIM = +50.0f;
         
-        // Pitch integral limits ******
+        // Pitch integral limits
         inline const static float PITCH_INTEGRAL_MIN_LIM = -50.0f;
         inline const static float PITCH_INTEGRAL_MAX_LIM = +50.0f;
 
@@ -36,4 +36,13 @@ class FBWAMapping : public Flightmode {
         // Roll and Pitch PID class objects
         PID rollPID;
         PID pitchPID;
+
+        // Roll and Pitch Angle Ranges (in radians)
+        inline const static float ROLL_MIN_ANGLE_RAD = -0.785; 	// -45 degrees
+        inline const static float ROLL_MAX_ANGLE_RAD = 0.785; 	// +45 degrees
+        inline const static float PITCH_MIN_ANGLE_RAD = -0.349; // -20 degrees
+        inline const static float PITCH_MAX_ANGLE_RAD = 0.349;	// +20 degrees
+
+        // Assumed normalized range of RC Input to be [-50, 50]
+        inline const static uint8_t MAX_RC_INPUT_VAL = 50;
 };
