@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rc_motor_control.hpp"
+#include "drone_state.hpp"
 
 class Flightmode {
     protected:
@@ -9,5 +10,5 @@ class Flightmode {
     public:
         virtual ~Flightmode() = default;
 
-        virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput) = 0;
+        virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
 };
