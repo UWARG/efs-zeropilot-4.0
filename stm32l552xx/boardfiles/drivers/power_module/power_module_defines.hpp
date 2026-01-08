@@ -7,7 +7,7 @@ struct RegInfo {
     uint8_t byte_size;
     bool is_signed;
 };
-//all the data for the registers
+// All the data for the registers
 static constexpr RegInfo REG_CONFIG = {0x00, 2, false}; // 16
 static constexpr RegInfo REG_ADC_CONFIG = {0x01, 2, false}; // 16
 static constexpr RegInfo REG_SHUNT_CAL = {0x02, 2, false}; // 16
@@ -30,10 +30,8 @@ static constexpr float POWER_LSB = 3.2f * CURRENT_LSB;
 static constexpr float ENERGY_LSB = 16 * 3.2 * CURRENT_LSB;  
 static constexpr float CHARGE_LSB = CURRENT_LSB;  
 
-//config values
+// Config values
 static constexpr uint16_t CONFIG_VALUE = 0x8000;  
-static constexpr uint16_t ADC_CONFIG_VALUE = 0b1111000000000010; //0b 1111 000 000 000 010, continuous reading and 16 samples averaged
-
-
+static constexpr uint16_t ADC_CONFIG_VALUE = 0xF002; // 0b 1111 000 000 000 010, continuous reading and 16 samples averaged
 
 static constexpr uint8_t REGISTERS_TO_READ = 5;
