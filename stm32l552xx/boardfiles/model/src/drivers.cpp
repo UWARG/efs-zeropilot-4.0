@@ -29,7 +29,7 @@ alignas(MotorControl) static uint8_t rightFlapMotorStorage[sizeof(MotorControl)]
 alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
-alignas(RCReceiver) static uint8_t rcStorage[sizeof(RCReceiver)];
+alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t rfdStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 
@@ -55,9 +55,8 @@ MotorControl *rightFlapMotorHandle = nullptr;
 MotorControl *steeringMotorHandle = nullptr;
 
 GPS *gpsHandle = nullptr;
-RCReceiver *rcHandle = nullptr;
+CRSFReceiver *rcHandle = nullptr;
 RFD *rfdHandle = nullptr;
-
 IMU *imuHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -109,7 +108,7 @@ void initDrivers()
 
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
-    rcHandle = new (&rcStorage) RCReceiver(&huart4);
+    rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
     rfdHandle = new (&rfdStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
 
