@@ -24,6 +24,10 @@ static constexpr uint16_t CRSF_PULSE_MIN = 172; //represents 988us (microseconds
 static constexpr uint16_t CRSF_PULSE_MAX = 1811; //represents 2012us (microseconds)
 static constexpr uint16_t CRSF_PULSE_RANGE = (CRSF_PULSE_MAX - CRSF_PULSE_MIN);
 
+static constexpr uint16_t CRSF_AUX_MIN = 191; //represents 1000us (microseconds)
+static constexpr uint16_t CRSF_AUX_MAX = 1792; //represents 2000us (microseconds)
+static constexpr uint16_t CRSF_AUX_RANGE = (CRSF_AUX_MAX - CRSF_AUX_MIN);
+
 //Frame types (can add more when implementing other frame types. Only adding RC channel frametype for now)
 static constexpr uint8_t  CRSF_FRAMETYPE_RC_CHANNELS_PACKED = 0x16;
 

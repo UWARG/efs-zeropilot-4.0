@@ -32,7 +32,7 @@ class CRSFReceiver : public IRCReceiver {
         UART_HandleTypeDef * getUart();
        
     private:
-        UART_HandleTypeDef *uart_;
-        RCControl rcData_;
-        uint8_t crsfRxBuffer_[CRSF_BYTE_COUNT];
+        UART_HandleTypeDef *uart;
+        RCControl rcData;
+        uint8_t crsfRxBuffer[CRSF_BYTE_COUNT];
 };

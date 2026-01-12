@@ -4,25 +4,25 @@
 #include "rc_defines.hpp"
 #include "rc_crsf.hpp"
 
-CRSFReceiver::CRSFReceiver(UART_HandleTypeDef* uart) : uart_(uart) {
-    memset(crsfRxBuffer_, 0, CRSF_BYTE_COUNT);
+CRSFReceiver::CRSFReceiver(UART_HandleTypeDef* uart) : uart(uart) {
+    memset(crsfRxBuffer, 0, CRSF_BYTE_COUNT);
 }
 
 RCControl CRSFReceiver::getRCData() {
-    RCControl tmp = rcData_;
-    rcData_.isDataNew = false;
+    RCControl tmp = rcData;
+    rcData.isDataNew = false;
     return tmp;
 }
 
 void CRSFReceiver::init() {
     // start circular DMA
-    rcData_.isDataNew = false;
-    HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_BYTE_COUNT);
+    rcData.isDataNew = false;
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, crsfRxBuffer, CRSF_BYTE_COUNT);
 }
 
 void CRSFReceiver::startDMA() {
     // start circular DMA
-    HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_BYTE_COUNT);
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, crsfRxBuffer, CRSF_BYTE_COUNT);
 }
 
 // Polynomial used in CRSF: 0xD5
@@ -42,7 +42,7 @@ static uint8_t crsf_crc8(const uint8_t *data, uint8_t len) {
 
 void CRSFReceiver::parse() {
 
-    uint8_t *buf = crsfRxBuffer_;
+    uint8_t *buf = crsfRxBuffer;
 
     // Validate sync byte and frame type
    if (buf[0] != CRSF_SYNC_BYTE || buf[2] != CRSF_FRAMETYPE_RC_CHANNELS_PACKED) {
@@ -76,13 +76,18 @@ void CRSFReceiver::parse() {
         bitBuffer >>= 11;
         bitsInBuffer -= 11;
 
-        // Map to desired range
-        rcData_.controlSignals[i] = static_cast<float>((channels[i] - CRSF_PULSE_MIN) * (100.0f / CRSF_PULSE_RANGE));
+        if (i < 4) { //stick channels
+            rcData.controlSignals[i] = static_cast<float>((channels[i] - CRSF_PULSE_MIN) * (100.0f / CRSF_PULSE_RANGE));
+        } 
+        else{
+            // ARM and AUX channels
+            rcData.controlSignals[i] = static_cast<float>((channels[i] - CRSF_AUX_MIN) * (100.0f / CRSF_AUX_RANGE));
+        }
     }
 
-    rcData_.isDataNew = true;
+    rcData.isDataNew = true;
 }
 
 UART_HandleTypeDef * CRSFReceiver::getUart() {
-	return uart_;
+	return uart;
 }
