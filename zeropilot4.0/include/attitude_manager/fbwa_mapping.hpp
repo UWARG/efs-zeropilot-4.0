@@ -43,6 +43,6 @@ class FBWAMapping : public Flightmode {
         inline const static float PITCH_MIN_ANGLE_RAD = -0.349; // -20 degrees
         inline const static float PITCH_MAX_ANGLE_RAD = 0.349;	// +20 degrees
 
-        // Assumed normalized range of RC Input to be [-50, 50]
-        inline const static uint8_t MAX_RC_INPUT_VAL = 50;
+        // Assumed normalized range of RC Input to be [0, 100]
+        inline const static uint8_t MAX_RC_INPUT_VAL = 100;
 };
