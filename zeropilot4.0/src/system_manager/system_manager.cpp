@@ -9,6 +9,7 @@ SystemManager::SystemManager(
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
+	IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue) :
@@ -16,6 +17,7 @@ SystemManager::SystemManager(
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
+		pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
@@ -73,6 +75,12 @@ void SystemManager::smUpdate() {
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
         sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
     }
+
+    if (pmDriver) {
+		PMData_t pmData;
+		bool pmDataValid = pmDriver->readData(&pmData);
+		(void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
+	}
 
     // Log if new messages
     if (smLoggerQueue->count() > 0) {

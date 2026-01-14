@@ -10,7 +10,7 @@ class RCControl {
     public:
 
         float controlSignals[SBUS_INPUT_CHANNELS];
-        bool isDataNew;
+        volatile bool isDataNew;
 
         float &roll     = controlSignals[0];
         float &pitch    = controlSignals[1];
