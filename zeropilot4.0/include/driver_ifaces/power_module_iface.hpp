@@ -1,6 +1,19 @@
 #pragma once
 
-#include "power_module_datatypes.hpp"
+#include <cstdint>
+
+typedef struct {
+
+    //instantaneous results
+    float busVoltage = 0.0f;
+    float current = 0.0f;
+    float power = 0.0f;
+
+    //accumulated results
+    float charge = 0.0f;
+    float energy = 0.0f;
+
+} PMData_t;
 
 class IPowerModule {
 protected:
