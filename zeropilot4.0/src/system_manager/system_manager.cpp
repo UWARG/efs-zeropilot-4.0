@@ -79,6 +79,7 @@ void SystemManager::smUpdate() {
     if (pmDriver) {
 		PMData_t pmData;
 		bool pmDataValid = pmDriver->readData(&pmData);
+		(void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
 	}
 
     // Log if new messages
