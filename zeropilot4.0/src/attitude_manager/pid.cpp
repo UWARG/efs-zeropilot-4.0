@@ -25,7 +25,7 @@ void PID::setConstants(float newKp, float newKi, float newKd, float newTau) noex
 }
 
 // Update method
-float PID::pidOutput(float setpoint, float measurement) {
+float PID::pidOutput(float setpoint, float measurement) noexcept {
     // Calculate error
     float error = setpoint - measurement;
 

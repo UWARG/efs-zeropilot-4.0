@@ -28,8 +28,8 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
 
 RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
     // Convert RC inputs into radians
-	float rollSetpoint = ((float)controlInputs.roll / MAX_RC_INPUT_VAL) * (ROLL_MAX_ANGLE_RAD - ROLL_MIN_ANGLE_RAD) + ROLL_MIN_ANGLE_RAD;
-    float pitchSetpoint = ((float)controlInputs.pitch / MAX_RC_INPUT_VAL) * (PITCH_MAX_ANGLE_RAD - PITCH_MIN_ANGLE_RAD) + PITCH_MIN_ANGLE_RAD;
+    float rollSetpoint = (controlInputs.roll / (float)MAX_RC_INPUT_VAL) * (ROLL_MAX_ANGLE_RAD - ROLL_MIN_ANGLE_RAD) + ROLL_MIN_ANGLE_RAD;
+    float pitchSetpoint = (controlInputs.pitch / (float)MAX_RC_INPUT_VAL) * (PITCH_MAX_ANGLE_RAD - PITCH_MIN_ANGLE_RAD) + PITCH_MIN_ANGLE_RAD;
 
     // Get measured values from drone state (populated by IMU)
     float rollMeasured = droneState.roll;

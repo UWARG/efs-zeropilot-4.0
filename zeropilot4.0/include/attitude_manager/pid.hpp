@@ -14,7 +14,7 @@ class PID {
         void setConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
         
         // Computes PID for a measurement with its desired setpoint passed in
-        float pidOutput(float setpoint, float measurement);
+        float pidOutput(float setpoint, float measurement) noexcept;
 
 
     private:
