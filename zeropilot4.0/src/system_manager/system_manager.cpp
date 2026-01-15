@@ -9,7 +9,6 @@ SystemManager::SystemManager(
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
-	IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue) :
@@ -17,26 +16,7 @@ SystemManager::SystemManager(
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
-		pmDriver(pmDriver),
         amRCQueue(amRCQueue),
-        tmQueue(tmQueue),
-        smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0) {}
-
-SystemManager::SystemManager(
-    ISystemUtils *systemUtilsDriver,
-    IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
-    IRCReceiver *rcDriver,
-	IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
-        systemUtilsDriver(systemUtilsDriver),
-        iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
-        rcDriver(rcDriver),
-        pmDriver(nullptr),
-		amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0) {}
