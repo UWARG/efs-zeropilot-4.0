@@ -13,6 +13,7 @@
 #include "gps.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
+#include "power_module.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -32,6 +33,7 @@ extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern IMU *imuHandle;
 extern RFD *rfdHandle;
+extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

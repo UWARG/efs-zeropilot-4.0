@@ -3,9 +3,6 @@
 #include "stm32l5xx_hal.h"
 #include "power_module_iface.hpp"
 #include <cmath>
-
-#pragma once
-
 #include <cstdint>
 
 
