@@ -8,6 +8,8 @@
 
 class GeminiMavlink: public IRCReceiver, public IRFD {
     public:
+        static GeminiMavlink* instance; // One instance only
+
         GeminiMavlink(UART_HandleTypeDef* huart);
 
         ~GeminiMavlink() override;
@@ -19,16 +21,19 @@ class GeminiMavlink: public IRCReceiver, public IRFD {
         // IRC
         RCControl getRCData() override;
 
+        // Helper
+        UART_HandleTypeDef* getHuart() const;
+
     private:
         UART_HandleTypeDef* huart;
         
         // IRFD
-        uint8_t rxBuffer[MAVLINK_MAX_PACKET_SIZE]; // think of better name (to not confuse with other buffer)
+        uint8_t rfdrxBuffer[MAVLINK_MAX_PACKET_SIZE];
         uint16_t readIndex;
         uint16_t writeIndex;
 
         // RC
         RCControl rcData_;
-        uint8_t mavlinkRxBuffer[MAVLINK_MAX_PACKET_SIZE]; // think of better name (to not confuse with other buffer)
+        uint8_t rcRxBuffer[MAVLINK_MAX_PACKET_SIZE];
 
 };
