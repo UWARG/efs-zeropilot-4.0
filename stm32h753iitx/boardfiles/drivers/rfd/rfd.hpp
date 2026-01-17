@@ -12,7 +12,6 @@ public:
     RFD(UART_HandleTypeDef* huart);
     ~RFD();
 
-
     void transmit(const uint8_t* data, uint16_t size) override;
     uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override;
 
