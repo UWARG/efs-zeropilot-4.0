@@ -24,7 +24,7 @@ SystemManager::SystemManager(
         smConfigRouteQueue(),
         logger(logger),
         config(config) {
-            for (size_t i = 0; i < static_cast<size_t>(Owner::COUNT); ++i) {
+            for (size_t i = 0; i < static_cast<size_t>(Owner_e::COUNT); ++i) {
                 smConfigRouteQueue[i] = smConfigRouteQueue[i];
             }
         }
@@ -86,7 +86,7 @@ void SystemManager::smUpdate() {
     }
 
     // Send Param data to TM if there are params left to send and the process has been initiated by a param request which sets paramAmountSent to 0
-    if (paramAmountSent >= 0 && paramAmountSent < static_cast<size_t>(ConfigKey::COUNT)) {
+    if (paramAmountSent >= 0 && paramAmountSent < NUM_KEYS) {
         sendParamDataToTelemetryManager();
     }
 
@@ -113,11 +113,11 @@ void SystemManager::sendParamDataToTelemetryManager() {
     char buffer[100];
     snprintf(buffer, sizeof(buffer), "Sending param index %d to TM", paramAmountSent);
     logger->log(buffer);
-    Param_t param = config->getParam(static_cast<ConfigKey>(paramAmountSent));
+    Param_t param = config->getParam(paramAmountSent);
     TMMessage_t paramDataMsg = paramDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
         static_cast<uint16_t>(paramAmountSent),
-        static_cast<uint16_t>(static_cast<size_t>(ConfigKey::COUNT)),
+        static_cast<uint16_t>(NUM_KEYS),
         param
     );
     tmQueue->push(&paramDataMsg);
@@ -163,9 +163,9 @@ void SystemManager::handleMessagesFromTelemetryManager() {
                 );
                 if (res == 0) {
                     logger->log("Param updated from TM");
-                    ConfigKey key = config->getParamConfigKey(msg.tmSMMessageData.paramChangeData.keyId);
-                    Owner owner = config->getParamOwner(key);
-                    if (owner != Owner::COUNT) {
+                    size_t key = config->getParamConfigKey(msg.tmSMMessageData.paramChangeData.keyId);
+                    Owner_e owner = config->getParamOwner(key);
+                    if (owner != Owner_e::COUNT) {
                         ConfigMessage_t configMsg = {
                             .key = static_cast<size_t>(key),
                             .value = msg.tmSMMessageData.paramChangeData.value
@@ -173,7 +173,7 @@ void SystemManager::handleMessagesFromTelemetryManager() {
                         smConfigRouteQueue[static_cast<size_t>(owner)]->push(&configMsg);
                         TMMessage_t paramDataMsg = paramDataPack(systemUtilsDriver->getCurrentTimestampMs(),
                             static_cast<uint16_t>(static_cast<size_t>(key)),
-                            static_cast<uint16_t>(static_cast<size_t>(ConfigKey::COUNT)),
+                            static_cast<uint16_t>(NUM_KEYS),
                             config->getParam(key)
                         );
                         tmQueue->push(&paramDataMsg);

@@ -44,7 +44,7 @@ int Config::init() {
   }
 
   // Table was already initialized with default values so we loop and find all params in file
-  for (size_t i = 0; i < static_cast<size_t>(ConfigKey::COUNT); i++) {
+  for (size_t i = 0; i < NUM_KEYS; i++) {
     // findParam sets the value in config_table[i].value with the value read from the file if it exists
     // If the parameter does not exist in the file, it will not change the value in config_table[i].value
     findParam(config_table[i].key, config_table[i].value);
@@ -81,7 +81,7 @@ int Config::findParam(const char param[MAX_KEY_LENGTH], float &val, int &tableId
 
   // find idx of param in config table
   if (tableIdx != -1) {
-    for (size_t i = 0; i < static_cast<size_t>(ConfigKey::COUNT); i++) {
+    for (size_t i = 0; i < NUM_KEYS; i++) {
       if (!strcmp(param, config_table[i].key)) {
         tableIdx = static_cast<int>(i);
         break;
@@ -102,7 +102,7 @@ int Config::findParam(const char param[100], int &tableIdx)  {
   return findParam(param, val, tableIdx);
 }
 
-int Config::readParam(ConfigKey key, float &val) {
+int Config::readParam(size_t key, float &val) {
   if (textIO->open(configFile, FA_READ | FA_WRITE) != 0) {
       return 1;
   }
@@ -118,7 +118,7 @@ int Config::readParam(ConfigKey key, float &val) {
   return 0;
 }
 
-int Config::writeParam(ConfigKey key, float newValue) {
+int Config::writeParam(size_t key, float newValue) {
   char strValue[MAX_VALUE_LENGTH + 1];
   getXCharNum(newValue, strValue);
 
@@ -155,39 +155,35 @@ int Config::writeParam(ConfigKey key, float newValue) {
 }
 
 int Config::writeParamByName(const char param[MAX_KEY_LENGTH], float newValue) {
-  for (size_t i = 0; i < static_cast<size_t>(ConfigKey::COUNT); i++) {
+  for (size_t i = 0; i < NUM_KEYS; i++) {
     if (!strcmp(param, config_table[i].key)) {
-      return writeParam(static_cast<ConfigKey>(i), newValue);
+      return writeParam(i, newValue);
     }
   }
   return 2; // Parameter not found
 }
 
-ConfigKey Config::getParamConfigKey(const char param[MAX_KEY_LENGTH]) {
-  for (size_t i = 0; i < static_cast<size_t>(ConfigKey::COUNT); i++) {
+size_t Config::getParamConfigKey(const char param[MAX_KEY_LENGTH]) {
+  for (size_t i = 0; i < NUM_KEYS; i++) {
     if (!strcmp(param, config_table[i].key)) {
-      return static_cast<ConfigKey>(i);
+      return i;
     }
   }
-  return ConfigKey::COUNT; // Invalid key
+  return NUM_KEYS; // Invalid key
 }
 
-Owner Config::getParamOwner(ConfigKey key) {
+Owner_e Config::getParamOwner(size_t key) {
   size_t index = static_cast<size_t>(key);
   if (index >= NUM_KEYS) {
-      return Owner::COUNT; // Invalid owner
+      return Owner_e::COUNT; // Invalid owner
   }
   return config_table[index].owner;
 }
 
-Param_t* Config::getAllParams() {
-    return config_table;
-}
-
-Param_t Config::getParam(ConfigKey key) {
+Param_t Config::getParam(size_t key) {
     size_t index = static_cast<size_t>(key);
     if (index >= NUM_KEYS) {
-        return Param_t{}; // Return default Param_t if key is invalid for now
+        return Param_t{"ERROR", 0, Owner_e::COUNT, false}; // Return default Param_t if key is invalid for now
     }
     return config_table[index];
 }

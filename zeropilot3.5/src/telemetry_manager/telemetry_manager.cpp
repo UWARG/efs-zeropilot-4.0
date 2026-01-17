@@ -10,17 +10,17 @@
 TelemetryManager::TelemetryManager(
     ISystemUtils *systemUtilsDriver,
     IRFD *rfdDriver,
-    IMessageQueue<TMMessage_t> *tmQueueDriver,
-    IMessageQueue<TMSMMessage_t> *smQueueDriver,
+    IMessageQueue<TMMessage_t> *tmRxQueue,
+    IMessageQueue<TMSMMessage_t> *tmTxQueue,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
-    IMessageQueue<mavlink_message_t> *messageBuffer
+    IMessageQueue<mavlink_message_t> *mavlinkTxQueue
 ) :
     systemUtilsDriver(systemUtilsDriver),
     rfdDriver(rfdDriver),
-    tmQueueDriver(tmQueueDriver),
-    smQueueDriver(smQueueDriver),
+    tmRxQueue(tmRxQueue),
+    tmTxQueue(tmTxQueue),
     amQueueDriver(amQueueDriver),
-    messageBuffer(messageBuffer),
+    mavlinkTxQueue(mavlinkTxQueue),
     overflowMsgPending(false) {}
 
 TelemetryManager::~TelemetryManager() = default;
@@ -34,13 +34,13 @@ void TelemetryManager::tmUpdate() {
 // TODO: HERE UNTIL ALL PARAM LIST HAS BEEN SENT, INGORE OTHERS EXCEPT HEARTBEAT
 // WHEN THE REQUEST FOR PARAMS IS RECEIVED, SET A BOOLEAN TO IGNORE
 void TelemetryManager::processMsgQueue() {
-    uint16_t count = tmQueueDriver->count();
+    uint16_t count = tmRxQueue->count();
     TMMessage rcMsg = {};
     bool rc = false;
 	while (count-- > 0) {
         mavlink_message_t mavlinkMessage = {0};
         TMMessage_t tmqMessage = {};
-        tmQueueDriver->get(&tmqMessage);
+        tmRxQueue->get(&tmqMessage);
 
         switch (tmqMessage.dataType) {
             case TMMessage_t::HEARTBEAT_DATA: {
@@ -89,7 +89,7 @@ void TelemetryManager::processMsgQueue() {
 
         // Allow other messages if not transmitting params, otherwise only allow param and heartbeat messages
         if (!transmittingParams || (transmittingParams && (tmqMessage.dataType == TMMessage_t::PARAM_VALUE_DATA || tmqMessage.dataType == TMMessage_t::HEARTBEAT_DATA))) {
-            messageBuffer->push(&mavlinkMessage);
+            mavlinkTxQueue->push(&mavlinkMessage);
         }
     }
 
@@ -102,7 +102,7 @@ void TelemetryManager::processMsgQueue() {
 		if (mavlinkMessage.len == 0) {
 			return;
 		}
-		messageBuffer->push(&mavlinkMessage);
+		mavlinkTxQueue->push(&mavlinkMessage);
 	}
 }
 
@@ -118,13 +118,13 @@ void TelemetryManager::transmit() {
         overflowMsgPending = false;
     }
 
-    if (messageBuffer->count() == 0 && txBufIdx == 0) {
+    if (mavlinkTxQueue->count() == 0 && txBufIdx == 0) {
         // Nothing to transmit
         return;
     }
 
-    while (messageBuffer->count() > 0 && txBufIdx < TM_MAX_TRANSMISSION_BYTES) {
-        messageBuffer->get(&msgToTx);
+    while (mavlinkTxQueue->count() > 0 && txBufIdx < TM_MAX_TRANSMISSION_BYTES) {
+        mavlinkTxQueue->get(&msgToTx);
         const uint16_t MSG_LEN = mavlink_msg_to_send_buffer(transmitBuffer + txBufIdx, &msgToTx);
 
         if (txBufIdx + MSG_LEN > TM_MAX_TRANSMISSION_BYTES) {
@@ -159,7 +159,7 @@ void TelemetryManager::handleRxMsg(const mavlink_message_t &msg) {
         case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
             transmittingParams = true; // Set flag to ignore other messages except heartbeat and param value until all params sent
             TMSMMessage_t smMsg = requestPack(systemUtilsDriver->getCurrentTimestampMs(), TMSMRequest::REQUEST_PARAMS);
-            smQueueDriver->push(&smMsg);
+            tmTxQueue->push(&smMsg);
         }
 
         case MAVLINK_MSG_ID_PARAM_SET: {
@@ -170,7 +170,7 @@ void TelemetryManager::handleRxMsg(const mavlink_message_t &msg) {
 
             // Send param change to system manager which will respond back with updated param value
             TMSMMessage_t smMsg = paramChangePack(systemUtilsDriver->getCurrentTimestampMs(), paramToSet, valueToSet);
-            smQueueDriver->push(&smMsg);
+            tmTxQueue->push(&smMsg);
         }
 
         default: {

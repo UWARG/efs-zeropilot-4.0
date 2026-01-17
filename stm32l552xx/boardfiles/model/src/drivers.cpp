@@ -82,8 +82,8 @@ void initDrivers()
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
     smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     smConfigAttitudeQueueHandle = new MessageQueue<ConfigMessage_t>(&smConfigAttitudeQueueId);
-    smConfigRouteQueueHandle = new IMessageQueue<ConfigMessage_t>*[static_cast<size_t>(Owner::COUNT)];
-    smConfigRouteQueueHandle[static_cast<size_t>(Owner::ATTITUDE_MANAGER)] = smConfigAttitudeQueueHandle;
+    smConfigRouteQueueHandle = new IMessageQueue<ConfigMessage_t>*[static_cast<size_t>(Owner_e::COUNT)];
+    smConfigRouteQueueHandle[static_cast<size_t>(Owner_e::ATTITUDE_MANAGER)] = smConfigAttitudeQueueHandle;
     // Add other manager queues to smConfigRouteQueueHandle as needed
 
     loggerHandle->init();

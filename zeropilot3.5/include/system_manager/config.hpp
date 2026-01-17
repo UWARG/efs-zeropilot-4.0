@@ -8,11 +8,7 @@ class Config {
         char configFile[100];
         ITextIO *textIO;
 
-        Param_t config_table[NUM_KEYS] = {
-            #define _(name, default_val, reboot_flag, owner) {#name, default_val, reboot_flag, owner},
-                CONFIG_KEYS_LIST(_)
-            #undef _
-        };
+        std::array<Param_t, NUM_KEYS> config_table = CONFIG_VALUES;
 
         /**
          * @brief Moves read/write pointer to parameter
@@ -42,7 +38,7 @@ class Config {
          * @param val buffer to store value
          * @retval Operation success
          */
-        int readParam(ConfigKey key, float &val);
+        int readParam(size_t key, float &val);
 
         /**
          * @brief writes parameter from config file
@@ -50,7 +46,7 @@ class Config {
          * @param newValue updated value
          * @retval Operation success
          */
-        int writeParam(ConfigKey key, float newValue);
+        int writeParam(size_t key, float newValue);
 
         /**
          * @brief writes parameter from config file by name
@@ -61,29 +57,23 @@ class Config {
         int writeParamByName(const char param[MAX_KEY_LENGTH], float newValue);
 
         /**
-         * @brief gets the ConfigKey index of a parameter by name
+         * @brief gets the index of a parameter by name
          * @param param parameter to get index for
-         * @retval ConfigKey of the parameter
+         * @retval index of the parameter
          */
-        ConfigKey getParamConfigKey(const char param[MAX_KEY_LENGTH]);
+        size_t getParamConfigKey(const char param[MAX_KEY_LENGTH]);
 
         /**
          * @brief gets the owner of a parameter
          * @param key key of parameter to get owner for
          * @retval Owner of the parameter
          */
-        Owner getParamOwner(ConfigKey key);
-
-        /**
-         * @brief gets all parameters
-         * @retval Pointer to array of all parameters
-         */
-        Param_t* getAllParams();
+        Owner_e getParamOwner(size_t key);
 
         /**
          * @brief gets parameter struct by key
          * @param key parameter key to get
          * @retval Parameter struct
          */
-        Param_t getParam(ConfigKey key);
+        Param_t getParam(size_t key);
 };
