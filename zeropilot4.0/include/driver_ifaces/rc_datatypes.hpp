@@ -8,9 +8,9 @@
 /*  all values are floats and range from 0 to 100 */
 class RCControl {
     public:
-
         float controlSignals[INPUT_CHANNELS];
-        bool isDataNew;
+        volatile bool isDataNew;
+
 
         float &roll     = controlSignals[0];
         float &pitch    = controlSignals[1];

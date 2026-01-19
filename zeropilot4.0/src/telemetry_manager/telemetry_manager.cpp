@@ -100,7 +100,7 @@ void TelemetryManager::processMsgQueue() {
 }
 
 void TelemetryManager::transmit() {
-    uint8_t transmitBuffer[TM_MAX_TRANSMISSION_BYTES];
+    static uint8_t transmitBuffer[TM_MAX_TRANSMISSION_BYTES];
     mavlink_message_t msgToTx{};
     uint16_t txBufIdx = 0;
 

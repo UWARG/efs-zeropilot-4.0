@@ -9,8 +9,10 @@
 #include "imu_iface.hpp"
 #include "MahonyAHRS.hpp"
 #include "queue_iface.hpp"
+#include "drone_state.hpp"
 
 #define AM_CONTROL_LOOP_DELAY 10
+#define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_CONTROL_LOOP_DELAY) / 1000.0f)
 #define AM_FAILSAFE_TIMEOUT 1000
 
 typedef enum {
@@ -55,6 +57,7 @@ class AttitudeManager {
 
         DirectMapping controlAlgorithm;
         RCMotorControlMessage_t controlMsg;
+        DroneState_t droneState;
 
         MotorGroupInstance_t *rollMotors;
         MotorGroupInstance_t *pitchMotors;

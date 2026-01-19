@@ -9,6 +9,7 @@
 #include "iwdg_iface.hpp"
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
+#include "power_module_iface.hpp"
 
 #define SM_CONTROL_LOOP_DELAY 50
 #define SM_RC_TIMEOUT 500 
@@ -20,6 +21,7 @@ class SystemManager {
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
             IRCReceiver *rcDriver,
+			IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue
@@ -33,6 +35,7 @@ class SystemManager {
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
         ILogger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver
+        IPowerModule *pmDriver;
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
