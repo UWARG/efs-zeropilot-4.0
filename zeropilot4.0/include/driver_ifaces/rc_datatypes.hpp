@@ -2,15 +2,15 @@
 
 #include <algorithm>
 
-#define SBUS_INPUT_CHANNELS 16
+#define INPUT_CHANNELS 16
 
 /*  control signal channel mapping and attribute values */
 /*  all values are floats and range from 0 to 100 */
 class RCControl {
     public:
-
-        float controlSignals[SBUS_INPUT_CHANNELS];
+        float controlSignals[INPUT_CHANNELS];
         volatile bool isDataNew;
+
 
         float &roll     = controlSignals[0];
         float &pitch    = controlSignals[1];
@@ -30,7 +30,7 @@ class RCControl {
         float &aux11    = controlSignals[15];
 
         RCControl operator=(const RCControl& other){
-            std::copy(other.controlSignals, other.controlSignals + SBUS_INPUT_CHANNELS, this->controlSignals);
+            std::copy(other.controlSignals, other.controlSignals + INPUT_CHANNELS, this->controlSignals);
             this->isDataNew = other.isDataNew; // Add this line to copy the isDataNew flag
             return *this;
         }
