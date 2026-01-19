@@ -1,6 +1,6 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
-
+#include <cstdio>
 #define AM_SCHEDULING_RATE_HZ 100
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
@@ -37,8 +37,20 @@ AttitudeManager::AttitudeManager(
     steeringMotors(steeringMotors),
     previouslyArmed(false),
     armAltitude(0.0f),
+    adverseCoeff( 0.15f),
+    adverseYaw (0.0f),
+    signedYaw(0.0f),
     amSchedulingCounter(0) {}
 
+
+void AttitudeManager::setRudderMixing(float coeff) {
+    if (coeff < 0.0f || coeff > 1.0f) {
+        return;
+    }
+
+    adverseCoeff = coeff;
+    signedYaw = 0.0f; // Reset signedYaw to avoid incorrect values
+}
 void AttitudeManager::amUpdate() {
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
@@ -164,10 +176,10 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
         MotorInstance_t *motor = (motorGroup->motors + i);
 
         if (motor->isInverted) {
-            motor->motorInstance->set(100 - percent);
+             motor->motorInstance->set(100 - (percent + motor->trim));
         }
         else {
-            motor->motorInstance->set(percent);
+            motor->motorInstance->set(percent + motor->trim);
         }
     }
 }

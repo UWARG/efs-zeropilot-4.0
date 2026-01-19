@@ -40,7 +40,7 @@ class AttitudeManager {
             MotorGroupInstance_t *flapMotors,
             MotorGroupInstance_t *steeringMotors
         );
-
+        void setRudderMixing(float coeff);
         void amUpdate();
 
     private:
@@ -65,7 +65,10 @@ class AttitudeManager {
         MotorGroupInstance_t *throttleMotors;
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
-
+        
+        float adverseCoeff;
+        float adverseYaw;
+        float signedYaw;
         bool previouslyArmed;
         float armAltitude;
 
