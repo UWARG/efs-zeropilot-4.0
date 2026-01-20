@@ -27,6 +27,7 @@ class GeminiMavlink: public IRCReceiver, public IRFD {
 
         // Helper
         UART_HandleTypeDef* getHuart() const;
+        void irqhandler();
 
     private:
         UART_HandleTypeDef* huart;
