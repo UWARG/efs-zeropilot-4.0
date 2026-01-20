@@ -37,7 +37,7 @@ AttitudeManager::AttitudeManager(
     steeringMotors(steeringMotors),
     previouslyArmed(false),
     armAltitude(0.0f),
-    adverseCoeff( 0.15f),
+    adverseCoeff(0.15f),
     adverseYaw (0.0f),
     signedYaw(0.0f),
     amSchedulingCounter(0) {}
@@ -128,6 +128,17 @@ void AttitudeManager::amUpdate() {
 
 
     RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
+    signedYaw = motorOutputs.roll-50;
+    adverseYaw = signedYaw * adverseCoeff;
+    motorOutputs.yaw +=adverseYaw; 
+    // limit yaw to 100
+    if (motorOutputs.yaw>100){
+        motorOutputs.yaw = 100;
+    //limit yaw to 0
+    } else if (motorOutputs.yaw < 0) {
+        motorOutputs.yaw = 0;
+    }
+
 
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
