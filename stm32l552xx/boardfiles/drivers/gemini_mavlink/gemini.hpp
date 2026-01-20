@@ -39,5 +39,6 @@ class GeminiMavlink: public IRCReceiver, public IRFD {
         // RC
         RCControl rcData_;
         uint8_t rcRxBuffer[MAVLINK_MAX_PACKET_SIZE];
+        uint8_t processBuffer[MAVLINK_MAX_PACKET_SIZE];
 
 };
