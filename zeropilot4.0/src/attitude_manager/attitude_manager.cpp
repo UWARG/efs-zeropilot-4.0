@@ -38,7 +38,7 @@ AttitudeManager::AttitudeManager(
     previouslyArmed(false),
     armAltitude(0.0f),
     adverseCoeff( 0.15f),
-    adverseYaw (0.0f),
+    adverseYaw(0.0f),
     signedYaw(0.0f),
     amSchedulingCounter(0) {}
 
