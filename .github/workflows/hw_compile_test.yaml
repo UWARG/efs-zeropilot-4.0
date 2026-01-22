@@ -22,7 +22,7 @@ jobs:
         submodules: true
 
     - name: Build Docker image
-      run: docker build -t zeropilot-ci .
+      run: docker build -t zeropilot-ci -f docker/Dockerfile .
 
     - name: Build ${{ matrix.target.name }}
       run: |
