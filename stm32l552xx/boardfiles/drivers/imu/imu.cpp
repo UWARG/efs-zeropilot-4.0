@@ -1,6 +1,6 @@
 // IMU.cpp
 
-#include "IMU.hpp"
+#include "imu.hpp"
 #include <string.h>
 
 
