@@ -1,0 +1,48 @@
+name: HW Compile Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    type: [opened, synchronize, reopened]
+
+jobs:
+  hw_compile_h7:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build Docker image
+      run: docker build -t zeropilot-ci .
+
+    - name: Build STM32H753 Debug
+      run: |
+        docker run --rm zeropilot-ci \
+          stm32cubeide --launcher.suppressErrors -nosplash \
+          -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
+          -data /workspace -import /workspace/stm32h753iitx \
+          -cleanBuild stm32h753iitx/Debug
+
+  hw_compile_l5:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build Docker image
+      run: docker build -t zeropilot-ci .
+
+    - name: Build STM32L552 Debug
+      run: |
+        docker run --rm zeropilot-ci \
+          stm32cubeide --launcher.suppressErrors -nosplash \
+          -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
+          -data /workspace -import /workspace/stm32l552xx \
+          -cleanBuild stm32l552xx/Debug
