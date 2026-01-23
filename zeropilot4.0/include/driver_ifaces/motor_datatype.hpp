@@ -5,7 +5,7 @@
 typedef struct {
     IMotorControl *motorInstance; 
     bool isInverted;
-     float trim; // in percentage
+    float trim; // in percentage
 } MotorInstance_t;
 
 typedef struct {   
