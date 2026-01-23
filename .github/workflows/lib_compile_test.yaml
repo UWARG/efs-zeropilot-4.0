@@ -1,4 +1,4 @@
-name: Compile Test
+name: ZP4 Lib Compile Test
 
 on:
   push:
