@@ -185,12 +185,21 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
     for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
         MotorInstance_t *motor = (motorGroup->motors + i);
 
+        int32_t cmd = (int32_t)percent + motor->trim;
+
+        // Clamp cmd to [0, 100]
+        if (cmd > 100) {
+            cmd = 100;
+        } else if (cmd < 0) {
+            cmd = 0;
+        }
+
+        // Invert command if motor is inverted
         if (motor->isInverted) {
-             motor->motorInstance->set(100 - (percent + motor->trim));
+            cmd = 100 - cmd;
         }
-        else {
-            motor->motorInstance->set(percent + motor->trim);
-        }
+
+        motor->motorInstance->set(cmd);
     }
 }
 
