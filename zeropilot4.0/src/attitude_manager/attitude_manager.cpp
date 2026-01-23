@@ -42,14 +42,14 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0) {}
 
 
-void AttitudeManager::setRudderMixing(float coeff) {
+void AttitudeManager::setRudderMixingCoeff(float coeff) {
     if (coeff < 0.0f || coeff > 1.0f) {
         return;
     }
 
     adverseCoeff = coeff;
-    signedYaw = 0.0f; // Reset signedYaw to avoid incorrect values
 }
+
 void AttitudeManager::amUpdate() {
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
