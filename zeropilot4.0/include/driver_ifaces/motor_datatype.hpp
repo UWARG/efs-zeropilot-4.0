@@ -5,7 +5,7 @@
 typedef struct {
     IMotorControl *motorInstance; 
     bool isInverted;
-    float trim; // in percentage
+    int trim = 0; // trim value to adjust motor output, can be positive or negative in range [-50,50]
 } MotorInstance_t;
 
 typedef struct {   
