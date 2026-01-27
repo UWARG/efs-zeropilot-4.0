@@ -7,12 +7,15 @@
 #include "motor.hpp"
 #include "motor_datatype.hpp"
 #include "rc.hpp"
+#include "rc_crsf.hpp"
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
 #include "rfd.hpp"
+#include "imu.hpp"
+#include "power_module.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -28,10 +31,11 @@ extern MotorControl *leftFlapMotorHandle;
 extern MotorControl *rightFlapMotorHandle;
 extern MotorControl *steeringMotorHandle;
 
-extern RCReceiver *rcHandle;
+extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
-
 extern RFD *rfdHandle;
+extern IMU *imuHandle;
+extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

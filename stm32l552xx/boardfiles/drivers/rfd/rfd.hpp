@@ -23,6 +23,9 @@ public:
     // DMA callback
     void receiveCallback(uint16_t size);
 
+    // Start DMA
+    void startReceive();
+
 private:
     UART_HandleTypeDef* huart;
     uint8_t rxBuffer[BUFFER_SIZE];

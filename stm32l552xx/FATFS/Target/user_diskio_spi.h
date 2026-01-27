@@ -24,6 +24,16 @@
 
 #define SD_TIMEOUT 1000
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void setSpiTxFlag(uint8_t val);
+
+#ifdef __cplusplus
+}
+#endif
+
 DSTATUS USER_SPI_initialize (BYTE drv);
 DSTATUS USER_SPI_status (BYTE drv);
 DRESULT USER_SPI_read (BYTE drv, BYTE *buff, DWORD sector, UINT count);

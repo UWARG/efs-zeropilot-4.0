@@ -17,15 +17,26 @@ class RCReceiver : public IRCReceiver {
 
         ZP_ERROR_e getRCData(RCControl *data) override;
 
-        ZP_ERROR_e init();
-        ZP_ERROR_e startDMA();
+        UART_HandleTypeDef* getHUART();
 
+        /**
+         * @brief starts DMA receive
+         */
+        ZP_ERROR_e init();
+
+        /**
+         * @brief restarts DMA
+         */
+        ZP_ERROR_e startDMA();
+        /**
+         * @brief Updates RCControl values
+         */
         ZP_ERROR_e parse();
 
     private:
-        UART_HandleTypeDef *uart_;
-        RCControl rcData_;
-        uint8_t rawSbus_[SBUS_BYTE_COUNT];
+        UART_HandleTypeDef *uart;
+        RCControl rcData;
+        uint8_t rawSbus[SBUS_PACKET_SIZE];
 
         ZP_ERROR_e sbusToRCControl(float *value, uint8_t *buf, int channelMappingIdx);
 };

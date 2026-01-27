@@ -8,7 +8,6 @@ SystemManager *smHandle = nullptr;
 TelemetryManager *tmHandle = nullptr;
 DirectMapping *flightMode = nullptr;
 
-
 ZP_ERROR_e initManagers()
 {
     // AM initialization

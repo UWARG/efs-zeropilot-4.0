@@ -17,7 +17,7 @@ class MessageQueue : public IMessageQueue<T> {
 
       /**
        * @brief Gets top element of queue
-       * @param message:
+       * @param message variable to receive data
        * @retval ZP_ERROR_e status code
        */
       ZP_ERROR_e get(T *message) override {
@@ -47,7 +47,7 @@ class MessageQueue : public IMessageQueue<T> {
 
       /**
        * @brief pushes message to the back of the queue
-       * @param message: data to be transmitted
+       * @param message data to be transmitted
        * @retval ZP_ERROR_e status code
        */
       ZP_ERROR_e push(T *message) override {

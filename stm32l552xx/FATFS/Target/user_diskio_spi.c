@@ -60,6 +60,11 @@
   
   static volatile DSTATUS Stat = STA_NOINIT;
   static volatile uint8_t spiTxFlag = 0;
+
+  void setSpiTxFlag(uint8_t val) {
+    spiTxFlag = val;
+  }
+
   static uint8_t blankTxBuf[512] = {0};
   static BYTE CardType;
   
@@ -465,12 +470,6 @@
       return res;
   }
   #endif
-  
-  void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-      if (hspi->Instance == SPI1) {
-          spiTxFlag = 1;
-      }
-  }
   
   void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
       if (hspi->Instance == SPI1) {
