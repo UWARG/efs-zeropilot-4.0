@@ -12,14 +12,24 @@ static const osThreadAttr_t smMainLoopAttr = {
 
 void smMainLoopWrapper(void *arg)
 {
+  ZP_ERROR_e err;
   while(true)
   {
-    smHandle->smUpdate();
-    osDelay(timeToTicks(SM_CONTROL_LOOP_DELAY));
+    err = smHandle->smUpdate();
+    // TODO: Handle error appropriately (e.g., log, enter safe mode, etc.)
+    (void)err; // Suppress unused variable warning for now
+    uint32_t ticks = 0;
+    if (timeToTicks(&ticks, 50) == ZP_ERROR_OK) {
+      osDelay(ticks);
+    }
   }
 }
 
-void smInitThreads()
+ZP_ERROR_e smInitThreads()
 {
     smMainHandle = osThreadNew(smMainLoopWrapper, NULL, &smMainLoopAttr);
+    if (smMainHandle == NULL) {
+        return ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }

@@ -29,7 +29,9 @@ void TelemetryManager::tmUpdate() {
 }
 
 void TelemetryManager::processMsgQueue() {
-    uint16_t count = tmQueueDriver->count();
+    int countVal = 0;
+    tmQueueDriver->count(&countVal);
+    uint16_t count = countVal;
     TMMessage rcMsg = {};
     bool rc = false;
 	while (count-- > 0) {
@@ -111,12 +113,14 @@ void TelemetryManager::transmit() {
         overflowMsgPending = false;
     }
 
-    if (messageBuffer->count() == 0 && txBufIdx == 0) {
+    int msgCount = 0;
+    messageBuffer->count(&msgCount);
+    if (msgCount == 0 && txBufIdx == 0) {
         // Nothing to transmit
         return;
     }
 
-    while (messageBuffer->count() > 0 && txBufIdx < TM_MAX_TRANSMISSION_BYTES) {
+    while (msgCount > 0 && txBufIdx < TM_MAX_TRANSMISSION_BYTES) {
         messageBuffer->get(&msgToTx);
         const uint16_t MSG_LEN = mavlink_msg_to_send_buffer(transmitBuffer + txBufIdx, &msgToTx);
 
@@ -128,6 +132,7 @@ void TelemetryManager::transmit() {
         }
 
         txBufIdx += MSG_LEN;
+        messageBuffer->count(&msgCount);
     }
 
     rfdDriver->transmit(transmitBuffer, txBufIdx);
@@ -136,10 +141,11 @@ void TelemetryManager::transmit() {
 void TelemetryManager::reconstructMsg() {
     uint8_t rxBuffer[RX_BUFFER_LEN];
 
-    const uint16_t RECEIVED_BYTES = rfdDriver->receive(rxBuffer, sizeof(rxBuffer));
+    uint16_t receivedBytes = 0;
+    rfdDriver->receive(&receivedBytes, rxBuffer, sizeof(rxBuffer));
 
     // Use mavlink_parse_char to process one byte at a time
-    for (uint16_t i = 0; i < RECEIVED_BYTES; ++i) {
+    for (uint16_t i = 0; i < receivedBytes; ++i) {
         if (mavlink_parse_char(0, rxBuffer[i], &message, &status)) {
             handleRxMsg(message);
             message = {};

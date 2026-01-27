@@ -1,5 +1,6 @@
 #pragma once
 
 #include "cmsis_os2.h"
+#include "error.h"
 
-void amInitThreads();
+ZP_ERROR_e amInitThreads();

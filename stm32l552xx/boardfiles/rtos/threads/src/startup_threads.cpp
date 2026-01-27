@@ -2,6 +2,7 @@
 #include "managers.hpp"
 #include "utils.h"
 #include "logger.hpp"
+#include "error.h"
 
 osThreadId_t startUpMainHandle;
 extern Logger * loggerHandle;
@@ -18,7 +19,11 @@ void startUpMain(void *arg)
   vTaskDelete(NULL);
 }
 
-void startUpInitThreads()
+ZP_ERROR_e startUpInitThreads()
 {
     startUpMainHandle = osThreadNew(startUpMain, NULL, &startUpAttr);
+    if (startUpMainHandle == NULL) {
+        return ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }

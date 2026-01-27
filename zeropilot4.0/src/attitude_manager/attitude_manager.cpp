@@ -39,7 +39,7 @@ AttitudeManager::AttitudeManager(
     armAltitude(0.0f),
     amSchedulingCounter(0) {}
 
-void AttitudeManager::amUpdate() {
+ZP_ERROR_e AttitudeManager::amUpdate() {
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 
@@ -68,37 +68,51 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get data from Queue and motor outputs
-    bool controlRes = getControlInputs(&controlMsg);
-    
+    ZP_ERROR_e controlRes = getControlInputs(&controlMsg);
+
     // Failsafe
     static int noDataCount = 0;
     static bool failsafeTriggered = false;
 
-    if (controlRes != true) {
+    if (controlRes != ZP_ERROR_OK) {
         ++noDataCount;
 
-        if (noDataCount * AM_CONTROL_LOOP_DELAY > AM_FAILSAFE_TIMEOUT) {
-            outputToMotor(YAW, 50);
-            outputToMotor(PITCH, 50);
-            outputToMotor(ROLL, 50);
-            outputToMotor(THROTTLE, 0);
-            outputToMotor(FLAP_ANGLE, 0);
-            outputToMotor(STEERING, 50);
+        if (noDataCount * AM_MAIN_DELAY > 1000) {
+            ZP_ERROR_e err;
+            err = outputToMotor(YAW, 50);
+            if (err != ZP_ERROR_OK) return err;
+
+            err = outputToMotor(PITCH, 50);
+            if (err != ZP_ERROR_OK) return err;
+
+            err = outputToMotor(ROLL, 50);
+            if (err != ZP_ERROR_OK) return err;
+
+            err = outputToMotor(THROTTLE, 0);
+            if (err != ZP_ERROR_OK) return err;
+
+            err = outputToMotor(FLAP_ANGLE, 0);
+            if (err != ZP_ERROR_OK) return err;
+
+            err = outputToMotor(STEERING, 50);
+            if (err != ZP_ERROR_OK) return err;
 
             if (!failsafeTriggered) {
               char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
+              err = smLoggerQueue->push(&errorMsg);
+              if (err != ZP_ERROR_OK) return err;
               failsafeTriggered = true;
             }
         }
 
-        return;
+        return ZP_ERROR_OK;
     } else {
         noDataCount = 0;
 
         if (failsafeTriggered) {
           char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
+          ZP_ERROR_e err = smLoggerQueue->push(&errorMsg);
+          if (err != ZP_ERROR_OK) return err;
           failsafeTriggered = false;
         }
     }
@@ -115,26 +129,63 @@ void AttitudeManager::amUpdate() {
     }
 
 
-    RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
+    RCMotorControlMessage_t motorOutputs;
+    ZP_ERROR_e err = controlAlgorithm.runControl(&motorOutputs, controlMsg, droneState);
+    if (err != ZP_ERROR_OK) return err;
 
-    outputToMotor(YAW, motorOutputs.yaw);
-    outputToMotor(PITCH, motorOutputs.pitch);
-    outputToMotor(ROLL, motorOutputs.roll);
-    outputToMotor(THROTTLE, motorOutputs.throttle);
-    outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle);
-    outputToMotor(STEERING, motorOutputs.yaw);
-}
+    err = outputToMotor(YAW, motorOutputs.yaw);
+    if (err != ZP_ERROR_OK) return err;
 
-bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
-    if (amQueue->count() == 0) {
-        return false;
+    err = outputToMotor(PITCH, motorOutputs.pitch);
+    if (err != ZP_ERROR_OK) return err;
+
+    err = outputToMotor(ROLL, motorOutputs.roll);
+    if (err != ZP_ERROR_OK) return err;
+
+    err = outputToMotor(THROTTLE, motorOutputs.throttle);
+    if (err != ZP_ERROR_OK) return err;
+
+    err = outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle);
+    if (err != ZP_ERROR_OK) return err;
+
+    err = outputToMotor(STEERING, motorOutputs.yaw);
+    if (err != ZP_ERROR_OK) return err;
+
+    // Send GPS data to telemetry manager
+    GpsData_t gpsData;
+    err = gpsDriver->readData(&gpsData);
+    if (err != ZP_ERROR_OK) return err;
+
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
+        err = sendGPSDataToTelemetryManager(gpsData, controlMsg.arm > 0);
+        if (err != ZP_ERROR_OK) return err;
     }
 
-    amQueue->get(pControlMsg);
-    return true;
+    amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
+
+    return ZP_ERROR_OK;
 }
 
-void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
+ZP_ERROR_e AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
+    int count = 0;
+    ZP_ERROR_e err = amQueue->count(&count);
+    if (err != ZP_ERROR_OK) {
+        return err;
+    }
+
+    if (count == 0) {
+        return ZP_ERROR_RESOURCE_UNAVAILABLE;
+    }
+
+    err = amQueue->get(pControlMsg);
+    if (err != ZP_ERROR_OK) {
+        return err;
+    }
+
+    return ZP_ERROR_OK;
+}
+
+ZP_ERROR_e AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
     MotorGroupInstance_t *motorGroup = nullptr;
 
     switch (axis) {
@@ -157,24 +208,31 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
             motorGroup = steeringMotors;
             break;
         default:
-            return;
+            return ZP_ERROR_INVALID_PARAM;
     }
 
     for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
         MotorInstance_t *motor = (motorGroup->motors + i);
+        ZP_ERROR_e err;
 
         if (motor->isInverted) {
-            motor->motorInstance->set(100 - percent);
+            err = motor->motorInstance->set(100 - percent);
         }
         else {
-            motor->motorInstance->set(percent);
+            err = motor->motorInstance->set(percent);
+        }
+
+        if (err != ZP_ERROR_OK) {
+            return err;
         }
     }
+
+    return ZP_ERROR_OK;
 }
 
 
-void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData, const bool &armed) {
-    if (!gpsData.isNew) return;
+ZP_ERROR_e AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData, const bool &armed) {
+    if (!gpsData.isNew) return ZP_ERROR_OK;
 
     if (armed) {
         if (!previouslyArmed) {
@@ -189,8 +247,14 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData, co
     // calculate relative altitude
     float relativeAltitude = previouslyArmed ? (gpsData.altitude - armAltitude) : 0.0f;
 
+    uint32_t timestampMs = 0;
+    ZP_ERROR_e err = systemUtilsDriver->getCurrentTimestampMs(&timestampMs);
+    if (err != ZP_ERROR_OK) {
+        return err;
+    }
+
     TMMessage_t gpsDataMsg = gposDataPack(
-        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        timestampMs, // time_boot_ms
         gpsData.altitude * 1000, // altitude in mm
         gpsData.latitude * 1e7,
         gpsData.longitude * 1e7,
@@ -201,7 +265,37 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData, co
         gpsData.trackAngle
     );
 
-    tmQueue->push(&gpsDataMsg);
+    err = tmQueue->push(&gpsDataMsg);
+    if (err != ZP_ERROR_OK) {
+        return err;
+    }
+
+    return ZP_ERROR_OK;
+}
+
+void AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {
+    TMMessage_t imuDataMsg = rawImuDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        imuData.xacc,
+        imuData.yacc,
+        imuData.zacc,
+        imuData.xgyro,
+        imuData.ygyro,
+        imuData.zgyro
+    );
+
+    tmQueue->push(&imuDataMsg);
+}
+
+void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attitude) {
+    TMMessage_t attitudeDataMsg = attitudeDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        attitude.roll,
+        attitude.pitch,
+        attitude.yaw
+    );
+
+    tmQueue->push(&attitudeDataMsg);
 }
 
 void AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {

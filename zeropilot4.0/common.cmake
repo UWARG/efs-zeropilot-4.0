@@ -37,6 +37,7 @@ set(ZP_SRC
     ${TM_SRC}
 )
 set(ZP_INC
+    "include/"
     "include/driver_ifaces/"
     "include/thread_msgs/"
     ${AM_INC}

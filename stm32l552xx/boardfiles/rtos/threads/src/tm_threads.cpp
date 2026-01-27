@@ -15,11 +15,18 @@ void tmMainLoopWrapper(void *arg)
   while(true)
   {
     tmHandle->tmUpdate();
-    osDelay(timeToTicks(50));
+    uint32_t ticks = 0;
+    if (timeToTicks(&ticks, 50) == ZP_ERROR_OK) {
+      osDelay(ticks);
+    }
   }
 }
 
-void tmInitThreads()
+ZP_ERROR_e tmInitThreads()
 {
     tmMainHandle = osThreadNew(tmMainLoopWrapper, NULL, &tmMainLoopAttr);
+    if (tmMainHandle == NULL) {
+        return ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }

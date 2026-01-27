@@ -1,6 +1,7 @@
 #include "drivers.hpp"
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
+#include "error.h"
 
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg;
@@ -92,35 +93,97 @@ MotorGroupInstance_t steeringMotors;
 // ----------------------------------------------------------------------------
 // Initialization (no heap allocations)
 // ----------------------------------------------------------------------------
-void initDrivers()
+ZP_ERROR_e initDrivers()
 {
-    // Core utilities
-    systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
-    iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    systemUtilsHandle = new SystemUtils();
+    if (systemUtilsHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
 
-    // Motors
-    leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
-    rightAileronMotorHandle = new (&rightAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_2, 5, 10);
-    elevatorMotorHandle = new (&elevatorMotorStorage) MotorControl(&htim3, TIM_CHANNEL_3, 5, 10);
-    rudderMotorHandle = new (&rudderMotorStorage) MotorControl(&htim3, TIM_CHANNEL_4, 5, 10);
-    throttleMotorHandle = new (&throttleMotorStorage) MotorControl(&htim4, TIM_CHANNEL_1, 5, 10);
-    leftFlapMotorHandle = new (&leftFlapMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10);
-    rightFlapMotorHandle = new (&rightFlapMotorStorage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10);
-    steeringMotorHandle = new (&steeringMotorStorage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10);
+    iwdgHandle = new IndependentWatchdog(&hiwdg);
+    if (iwdgHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
 
-    // Peripherals
-    gpsHandle = new (&gpsStorage) GPS(&huart2);
-    rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
-    rfdHandle = new (&rfdStorage) RFD(&huart3);
-    imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
-    pmHandle = new (&pmStorage) PowerModule(&hi2c1);
+    loggerHandle = new Logger(); // Initialized in a RTOS task
+    if (loggerHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
 
-    // Queues
-    amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
-    tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
-    messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
+    leftAileronMotorHandle = new MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
+    if (leftAileronMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    rightAileronMotorHandle = new MotorControl(&htim3, TIM_CHANNEL_2, 5, 10);
+    if (rightAileronMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    elevatorMotorHandle = new MotorControl(&htim3, TIM_CHANNEL_3, 5, 10);
+    if (elevatorMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    rudderMotorHandle = new MotorControl(&htim3, TIM_CHANNEL_4, 5, 10);
+    if (rudderMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    throttleMotorHandle = new MotorControl(&htim4, TIM_CHANNEL_1, 5, 10);
+    if (throttleMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    leftFlapMotorHandle = new MotorControl(&htim1, TIM_CHANNEL_1, 5, 10);
+    if (leftFlapMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    rightFlapMotorHandle = new MotorControl(&htim1, TIM_CHANNEL_2, 5, 10);
+    if (rightFlapMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    steeringMotorHandle = new MotorControl(&htim1, TIM_CHANNEL_3, 5, 10);
+    if (steeringMotorHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    gpsHandle = new GPS(&huart2);
+    if (gpsHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    rcHandle = new RCReceiver(&huart4);
+    if (rcHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    rfdHandle = new RFD(&huart3);
+    if (rfdHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
+    if (amRCQueueHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
+    if (smLoggerQueueHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
+    if (tmQueueHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
+
+    messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
+    if (messageBufferHandle == nullptr) {
+      return ZP_ERROR_OUT_OF_MEMORY;
+    }
 
     // Initialize hardware components
     leftAileronMotorHandle->init();
@@ -159,4 +222,6 @@ void initDrivers()
     throttleMotors = {&throttleMotorInstance, 1};
     flapMotors = {flapMotorInstances, 2};
     steeringMotors = {&steeringMotorInstance, 1};
+
+    return ZP_ERROR_OK;
 }

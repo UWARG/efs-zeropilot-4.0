@@ -2,6 +2,7 @@
 
 #include "iwdg_iface.hpp"
 #include "stm32l5xx_hal.h"
+#include "error.h"
 
 class IndependentWatchdog : public IIndependentWatchdog{
     private:
@@ -13,5 +14,5 @@ class IndependentWatchdog : public IIndependentWatchdog{
         /**
          * @brief reset watchdog timer
          */
-        bool refreshWatchdog() override;
+        ZP_ERROR_e refreshWatchdog() override;
 };

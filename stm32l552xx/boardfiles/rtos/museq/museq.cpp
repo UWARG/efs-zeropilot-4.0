@@ -2,6 +2,7 @@
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
 #include "mavlink.h"
+#include "error.h"
 
 /* --- mutexes --- */
 /* define mutexes begin */
@@ -19,28 +20,53 @@ static const osMutexAttr_t itmMutexAttr = {
 };
 /* define mutexes end */
 
-void initMutexes()
-{
-  itmMutex = osMutexNew(&itmMutexAttr);
-}
+extern "C" {
+  ZP_ERROR_e initMutexes()
+  {
+    itmMutex = osMutexNew(&itmMutexAttr);
 
-/* --- sempahores --- */
-/* define semaphores begin */
-/* define semaphores end */
+    if (itmMutex == NULL) {
+      return ZP_ERROR_FAIL;
+    }
 
-void initSemphrs()
-{
+    return ZP_ERROR_OK;
+  }
 
-}
+  /* --- sempahores --- */
+  /* define semaphores begin */
+  /* define semaphores end */
 
-/* --- queues --- */
-/* define queues begin */
-/* define queues end */
+  ZP_ERROR_e initSemphrs()
+  {
+    return ZP_ERROR_OK;
+  }
 
-void initQueues()
-{
-  amQueueId = osMessageQueueNew(16, sizeof(RCMotorControlMessage_t), NULL);
-  smLoggerQueueId = osMessageQueueNew(16, sizeof(char[100]), NULL);
-  tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
-  messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);
+  /* --- queues --- */
+  /* define queues begin */
+  /* define queues end */
+
+  ZP_ERROR_e initQueues()
+  {
+    amQueueId = osMessageQueueNew(16, sizeof(RCMotorControlMessage_t), NULL);
+    if (amQueueId == NULL) {
+      return ZP_ERROR_FAIL;
+    }
+
+    smLoggerQueueId = osMessageQueueNew(16, sizeof(char[100]), NULL);
+    if (smLoggerQueueId == NULL) {
+      return ZP_ERROR_FAIL;
+    }
+
+    tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
+    if (tmQueueId == NULL) {
+      return ZP_ERROR_FAIL;
+    }
+
+    messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);
+    if (messageBufferId == NULL) {
+      return ZP_ERROR_FAIL;
+    }
+
+    return ZP_ERROR_OK;
+  }
 }

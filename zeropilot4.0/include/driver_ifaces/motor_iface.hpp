@@ -1,14 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include "error.h"
 
 class IMotorControl {
-    protected: 
+    protected:
         IMotorControl() = default;
-        
+
     public:
         virtual ~IMotorControl() = default;
 
         // set pwm percentage of servo motors
-        virtual void set(uint32_t percent) = 0;
+        virtual ZP_ERROR_e set(uint32_t percent) = 0;
 };

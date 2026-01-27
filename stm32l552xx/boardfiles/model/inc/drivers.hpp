@@ -1,5 +1,6 @@
 #pragma once
 
+#include "error.h"
 #include "systemutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
@@ -48,4 +49,4 @@ extern MotorGroupInstance_t throttleMotors;
 extern MotorGroupInstance_t flapMotors;
 extern MotorGroupInstance_t steeringMotors;
 
-void initDrivers();
+ZP_ERROR_e initDrivers();

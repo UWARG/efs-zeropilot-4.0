@@ -1,14 +1,20 @@
 #include "utils.h"
 
-uint32_t timeToTicks(uint32_t duration_ms)
+ZP_ERROR_e timeToTicks(uint32_t *ticks, uint32_t duration_ms)
 {
-  uint32_t ticks = (osKernelGetTickFreq() * duration_ms) / 1000U;
-  if(ticks > 1U)
+  if (ticks == NULL) {
+    return ZP_ERROR_NULLPTR;
+  }
+
+  uint32_t calculated_ticks = (osKernelGetTickFreq() * duration_ms) / 1000U;
+  if(calculated_ticks > 1U)
   {
-    return ticks;
+    *ticks = calculated_ticks;
   }
   else
   {
-    return 1U;
+    *ticks = 1U;
   }
+
+  return ZP_ERROR_OK;
 }

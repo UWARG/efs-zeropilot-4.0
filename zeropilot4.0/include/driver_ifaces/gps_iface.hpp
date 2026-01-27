@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gps_datatypes.hpp"
+#include "error.h"
 
 class IGPS {
 protected:
@@ -9,5 +10,5 @@ protected:
 public:
     virtual ~IGPS() = default;
 
-    virtual GpsData_t readData() = 0;
+    virtual ZP_ERROR_e readData(GpsData_t *data) = 0;
 };
