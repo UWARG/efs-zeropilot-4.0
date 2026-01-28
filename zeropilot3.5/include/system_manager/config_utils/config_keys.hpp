@@ -28,8 +28,11 @@ struct Param_t {
     }
 };
 
-constexpr std::array<Param_t, 1> CONFIG_VALUES = {{
-    {"baud_rate", 0.0, Owner_e::ATTITUDE_MANAGER, false} // Example
+constexpr std::array<Param_t, 4> CONFIG_VALUES = {{
+    {"baud_rate", 0.0, Owner_e::ATTITUDE_MANAGER, false}, // Example
+    {"p", 100.0, Owner_e::ATTITUDE_MANAGER, false},
+	{"i", 25.0, Owner_e::ATTITUDE_MANAGER, false},
+	{"d", 10.0, Owner_e::ATTITUDE_MANAGER, false}
 }};
 
 static constexpr size_t NUM_KEYS = CONFIG_VALUES.size();
