@@ -14,6 +14,7 @@ AttitudeManager::AttitudeManager(
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
+    IMessageQueue<ConfigMessage_t> *smConfigAttitudeQueue,
     MotorGroupInstance_t *rollMotors,
     MotorGroupInstance_t *pitchMotors,
     MotorGroupInstance_t *yawMotors,
@@ -27,6 +28,7 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
+    smConfigAttitudeQueue(smConfigAttitudeQueue),
     controlAlgorithm(),
     droneState(DRONE_STATE_DEFAULT),
     rollMotors(rollMotors),
@@ -123,6 +125,9 @@ void AttitudeManager::amUpdate() {
     outputToMotor(THROTTLE, motorOutputs.throttle);
     outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle);
     outputToMotor(STEERING, motorOutputs.yaw);
+
+    // Handle config changes
+    handleConfigChanges();
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
@@ -132,6 +137,21 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 
     amQueue->get(pControlMsg);
     return true;
+}
+
+void AttitudeManager::handleConfigChanges() {
+    if (smConfigAttitudeQueue->count() == 0) {
+        return;
+    }
+    ConfigMessage_t *pConfigMsg = new ConfigMessage_t;
+    smConfigAttitudeQueue->get(pConfigMsg);
+    // Handle config changes here for whatever config keys the attitude manager owns
+    char logMsg[100];
+    snprintf(logMsg, 100, "AttitudeManager: Config key %zu changed to value %f", pConfigMsg->key, pConfigMsg->value);
+    smLoggerQueue->push(&logMsg);
+
+    delete pConfigMsg;
+    return;
 }
 
 void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
