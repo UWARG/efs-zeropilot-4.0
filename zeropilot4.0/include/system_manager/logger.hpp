@@ -11,7 +11,7 @@ class Logger {
         ISystemUtils *sysUtils;
 
     public:
-        Logger(ITextIO *textIO);
+        Logger(ITextIO *textIO, ISystemUtils *sysUtils);
 
         /**
          * @brief logs a single message to the SD Card

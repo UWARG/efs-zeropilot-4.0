@@ -41,14 +41,14 @@ void initManagers()
     smHandle = new (&smHandleStorage) SystemManager(
         systemUtilsHandle, 
         iwdgHandle,
-        loggerHandle, 
         rcHandle,
 		pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
         tmSmQueueHandle, 
         smLoggerQueueHandle, 
-        smConfigRouteQueueHandle, 
+        smConfigRouteQueueHandle,
+        loggerHandle,
         configHandle
     );
 

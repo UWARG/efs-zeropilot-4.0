@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-Logger::Logger(ITextIO *textIO) : textIO(textIO) {
+Logger::Logger(ITextIO *textIO, ISystemUtils *sysUtils) : textIO(textIO), sysUtils(sysUtils) {
   //blank
 }
 

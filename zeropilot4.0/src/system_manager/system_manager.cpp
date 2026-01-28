@@ -7,18 +7,17 @@
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
     IRCReceiver *rcDriver,
 	IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<TMSMMessage_t> *tmSmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    IMessageQueue<ConfigMessage_t> **smConfigRouteQueue,
+    IMessageQueue<ConfigMessage_t> *smConfigRouteQueue[],
     Logger *logger,
     Config *config) :
+        systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
         rcDriver(rcDriver),
 		pmDriver(pmDriver),
         amRCQueue(amRCQueue),
@@ -29,7 +28,7 @@ SystemManager::SystemManager(
         logger(logger),
         config(config) {
             for (size_t i = 0; i < static_cast<size_t>(Owner_e::COUNT); ++i) {
-                smConfigRouteQueue[i] = smConfigRouteQueue[i];
+                this->smConfigRouteQueue[i] = smConfigRouteQueue[i];
             }
         }
 
@@ -54,7 +53,7 @@ void SystemManager::smUpdate() {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_CONTROL_LOOP_DELAY > SM_RC_TIMEOUT) && rcConnected) {
-            loggerDriver->log("RC Disconnected");
+            logger->log("RC Disconnected");
             rcConnected = false;
         }
     }

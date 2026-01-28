@@ -22,14 +22,13 @@ class SystemManager {
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
-            ILogger *loggerDriver,
             IRCReceiver *rcDriver,
 			IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<TMSMMessage_t> *tmSmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-            IMessageQueue<ConfigMessage_t> *smConfigRouteQueue[static_cast<size_t>(Owner_e::COUNT)],
+            IMessageQueue<ConfigMessage_t> **smConfigRouteQueue,
             Logger *logger,
             Config *config
         );
@@ -49,7 +48,7 @@ class SystemManager {
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
         IMessageQueue<TMSMMessage_t> *tmSmQueue; // Queue driver for rx communication from Telemetry Manager to System Manager
         IMessageQueue<char[100]> *smLoggerQueue; // Queue driver for rx communication from other modules to the System Manager for logging
-        IMessageQueue<ConfigMessage_t> *smConfigRouteQueue[static_cast<size_t>(Owner_e::COUNT)]; // Array of queues for routing config messages to respective managers
+        IMessageQueue<ConfigMessage_t> *smConfigRouteQueue[static_cast<size_t>(Owner_e::COUNT)] = {}; // Array of queues for routing config messages to respective managers
 
         uint8_t smSchedulingCounter;
         int paramAmountSent = -1; // Counter to keep track of how many params have been sent to TM

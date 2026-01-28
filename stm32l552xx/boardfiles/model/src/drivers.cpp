@@ -65,7 +65,7 @@ PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
-IMessageQueue<ConfigMessage_t> **smConfigRouteQueueHandle = nullptr;
+IMessageQueue<ConfigMessage_t> *smConfigRouteQueueHandle[static_cast<size_t>(Owner_e::COUNT)] = {};
 MessageQueue<ConfigMessage_t> *smConfigAttitudeQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<TMSMMessage_t> *tmSmQueueHandle = nullptr;
@@ -102,7 +102,7 @@ void initDrivers()
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
     textIOHandle = new SDIO();
-    loggerHandle = new (&loggerStorage) Logger(textIOHandle); // Initialized later in RTOS task
+    loggerHandle = new (&loggerStorage) Logger(textIOHandle, systemUtilsHandle); // Initialized later in RTOS task
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
@@ -125,7 +125,6 @@ void initDrivers()
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
     smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
     smConfigAttitudeQueueHandle = new MessageQueue<ConfigMessage_t>(&smConfigAttitudeQueueId);
-    smConfigRouteQueueHandle = new IMessageQueue<ConfigMessage_t>*[static_cast<size_t>(Owner_e::COUNT)];
     smConfigRouteQueueHandle[static_cast<size_t>(Owner_e::ATTITUDE_MANAGER)] = smConfigAttitudeQueueHandle;
     // Add other manager queues to smConfigRouteQueueHandle as needed
 

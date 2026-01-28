@@ -43,7 +43,7 @@ extern PowerModule *pmHandle;
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
 extern MessageQueue<ConfigMessage_t> *smConfigAttitudeQueueHandle;
-extern IMessageQueue<ConfigMessage_t> **smConfigRouteQueueHandle;
+extern IMessageQueue<ConfigMessage_t> *smConfigRouteQueueHandle[static_cast<size_t>(Owner_e::COUNT)];
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<TMSMMessage_t> *tmSmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
