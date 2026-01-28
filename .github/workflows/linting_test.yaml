@@ -22,17 +22,17 @@ jobs:
         submodules: true
 
     - name: Build main 
-      working-directory: ./zeropilot3.5
+      working-directory: ./zeropilot4.0
       run: |
         bash ./hwbuild.bash -c l552
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
-      working-directory: ./zeropilot3.5/tests
+      working-directory: ./zeropilot4.0/tests
       run: |
         bash ./testbuild.bash -c l552
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
-      working-directory: ./zeropilot3.5
+      working-directory: ./zeropilot4.0
       run: bash ./lint.bash  

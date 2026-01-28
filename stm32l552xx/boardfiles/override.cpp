@@ -4,6 +4,8 @@
 #include "rfd.hpp"
 #include "drivers.hpp"
 #include "utils.h"
+#include "imu.hpp"
+#include "user_diskio_spi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,23 +48,21 @@ void HAL_Delay(uint32_t Delay) {
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-    if (huart->Instance == UART4){
+    if (huart == rcHandle->getUart()){
         rcHandle->parse();
         rcHandle->startDMA();
     } else if (RFD::instance && RFD::instance->getHuart() == huart) {
       RFD::instance->receiveCallback(Size);
     }
     // GPS dma callback
-    else if (huart->Instance == USART2) {
+    else if (huart == gpsHandle->getHUART()) {
       gpsHandle->processGPSData();
     }
 }
 
-uint32_t error;
-
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart->Instance == UART4){
-    error = HAL_UART_GetError(huart);
+  if(huart == rcHandle->getUart()){
+    uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
       __HAL_UART_CLEAR_PEFLAG(huart);
@@ -82,4 +82,19 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 
     rcHandle->startDMA();
   }
+}
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
+    #ifdef SPI_INTERFACE
+    if (hspi->Instance == SPI1) {
+        setSpiTxFlag(1);
+    }
+    #endif
+    if (hspi->Instance == SPI2) {
+      imuHandle->txRxCallback();
+    }
+}
+
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+		pmHandle->I2C_MemRxCpltCallback();
 }

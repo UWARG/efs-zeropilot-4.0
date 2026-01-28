@@ -1,5 +1,5 @@
-## Welcome to ZeroPilot3.5
-ZeroPilot is WARG's custom flight controller! Before beginning work, please take a look at the desgin documentation and KT videos here: https://uwarg-docs.atlassian.net/wiki/spaces/ZP/pages/2668101634/ZeroPilot3.5+Design
+## Welcome to ZeroPilot4.0
+ZeroPilot is WARG's custom flight controller! Before beginning work, please take a look at the desgin documentation and KT videos here: https://uwarg-docs.atlassian.net/wiki/spaces/ZP/pages/2668101634/ZeroPilot4.0+Design
 
 ## Building the Project
 TODO:
@@ -16,7 +16,7 @@ To debug the testing build in VS Code, add the following `launch.json` file to t
             "name": "GTest Debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/zeropilot3.5/tests/build/gtestzeropilot3.5",
+            "program": "${workspaceFolder}/zeropilot4.0/tests/build/gtestzeropilot4.0",
             "args": [
                 "--gtest_filter=*"
             ],

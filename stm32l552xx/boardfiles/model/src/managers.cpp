@@ -2,6 +2,12 @@
 #include "drivers.hpp"
 #include "managers.hpp"
 
+// Pre-allocated static storage (global, not stack)
+alignas(AttitudeManager) static uint8_t amHandleStorage[sizeof(AttitudeManager)];
+alignas(SystemManager) static uint8_t smHandleStorage[sizeof(SystemManager)];
+alignas(TelemetryManager) static uint8_t tmHandleStorage[sizeof(TelemetryManager)];
+
+// Manager handles
 AttitudeManager *amHandle = nullptr;
 SystemManager *smHandle = nullptr;
 TelemetryManager *tmHandle = nullptr;
@@ -14,15 +20,45 @@ Config *configHandle = nullptr;
 void initManagers()
 {
     // AM initialization
-    flightMode = new DirectMapping();
-
-    // AM initialization
-    amHandle = new AttitudeManager(systemUtilsHandle, gpsHandle, amRCQueueHandle, tmQueueHandle, smLoggerQueueHandle, smConfigAttitudeQueueHandle, flightMode, &rollMotors, &pitchMotors, &yawMotors, &throttleMotors, &flapMotors, &steeringMotors);
+    amHandle = new (&amHandleStorage) AttitudeManager(
+        systemUtilsHandle, 
+        gpsHandle,
+        imuHandle,
+        amRCQueueHandle, 
+        tmQueueHandle, 
+        smLoggerQueueHandle,
+        smConfigAttitudeQueueHandle,
+        &rollMotors, 
+        &pitchMotors, 
+        &yawMotors, 
+        &throttleMotors, 
+        &flapMotors, 
+        &steeringMotors
+    );
 
     // SM initialization
     configHandle = new Config(textIOHandle);
-    smHandle = new SystemManager(systemUtilsHandle, iwdgHandle, rcHandle, amRCQueueHandle, tmQueueHandle, tmSmQueueHandle, smLoggerQueueHandle, smConfigRouteQueueHandle, loggerHandle, configHandle);
+    smHandle = new (&smHandleStorage) SystemManager(
+        systemUtilsHandle, 
+        iwdgHandle,
+        loggerHandle, 
+        rcHandle,
+		pmHandle,
+        amRCQueueHandle,
+        tmQueueHandle,
+        tmSmQueueHandle, 
+        smLoggerQueueHandle, 
+        smConfigRouteQueueHandle, 
+        configHandle
+    );
 
     // TM initialization
-    tmHandle = new TelemetryManager(systemUtilsHandle, rfdHandle, tmQueueHandle, tmSmQueueHandle, amRCQueueHandle, messageBufferHandle);
+    tmHandle = new (&tmHandleStorage) TelemetryManager(
+        systemUtilsHandle,
+        rfdHandle,
+        tmQueueHandle,
+        tmSmQueueHandle,
+        amRCQueueHandle,
+        messageBufferHandle
+    );
 }

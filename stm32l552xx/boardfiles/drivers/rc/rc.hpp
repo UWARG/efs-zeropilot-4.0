@@ -16,15 +16,26 @@ class RCReceiver : public IRCReceiver {
 
         RCControl getRCData() override;
 
-        void init();
-        void startDMA();
+        UART_HandleTypeDef* getHUART();
 
+        /**
+         * @brief starts DMA receive
+         */
+        void init();
+
+        /**
+         * @brief restarts DMA
+         */
+        void startDMA();
+        /**
+         * @brief Updates RCControl values
+         */
         void parse();
        
     private:
-        UART_HandleTypeDef *uart_;
-        RCControl rcData_;
-        uint8_t rawSbus_[SBUS_BYTE_COUNT];
+        UART_HandleTypeDef *uart;
+        RCControl rcData;
+        uint8_t rawSbus[SBUS_PACKET_SIZE];
 
         float sbusToRCControl(uint8_t *buf, int channelMappingIdx);
 };

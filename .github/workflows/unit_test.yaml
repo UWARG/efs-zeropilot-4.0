@@ -22,11 +22,11 @@ jobs:
         submodules: true
 
     - name: Build tests
-      working-directory: ./zeropilot3.5/tests
+      working-directory: ./zeropilot4.0/tests
       run: bash ./testbuild.bash -c l552
     
     - name: Run tests
-      working-directory: ./zeropilot3.5/tests
+      working-directory: ./zeropilot4.0/tests
       run: |
-        chmod +x build/gtestzeropilot3.5
-        ./build/gtestzeropilot3.5
+        chmod +x build/gtestzeropilot4.0
+        ./build/gtestzeropilot4.0
