@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.actuator.Command.c:9:10:uavcan_equipment_actuator_Command_encode	1
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.actuator.Command.c:29:6:uavcan_equipment_actuator_Command_decode	1

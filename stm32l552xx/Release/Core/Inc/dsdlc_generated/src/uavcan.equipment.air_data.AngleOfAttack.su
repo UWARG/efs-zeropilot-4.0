@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.air_data.AngleOfAttack.c:9:10:uavcan_equipment_air_data_AngleOfAttack_encode	24	static
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.air_data.AngleOfAttack.c:29:6:uavcan_equipment_air_data_AngleOfAttack_decode	32	static

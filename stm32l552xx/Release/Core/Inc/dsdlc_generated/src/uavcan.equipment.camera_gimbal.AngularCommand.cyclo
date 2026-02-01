@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.camera_gimbal.AngularCommand.c:9:10:uavcan_equipment_camera_gimbal_AngularCommand_encode	2
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.camera_gimbal.AngularCommand.c:29:6:uavcan_equipment_camera_gimbal_AngularCommand_decode	2

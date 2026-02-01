@@ -1,0 +1,17 @@
+../FATFS/Target/user_diskio_spi.c:89:18:SPI_Timer_Status	8	static
+../FATFS/Target/user_diskio_spi.c:66:15:xchg_spi	32	static
+../FATFS/Target/user_diskio_spi.c:93:14:wait_ready	16	static
+../FATFS/Target/user_diskio_spi.c:157:15:despiselect	8	static
+../FATFS/Target/user_diskio_spi.c:162:14:spiselect	8	static
+../FATFS/Target/user_diskio_spi.c:135:15:xmit_spi_multi	16	static
+../FATFS/Target/user_diskio_spi.c:213:15:send_cmd	24	static
+../FATFS/Target/user_diskio_spi.c:192:14:xmit_datablock	16	static
+../FATFS/Target/user_diskio_spi.c:175:14:rcvr_datablock	24	static
+../FATFS/Target/user_diskio_spi.c:263:11:USER_SPI_initialize	32	static
+../FATFS/Target/user_diskio_spi.c:314:11:USER_SPI_status	0	static
+../FATFS/Target/user_diskio_spi.c:324:11:USER_SPI_read	16	static
+../FATFS/Target/user_diskio_spi.c:355:11:USER_SPI_write	16	static
+../FATFS/Target/user_diskio_spi.c:389:11:USER_SPI_ioctl	32	static
+../FATFS/Target/user_diskio_spi.c:470:8:HAL_SPI_TxCpltCallback	0	static
+../FATFS/Target/user_diskio_spi.c:464:8:HAL_SPI_TxRxCpltCallback	0	static
+../FATFS/Target/user_diskio_spi.c:476:8:HAL_SPI_RxCpltCallback	0	static

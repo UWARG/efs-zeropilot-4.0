@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.ahrs.RawIMU.c:9:10:uavcan_equipment_ahrs_RawIMU_encode	4
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.ahrs.RawIMU.c:29:6:uavcan_equipment_ahrs_RawIMU_decode	5

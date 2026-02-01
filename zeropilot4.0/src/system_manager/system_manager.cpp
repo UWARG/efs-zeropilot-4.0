@@ -11,6 +11,7 @@ SystemManager::SystemManager(
     IRCReceiver *rcDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
+    ICAN *canHandle,
     IMessageQueue<char[100]> *smLoggerQueue) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
@@ -19,7 +20,8 @@ SystemManager::SystemManager(
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0) {}
+        smSchedulingCounter(0),
+        canHandle(canHandle) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -78,6 +80,8 @@ void SystemManager::smUpdate() {
     if (smLoggerQueue->count() > 0) {
         sendMessagesToLogger();
     }
+
+    canHandle->routineTasks();
 
     // Increment scheduling counter
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;

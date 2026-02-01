@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.ahrs.MagneticFieldStrength.c:9:10:uavcan_equipment_ahrs_MagneticFieldStrength_encode	32	static
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.ahrs.MagneticFieldStrength.c:29:6:uavcan_equipment_ahrs_MagneticFieldStrength_decode	40	static

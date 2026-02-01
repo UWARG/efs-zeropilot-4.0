@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.CoarseOrientation.c:9:10:uavcan_CoarseOrientation_encode	2
+../Core/Inc/dsdlc_generated/src/uavcan.CoarseOrientation.c:29:6:uavcan_CoarseOrientation_decode	2

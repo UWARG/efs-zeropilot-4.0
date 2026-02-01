@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.camera_gimbal.GEOPOICommand.c:9:10:uavcan_equipment_camera_gimbal_GEOPOICommand_encode	1
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.camera_gimbal.GEOPOICommand.c:29:6:uavcan_equipment_camera_gimbal_GEOPOICommand_decode	1

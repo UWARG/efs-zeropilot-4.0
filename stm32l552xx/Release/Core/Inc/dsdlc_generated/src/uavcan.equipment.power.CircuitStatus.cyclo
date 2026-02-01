@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.power.CircuitStatus.c:9:10:uavcan_equipment_power_CircuitStatus_encode	1
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.power.CircuitStatus.c:29:6:uavcan_equipment_power_CircuitStatus_decode	1

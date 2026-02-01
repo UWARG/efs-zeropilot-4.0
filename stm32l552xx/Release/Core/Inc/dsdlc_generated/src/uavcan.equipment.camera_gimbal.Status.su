@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.camera_gimbal.Status.c:9:10:uavcan_equipment_camera_gimbal_Status_encode	32	static
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.camera_gimbal.Status.c:29:6:uavcan_equipment_camera_gimbal_Status_decode	40	static

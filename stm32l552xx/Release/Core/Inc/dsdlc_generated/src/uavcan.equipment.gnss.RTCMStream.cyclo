@@ -1,0 +1,2 @@
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.gnss.RTCMStream.c:9:10:uavcan_equipment_gnss_RTCMStream_encode	2
+../Core/Inc/dsdlc_generated/src/uavcan.equipment.gnss.RTCMStream.c:29:6:uavcan_equipment_gnss_RTCMStream_decode	3
