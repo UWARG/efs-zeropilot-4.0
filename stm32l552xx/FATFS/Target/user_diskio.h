@@ -29,13 +29,13 @@
 /* USER CODE BEGIN 0 */
 
 /* Includes ------------------------------------------------------------------*/
-#include "logger_params.hpp"
+//#include "logger_params.h"
 #include "ff_gen_drv.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
-#ifdef SD_CARD_LOGGING
+//#ifdef SD_CARD_LOGGING
 
 //#define SDMMC_INTERFACE
 #define SPI_INTERFACE
@@ -46,7 +46,7 @@
   #error Define a SD Card interface
 #endif
 
-#endif
+//#endif
 
 extern Diskio_drvTypeDef USER_Driver;
 

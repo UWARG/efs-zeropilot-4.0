@@ -20,6 +20,8 @@
 class SystemManager {
     public:
         SystemManager(
+        	Logger *logger,
+			Config *config,
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
             IRCReceiver *rcDriver,
@@ -28,19 +30,19 @@ class SystemManager {
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<TMSMMessage_t> *tmSmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-            IMessageQueue<ConfigMessage_t> **smConfigRouteQueue,
-            Logger *logger,
-            Config *config
+            IMessageQueue<ConfigMessage_t> **smConfigRouteQueue
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
 
     private:
-        IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
-
-        ISystemUtils *systemUtilsDriver; // System utilities instance
         Logger *logger; // Logger 
         Config *config; // Config manager
+
+        ISystemUtils *systemUtilsDriver; // System utilities instance
+        IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
+
+
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver;
         

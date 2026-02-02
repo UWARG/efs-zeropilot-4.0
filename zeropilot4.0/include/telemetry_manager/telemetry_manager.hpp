@@ -13,10 +13,11 @@ class TelemetryManager {
   private:
     ISystemUtils *systemUtilsDriver;			                  // System Utils Driver
     IRFD *rfdDriver;										                    // Driver used to actually send mavlink messages
-    IMessageQueue<TMMessage_t> *tmRxQueue;				      // Driver that receives messages from other managers
+    IMessageQueue<TMMessage_t> *tmRxQueue;				    // Driver that receives messages from other managers
+    IMessageQueue<TMSMMessage_t> *tmTxQueue;            	// Driver that sends messages to system manager
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;	// Driver that currently is only used to set arm/disarm
     IMessageQueue<mavlink_message_t> *mavlinkTxQueue{};	  	// GPOS, Attitude, Heartbeat/Connection, and Param Messages
-    IMessageQueue<TMSMMessage_t> *tmTxQueue;            // Driver that sends messages to system manager
+
     mavlink_status_t status;
     mavlink_message_t message;
     mavlink_message_t overflowBuf;
@@ -29,7 +30,14 @@ class TelemetryManager {
     void reconstructMsg();
 
   public:
-    TelemetryManager(ISystemUtils *systemUtilsDriver, IRFD *rfdDriver, IMessageQueue<TMMessage_t>  *tmRxQueue, IMessageQueue<TMSMMessage_t> *tmTxQueue, IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *mavlinkTxQueue);
+    TelemetryManager(
+    		ISystemUtils *systemUtilsDriver,
+			IRFD *rfdDriver,
+			IMessageQueue<TMMessage_t> *tmRxQueue,
+			IMessageQueue<TMSMMessage_t> *tmTxQueue,
+			IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
+			IMessageQueue<mavlink_message_t> *mavlinkTxQueue
+	);
     ~TelemetryManager();
 
     void tmUpdate();

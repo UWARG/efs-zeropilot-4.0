@@ -39,6 +39,8 @@ void initManagers()
     // SM initialization
     configHandle = new Config(textIOHandle);
     smHandle = new (&smHandleStorage) SystemManager(
+    	loggerHandle,
+    	configHandle,
         systemUtilsHandle, 
         iwdgHandle,
         rcHandle,
@@ -47,9 +49,7 @@ void initManagers()
         tmQueueHandle,
         tmSmQueueHandle, 
         smLoggerQueueHandle, 
-        smConfigRouteQueueHandle,
-        loggerHandle,
-        configHandle
+        smConfigRouteQueueHandle
     );
 
     // TM initialization

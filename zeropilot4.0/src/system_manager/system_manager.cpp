@@ -5,6 +5,8 @@
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 
 SystemManager::SystemManager(
+	Logger *logger,
+	Config *config,
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
     IRCReceiver *rcDriver,
@@ -13,9 +15,10 @@ SystemManager::SystemManager(
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<TMSMMessage_t> *tmSmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    IMessageQueue<ConfigMessage_t> *smConfigRouteQueue[],
-    Logger *logger,
-    Config *config) :
+    IMessageQueue<ConfigMessage_t> **smConfigRouteQueue
+    ) :
+		logger(logger),
+	    config(config),
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         rcDriver(rcDriver),
@@ -24,9 +27,8 @@ SystemManager::SystemManager(
         tmQueue(tmQueue),
         tmSmQueue(tmSmQueue),
         smLoggerQueue(smLoggerQueue),
-        smConfigRouteQueue(),
-        logger(logger),
-        config(config) {
+        smConfigRouteQueue()
+         {
             for (size_t i = 0; i < static_cast<size_t>(Owner_e::COUNT); ++i) {
                 this->smConfigRouteQueue[i] = smConfigRouteQueue[i];
             }

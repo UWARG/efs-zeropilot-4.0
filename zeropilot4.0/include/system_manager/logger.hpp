@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger_params.hpp"
+#include "logger_params.h"
 #include "textio_iface.hpp"
 #include "systemutils_iface.hpp"
 
