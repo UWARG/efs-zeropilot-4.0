@@ -1,25 +1,30 @@
-#include <cstdio>
-#include <cstring>
 #include "logger.hpp"
+#include "config_utils/config_defines.hpp"
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+
+Logger::Logger(ITextIO *textIO, ISystemUtils *sysUtils) : textIO(textIO), sysUtils(sysUtils) {
+  //blank
+}
 
 int Logger::init() {
 #if defined(SD_CARD_LOGGING)
-    HAL_Delay(1000);
+    sysUtils->delayMs(1000); //wait for SD card to stabilize
 
-    FRESULT res;
+    int res;
 
-    res = f_mount(&FatFs, "", 1);
-    if (res != FR_OK) {
+    res = textIO->mountFile();
+    if (res != 0) {
         return res;
     }
 
-    FRESULT exist = FR_OK;
-    FILINFO fno;
+    int exist = 0;
     int count = 1;
 
-    while (exist == FR_OK) {
-        snprintf(file, 100, "log%d.txt", count);
-        exist = f_stat(file, &fno);
+    while (exist == 0) {
+        snprintf(logFile, 100, "log%d.txt", count);
+        exist = textIO->checkFileExist(logFile);
         count++;
     }
 
@@ -27,23 +32,24 @@ int Logger::init() {
 #elif defined(SWO_LOGGING)
     return 0;
 #endif
+
 }
 
 int Logger::log(const char message[100]) {
     char msgToSend[112]; //10 for timestamp, 100 for message, 2 for new line
 
-    uint32_t ts = (uint32_t)(osKernelGetTickCount() * 1.0 / osKernelGetTickFreq());
-    int tsStrLen = snprintf(msgToSend, 10, "%lus: ", ts);
+    uint32_t ts = sysUtils->getCurrentTimestampMs() / 1000;
+    int tsStrLen = snprintf(msgToSend, 10, "%us: ", ts);
 
 #if defined(SD_CARD_LOGGING)
-    FRESULT res;
-    res = f_open(&fil, file, FA_WRITE | FA_OPEN_APPEND);
+    int res;
+    res = textIO->open(logFile, FA_WRITE | FA_OPEN_APPEND);
 
     snprintf(msgToSend + tsStrLen, 100, message);
     snprintf(msgToSend + tsStrLen + strlen(message), 3, "\r\n");
-    res = (FRESULT)f_puts(msgToSend, &fil);
+    res = textIO->write(msgToSend);
 
-    res = f_close(&fil);
+    res = textIO->close();
 
     return res;
 #elif defined(SWO_LOGGING)
@@ -57,20 +63,20 @@ int Logger::log(const char message[100]) {
 int Logger::log(const char message[][100], int count) {
     char msgToSend[112]; //10 for timestamp, 100 for message, 2 for new line
 
-    uint32_t ts = (uint32_t)(osKernelGetTickCount() * 1.0 / osKernelGetTickFreq());
-    int tsStrLen = snprintf(msgToSend, 10, "%lus: ", ts);
+    uint32_t ts = sysUtils->getCurrentTimestampMs() / 1000;
+    int tsStrLen = snprintf(msgToSend, 10, "%us: ", ts);
 
 #if defined(SD_CARD_LOGGING)
-    FRESULT res;
-    res = f_open(&fil, file, FA_WRITE | FA_OPEN_APPEND);
+    int res;
+    textIO->open(logFile, FA_WRITE | FA_OPEN_APPEND);
 
     for (int i = 0; i < count; i++) {
       snprintf(msgToSend + tsStrLen, 100, message[i]);
       snprintf(msgToSend + tsStrLen + strlen(message[i]), 3, "\r\n");
-      res = (FRESULT)f_puts(msgToSend, &fil);
+      res = textIO->write(msgToSend);
     }
 
-    res = f_close(&fil);
+    res = textIO->close();
 
     return res;
 #elif defined(SWO_LOGGING)

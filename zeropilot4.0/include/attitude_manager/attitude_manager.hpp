@@ -4,6 +4,7 @@
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "motor_datatype.hpp"
+#include "config_msg.hpp"
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
@@ -33,6 +34,7 @@ class AttitudeManager {
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
+            IMessageQueue<ConfigMessage_t> *smConfigAttitudeQueue,
             MotorGroupInstance_t *rollMotors,
             MotorGroupInstance_t *pitchMotors,
             MotorGroupInstance_t *yawMotors,
@@ -54,6 +56,7 @@ class AttitudeManager {
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
         IMessageQueue<TMMessage_t> *tmQueue;
         IMessageQueue<char[100]> *smLoggerQueue;
+        IMessageQueue<ConfigMessage_t> *smConfigAttitudeQueue;
 
         DirectMapping controlAlgorithm;
         RCMotorControlMessage_t controlMsg;
@@ -72,6 +75,8 @@ class AttitudeManager {
         uint8_t amSchedulingCounter;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
+
+        void handleConfigChanges();
 
         void outputToMotor(ControlAxis_t axis, uint8_t percent);
 

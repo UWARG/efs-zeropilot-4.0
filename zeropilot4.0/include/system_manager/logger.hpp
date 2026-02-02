@@ -1,28 +1,29 @@
 #pragma once
 
-#include "logger_iface.hpp"
-#include "fatfs.h"
-#include "logger_config.h"
+#include "logger_params.h"
+#include "textio_iface.hpp"
+#include "systemutils_iface.hpp"
 
-class Logger : public ILogger {
+class Logger {
     private:
-        FATFS FatFs;
-        FIL fil;
-        char file[100];
+        char logFile[100];
+        ITextIO *textIO;
+        ISystemUtils *sysUtils;
 
     public:
-        Logger() = default;
+        Logger(ITextIO *textIO, ISystemUtils *sysUtils);
 
         /**
          * @brief logs a single message to the SD Card
-         * @param message: data to be written
+         * @param message data to be written
          * @retval DRESULT: Operation result
          */
         int log(const char message[100]);
 
         /**
          * @brief logs multiple messages to the SD card
-         * @param messages: data to be written
+         * @param messages data to be written
+         * @param count number of messages to write
          * @retval DRESULT: Operation result
          */
         int log(const char messages[][100], int count);

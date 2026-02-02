@@ -5,23 +5,34 @@
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 
 SystemManager::SystemManager(
+	Logger *logger,
+	Config *config,
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
     IRCReceiver *rcDriver,
 	IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<TMSMMessage_t> *tmSmQueue,
+    IMessageQueue<char[100]> *smLoggerQueue,
+    IMessageQueue<ConfigMessage_t> **smConfigRouteQueue
+    ) :
+		logger(logger),
+	    config(config),
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
         rcDriver(rcDriver),
 		pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
+        tmSmQueue(tmSmQueue),
         smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0) {}
+        smConfigRouteQueue()
+         {
+            for (size_t i = 0; i < static_cast<size_t>(Owner_e::COUNT); ++i) {
+                this->smConfigRouteQueue[i] = smConfigRouteQueue[i];
+            }
+        }
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -37,17 +48,20 @@ void SystemManager::smUpdate() {
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
-            loggerDriver->log("RC Reconnected");
+            logger->log("RC Reconnected");
             rcConnected = true;
         }
     } else {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_CONTROL_LOOP_DELAY > SM_RC_TIMEOUT) && rcConnected) {
-            loggerDriver->log("RC Disconnected");
+            logger->log("RC Disconnected");
             rcConnected = false;
         }
     }
+
+    // Handle messages from TM
+    handleMessagesFromTelemetryManager();
 
     // Send RC data to TM
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_RC_DATA_RATE_HZ) == 0) {
@@ -82,6 +96,11 @@ void SystemManager::smUpdate() {
 		(void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
 	}
 
+    // Send Param data to TM if there are params left to send and the process has been initiated by a param request which sets paramAmountSent to 0
+    if (paramAmountSent >= 0 && paramAmountSent < NUM_KEYS) {
+        sendParamDataToTelemetryManager();
+    }
+
     // Log if new messages
     if (smLoggerQueue->count() > 0) {
         sendMessagesToLogger();
@@ -99,6 +118,21 @@ void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
 void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
     TMMessage_t hbDataMsg = heartbeatPack(systemUtilsDriver->getCurrentTimestampMs(), baseMode, customMode, systemStatus);
     tmQueue->push(&hbDataMsg);
+}
+
+void SystemManager::sendParamDataToTelemetryManager() {
+    char buffer[100];
+    snprintf(buffer, sizeof(buffer), "Sending param index %d to TM", paramAmountSent);
+    logger->log(buffer);
+    Param_t param = config->getParam(paramAmountSent);
+    TMMessage_t paramDataMsg = paramDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(),
+        static_cast<uint16_t>(paramAmountSent),
+        static_cast<uint16_t>(NUM_KEYS),
+        param
+    );
+    tmQueue->push(&paramDataMsg);
+    paramAmountSent++;
 }
 
 void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
@@ -123,5 +157,56 @@ void SystemManager::sendMessagesToLogger() {
         msgCount++;
     }
 
-    loggerDriver->log(messages, msgCount);
+    logger->log(messages, msgCount);
+}
+
+void SystemManager::handleMessagesFromTelemetryManager() {
+    uint16_t count = tmSmQueue->count();
+    while (count-- > 0) {
+        TMSMMessage_t msg;
+        tmSmQueue->get(&msg);
+        switch (msg.dataType) {
+            case TMSMMessage_t::PARAM_CHANGE_DATA: {
+                logger->log("Param change request received from TM");
+                int res = config->writeParamByName(
+                    msg.tmSMMessageData.paramChangeData.keyId,
+                    msg.tmSMMessageData.paramChangeData.value
+                );
+                if (res == 0) {
+                    logger->log("Param updated from TM");
+                    size_t key = config->getParamConfigKey(msg.tmSMMessageData.paramChangeData.keyId);
+                    Owner_e owner = config->getParamOwner(key);
+                    if (owner != Owner_e::COUNT) {
+                        ConfigMessage_t configMsg = {
+                            .key = static_cast<size_t>(key),
+                            .value = msg.tmSMMessageData.paramChangeData.value
+                        };
+                        smConfigRouteQueue[static_cast<size_t>(owner)]->push(&configMsg);
+                        TMMessage_t paramDataMsg = paramDataPack(systemUtilsDriver->getCurrentTimestampMs(),
+                            static_cast<uint16_t>(static_cast<size_t>(key)),
+                            static_cast<uint16_t>(NUM_KEYS),
+                            config->getParam(key)
+                        );
+                        tmQueue->push(&paramDataMsg);
+                    } else {
+                        logger->log("Param owner invalid, cannot route update");
+                    }
+                } else {
+                    logger->log("Failed to write param from TM");
+                }
+                break;
+            }
+
+            case TMSMMessage_t::REQUEST_DATA: {
+                if (msg.tmSMMessageData.requestData.requestType == TMSMRequest::REQUEST_PARAMS) {
+                    paramAmountSent = 0; // Start sending params from the beginning
+                    logger->log("Param request received from TM");
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
 }

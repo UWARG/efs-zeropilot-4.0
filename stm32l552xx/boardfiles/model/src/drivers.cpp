@@ -45,6 +45,7 @@ alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[siz
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
+SDIO *textIOHandle = nullptr;
 Logger *loggerHandle = nullptr;
 
 MotorControl *leftAileronMotorHandle = nullptr;
@@ -64,7 +65,10 @@ PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
+IMessageQueue<ConfigMessage_t> *smConfigRouteQueueHandle[static_cast<size_t>(Owner_e::COUNT)] = {};
+MessageQueue<ConfigMessage_t> *smConfigAttitudeQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
+MessageQueue<TMSMMessage_t> *tmSmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
 // ----------------------------------------------------------------------------
@@ -97,7 +101,8 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    textIOHandle = new SDIO();
+    loggerHandle = new (&loggerStorage) Logger(textIOHandle, systemUtilsHandle); // Initialized later in RTOS task
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
@@ -119,7 +124,13 @@ void initDrivers()
     // Queues
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
     smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
+    smConfigAttitudeQueueHandle = new MessageQueue<ConfigMessage_t>(&smConfigAttitudeQueueId);
+    smConfigRouteQueueHandle[static_cast<size_t>(Owner_e::ATTITUDE_MANAGER)] = smConfigAttitudeQueueHandle;
+    // Add other manager queues to smConfigRouteQueueHandle as needed
+
+    loggerHandle->init();
     tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
+    tmSmQueueHandle = new MessageQueue<TMSMMessage_t>(&tmSmQueueId);
     messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
@@ -136,6 +147,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
+    rfdHandle->startReceive();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true};

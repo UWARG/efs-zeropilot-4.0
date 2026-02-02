@@ -45,6 +45,7 @@ uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
 
 void RFD::receiveCallback(uint16_t size){
     writeIndex = size;
+	HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
 }
 
 UART_HandleTypeDef* RFD::getHuart() const {

@@ -11,6 +11,11 @@ alignas(TelemetryManager) static uint8_t tmHandleStorage[sizeof(TelemetryManager
 AttitudeManager *amHandle = nullptr;
 SystemManager *smHandle = nullptr;
 TelemetryManager *tmHandle = nullptr;
+DirectMapping *flightMode = nullptr;
+
+Config *configHandle = nullptr;
+
+
 
 void initManagers()
 {
@@ -21,7 +26,8 @@ void initManagers()
         imuHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
-        smLoggerQueueHandle, 
+        smLoggerQueueHandle,
+        smConfigAttitudeQueueHandle,
         &rollMotors, 
         &pitchMotors, 
         &yawMotors, 
@@ -31,15 +37,19 @@ void initManagers()
     );
 
     // SM initialization
+    configHandle = new Config(textIOHandle);
     smHandle = new (&smHandleStorage) SystemManager(
+    	loggerHandle,
+    	configHandle,
         systemUtilsHandle, 
         iwdgHandle,
-        loggerHandle,
         rcHandle,
 		pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle
+        tmSmQueueHandle, 
+        smLoggerQueueHandle, 
+        smConfigRouteQueueHandle
     );
 
     // TM initialization
@@ -47,6 +57,7 @@ void initManagers()
         systemUtilsHandle,
         rfdHandle,
         tmQueueHandle,
+        tmSmQueueHandle,
         amRCQueueHandle,
         messageBufferHandle
     );
