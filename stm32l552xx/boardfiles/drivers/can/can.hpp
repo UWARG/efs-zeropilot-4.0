@@ -7,15 +7,15 @@
 #include "can_defines.hpp"
 #include <cstdint>
 #include "can_datatypes.hpp"
-#include "dsdlc_generated/include/dronecan_msgs.h"
-#include "dsdlc_generated/include/uavcan.protocol.NodeStatus.h"
+#include "dronecan_msgs.h"
+#include "uavcan.protocol.NodeStatus.h"
 #include <string.h>
 #include "cmsis_os2.h"
 #include "museq.hpp"
 
 
 
-class CAN : ICAN {
+class CAN : public ICAN {
 
 private:
 	canNode canNodes[CANARD_MAX_NODE_ID + 1];

@@ -48,5 +48,3 @@ extern MotorGroupInstance_t flapMotors;
 extern MotorGroupInstance_t steeringMotors;
 
 void initDrivers();
-
-extern CAN *canHandle;

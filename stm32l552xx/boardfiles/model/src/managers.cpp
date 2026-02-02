@@ -37,8 +37,8 @@ void initManagers()
         rcHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle,
-        canHandle
+        canHandle,
+        smLoggerQueueHandle
     );
 
     // TM initialization
