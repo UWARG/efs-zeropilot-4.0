@@ -1,7 +1,7 @@
 #pragma once
 #define MAVLINK_MSG_MAX_SIZE 280
 #define MAVLINK_MAX_IDENTIFIER_LEN 17
-#define RX_BUFFER_LEN 8192
+#define RX_BUFFER_LEN 2048
 
 #include "systemutils_iface.hpp"
 #include "mavlink.h"
