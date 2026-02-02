@@ -31,8 +31,6 @@ void TelemetryManager::tmUpdate() {
     transmit();
 }
 
-// TODO: HERE UNTIL ALL PARAM LIST HAS BEEN SENT, INGORE OTHERS EXCEPT HEARTBEAT
-// WHEN THE REQUEST FOR PARAMS IS RECEIVED, SET A BOOLEAN TO IGNORE
 void TelemetryManager::processMsgQueue() {
     uint16_t count = tmRxQueue->count();
     TMMessage rcMsg = {};

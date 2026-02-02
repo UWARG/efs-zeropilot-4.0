@@ -10,7 +10,6 @@
 // Managers that own config keys
 enum class Owner_e : size_t {
     ATTITUDE_MANAGER = 0,
-    TELEMETRY_MANAGER = 1,
     COUNT,
 };
 
