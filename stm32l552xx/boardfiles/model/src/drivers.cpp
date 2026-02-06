@@ -122,6 +122,9 @@ void initDrivers()
     tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
 
+    // Initialize core utilities
+    loggerHandle->init();
+
     // Initialize hardware components
     leftAileronMotorHandle->init();
     rightAileronMotorHandle->init();
@@ -136,6 +139,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
+    
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true};
