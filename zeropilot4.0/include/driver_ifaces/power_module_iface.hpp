@@ -5,13 +5,13 @@
 typedef struct PMData {
 
     //instantaneous results
-    float busVoltage = 0.0f;
-    float current = 0.0f;
-    float power = 0.0f;
+    float busVoltage;
+    float current;
+    float power;
 
     //accumulated results
-    float charge = 0.0f;
-    float energy = 0.0f;
+    float charge;
+    float energy;
 
 } PMData_t;
 
