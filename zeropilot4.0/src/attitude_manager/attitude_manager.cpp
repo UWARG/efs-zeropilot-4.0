@@ -28,6 +28,7 @@ AttitudeManager::AttitudeManager(
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
     controlAlgorithm(),
+    controlMsg({50, 50, 50, 0, 0, 0}),
     droneState(DRONE_STATE_DEFAULT),
     rollMotors(rollMotors),
     pitchMotors(pitchMotors),
@@ -65,6 +66,12 @@ void AttitudeManager::amUpdate() {
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
         sendAttitudeDataToTelemetryManager(attitude);
+    }
+
+    // Send GPS data to telemetry manager
+    GpsData_t gpsData = gpsDriver->readData();
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
+        sendGPSDataToTelemetryManager(gpsData, controlMsg.arm > 0);
     }
 
     // Get data from Queue and motor outputs
@@ -106,12 +113,6 @@ void AttitudeManager::amUpdate() {
     // Disarm
     if (controlMsg.arm == 0) {
         controlMsg.throttle = 0;
-    }
-
-    // Send GPS data to telemetry manager
-    GpsData_t gpsData = gpsDriver->readData();
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData, controlMsg.arm > 0);
     }
 
 
