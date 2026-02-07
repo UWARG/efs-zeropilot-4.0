@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-typedef struct {
+typedef struct PMData {
 
     //instantaneous results
     float busVoltage = 0.0f;
