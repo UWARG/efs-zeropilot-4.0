@@ -25,18 +25,7 @@ external/                   # Third-party dependencies (MAVLink)
 
 ### Hardware Build
 
-Build for STM32H753 (default) or STM32L552:
-
-```bash
-cd zeropilot4.0
-./hwbuild.bash              # STM32H753 Debug
-./hwbuild.bash -b l552      # STM32L552 Debug
-./hwbuild.bash -c           # Clean build
-```
-
-Output: `zeropilot4.0/build/{h753iit,l552}/`
-
-**Requirements**: ARM GCC toolchain, CMake, Ninja/Make
+Build for STM32H753 or STM32L552 can be done via STM32CubeIDE.
 
 ### Unit Tests
 
