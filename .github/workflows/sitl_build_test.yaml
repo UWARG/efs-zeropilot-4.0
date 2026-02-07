@@ -1,0 +1,36 @@
+name: SITL Build Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sitl_build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        pip install -r zp_sitl/requirements.txt
+
+    - name: Build SITL
+      run: |
+        cd zp_sitl
+        ./build_sitl.sh
+
+    - name: Test SITL runs
+      run: |
+        cd zp_sitl
+        timeout 10s python sitl_main.py || [ $? -eq 124 ]
