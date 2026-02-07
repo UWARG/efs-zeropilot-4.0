@@ -69,7 +69,7 @@ class ZP_SITL:
         
         try:
             # 1. Update ZeroPilot sensors
-            self.zp.update_plant(
+            self.zp.update_from_plant(
                 self.fdm['attitude/phi-rad'],
                 self.fdm['attitude/theta-rad'],
                 self.fdm['velocities/p-rad_sec'],
