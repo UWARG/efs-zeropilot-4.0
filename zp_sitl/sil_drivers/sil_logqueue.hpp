@@ -26,10 +26,10 @@ public:
     }
     
     int count() override {
-        return q.size();
+        return (int)q.size();
     }
     
     int remainingCapacity() override {
-        return maxSize - q.size();
+        return (int)(maxSize - q.size());
     }
 };
