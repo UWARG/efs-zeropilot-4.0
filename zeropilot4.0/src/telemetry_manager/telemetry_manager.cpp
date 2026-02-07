@@ -48,8 +48,8 @@ void TelemetryManager::processMsgQueue() {
             case TMMessage_t::GPS_RAW_DATA: {
                 auto& g = tmqMessage.tmMessageData.gpsRawData;
                 mavlink_msg_gps_raw_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
-                    g.fix_type, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellites_visible, g.alt_ellipsoid, 
-                    g.h_acc, g.v_acc, g.vel_acc, g.hdg_acc, g.yaw);
+                    g.fixType, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellitesVisible, g.altEllipsoid, 
+                    g.hAcc, g.vAcc, g.velAcc, g.hdgAcc, g.yaw);
                 break;
             }
 

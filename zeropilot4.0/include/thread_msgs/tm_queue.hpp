@@ -8,7 +8,7 @@ typedef union TMMessageData_u {
       uint8_t systemStatus;
   } heartbeatData;
   struct{
-      uint8_t fix_type;
+      uint8_t fixType;
       int32_t lat;
       int32_t lon;
       int32_t alt;
@@ -16,12 +16,12 @@ typedef union TMMessageData_u {
       uint16_t epv;
       uint16_t vel;
       uint16_t cog;
-      uint8_t satellites_visible;
-      int32_t alt_ellipsoid;
-      uint32_t h_acc;
-      uint32_t v_acc;
-      uint32_t vel_acc;
-      uint32_t hdg_acc;
+      uint8_t satellitesVisible;
+      int32_t altEllipsoid;
+      uint32_t hAcc;
+      uint32_t vAcc;
+      uint32_t velAcc;
+      uint32_t hdgAcc;
       uint16_t yaw;
   } gpsRawData;
   struct{
