@@ -1,4 +1,6 @@
 from setuptools import setup, Extension
+import os
+import glob
 import platform
 
 zeropilot_root = '../zeropilot4.0'
@@ -13,19 +15,16 @@ else:
     # GCC/Clang Flags
     compile_args = ['-std=c++17']
     libraries = []
+    
+sources = ['zeropilot_wrapper.cpp']
+sources += glob.glob(
+    os.path.join(zeropilot_root, 'src', '**', '*.cpp'),
+    recursive=True
+)
 
 zeropilot = Extension(
     'zeropilot',
-    sources=[
-        'zeropilot_wrapper.cpp',
-        f'{zeropilot_root}/src/attitude_manager/attitude_manager.cpp',
-        f'{zeropilot_root}/src/attitude_manager/direct_mapping.cpp',
-        f'{zeropilot_root}/src/attitude_manager/fbwa_mapping.cpp',
-        f'{zeropilot_root}/src/attitude_manager/pid.cpp',
-        f'{zeropilot_root}/src/attitude_manager/MahonyAHRS.cpp',
-        f'{zeropilot_root}/src/system_manager/system_manager.cpp',
-        f'{zeropilot_root}/src/telemetry_manager/telemetry_manager.cpp',
-    ],
+    sources=sources,
     include_dirs=[
         '.',
         f'{zeropilot_root}/include/attitude_manager',
