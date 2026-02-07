@@ -1,2 +1,3 @@
+setuptools
 jsbsim==1.2.0
 aiohttp==3.9.3
