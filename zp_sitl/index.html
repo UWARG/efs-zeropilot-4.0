@@ -61,6 +61,7 @@
         .start-btn { width: 100%; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .start-btn:hover { background: #45a049; }
         .hidden { display: none; }
+        .joystick-status { font-size: 12px; color: #4CAF50; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -111,15 +112,15 @@
             <div class="state">
                 <div class="state-item">
                     <div>Roll</div>
-                    <div class="value" id="roll">0°</div>
+                    <div class="value" id="roll">0&deg;</div>
                 </div>
                 <div class="state-item">
                     <div>Pitch</div>
-                    <div class="value" id="pitch">0°</div>
+                    <div class="value" id="pitch">0&deg;</div>
                 </div>
                 <div class="state-item">
                     <div>Yaw</div>
-                    <div class="value" id="yaw">0°</div>
+                    <div class="value" id="yaw">0&deg;</div>
                 </div>
                 <div class="state-item">
                     <div>Altitude</div>
@@ -148,6 +149,7 @@
         <div class="panel controls-panel">
             <button id="arm-btn" class="arm-btn disarmed">ARM</button>
             <h2>RC Channels</h2>
+            <div id="joy-note" class="joystick-status" style="color: #888;">Joystick not detected. Move a stick or press a button to connect.</div>
             <div class="controls">
                 <div class="control-group">
                     <label>Roll: <span id="roll-val">50</span></label>
@@ -178,7 +180,6 @@
         let ws;
 
         $(document).ready(function() {
-            // Handle startup form
             document.getElementById('startup-config').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const config = {
@@ -231,7 +232,58 @@
             controls.throttle.value = config.throttle;
             document.getElementById('throttle-val').textContent = config.throttle;
 
-            // Arm button
+            // --- JOYSTICK LOGIC START ---
+            let joystickConnected = false;
+
+            window.addEventListener("gamepadconnected", (e) => {
+                console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
+                    e.gamepad.index, e.gamepad.id,
+                    e.gamepad.buttons.length, e.gamepad.axes.length);
+                joystickConnected = true;
+                document.getElementById('joy-note').textContent = "Joystick Connected: " + e.gamepad.id;
+                document.getElementById('joy-note').style.color = "#4CAF50";
+                pollJoystick();
+            });
+
+            window.addEventListener("gamepaddisconnected", (e) => {
+                joystickConnected = false;
+                document.getElementById('joy-note').textContent = "Joystick Disconnected.";
+                document.getElementById('joy-note').style.color = "#d32f2f";
+            });
+
+            function pollJoystick() {
+                if (!joystickConnected) return;
+                const gamepads = navigator.getGamepads();
+                const gp = gamepads[0];
+                if (!gp) return;
+
+                // Deadzone and Normalization
+                const applyDeadzone = (val) => (Math.abs(val) < 0.05 ? 0 : val);
+                const norm = (val) => Math.round((val + 1) * 50);
+
+                // Axis mapping
+                const joyData = {
+                    roll: norm(applyDeadzone(gp.axes[2])),
+                    pitch: norm(applyDeadzone(gp.axes[3])),
+                    yaw: norm(applyDeadzone(gp.axes[0])),
+                    throttle: norm(applyDeadzone(-gp.axes[1]))
+                };
+
+                // Update UI elements
+                Object.entries(joyData).forEach(([key, val]) => {
+                    controls[key].value = val;
+                    document.getElementById(`${key}-val`).textContent = val;
+                });
+
+                // Send to Server
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'control', ...joyData }));
+                }
+
+                requestAnimationFrame(pollJoystick);
+            }
+            // --- JOYSTICK LOGIC END ---
+
             document.getElementById('arm-btn').addEventListener('click', () => {
                 if (ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({type: 'arm'}));
@@ -240,15 +292,18 @@
 
             Object.entries(controls).forEach(([name, elem]) => {
                 elem.addEventListener('input', () => {
-                    document.getElementById(`${name}-val`).textContent = elem.value;
-                    if (ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({
-                            type: 'control',
-                            roll: parseInt(controls.roll.value),
-                            pitch: parseInt(controls.pitch.value),
-                            yaw: parseInt(controls.yaw.value),
-                            throttle: parseInt(controls.throttle.value)
-                        }));
+                    // Only manual slider move sends this; joystick has its own loop
+                    if (!joystickConnected) {
+                        document.getElementById(`${name}-val`).textContent = elem.value;
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                type: 'control',
+                                roll: parseInt(controls.roll.value),
+                                pitch: parseInt(controls.pitch.value),
+                                yaw: parseInt(controls.yaw.value),
+                                throttle: parseInt(controls.throttle.value)
+                            }));
+                        }
                     }
                 });
             });
@@ -261,9 +316,9 @@
 
             ws.onmessage = (event) => {
                 const state = JSON.parse(event.data);
-                document.getElementById('roll').textContent = state.roll.toFixed(1) + '°';
-                document.getElementById('pitch').textContent = state.pitch.toFixed(1) + '°';
-                document.getElementById('yaw').textContent = state.yaw.toFixed(1) + '°';
+                document.getElementById('roll').textContent = state.roll.toFixed(1) + '\u00B0';
+                document.getElementById('pitch').textContent = state.pitch.toFixed(1) + '\u00B0';
+                document.getElementById('yaw').textContent = state.yaw.toFixed(1) + '\u00B0';
                 document.getElementById('altitude').textContent = state.altitude.toFixed(0) + ' ft';
                 document.getElementById('airspeed').textContent = state.airspeed.toFixed(1) + ' kts';
                 document.getElementById('rpm').textContent = state.rpm.toFixed(0);
