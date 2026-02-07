@@ -109,7 +109,7 @@ class ZP_SITL:
         return {
             'roll': math.degrees(self.fdm['attitude/phi-rad']),
             'pitch': math.degrees(self.fdm['attitude/theta-rad']),
-            'yaw': math.degrees(self.fdm['attitude/psi-deg']),
+            'yaw': math.degrees(self.fdm['attitude/psi-rad']),
             'altitude': self.fdm['position/h-sl-ft'],
             'airspeed': self.fdm['velocities/vc-kts'],
             'rpm': self.fdm['propulsion/engine/propeller-rpm'],
