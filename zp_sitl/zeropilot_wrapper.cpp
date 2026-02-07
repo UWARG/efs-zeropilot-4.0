@@ -95,7 +95,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->logger = new SIL_Logger();
         self->rc = new SIL_RC();
         self->pm = new SIL_PowerModule();
-        self->rfd = new SIL_RFD("127.0.0.1", 14551);
+        self->rfd = new SIL_RFD("127.0.0.1", 14550);
         self->imu = new SIL_IMU();
         self->gps = new SIL_GPS();
         self->rollMotor = new SIL_Motor();
