@@ -38,7 +38,7 @@ cd zeropilot4.0/tests
 
 **Requirements**: GoogleTest, GoogleMock
 
-### SITL Simulation
+### SITL Simulation ([WIP](https://github.com/UWARG/efs-zeropilot-4.0/pull/110))
 
 Software-in-the-Loop simulation with JSBSim flight dynamics:
 
@@ -87,7 +87,7 @@ Create `.vscode/launch.json`:
 }
 ```
 
-Filter tests: `--gtest_filter=AttitudeManager.*`
+Note: Use --gtest_filter to run a specific or subset of tests: https://google.github.io/googletest/advanced.html#running-a-subset-of-the-tests
 
 ## CI/CD
 
