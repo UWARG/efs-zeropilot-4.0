@@ -12,6 +12,12 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 
 ## Running
 
+Before running for the first time:
+```
+pip install -r requirements.txt
+```
+
+Then, to build and run:
 ```bash
 ./build_sitl.sh
 python sitl_main.py
