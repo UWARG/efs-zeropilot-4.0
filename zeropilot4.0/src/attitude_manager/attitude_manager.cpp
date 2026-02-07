@@ -36,8 +36,6 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
-    previouslyArmed(false),
-    armAltitude(0.0f),
     amSchedulingCounter(0) {}
 
 void AttitudeManager::amUpdate() {
@@ -71,7 +69,7 @@ void AttitudeManager::amUpdate() {
     // Send GPS data to telemetry manager
     GpsData_t gpsData = gpsDriver->readData();
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData, controlMsg.arm > 0);
+        sendGPSDataToTelemetryManager(gpsData);
     }
 
     // Get data from Queue and motor outputs
@@ -174,32 +172,35 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
 }
 
 
-void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData, const bool &armed) {
+void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     if (!gpsData.isNew) return;
 
-    if (armed) {
-        if (!previouslyArmed) {
-            armAltitude = gpsData.altitude;
-            previouslyArmed = true;
-        }
-    } else {
-        previouslyArmed = false;
-        armAltitude = 0.0f;
+    uint8_t fixType = (gpsData.numSatellites >= 4) ? 3 : 2; // 3 = 3D Fix, 2 = 2D Fix
+    
+    int32_t latE7 = static_cast<int32_t>(gpsData.latitude * 1e7f);
+    int32_t lonE7 = static_cast<int32_t>(gpsData.longitude * 1e7f);
+    int32_t altMM = static_cast<int32_t>(gpsData.altitude * 1000.0f);
+    
+    uint16_t velCmS = static_cast<uint16_t>(gpsData.groundSpeed);
+    
+    uint16_t cogCDeg = 65535;
+    if (gpsData.trackAngle != INVALID_TRACK_ANGLE) {
+        float normalizedAngle = gpsData.trackAngle;
+        while (normalizedAngle < 0) normalizedAngle += 360.0f;
+        cogCDeg = static_cast<uint16_t>(normalizedAngle * 100.0f);
     }
 
-    // calculate relative altitude
-    float relativeAltitude = previouslyArmed ? (gpsData.altitude - armAltitude) : 0.0f;
-
-    TMMessage_t gpsDataMsg = gposDataPack(
-        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
-        gpsData.altitude * 1000, // altitude in mm
-        gpsData.latitude * 1e7,
-        gpsData.longitude * 1e7,
-        relativeAltitude * 1000, // relative altitude in mm
-        gpsData.vx,
-        gpsData.vy,
-        gpsData.vz,
-        gpsData.trackAngle
+    TMMessage_t gpsDataMsg = gpsRawDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(),
+        fixType,
+        latE7,
+        lonE7,
+        altMM,
+        65535,  // eph: UINT16_MAX if unknown
+        65535,  // epv: UINT16_MAX if unknown
+        velCmS,
+        cogCDeg,
+        gpsData.numSatellites
     );
 
     tmQueue->push(&gpsDataMsg);

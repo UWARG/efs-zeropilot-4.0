@@ -66,16 +66,13 @@ class AttitudeManager {
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
 
-        bool previouslyArmed;
-        float armAltitude;
-
         uint8_t amSchedulingCounter;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
         void outputToMotor(ControlAxis_t axis, uint8_t percent);
 
-        void sendGPSDataToTelemetryManager(const GpsData_t &gpsData, const bool &armed);
+        void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
 
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
 
