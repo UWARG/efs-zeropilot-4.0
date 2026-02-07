@@ -47,7 +47,7 @@ If you just wrote a hardware driver and need to add SIL support:
    - Add update call in `ZP_updatePlant()` with plant data
 
 3. **Update from simulation** (`sitl_main.py`):
-   - Call `zp.update_plant()` with new parameters in simulation loop
+   - Call `zp.update_from_plant()` with new parameters in simulation loop
 
 Example pattern:
 ```cpp

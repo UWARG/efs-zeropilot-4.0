@@ -140,7 +140,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
     return (PyObject*)self;
 }
 
-static PyObject* ZP_updatePlant(ZPObject* self, PyObject* args) {
+static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double roll_rad, pitch_rad;
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
@@ -207,7 +207,7 @@ static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
 }
 
 static PyMethodDef ZP_methods[] = {
-    {"update_plant", (PyCFunction)ZP_updatePlant, METH_VARARGS, "Update sensors from plant"},
+    {"update_from_plant", (PyCFunction)ZP_updateFromPlant, METH_VARARGS, "Update sensors from plant"},
     {"set_fuel_capacity", (PyCFunction)ZP_setFuelCapacity, METH_VARARGS, "Set fuel capacity"},
     {"set_rc", (PyCFunction)ZP_setRC, METH_VARARGS, "Set RC commands"},
     {"update", (PyCFunction)ZP_update, METH_NOARGS, "Run all managers"},
