@@ -49,7 +49,7 @@ pip install -r requirements.txt
 python sitl_main.py
 ```
 
-Open `http://localhost:8080` for web UI. MAVLink streams to `127.0.0.1:14550` (connect MissionPlanner/QGroundControl).
+Open `http://localhost:8080` for web UI. MAVLink streams to `udp://127.0.0.1:14550` (connect MissionPlanner/QGroundControl).
 
 See [zp_sitl/README.md](zp_sitl/README.md) for details.
 
