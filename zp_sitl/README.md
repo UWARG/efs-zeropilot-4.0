@@ -8,7 +8,7 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 - `zeropilot_wrapper.cpp` - Python C extension wrapping ZeroPilot managers
 - `sil_drivers/` - Software-in-the-Loop driver implementations
 - `index.html` - Web UI for simulation control
-- `sd_card/` - Simulated SD card for logging
+- `sd_card/` - Simulated SD card for logging (gitignored)
 
 ## Running
 
