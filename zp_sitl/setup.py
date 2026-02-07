@@ -20,6 +20,7 @@ zeropilot = Extension(
         'zeropilot_wrapper.cpp',
         f'{zeropilot_root}/src/attitude_manager/attitude_manager.cpp',
         f'{zeropilot_root}/src/attitude_manager/direct_mapping.cpp',
+        f'{zeropilot_root}/src/attitude_manager/fbwa_mapping.cpp',
         f'{zeropilot_root}/src/attitude_manager/pid.cpp',
         f'{zeropilot_root}/src/attitude_manager/MahonyAHRS.cpp',
         f'{zeropilot_root}/src/system_manager/system_manager.cpp',
