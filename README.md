@@ -38,7 +38,7 @@ cd zeropilot4.0/tests
 
 **Requirements**: GoogleTest, GoogleMock
 
-### SITL Simulation ([WIP](https://github.com/UWARG/efs-zeropilot-4.0/pull/110))
+### SITL Simulation
 
 Software-in-the-Loop simulation with JSBSim flight dynamics:
 
