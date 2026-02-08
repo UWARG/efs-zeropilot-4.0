@@ -12,6 +12,7 @@ build/
 Debug/
 Release/
 *.launch
+venv/
 
 # remove build host
 *build-host*
