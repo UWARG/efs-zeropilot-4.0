@@ -1,6 +1,5 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
-
 #define AM_SCHEDULING_RATE_HZ 100
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
@@ -36,7 +35,19 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
+    adverseCoeff(0.15f),
+    adverseYaw(0.0f),
+    signedYaw(0.0f),
     amSchedulingCounter(0) {}
+
+
+void AttitudeManager::setRudderMixingCoeff(float coeff) {
+    if (coeff < 0.0f || coeff > 1.0f) {
+        return;
+    }
+
+    adverseCoeff = coeff;
+}
 
 void AttitudeManager::amUpdate() {
 
@@ -115,6 +126,17 @@ void AttitudeManager::amUpdate() {
 
 
     RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
+    signedYaw = motorOutputs.roll-50;
+    adverseYaw = signedYaw * adverseCoeff;
+    motorOutputs.yaw +=adverseYaw; 
+    // limit yaw to 100
+    if (motorOutputs.yaw>100){
+        motorOutputs.yaw = 100;
+    //limit yaw to 0
+    } else if (motorOutputs.yaw < 0) {
+        motorOutputs.yaw = 0;
+    }
+
 
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
@@ -162,12 +184,21 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
     for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
         MotorInstance_t *motor = (motorGroup->motors + i);
 
+        int32_t cmd = (int32_t)percent + motor->trim;
+
+        // Clamp cmd to [0, 100]
+        if (cmd > 100) {
+            cmd = 100;
+        } else if (cmd < 0) {
+            cmd = 0;
+        }
+
+        // Invert command if motor is inverted
         if (motor->isInverted) {
-            motor->motorInstance->set(100 - percent);
+            cmd = 100 - cmd;
         }
-        else {
-            motor->motorInstance->set(percent);
-        }
+
+        motor->motorInstance->set(cmd);
     }
 }
 
