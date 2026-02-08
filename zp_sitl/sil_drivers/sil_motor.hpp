@@ -3,8 +3,6 @@
 
 class SIL_Motor : public IMotorControl {
 public:
-    uint32_t currentPercent = 0;
-    
     void set(uint32_t percent) override {
         currentPercent = percent;
     }
@@ -12,4 +10,7 @@ public:
     uint32_t get() {
         return currentPercent;
     }
+
+private:
+    uint32_t currentPercent = 0;
 };
