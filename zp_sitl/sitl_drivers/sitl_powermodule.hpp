@@ -1,20 +1,15 @@
 #pragma once
 #include "power_module_iface.hpp"
+#include "sitl_driver_configs.hpp"
 #include <algorithm>
 
 class SITL_PowerModule : public IPowerModule {
 private:
+    using Config = SITL_Driver_Configs::SITL_PowerModule_Config;
+
     // Initialized for 4S nominal voltage (~14.8V)
     PMData_t pmData = {14.8f, 0.0f, 0.0f, 0.0f, 100.0f};
     float maxCapacity = 1.0f;
-    
-    // 4S Voltage Thresholds (3.5V per cell to 4.2V per cell)
-    const float V_FULL  = 16.8f; 
-    const float V_NOMINAL = 14.8f;
-    const float V_EMPTY = 14.0f;
-
-    // Battery capacity in Ah (for simulation purposes)
-    const float BATTERY_CAPACITY_AH = 5.0f; // 5000mAh
 
 public:
     void set_max_batt_capacity(float capacity) {
@@ -26,13 +21,13 @@ public:
         capacityRatio = std::clamp(capacityRatio, 0.0f, 1.0f);
 
         // Linear interpolation for 4S Voltage
-        pmData.busVoltage = V_EMPTY + (capacityRatio * (V_FULL - V_EMPTY));
+        pmData.busVoltage = Config::V_EMPTY + (capacityRatio * (Config::V_FULL - Config::V_EMPTY));
         
         // Dynamic stats
         pmData.current = rpm / 100.0f + 3.0f; // Simulate current draw based on RPM
         pmData.power = pmData.busVoltage * pmData.current;
-        pmData.charge = capacityRatio * BATTERY_CAPACITY_AH;
-        pmData.energy = pmData.charge * V_NOMINAL;
+        pmData.charge = capacityRatio * Config::MAX_BATTERY_CAPACITY_AH;
+        pmData.energy = pmData.charge * Config::V_NOMINAL;
     }
     
     bool readData(PMData_t *data) override {
