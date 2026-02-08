@@ -59,7 +59,7 @@ class ZP_SITL:
         self.arm_cmd = 100 if engine_on else 0
         
         self.fdm.run_ic()
-        self.zp.set_fuel_capacity(self.fdm['propulsion/total-fuel-lbs'])
+        self.zp.set_max_capacity(self.fdm['propulsion/total-fuel-lbs'])
         self.initialized = True
 
     def step(self):
