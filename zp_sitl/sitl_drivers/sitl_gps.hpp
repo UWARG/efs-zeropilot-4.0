@@ -1,7 +1,7 @@
 #pragma once
 #include "gps_iface.hpp"
 
-class SIL_GPS : public IGPS {
+class SITL_GPS : public IGPS {
 private:
     GpsData_t gpsData = {{0,0,0,0,0,0}, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, false, 0.0f, 0.0f, 0.0f};
     

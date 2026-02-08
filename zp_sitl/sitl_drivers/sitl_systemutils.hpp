@@ -3,12 +3,12 @@
 #include <chrono>
 #include <thread>
 
-class SIL_SystemUtils : public ISystemUtils {
+class SITL_SystemUtils : public ISystemUtils {
 private:
     std::chrono::steady_clock::time_point startTime;
     
 public:
-    SIL_SystemUtils() : startTime(std::chrono::steady_clock::now()) {}
+    SITL_SystemUtils() : startTime(std::chrono::steady_clock::now()) {}
     
     void delayMs(uint32_t delay_ms) override {
         std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));

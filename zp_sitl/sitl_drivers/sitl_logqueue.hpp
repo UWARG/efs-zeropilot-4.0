@@ -3,13 +3,13 @@
 #include <queue>
 #include <cstring>
 
-class SIL_LogQueue : public IMessageQueue<char[100]> {
+class SITL_LogQueue : public IMessageQueue<char[100]> {
 private:
     std::queue<std::string> q;
     size_t maxSize;
     
 public:
-    SIL_LogQueue(size_t max = 100) : maxSize(max) {}
+    SITL_LogQueue(size_t max = 100) : maxSize(max) {}
     
     int get(char (*message)[100]) override {
         if (q.empty()) return -1;

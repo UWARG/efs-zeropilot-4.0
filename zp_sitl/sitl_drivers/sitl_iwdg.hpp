@@ -4,7 +4,7 @@
 
 #define WATCHDOG_TIMEOUT_MS 10000 // 10 seconds
 
-class SIL_IWDG : public IIndependentWatchdog {
+class SITL_IWDG : public IIndependentWatchdog {
 private:
     uint32_t timeoutCounter = 0;
 

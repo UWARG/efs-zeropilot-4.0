@@ -6,7 +6,7 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 
 - `sitl_main.py` - Python simulation loop integrating JSBSim with ZeroPilot
 - `zeropilot_wrapper.cpp` - Python C extension wrapping ZeroPilot managers
-- `sil_drivers/` - Software-in-the-Loop driver implementations
+- `sitl_drivers/` - Software-in-the-Loop driver implementations
 - `index.html` - Web UI for simulation control
 - `sd_card/` - Logging folder where simulated sd card logging gets dumped (gitignored)
 
@@ -53,21 +53,21 @@ Launch FGFS via `start_fgfs.sh` (requires having fgfs in your $PATH):
 ./start_fgfs.sh
 ```
 
-## SIL Drivers
+## SITL Drivers
 
-Each driver in `sil_drivers/` implements the same interface as the hardware driver but provides simulated data.
+Each driver in `sitl_drivers/` implements the same interface as the hardware driver but provides simulated data.
 
-### Adding a New SIL Driver
+### Adding a New SITL Driver
 
-If you just wrote a hardware driver and need to add SIL support:
+If you just wrote a hardware driver and need to add SITL support:
 
-1. **Create the SIL driver** in `sil_drivers/sil_<name>.hpp`:
+1. **Create the SITL driver** in `sitl_drivers/sitl_<name>.hpp`:
    - Inherit from the same interface as your hardware driver
    - Implement all required interface methods
    - Add `update_from_plant()` or similar method to inject simulation data if needed
 
 2. **Include in wrapper** (`zeropilot_wrapper.cpp`):
-   - Add `#include "sil_drivers/sil_<name>.hpp"`
+   - Add `#include "sitl_drivers/sitl_<name>.hpp"`
    - Add pointer to `ZPObject` struct
    - Instantiate in `ZP_new()`
    - Delete in `ZP_dealloc()`
@@ -79,7 +79,7 @@ If you just wrote a hardware driver and need to add SIL support:
 
 Example pattern:
 ```cpp
-class SIL_MyDriver : public IMyDriver {
+class SITL_MyDriver : public IMyDriver {
 private:
     DriverData_t data;
 public:

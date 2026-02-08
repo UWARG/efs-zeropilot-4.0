@@ -1,7 +1,7 @@
 #pragma once
 #include "motor_iface.hpp"
 
-class SIL_Motor : public IMotorControl {
+class SITL_Motor : public IMotorControl {
 public:
     void set(uint32_t percent) override {
         currentPercent = percent;
