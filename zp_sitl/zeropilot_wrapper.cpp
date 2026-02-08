@@ -193,8 +193,12 @@ static PyObject* ZP_update(ZPObject* self, PyObject* args) {
     self->smCounter++;
     self->tmCounter++;
     self->amCounter++;
+
+    if (self->iwdg->check_watchdog() == false) {
+        Py_RETURN_FALSE; // Report false if watchdog times out
+    }
     
-    Py_RETURN_NONE;
+    Py_RETURN_TRUE;
 }
 
 static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {

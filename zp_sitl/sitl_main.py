@@ -89,7 +89,12 @@ class ZP_SITL:
                 self.roll_cmd, self.pitch_cmd, 
                 self.yaw_cmd, self.throttle_cmd, self.arm_cmd
             )
-            self.zp.update()
+            # Advances 1 ms in simulation time
+            result = self.zp.update()
+
+            # Check for watchdog timeout
+            if result is False:
+                raise RuntimeError("ZeroPilot Watchdog Timeout!")
             
             # 3. Apply ZeroPilot motor outputs back to JSBSim
             r_out, p_out, y_out, t_out = self.zp.get_motor_outputs()
