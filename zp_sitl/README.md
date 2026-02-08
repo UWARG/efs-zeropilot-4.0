@@ -12,6 +12,8 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 
 ## Running
 
+### Main Target
+
 Before running for the first time:
 ```
 pip install -r requirements.txt
@@ -24,6 +26,22 @@ python sitl_main.py
 ```
 
 Open `http://localhost:8080` to control the simulation. You can use the sliders or connect a joystick. It also streams MAVLink onto UDP at `127.0.0.1:14550` so you can connect MissionPlanner alongside the UI.
+
+### FGFS Target
+
+If you install [FlightGear](https://www.flightgear.org/) you can visualize the simulation in real-time. The SITL script automatically generates a UDP output directive to stream flight data to FlightGear.
+
+Run the FGFS SITL target via:
+```bash
+./build_sitl.sh
+python sitl_fgfs.py
+```
+
+Launch FGFS via `start_fgfs.sh` (requires having fgfs in your $PATH):
+```bash
+# This script runs fgfs --fdm=null --native-fdm=socket,in,60,,5550,udp --aircraft=c172p
+./start_fgfs.sh
+```
 
 ## SIL Drivers
 
