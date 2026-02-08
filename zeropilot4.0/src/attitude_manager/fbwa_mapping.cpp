@@ -2,13 +2,13 @@
 
 #define FBWA_PID_OUTPUT_SHIFT 50.0f
 
-FBWAMapping::FBWAMapping() noexcept :
+FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
     rollPID(0.0f, 0.0f, 0.0f,
         0.0f, OUTPUT_MIN, OUTPUT_MAX,
-        ROLL_INTEGRAL_MIN_LIM, ROLL_INTEGRAL_MAX_LIM, AM_CONTROL_LOOP_PERIOD_S),
+        ROLL_INTEGRAL_MIN_LIM, ROLL_INTEGRAL_MAX_LIM, control_iter_period_s),
     pitchPID(0.0f, 0.0f, 0.0f,
         0.0f, OUTPUT_MIN, OUTPUT_MAX,
-        PITCH_INTEGRAL_MIN_LIM, PITCH_INTEGRAL_MAX_LIM, AM_CONTROL_LOOP_PERIOD_S)
+        PITCH_INTEGRAL_MIN_LIM, PITCH_INTEGRAL_MAX_LIM, control_iter_period_s)
 {
     rollPID.pidInitState();
     pitchPID.pidInitState();
@@ -28,8 +28,8 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
 
 RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
     // Convert RC inputs into radians
-    float rollSetpoint = (controlInputs.roll / (float)MAX_RC_INPUT_VAL) * (ROLL_MAX_ANGLE_RAD - ROLL_MIN_ANGLE_RAD) + ROLL_MIN_ANGLE_RAD;
-    float pitchSetpoint = (controlInputs.pitch / (float)MAX_RC_INPUT_VAL) * (PITCH_MAX_ANGLE_RAD - PITCH_MIN_ANGLE_RAD) + PITCH_MIN_ANGLE_RAD;
+    float rollSetpoint = (controlInputs.roll / MAX_RC_INPUT_VAL) * (ROLL_MAX_ANGLE_RAD - ROLL_MIN_ANGLE_RAD) + ROLL_MIN_ANGLE_RAD;
+    float pitchSetpoint = (controlInputs.pitch / MAX_RC_INPUT_VAL) * (PITCH_MAX_ANGLE_RAD - PITCH_MIN_ANGLE_RAD) + PITCH_MIN_ANGLE_RAD;
 
     // Get measured values from drone state (populated by IMU)
     float rollMeasured = droneState.roll;
