@@ -33,4 +33,4 @@ jobs:
     - name: Test SITL runs
       run: |
         cd zp_sitl
-        timeout 15s python sitl_main.py || [ $? -eq 124 ] # long enough to trigger watchdog timeout
+        timeout 10s python sitl_main.py || [ $? -eq 124 ]
