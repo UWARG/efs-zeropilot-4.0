@@ -39,7 +39,7 @@ class FBWAMapping : public Flightmode {
         static constexpr float ROLL_MIN_ANGLE_RAD = -0.785f;  // -45 degrees
         static constexpr float ROLL_MAX_ANGLE_RAD = 0.785f;   // +45 degrees
         static constexpr float PITCH_MIN_ANGLE_RAD = -0.349f; // -20 degrees
-        static constexpr float PITCH_MAX_ANGLE_RAD = 0.349f;	 // +20 degrees
+        static constexpr float PITCH_MAX_ANGLE_RAD = 0.349f;  // +20 degrees
 
         // Assumed normalized range of RC Input to be [0, 100]
         static constexpr float MAX_RC_INPUT_VAL = 100.0f;
