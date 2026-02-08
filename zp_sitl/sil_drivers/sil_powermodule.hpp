@@ -17,7 +17,7 @@ private:
     const float BATTERY_CAPACITY_AH = 5.0f; // 5000mAh
 
 public:
-    void set_max_capacity(float capacity) {
+    void set_max_batt_capacity(float capacity) {
         if (capacity > 0) maxCapacity = capacity;
     }
     

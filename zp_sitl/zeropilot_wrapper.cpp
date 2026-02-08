@@ -160,11 +160,11 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     Py_RETURN_NONE;
 }
 
-static PyObject* ZP_setFuelCapacity(ZPObject* self, PyObject* args) {
+static PyObject* ZP_setBatteryCapacity(ZPObject* self, PyObject* args) {
     float capacity;
     if (!PyArg_ParseTuple(args, "f", &capacity))
         return NULL;
-    self->pm->set_max_capacity(capacity);
+    self->pm->set_max_batt_capacity(capacity);
     Py_RETURN_NONE;
 }
 
@@ -212,7 +212,7 @@ static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
 
 static PyMethodDef ZP_methods[] = {
     {"update_from_plant", (PyCFunction)ZP_updateFromPlant, METH_VARARGS, "Update sensors from plant"},
-    {"set_max_capacity", (PyCFunction)ZP_setFuelCapacity, METH_VARARGS, "Set fuel capacity"},
+    {"set_max_batt_capacity", (PyCFunction)ZP_setBatteryCapacity, METH_VARARGS, "Set max battery capacity"},
     {"set_rc", (PyCFunction)ZP_setRC, METH_VARARGS, "Set RC commands"},
     {"update", (PyCFunction)ZP_update, METH_NOARGS, "Run all managers"},
     {"get_motor_outputs", (PyCFunction)ZP_getMotorOutputs, METH_NOARGS, "Get motor outputs"},
