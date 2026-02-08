@@ -45,10 +45,11 @@ void TelemetryManager::processMsgQueue() {
                 break;
             }
 
-            case TMMessage_t::GPOS_DATA: {
-                auto gposData = tmqMessage.tmMessageData.gposData;
-                mavlink_msg_global_position_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs,
-                	gposData.lat, gposData.lon, gposData.alt, gposData.relativeAlt, gposData.vx, gposData.vy, gposData.vz, gposData.hdg);
+            case TMMessage_t::GPS_RAW_DATA: {
+                auto& g = tmqMessage.tmMessageData.gpsRawData;
+                mavlink_msg_gps_raw_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
+                    g.fixType, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellitesVisible, g.altEllipsoid, 
+                    g.hAcc, g.vAcc, g.velAcc, g.hdgAcc, g.yaw);
                 break;
             }
 

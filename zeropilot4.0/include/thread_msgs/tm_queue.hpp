@@ -8,15 +8,22 @@ typedef union TMMessageData_u {
       uint8_t systemStatus;
   } heartbeatData;
   struct{
-      int32_t alt;
+      uint8_t fixType;
       int32_t lat;
       int32_t lon;
-      int32_t relativeAlt;
-      int16_t vx;
-      int16_t vy;
-      int16_t vz;
-      uint16_t hdg;
-  } gposData;
+      int32_t alt;
+      uint16_t eph;
+      uint16_t epv;
+      uint16_t vel;
+      uint16_t cog;
+      uint8_t satellitesVisible;
+      int32_t altEllipsoid;
+      uint32_t hAcc;
+      uint32_t vAcc;
+      uint32_t velAcc;
+      uint32_t hdgAcc;
+      uint16_t yaw;
+  } gpsRawData;
   struct{
       uint16_t roll;
       uint16_t pitch;
@@ -61,7 +68,7 @@ typedef union TMMessageData_u {
 typedef struct TMMessage{
     enum{
         HEARTBEAT_DATA,
-        GPOS_DATA,
+        GPS_RAW_DATA,
         RC_DATA,
         BM_DATA,
         RAW_IMU_DATA,
@@ -76,9 +83,17 @@ inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint3
     return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t gposDataPack(uint32_t time_boot_ms, int32_t alt, int32_t lat, int32_t lon, int32_t relative_alt, int16_t vx, int16_t vy, int16_t vz,uint16_t hdg) {
-    const TMMessageData_t DATA = {.gposData={alt, lat, lon, relative_alt, vx, vy, vz, hdg }};
-    return TMMessage_t{TMMessage_t::GPOS_DATA, DATA, time_boot_ms};
+inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32_t lat, int32_t lon, int32_t alt, 
+                                 uint16_t eph, uint16_t epv, uint16_t vel, uint16_t cog, uint8_t satellites,
+                                 int32_t alt_el = 0, uint32_t h_acc = 0, uint32_t v_acc = 0, 
+                                 uint32_t vel_acc = 0, uint32_t hdg_acc = 0, uint16_t yaw = 0) {
+    const TMMessageData_t DATA = {
+        .gpsRawData = {
+            fix_type, lat, lon, alt, eph, epv, vel, cog, satellites,
+            alt_el, h_acc, v_acc, vel_acc, hdg_acc, yaw
+        }
+    };
+    return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
