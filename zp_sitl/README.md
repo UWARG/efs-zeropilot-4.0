@@ -12,12 +12,22 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 
 ## Running
 
-### Main Target
-
 Before running for the first time:
-```
+```bash
+# Create a virtual environment
+python3 -m venv venv
+
+# Activate the virtual environment
+# On Linux / macOS:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
+
+### Main Target
 
 Then, to build and run:
 ```bash
