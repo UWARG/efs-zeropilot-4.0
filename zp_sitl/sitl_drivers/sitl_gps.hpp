@@ -1,8 +1,11 @@
 #pragma once
 #include "gps_iface.hpp"
+#include "sitl_driver_configs.hpp"
 
 class SITL_GPS : public IGPS {
 private:
+    using Config = SITL_Driver_Configs::SITL_GPS_Config;
+
     GpsData_t gpsData = {{0,0,0,0,0,0}, 0.0f, 0.0f, 0.0f, 0, 0.0f, 0.0f, false, 0.0f, 0.0f, 0.0f};
     
 public:
@@ -16,7 +19,7 @@ public:
         gpsData.vy = 0;
         gpsData.vz = 0;
         gpsData.isNew = true;
-        gpsData.numSatellites = 12;
+        gpsData.numSatellites = Config::NUM_SATELLITES;
     }
     
     GpsData_t readData() override {
