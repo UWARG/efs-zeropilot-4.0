@@ -1,24 +1,42 @@
 #pragma once
 #include "power_module_iface.hpp"
+#include <algorithm>
 
 class SIL_PowerModule : public IPowerModule {
 private:
-    PMData_t pmData = {12.0f, 5.0f, 60.0f, 0.0f, 0.0f};
-    float fuelCapacity = 1.0f;
+    // Initialized for 4S nominal voltage (~14.8V)
+    PMData_t pmData = {14.8f, 0.0f, 0.0f, 0.0f, 100.0f};
+    float maxCapacity = 1.0f;
     
+    // 4S Voltage Thresholds (3.5V per cell to 4.2V per cell)
+    const float V_FULL  = 16.8f; 
+    const float V_NOMINAL = 14.8f;
+    const float V_EMPTY = 14.0f;
+
+    // Battery capacity in Ah (for simulation purposes)
+    const float BATTERY_CAPACITY_AH = 5.0f; // 5000mAh
+
 public:
-    void set_fuel_capacity(float capacity) {
-        fuelCapacity = capacity;
+    void set_max_capacity(float capacity) {
+        if (capacity > 0) maxCapacity = capacity;
     }
     
-    void update_from_plant(float fuel_lbs, float rpm) {
-        float fuel_pct = (fuelCapacity > 0) ? (fuel_lbs / fuelCapacity * 100.0f) : 0.0f;
-        pmData.busVoltage = 12.0f + (fuel_pct / 100.0f) * 2.0f;  // 12-14V
-        pmData.current = rpm / 200.0f;  // Mock current from RPM
+    void update_from_plant(float remainingCapacity, float rpm) {
+        float capacityRatio = (maxCapacity > 0) ? (remainingCapacity / maxCapacity) : 0.0f;
+        capacityRatio = std::clamp(capacityRatio, 0.0f, 1.0f);
+
+        // Linear interpolation for 4S Voltage
+        pmData.busVoltage = V_EMPTY + (capacityRatio * (V_FULL - V_EMPTY));
+        
+        // Dynamic stats
+        pmData.current = rpm / 100.0f + 3.0f; // Simulate current draw based on RPM
         pmData.power = pmData.busVoltage * pmData.current;
+        pmData.charge = capacityRatio * BATTERY_CAPACITY_AH;
+        pmData.energy = pmData.charge * V_NOMINAL;
     }
     
     bool readData(PMData_t *data) override {
+        if (!data) return false;
         *data = pmData;
         return true;
     }
