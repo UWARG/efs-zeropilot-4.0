@@ -1,3 +1,15 @@
 [submodule "external/c_library_v2"]
 	path = external/c_library_v2
 	url = https://github.com/mavlink/c_library_v2
+[submodule "external/dronecan/pydronecan"]
+	path = external/dronecan/pydronecan
+	url = https://github.com/dronecan/pydronecan
+[submodule "external/dronecan/dronecan_dsdlc"]
+	path = external/dronecan/dronecan_dsdlc
+	url = https://github.com/dronecan/dronecan_dsdlc
+[submodule "external/dronecan/DSDL"]
+	path = external/dronecan/DSDL
+	url = https://github.com/dronecan/DSDL
+[submodule "external/dronecan/libcanard"]
+	path = external/dronecan/libcanard
+	url = https://github.com/dronecan/libcanard
