@@ -43,6 +43,20 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
+        bool batteryLow;
+        bool batteryCritical;
+        
+        bool batteryLowLogged;
+        bool batteryCritLogged;
+
+        float batteryVoltage;
+        float batteryCurrent;
+        bool batteryDataValid;
+
+        //Counter for battery states
+        uint32_t batteryLowCounterMs = 0;
+        uint32_t batteryCritcounterMs = 0;
+
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
