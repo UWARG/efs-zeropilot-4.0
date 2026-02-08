@@ -12,25 +12,25 @@
     #define PLATFORM_MKDIR(path) mkdir(path, 0755)
 #endif
 
-class SIL_Logger : public ILogger {
+class SITL_Logger : public ILogger {
 private:
     std::ofstream logFile;
     
 public:
-    SIL_Logger(const char* filename = "sd_card/sitl_log.txt") {
+    SITL_Logger(const char* filename = "sd_card/sitl_log.txt") {
         // Create directory if it doesn't exist
         if (PLATFORM_MKDIR("sd_card") == 0) {
-            std::cout << "[SIL_Logger] Created directory: sd_card" << std::endl;
+            std::cout << "[SITL_Logger] Created directory: sd_card" << std::endl;
         }
         
         logFile.open(filename, std::ios::app);
         
         if (!logFile.is_open()) {
-            std::cerr << "[SIL_Logger] ERROR: Could not open log file: " << filename << std::endl;
+            std::cerr << "[SITL_Logger] ERROR: Could not open log file: " << filename << std::endl;
         }
     }
     
-    ~SIL_Logger() {
+    ~SITL_Logger() {
         if (logFile.is_open()) {
             logFile.close();
         }

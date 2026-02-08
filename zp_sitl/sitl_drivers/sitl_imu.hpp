@@ -2,7 +2,7 @@
 #include "imu_iface.hpp"
 #include <cmath>
 
-class SIL_IMU : public IIMU {
+class SITL_IMU : public IIMU {
 private:
     RawImu_t rawData = {0, 0, 0, 0, 0, 0};
     

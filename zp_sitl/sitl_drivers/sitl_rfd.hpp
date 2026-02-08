@@ -20,7 +20,7 @@
     #include <fcntl.h>
 #endif
 
-class SIL_RFD : public IRFD {
+class SITL_RFD : public IRFD {
 private:
 #ifdef _WIN32
     SOCKET sockfd; // Windows uses a specific SOCKET type
@@ -30,7 +30,7 @@ private:
     struct sockaddr_in destAddr;
     
 public:
-    SIL_RFD(const char* ip = "127.0.0.1", int port = 14550) {
+    SITL_RFD(const char* ip = "127.0.0.1", int port = 14550) {
 #ifdef _WIN32
         // Initialize Windows Sockets (Required on Windows)
         WSADATA wsaData;
@@ -53,7 +53,7 @@ public:
         inet_pton(AF_INET, ip, &destAddr.sin_addr);
     }
     
-    ~SIL_RFD() {
+    ~SITL_RFD() {
 #ifdef _WIN32
         if (sockfd != INVALID_SOCKET) {
             closesocket(sockfd); // Windows uses closesocket()

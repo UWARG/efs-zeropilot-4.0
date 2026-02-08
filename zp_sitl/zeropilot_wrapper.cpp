@@ -2,17 +2,17 @@
 #include "system_manager.hpp"
 #include "telemetry_manager.hpp"
 #include "attitude_manager.hpp"
-#include "sil_drivers/sil_systemutils.hpp"
-#include "sil_drivers/sil_iwdg.hpp"
-#include "sil_drivers/sil_logger.hpp"
-#include "sil_drivers/sil_rc.hpp"
-#include "sil_drivers/sil_powermodule.hpp"
-#include "sil_drivers/sil_rfd.hpp"
-#include "sil_drivers/sil_imu.hpp"
-#include "sil_drivers/sil_gps.hpp"
-#include "sil_drivers/sil_queue.hpp"
-#include "sil_drivers/sil_logqueue.hpp"
-#include "sil_drivers/sil_motor.hpp"
+#include "sitl_drivers/sitl_systemutils.hpp"
+#include "sitl_drivers/sitl_iwdg.hpp"
+#include "sitl_drivers/sitl_logger.hpp"
+#include "sitl_drivers/sitl_rc.hpp"
+#include "sitl_drivers/sitl_powermodule.hpp"
+#include "sitl_drivers/sitl_rfd.hpp"
+#include "sitl_drivers/sitl_imu.hpp"
+#include "sitl_drivers/sitl_gps.hpp"
+#include "sitl_drivers/sitl_queue.hpp"
+#include "sitl_drivers/sitl_logqueue.hpp"
+#include "sitl_drivers/sitl_motor.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define TM_SCHEDULING_RATE_HZ 20
@@ -25,23 +25,23 @@ typedef struct {
     TelemetryManager* tm;
     AttitudeManager* am;
     
-    SIL_SystemUtils* sysUtils;
-    SIL_Queue<RCMotorControlMessage_t>* amQueue;
-    SIL_Queue<TMMessage_t>* tmQueue;
-    SIL_LogQueue* logQueue;
-    SIL_Queue<mavlink_message_t>* mavlinkQueue;
+    SITL_SystemUtils* sysUtils;
+    SITL_Queue<RCMotorControlMessage_t>* amQueue;
+    SITL_Queue<TMMessage_t>* tmQueue;
+    SITL_LogQueue* logQueue;
+    SITL_Queue<mavlink_message_t>* mavlinkQueue;
     
-    SIL_IWDG* iwdg;
-    SIL_Logger* logger;
-    SIL_RC* rc;
-    SIL_PowerModule* pm;
-    SIL_RFD* rfd;
-    SIL_IMU* imu;
-    SIL_GPS* gps;
-    SIL_Motor* rollMotor;
-    SIL_Motor* pitchMotor;
-    SIL_Motor* yawMotor;
-    SIL_Motor* throttleMotor;
+    SITL_IWDG* iwdg;
+    SITL_Logger* logger;
+    SITL_RC* rc;
+    SITL_PowerModule* pm;
+    SITL_RFD* rfd;
+    SITL_IMU* imu;
+    SITL_GPS* gps;
+    SITL_Motor* rollMotor;
+    SITL_Motor* pitchMotor;
+    SITL_Motor* yawMotor;
+    SITL_Motor* throttleMotor;
     
     MotorInstance_t rollMotorInstance;
     MotorInstance_t pitchMotorInstance;
@@ -85,23 +85,23 @@ static void ZP_dealloc(ZPObject* self) {
 static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
     ZPObject* self = (ZPObject*)type->tp_alloc(type, 0);
     if (self != NULL) {
-        self->sysUtils = new SIL_SystemUtils();
-        self->amQueue = new SIL_Queue<RCMotorControlMessage_t>();
-        self->tmQueue = new SIL_Queue<TMMessage_t>();
-        self->logQueue = new SIL_LogQueue();
-        self->mavlinkQueue = new SIL_Queue<mavlink_message_t>();
+        self->sysUtils = new SITL_SystemUtils();
+        self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
+        self->tmQueue = new SITL_Queue<TMMessage_t>();
+        self->logQueue = new SITL_LogQueue();
+        self->mavlinkQueue = new SITL_Queue<mavlink_message_t>();
         
-        self->iwdg = new SIL_IWDG();
-        self->logger = new SIL_Logger();
-        self->rc = new SIL_RC();
-        self->pm = new SIL_PowerModule();
-        self->rfd = new SIL_RFD("127.0.0.1", 14550);
-        self->imu = new SIL_IMU();
-        self->gps = new SIL_GPS();
-        self->rollMotor = new SIL_Motor();
-        self->pitchMotor = new SIL_Motor();
-        self->yawMotor = new SIL_Motor();
-        self->throttleMotor = new SIL_Motor();
+        self->iwdg = new SITL_IWDG();
+        self->logger = new SITL_Logger();
+        self->rc = new SITL_RC();
+        self->pm = new SITL_PowerModule();
+        self->rfd = new SITL_RFD("127.0.0.1", 14550);
+        self->imu = new SITL_IMU();
+        self->gps = new SITL_GPS();
+        self->rollMotor = new SITL_Motor();
+        self->pitchMotor = new SITL_Motor();
+        self->yawMotor = new SITL_Motor();
+        self->throttleMotor = new SITL_Motor();
         
         self->rollMotorInstance = {self->rollMotor, false};
         self->pitchMotorInstance = {self->pitchMotor, false};

@@ -1,7 +1,7 @@
 #pragma once
 #include "rc_iface.hpp"
 
-class SIL_RC : public IRCReceiver {
+class SITL_RC : public IRCReceiver {
 private:
     RCControl rcData;
     

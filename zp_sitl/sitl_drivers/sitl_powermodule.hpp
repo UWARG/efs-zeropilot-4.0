@@ -2,7 +2,7 @@
 #include "power_module_iface.hpp"
 #include <algorithm>
 
-class SIL_PowerModule : public IPowerModule {
+class SITL_PowerModule : public IPowerModule {
 private:
     // Initialized for 4S nominal voltage (~14.8V)
     PMData_t pmData = {14.8f, 0.0f, 0.0f, 0.0f, 100.0f};
