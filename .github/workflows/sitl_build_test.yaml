@@ -34,3 +34,8 @@ jobs:
       run: |
         cd zp_sitl
         timeout 10s python sitl_main.py || [ $? -eq 124 ]
+
+    - name: Test SITL FGFS script runs
+      run: |
+        cd zp_sitl
+        timeout 10s python sitl_fgfs.py || [ $? -eq 124 ]
