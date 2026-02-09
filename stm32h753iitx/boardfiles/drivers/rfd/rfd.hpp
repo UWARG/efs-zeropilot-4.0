@@ -2,7 +2,7 @@
 
 #include "rfd_iface.hpp"
 #include "rfd_defines.hpp"
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 
 class RFD : public IRFD {
 
@@ -19,14 +19,19 @@ public:
     UART_HandleTypeDef* getHuart() const;
 
     // DMA callback
-    void receiveCallback(uint16_t size);
+    void receiveCallback(UART_HandleTypeDef *huart, uint16_t size);
 
     // Start DMA
     void startReceive();
 
 private:
+    uint16_t getRXTransferSize(uint16_t idx);
     UART_HandleTypeDef* huart;
     uint8_t rxBuffer[BUFFER_SIZE];
-    uint16_t readIndex;
-    uint16_t writeIndex;
+
+    uint16_t readIndex = 0;
+    uint16_t writeIndex = 0;
+
+    int currentSize = 0;
+    uint16_t lastIdx = 0;
 };
