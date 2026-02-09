@@ -75,6 +75,6 @@ public:
     }
     
     uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override {
-        return 0;  
+        return 0;
     }
 };
