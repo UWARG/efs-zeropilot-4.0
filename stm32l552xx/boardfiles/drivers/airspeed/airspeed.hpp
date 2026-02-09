@@ -49,6 +49,7 @@ public:
 
     //helper function to calculate airspeed
     bool calculateAirspeed(double* data_out);
+    bool I2C_DMA_CALLBACK();
 
     // public getters
     I2C_HandleTypeDef* getI2C() { return hi2c; }

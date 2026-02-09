@@ -5,6 +5,7 @@
 #include "drivers.hpp"
 #include "utils.h"
 #include "imu.hpp"
+#include "airspeed.hpp"
 #include "user_diskio_spi.h"
 
 #ifdef __cplusplus
@@ -97,4 +98,10 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 		pmHandle->I2C_MemRxCpltCallback();
+}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if () {
+    airspeedHandle->I2C_DMA_CALLBACK();
+  }
 }

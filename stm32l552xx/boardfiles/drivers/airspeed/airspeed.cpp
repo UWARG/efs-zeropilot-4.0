@@ -85,3 +85,19 @@ bool airspeed::calculateAirspeed(double* data_out) {
     *data_out = airspeedData_.airspeed_;
     return true; // Will send a proper error message later
 }
+
+
+bool airspeed::I2C_DMA_CALLBACK() {
+    memcpy(
+        getProcessRXBuffer(),
+        getDMARXBuffer(),
+        getArraySize()
+	);
+
+    HAL_I2C_Master_Receive_DMA(
+        getI2C(),
+        getDevAddress(),
+        getDMARXBuffer(),
+        getArraySize()
+    );
+}
