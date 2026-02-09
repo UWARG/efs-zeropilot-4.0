@@ -14,6 +14,7 @@
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
+#include "airspeed.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -34,6 +35,7 @@ extern GPS *gpsHandle;
 extern IMU *imuHandle;
 extern RFD *rfdHandle;
 extern PowerModule *pmHandle;
+extern airspeed *asHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
