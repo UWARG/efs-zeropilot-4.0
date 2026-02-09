@@ -84,6 +84,7 @@ void SystemManager::smUpdate() {
       (void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
     }
 
+    canDriver->routineTasks();
     // Log if new messages
     if (smLoggerQueue->count() > 0) {
         sendMessagesToLogger();
