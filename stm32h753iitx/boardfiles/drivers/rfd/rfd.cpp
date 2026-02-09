@@ -1,5 +1,5 @@
 #include "rfd.hpp"
-#include "stm32l5xx_hal_uart.h"
+#include "stm32h7xx_hal_uart.h"
 #include <cstring>
 
 RFD* RFD::instance = nullptr;
