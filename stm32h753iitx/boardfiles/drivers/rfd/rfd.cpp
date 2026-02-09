@@ -32,7 +32,7 @@ void RFD::startReceive() {
     }
 }
 
-void RFD::receiveCallback(UART_HandleTypeDef *huart,uint16_t writeIdx) {
+void RFD::receiveCallback(uint16_t writeIdx) {
     if (HAL_UARTEx_GetRxEventType(huart) == HAL_UART_RXEVENT_HT) {
 		return;
 	}

@@ -4,7 +4,7 @@
 
 RFD* RFD::instance = nullptr;
 
-RFD::RFD(UART_HandleTypeDef* huart) : huart(huart), readIndex(0), writeIndex(0){
+RFD::RFD(UART_HandleTypeDef* huart) : huart(huart), readIndex(0), writeIndex(0) {
     instance = this;
 }
 
@@ -32,7 +32,7 @@ void RFD::startReceive() {
     }
 }
 
-void RFD::receiveCallback(UART_HandleTypeDef *huart,uint16_t writeIdx) {
+void RFD::receiveCallback(uint16_t writeIdx) {
     if (HAL_UARTEx_GetRxEventType(huart) == HAL_UART_RXEVENT_HT) {
 		return;
 	}
