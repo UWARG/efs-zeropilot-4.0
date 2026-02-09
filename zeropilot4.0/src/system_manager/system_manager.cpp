@@ -70,7 +70,7 @@ void SystemManager::smUpdate() {
     }
 
     // Hardcoded to MANUAL for now, should come from RC input in future
-    uint32_t customMode = static_cast<uint32_t>(PlaneFlightMode::MANUAL);
+    uint32_t customMode = static_cast<uint32_t>(PlaneFlightMode_e::MANUAL);
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
