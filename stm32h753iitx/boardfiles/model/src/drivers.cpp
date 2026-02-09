@@ -15,6 +15,7 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
+extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
 // Static storage for each driver (aligned for correct type)
@@ -32,6 +33,7 @@ alignas(MotorControl) static uint8_t leftFlapMotorStorage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t rightFlapMotorStorage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
 
+alignas(CAN) static uint8_t canStorage[sizeof(CAN)];
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t rfdStorage[sizeof(RFD)];
@@ -59,6 +61,7 @@ MotorControl *leftFlapMotorHandle = nullptr;
 MotorControl *rightFlapMotorHandle = nullptr;
 MotorControl *steeringMotorHandle = nullptr;
 
+CAN *canHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *rfdHandle = nullptr;
@@ -136,6 +139,12 @@ void initDrivers()
     steeringMotorHandle->init();
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
+
+    // TODO: Cleanup!
+    canHandle = new (&canStorage) CAN(&hfdcan1);
+    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+  		Error_Handler();
+  	}
 
     rcHandle->init();
     gpsHandle->init();

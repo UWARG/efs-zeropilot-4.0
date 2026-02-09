@@ -71,6 +71,8 @@
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/boardfiles/drivers/imu}&quot;"/>
+									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
+									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.219445963" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -109,10 +111,14 @@
 									<listOptionValue builtIn="false" value="../FATFS/App"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/boardfiles/drivers/imu}&quot;"/>
+									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/can"/>
+									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.includefiles.1647362123" name="Include files (-include)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.includefiles" useByScannerDiscovery="false" valueType="includeFiles"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.otherflags.841910682" name="Other flags" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.otherflags" useByScannerDiscovery="true" valueType="stringList">
-									<listOptionValue builtIn="false" value="-isystem &quot;../../external/c_library_v2/all&quot;"/>
+									<listOptionValue builtIn="false" value="-isystem &quot;../../external/c_library_v2/all&quot; "/>
+									<listOptionValue builtIn="false" value="-isystem &quot;../external/dronecan/libcanard&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.840771004" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
 							</tool>
@@ -147,11 +153,13 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="boardfiles"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="boardfiles"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="dronecan"/>
+						<entry excluding="tests/|.github/|canard/|drivers/|examples/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="libcanard"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

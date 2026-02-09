@@ -32,4 +32,16 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>dronecan</name>
+			<type>2</type>
+			<location>C:/Users/adity/Desktop/dev/efs-zeropilot-4.0/external/dronecan/generated/src</location>
+		</link>
+		<link>
+			<name>libcanard</name>
+			<type>2</type>
+			<location>C:/Users/adity/Desktop/dev/efs-zeropilot-4.0/external/dronecan/libcanard</location>
+		</link>
+	</linkedResources>
 </projectDescription>

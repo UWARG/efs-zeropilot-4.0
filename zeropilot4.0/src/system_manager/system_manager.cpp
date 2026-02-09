@@ -9,7 +9,8 @@ SystemManager::SystemManager(
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
-	IPowerModule *pmDriver,
+    ICAN *canDriver,
+    IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue) :
@@ -17,7 +18,8 @@ SystemManager::SystemManager(
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
-		pmDriver(pmDriver),
+        canDriver(canDriver),
+        pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
@@ -77,10 +79,10 @@ void SystemManager::smUpdate() {
     }
 
     if (pmDriver) {
-		PMData_t pmData;
-		bool pmDataValid = pmDriver->readData(&pmData);
-		(void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
-	}
+      PMData_t pmData;
+      bool pmDataValid = pmDriver->readData(&pmData);
+      (void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
+    }
 
     // Log if new messages
     if (smLoggerQueue->count() > 0) {

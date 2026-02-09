@@ -2,7 +2,7 @@
 #pragma once
 
 #include "can_iface.hpp"
-#include <canard.h>
+#include "canard.h"
 #include "stm32l5xx_hal.h"
 #include "can_defines.hpp"
 #include <cstdint>
