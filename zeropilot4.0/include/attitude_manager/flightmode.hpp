@@ -2,6 +2,7 @@
 
 #include "rc_motor_control.hpp"
 #include "drone_state.hpp"
+#include <cstdint>
 
 class Flightmode {
     protected:
@@ -11,4 +12,9 @@ class Flightmode {
         virtual ~Flightmode() = default;
 
         virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
+};
+
+enum class PlaneFlightMode : uint32_t {
+    MANUAL  = 0,
+    FBWA    = 5
 };
