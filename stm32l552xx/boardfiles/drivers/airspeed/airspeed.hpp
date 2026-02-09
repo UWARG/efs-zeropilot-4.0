@@ -2,6 +2,7 @@
 
 #include "stm32l5xx_hal.h"
 #include "airspeed_iface.hpp"
+#include "airspeed_iface.hpp"
 #include <cmath>
 
 enum class Status : uint8_t {
