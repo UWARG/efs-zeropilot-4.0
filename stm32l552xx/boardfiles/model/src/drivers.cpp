@@ -61,6 +61,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *rfdHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+airspeed *airspeedHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
