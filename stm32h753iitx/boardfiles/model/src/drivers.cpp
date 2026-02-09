@@ -140,6 +140,7 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    rfdHandle->startReceive();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true};
