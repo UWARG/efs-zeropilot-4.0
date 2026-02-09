@@ -19,6 +19,7 @@ TelemetryManager::TelemetryManager(
 TelemetryManager::~TelemetryManager() = default;
 
 void TelemetryManager::tmUpdate() {
+	receive();
     processTXMsgQueue();
     transmit();
 }
