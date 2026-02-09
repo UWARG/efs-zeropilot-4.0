@@ -1,12 +1,11 @@
 #pragma once
 
-class airspeed_iface
+class AirspeedIFace
 {
 protected:
-    airspeed_iface() = default;
+    AirspeedIFace() = default;
 public:
-    virtual ~airspeed_iface() = default;
+    virtual ~AirspeedIFace() = default;
     
-    virtual void getData() = 0;
-    virtual void calculateAirspeed() = 0;
+    virtual void getAirspeedData() = 0;
 };

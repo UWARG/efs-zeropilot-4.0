@@ -19,7 +19,7 @@ struct airspeedData {
     double airspeed_ = 0;
 };
 
-class airspeed : public airspeed_iface
+class Airspeed : public AirspeedIFace
 {
 private:
 	static constexpr int arraySize = 4;
@@ -40,15 +40,15 @@ private:
     airspeedData airspeedData_;
 
 public:
-    airspeed(I2C_HandleTypeDef* i2c, uint8_t addr = 0x28) : hi2c(i2c), devAddress(addr << 1) {}
-    ~airspeed() = default;
+    Airspeed(I2C_HandleTypeDef* i2c, uint8_t addr = 0x28) : hi2c(i2c), devAddress(addr << 1) {}
+    ~Airspeed() = default;
 
     // init
     bool airspeedInit();
 
     //helper function to calculate airspeed
     bool calculateAirspeed(double* data_out);
-    bool I2C_DMA_CALLBACK();
+    bool I2C_Master_Receive_DMA();
 
     // public getters
     bool getAirspeedData(double* data_out);

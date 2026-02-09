@@ -1,4 +1,4 @@
-#include "airspeed.hpp"
+#include "Airspeed.hpp"
 #include <cstring>
 
 /*
@@ -6,7 +6,7 @@ airspeedInit - gets the initial data, confirms that data is good
 getData - runs only if airspeedInit gives HAL_OK
 */
 
-bool airspeed::airspeedInit() {
+bool Airspeed::airspeedInit() {
     bool success = false;
     bool dma_success = false;
     HAL_StatusTypeDef status = HAL_I2C_Master_Receive_DMA(hi2c, devAddress, dmaRXBuffer, arraySize);
@@ -20,7 +20,7 @@ bool airspeed::airspeedInit() {
     return success;
 }
 
-bool airspeed::callibrate(int samples, int discard) {
+bool Airspeed::callibrate(int samples, int discard) {
     double sumPress = 0;
     double n = 0;
 
@@ -47,12 +47,12 @@ bool airspeed::callibrate(int samples, int discard) {
     return true;
 }
 
-bool airspeed::getAirspeedData(double* data_out) {
+bool Airspeed::getAirspeedData(double* data_out) {
 	if (!initSuccess_) { return false; }
 	return calculateAirspeed(data_out); // Will send a proper error message later
 }
 
-bool airspeed::calculateAirspeed(double* data_out) {
+bool Airspeed::calculateAirspeed(double* data_out) {
     status_ = static_cast<Status>((processRXBuffer[0] >> 6) & 0x03);
     if(status_ != Status::Normal) return false; // something wrong with the data
 
@@ -74,17 +74,17 @@ bool airspeed::calculateAirspeed(double* data_out) {
     }
 
 
-    double air_density = 101325.0 / (287.058 * (airspeedData_.processed_temp_ + 273.15)); //calculate air density in kg/m^3, assuming stanard air pressure of 101.325 kPa and specific gas constant for dry air R = 287.058 J/(kg·K)
+    double airDensity = 101325.0 / (287.058 * (airspeedData_.processed_temp_ + 273.15)); //calculate air density in kg/m^3, assuming stanard air pressure of 101.325 kPa and specific gas constant for dry air R = 287.058 J/(kg·K)
 
     //calculate airspeed in m/s using Bernoulli's equation
-    airspeedData_.airspeed_ = std::sqrt((2 * airspeedData_.processed_press_) / air_density); // this negative symbol might not be right
+    airspeedData_.airspeed_ = std::sqrt((2 * airspeedData_.processed_press_) / airDensity); // this negative symbol might not be right
 
     *data_out = airspeedData_.airspeed_;
     return true; // Will send a proper error message later
 }
 
 
-bool airspeed::I2C_DMA_CALLBACK() {
+bool Airspeed::I2C_Master_Receive_DMA() {
     memcpy(
         getProcessRXBuffer(),
         getDMARXBuffer(),
