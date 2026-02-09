@@ -1,4 +1,5 @@
 #include "system_manager.hpp"
+#include "flightmode.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -55,7 +56,7 @@ void SystemManager::smUpdate() {
     }
 
     // Populate baseMode based on arm state
-    uint8_t baseMode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+    uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     if (rcData.arm) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
@@ -68,8 +69,8 @@ void SystemManager::smUpdate() {
         systemStatus = MAV_STATE_STANDBY;
     }
 
-    // Custom mode not used, set to 0
-    uint32_t customMode = 0;
+    // Hardcoded to MANUAL for now, should come from RC input in future
+    uint32_t customMode = static_cast<uint32_t>(PlaneFlightMode_e::MANUAL);
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {

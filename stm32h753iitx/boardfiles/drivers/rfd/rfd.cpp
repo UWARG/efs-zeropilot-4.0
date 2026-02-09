@@ -1,13 +1,8 @@
 #include "rfd.hpp"
 #include "stm32h7xx_hal_uart.h"
+#include <cstring>
 
-/**
- * Important consideraton when using this driver:
- * Recieve should be called fast enough to never let the buffer overflow,
- * since there is currently no way to recover from an overflow
- */
-
-RFD* RFD::instance = nullptr; // global instance
+RFD* RFD::instance = nullptr;
 
 RFD::RFD(UART_HandleTypeDef* huart) : huart(huart), readIndex(0), writeIndex(0){
     instance = this;
@@ -23,28 +18,62 @@ void RFD::transmit(const uint8_t* data, uint16_t size) {
     }
 }
 
+uint16_t RFD::getRXTransferSize(uint16_t idx) {
+	if (idx > lastIdx) {
+		return (uint16_t)(idx - lastIdx);
+	} else {
+		return (uint16_t)(BUFFER_SIZE - lastIdx + idx);
+	}
+}
+
 void RFD::startReceive() {
     if (huart) {
         HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
     }
 }
 
-uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
-    for (uint16_t i = 0; i < bufferSize; i++) {
-        if (readIndex == writeIndex){
-            return i;
-        }
-        buffer[i] = rxBuffer[readIndex];
-        readIndex++;
-        if (readIndex >= BUFFER_SIZE) {
-            readIndex = 0;
-        }
+void RFD::receiveCallback(uint16_t writeIdx) {
+    if (HAL_UARTEx_GetRxEventType(huart) == HAL_UART_RXEVENT_HT) {
+		return;
+	}
+
+    writeIndex = writeIdx % BUFFER_SIZE;
+
+	uint16_t transferSize = getRXTransferSize(writeIndex);
+	currentSize += transferSize;
+
+    if (currentSize > (BUFFER_SIZE - 1)) {
+        readIndex += currentSize - (BUFFER_SIZE - 1);
+        readIndex %= BUFFER_SIZE;
+        currentSize = BUFFER_SIZE - 1;
     }
-    return bufferSize;
+
+	lastIdx = writeIdx;
 }
 
-void RFD::receiveCallback(uint16_t size){
-    writeIndex = size;
+uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
+    if (readIndex == writeIndex) {
+        return 0;
+    }
+
+    int dataRead = 0;
+
+	if (readIndex < writeIndex) {
+		memcpy(buffer, rxBuffer + readIndex, writeIndex - readIndex);
+		dataRead += writeIndex - readIndex;
+    
+    // data wrapped around buffer
+	} else {
+		memcpy(buffer, rxBuffer + readIndex, BUFFER_SIZE - readIndex);
+		dataRead += BUFFER_SIZE - readIndex;
+
+		memcpy(buffer + dataRead, rxBuffer, writeIndex);
+		dataRead += writeIndex;
+	}
+
+    readIndex = (readIndex + dataRead) % BUFFER_SIZE;
+    currentSize -= dataRead;
+    return dataRead;
 }
 
 UART_HandleTypeDef* RFD::getHuart() const {
