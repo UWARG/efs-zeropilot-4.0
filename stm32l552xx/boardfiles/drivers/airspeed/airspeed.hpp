@@ -29,7 +29,7 @@ private:
     I2C_HandleTypeDef* hi2c;
     uint8_t devAddress;
 
-    double press_zero = 0.0;
+    double pressZero = 0.0;
 
     bool callibrate(int samples, int discard);
     bool calibrated_ = false;
@@ -43,15 +43,15 @@ public:
     airspeed(I2C_HandleTypeDef* i2c, uint8_t addr = 0x28) : hi2c(i2c), devAddress(addr << 1) {}
     ~airspeed() = default;
 
+    // init
     bool airspeedInit();
-    bool getAirspeedData(double* data_out);
-    bool getOffset(bool poll);
 
     //helper function to calculate airspeed
     bool calculateAirspeed(double* data_out);
     bool I2C_DMA_CALLBACK();
 
     // public getters
+    bool getAirspeedData(double* data_out);
     I2C_HandleTypeDef* getI2C() { return hi2c; }
     uint8_t* getDMARXBuffer() { return dmaRXBuffer; }
     uint8_t* getProcessRXBuffer() { return processRXBuffer; }

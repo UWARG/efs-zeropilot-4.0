@@ -41,7 +41,7 @@ bool airspeed::callibrate(int samples, int discard) {
 
     if (n < (samples / 2)) return false; // too few good samples
 
-    press_zero = sumPress / n;
+    pressZero = sumPress / n;
     calibrated_ = true;
 
     return true;
@@ -53,7 +53,6 @@ bool airspeed::getAirspeedData(double* data_out) {
 }
 
 bool airspeed::calculateAirspeed(double* data_out) {
-//    __HAL_I2C_DISABLE_IT(hi2c, I2C_IT_RXI);
     status_ = static_cast<Status>((processRXBuffer[0] >> 6) & 0x03);
     if(status_ != Status::Normal) return false; // something wrong with the data
 
@@ -71,7 +70,7 @@ bool airspeed::calculateAirspeed(double* data_out) {
 
     //convert pressure to Pa
     if (calibrated_) {
-    	airspeedData_.processed_press_ = abs((airspeedData_.processed_press_ * 6894.76) - press_zero);
+    	airspeedData_.processed_press_ = abs((airspeedData_.processed_press_ * 6894.76) - pressZero);
     }
 
 
@@ -79,8 +78,6 @@ bool airspeed::calculateAirspeed(double* data_out) {
 
     //calculate airspeed in m/s using Bernoulli's equation
     airspeedData_.airspeed_ = std::sqrt((2 * airspeedData_.processed_press_) / air_density); // this negative symbol might not be right
-
-//    __HAL_I2C_ENABLE_IT(hi2c, I2C_IT_RXI);
 
     *data_out = airspeedData_.airspeed_;
     return true; // Will send a proper error message later
