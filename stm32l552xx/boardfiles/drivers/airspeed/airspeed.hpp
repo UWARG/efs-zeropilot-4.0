@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stm32l5xx_hal.h"
+#include "airspeed_iface.hpp"
 #include <cmath>
 
 enum class Status : uint8_t {
@@ -50,6 +51,7 @@ public:
     bool calculateAirspeed(double* data_out);
 
     // public getters
+    I2C_HandleTypeDef* getI2C() { return hi2c; }
     uint8_t* getDMARXBuffer() { return dmaRXBuffer; }
     uint8_t* getProcessRXBuffer() { return processRXBuffer; }
     uint8_t getDevAddress() { return devAddress; }
