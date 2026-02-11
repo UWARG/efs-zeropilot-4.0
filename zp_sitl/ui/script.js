@@ -154,7 +154,7 @@ function startRFDViewer() {
         const data = JSON.parse(event.data);
         
         if (data.direction === 1) {
-            // Transmitted - tree view
+            // Transmitted - tree view inspired by Mission Planner
             const msgType = data.type || 'UNKNOWN';
             
             if (!txMessages[msgType]) {
@@ -167,7 +167,7 @@ function startRFDViewer() {
             
             updateMessageEntry(txDiv, msgType, txMessages[msgType]);
         } else {
-            // Received - scrolling list (original)
+            // Received - scrolling list view
             const msgElem = document.createElement('div');
             msgElem.className = 'telemetry-message';
             

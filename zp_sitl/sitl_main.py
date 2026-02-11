@@ -187,6 +187,8 @@ async def rfd_viewer_handler(request):
         while True:
             messages = sitl.zp.get_rfd_messages()
             for direction, message in messages:
+                # Try to decode as MAVLink
+                # TODO: If a message is split between two UDP messages, we currently don't handle it correctly and just stream the bytes. Currently ZP never splits messages, so it is not yet an issue.
                 decoded = mavlink_decoder.decode_hex_message(message)
                 
                 if decoded:
