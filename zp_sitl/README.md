@@ -7,7 +7,9 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 - `sitl_main.py` - Python simulation loop integrating JSBSim with ZeroPilot
 - `zeropilot_wrapper.cpp` - Python C extension wrapping ZeroPilot managers
 - `sitl_drivers/` - Software-in-the-Loop driver implementations
-- `index.html` - Web UI for simulation control
+- `scripts/` - Contains build automation and FlightGear launch scripts
+- `ui/` - Frontend assets (HTML, CSS, JS) for the web dashboard
+- `util/` - Utility modules including MAVLink decoders
 - `sd_card/` - Logging folder where simulated sd card logging gets dumped (gitignored)
 
 ## Running
@@ -27,11 +29,14 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Main Target
+### Main Target (Web Dashboard)
 
-Then, to build and run:
+To build and run the simulation with the browser-based UI:
 ```bash
-./build_sitl.sh
+# Build the C++ extension
+./scripts/build_sitl.sh
+
+# Start the simulation
 python sitl_main.py
 ```
 
@@ -43,14 +48,14 @@ If you install [FlightGear](https://www.flightgear.org/) you can visualize the s
 
 Run the FGFS SITL target via:
 ```bash
-./build_sitl.sh
+./scripts/build_sitl.sh
 python sitl_fgfs.py
 ```
 
-Launch FGFS via `start_fgfs.sh` (requires having fgfs in your $PATH):
+Launch FGFS via `./scripts/start_fgfs.sh` (requires having fgfs in your $PATH):
 ```bash
 # This script runs fgfs --fdm=null --native-fdm=socket,in,60,,5550,udp --aircraft=c172p
-./start_fgfs.sh
+./scripts/start_fgfs.sh
 ```
 
 ## SITL Drivers
