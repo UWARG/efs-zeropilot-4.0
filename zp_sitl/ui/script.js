@@ -144,72 +144,23 @@ function handleJoystick(ws, controls) {
 }
 
 function startRFDViewer() {
+    const MAX_MESSAGES = 1000;
+
     const rfdWs = new WebSocket('ws://localhost:8080/rfd');
     const txDiv = document.getElementById('telem-tx');
     const rxDiv = document.getElementById('telem-rx');
     
-    const txMessages = {};
-    
     rfdWs.onmessage = (event) => {
         const data = JSON.parse(event.data);
+        const div = data.direction === 1 ? txDiv : rxDiv;
+        const msgElem = document.createElement('div');
+        msgElem.className = 'telemetry-message'; // Styles defined in CSS
         
-        if (data.direction === 1) {
-            // Transmitted - tree view inspired by Mission Planner
-            const msgType = data.type || 'UNKNOWN';
-            
-            if (!txMessages[msgType]) {
-                txMessages[msgType] = { count: 0, content: '', expanded: false };
-                createMessageEntry(txDiv, msgType, txMessages);
-            }
-            
-            txMessages[msgType].count++;
-            txMessages[msgType].content = data.decoded || data.raw;
-            
-            updateMessageEntry(txDiv, msgType, txMessages[msgType]);
-        } else {
-            // Received - scrolling list view
-            const msgElem = document.createElement('div');
-            msgElem.className = 'telemetry-message';
-            
-            msgElem.innerHTML = data.decoded 
-                ? `<strong>${data.type}</strong><br/><pre style="font-size: 11px; color: #aaa;">${data.decoded}</pre>` 
-                : data.raw;
-            
-            rxDiv.insertBefore(msgElem, rxDiv.firstChild);
-            if (rxDiv.children.length > 100) rxDiv.removeChild(rxDiv.lastChild);
-        }
+        msgElem.innerHTML = data.decoded 
+            ? `<strong>${data.type}</strong><br/><pre style="font-size: 11px; color: #aaa;">${data.decoded}</pre>` 
+            : data.raw;
+        
+        div.insertBefore(msgElem, div.firstChild);
+        if (div.children.length > MAX_MESSAGES) div.removeChild(div.lastChild);
     };
-}
-
-function createMessageEntry(div, msgType, messages) {
-    const typeElem = document.createElement('div');
-    typeElem.className = 'msg-type';
-    typeElem.dataset.type = msgType;
-    typeElem.innerHTML = `▶ ${msgType}<span class="msg-count">(0)</span>`;
-    
-    const contentElem = document.createElement('div');
-    contentElem.className = 'msg-content';
-    contentElem.dataset.type = msgType;
-    
-    typeElem.onclick = () => {
-        messages[msgType].expanded = !messages[msgType].expanded;
-        typeElem.classList.toggle('expanded');
-        contentElem.classList.toggle('visible');
-    };
-    
-    div.appendChild(typeElem);
-    div.appendChild(contentElem);
-}
-
-function updateMessageEntry(div, msgType, msg) {
-    const typeElem = div.querySelector(`.msg-type[data-type="${msgType}"]`);
-    const contentElem = div.querySelector(`.msg-content[data-type="${msgType}"]`);
-    
-    if (typeElem) {
-        const countSpan = typeElem.querySelector('.msg-count');
-        if (countSpan) countSpan.textContent = `(${msg.count})`;
-    }
-    if (contentElem) {
-        contentElem.textContent = msg.content;
-    }
 }
