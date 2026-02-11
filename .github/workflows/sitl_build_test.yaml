@@ -28,7 +28,11 @@ jobs:
     - name: Build SITL
       run: |
         cd zp_sitl
-        ./build_sitl.sh
+        ./scripts/build_sitl.sh
+
+    - name: SITL Syntax Check (Bytecode Compilation)
+      run: |
+        python -m compileall -q zp_sitl/
 
     - name: Test SITL runs
       run: |
