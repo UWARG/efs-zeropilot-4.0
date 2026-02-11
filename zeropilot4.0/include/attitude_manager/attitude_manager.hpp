@@ -41,6 +41,7 @@ class AttitudeManager {
             MotorGroupInstance_t *flapMotors,
             MotorGroupInstance_t *steeringMotors
         );
+
         void amUpdate();
 
     private:
