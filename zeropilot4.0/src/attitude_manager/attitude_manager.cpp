@@ -35,19 +35,7 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
-    adverseCoeff(0.15f),
-    adverseYaw(0.0f),
-    signedYaw(0.0f),
     amSchedulingCounter(0) {}
-
-
-void AttitudeManager::setRudderMixingCoeff(float coeff) {
-    if (coeff < 0.0f || coeff > 1.0f) {
-        return;
-    }
-
-    adverseCoeff = coeff;
-}
 
 void AttitudeManager::amUpdate() {
 
@@ -126,17 +114,6 @@ void AttitudeManager::amUpdate() {
 
 
     RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
-    signedYaw = motorOutputs.roll-50;
-    adverseYaw = signedYaw * adverseCoeff;
-    motorOutputs.yaw +=adverseYaw; 
-    // limit yaw to 100
-    if (motorOutputs.yaw>100){
-        motorOutputs.yaw = 100;
-    //limit yaw to 0
-    } else if (motorOutputs.yaw < 0) {
-        motorOutputs.yaw = 0;
-    }
-
 
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);

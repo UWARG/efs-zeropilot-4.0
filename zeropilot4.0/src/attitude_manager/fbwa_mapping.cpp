@@ -8,7 +8,8 @@ FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
         ROLL_INTEGRAL_MIN_LIM, ROLL_INTEGRAL_MAX_LIM, control_iter_period_s),
     pitchPID(0.0f, 0.0f, 0.0f,
         0.0f, OUTPUT_MIN, OUTPUT_MAX,
-        PITCH_INTEGRAL_MIN_LIM, PITCH_INTEGRAL_MAX_LIM, control_iter_period_s)
+        PITCH_INTEGRAL_MIN_LIM, PITCH_INTEGRAL_MAX_LIM, control_iter_period_s),
+    yawRudderMixingConst(0.0f)
 {
     rollPID.pidInitState();
     pitchPID.pidInitState();
@@ -26,6 +27,12 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
     pitchPID.setConstants(newKp, newKi, newKd, newTau);
 }
 
+// Setter for *yaw* rudder mixing const
+void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
+    yawRudderMixingConst = newMixingConst;
+}
+
+// Main control mapping function for FBWA mode
 RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
     // Convert RC inputs into radians
     float rollSetpoint = (controlInputs.roll / MAX_RC_INPUT_VAL) * (ROLL_MAX_ANGLE_RAD - ROLL_MIN_ANGLE_RAD) + ROLL_MIN_ANGLE_RAD;
@@ -41,6 +48,9 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
 
     controlInputs.roll = rollOutput + FBWA_PID_OUTPUT_SHIFT; // setting desired roll angle, adding 50 to shift to [0,100] range
     controlInputs.pitch = pitchOutput + FBWA_PID_OUTPUT_SHIFT; // setting desired pitch angle, adding 50 to shift to [0,100] range
+
+    // Yaw control via rudder mixing
+    controlInputs.yaw = controlInputs.yaw + (yawRudderMixingConst * controlInputs.roll);
 
     return controlInputs;
 }

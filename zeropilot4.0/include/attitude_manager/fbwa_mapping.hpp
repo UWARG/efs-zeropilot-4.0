@@ -15,6 +15,9 @@ class FBWAMapping : public Flightmode {
         // Setter for *pitch* PID consts
         void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
 
+        // Setter for *yaw* rudder mixing const
+        void setYawRudderMixingConstant(float newMixingConst) noexcept;
+
         // Destructor
         ~FBWAMapping() noexcept override;
     
@@ -22,6 +25,9 @@ class FBWAMapping : public Flightmode {
         // Roll and Pitch PID class objects
         PID rollPID;
         PID pitchPID;
+
+        // Yaw rudder mixing constant
+        float yawRudderMixingConst;
 
         // Roll integral limits
         static constexpr float ROLL_INTEGRAL_MIN_LIM = -50.0f;

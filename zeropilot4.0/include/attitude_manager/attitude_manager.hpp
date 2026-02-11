@@ -41,7 +41,6 @@ class AttitudeManager {
             MotorGroupInstance_t *flapMotors,
             MotorGroupInstance_t *steeringMotors
         );
-        void setRudderMixingCoeff(float coeff);
         void amUpdate();
 
     private:
@@ -66,10 +65,6 @@ class AttitudeManager {
         MotorGroupInstance_t *throttleMotors;
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
-
-        float adverseCoeff;
-        float adverseYaw;
-        float signedYaw;
 
         uint8_t amSchedulingCounter;
 

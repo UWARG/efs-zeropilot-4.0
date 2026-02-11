@@ -143,14 +143,14 @@ void initDrivers()
     rfdHandle->startReceive();
 
     // Motor instance bindings
-    leftAileronMotorInstance = {leftAileronMotorHandle, true};
-    rightAileronMotorInstance = {rightAileronMotorHandle, true};
-    elevatorMotorInstance = {elevatorMotorHandle, false};
-    rudderMotorInstance = {rudderMotorHandle, false};
-    throttleMotorInstance = {throttleMotorHandle, false};
-    leftFlapMotorInstance = {leftFlapMotorHandle, false};
-    rightFlapMotorInstance = {rightFlapMotorHandle, true};
-    steeringMotorInstance = {steeringMotorHandle, true};
+    leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
+    rightAileronMotorInstance = {rightAileronMotorHandle, true, 0};
+    elevatorMotorInstance = {elevatorMotorHandle, false, 0};
+    rudderMotorInstance = {rudderMotorHandle, false, 0};
+    throttleMotorInstance = {throttleMotorHandle, false, 0};
+    leftFlapMotorInstance = {leftFlapMotorHandle, false, 0};
+    rightFlapMotorInstance = {rightFlapMotorHandle, true, 0};
+    steeringMotorInstance = {steeringMotorHandle, true, 0};
 
     aileronMotorInstances[0] = leftAileronMotorInstance;
     aileronMotorInstances[1] = rightAileronMotorInstance;
