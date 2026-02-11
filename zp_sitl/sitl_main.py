@@ -119,6 +119,8 @@ class ZP_SITL:
             'yaw': math.degrees(self.fdm['attitude/psi-rad']),
             'altitude': self.fdm['position/h-sl-ft'],
             'airspeed': self.fdm['velocities/vc-kts'],
+            'climb_rate': -self.fdm['velocities/v-down-fps'] * 60.0, # ft/min
+            'turn_rate': math.degrees(self.fdm['velocities/r-rad_sec']),
             'rpm': self.fdm['propulsion/engine/propeller-rpm'],
             'roll_output': r_out,
             'pitch_output': p_out,
