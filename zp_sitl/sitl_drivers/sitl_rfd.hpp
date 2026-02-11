@@ -27,6 +27,7 @@
 
 class SITL_RFD : public IRFD {
 private:
+    using Config = SITL_Driver_Configs::SITL_RFD_Config;
 #ifdef _WIN32
     SOCKET sockfd; // Windows uses a specific SOCKET type
 #else
@@ -53,15 +54,15 @@ public:
         // Set non-blocking mode on Windows
         u_long mode = 1;
         ioctlsocket(sockfd, FIONBIO, &mode);
-        // Increase receive buffer to 1MB on Windows
-        int rcvbuf = 1048576;
+        // Increase receive buffer on Windows
+        int rcvbuf = Config::RX_BUF_SZ_BYTES;
         setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (const char*)&rcvbuf, sizeof(rcvbuf));
 #else
         if (sockfd < 0) return;
         // Set non-blocking mode on Unix
         fcntl(sockfd, F_SETFL, O_NONBLOCK);
-        // Increase receive buffer to 1MB on Unix
-        int rcvbuf = 1048576;
+        // Increase receive buffer on Unix
+        int rcvbuf = Config::RX_BUF_SZ_BYTES;
         setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbuf, sizeof(rcvbuf));
 #endif
         
