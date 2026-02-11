@@ -28,7 +28,7 @@ jobs:
     - name: Build SITL
       run: |
         cd zp_sitl
-        ./build_sitl.sh
+        ./scripts/build_sitl.sh
 
     - name: Test SITL runs
       run: |
