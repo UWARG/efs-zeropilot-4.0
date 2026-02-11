@@ -110,7 +110,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
     int port = 0;
    
     // Parse arguments from Python
-    static char* kwlist[] = {"ip", "port", NULL};
+    static char* kwlist[] = {(char*)"ip", (char*)"port", NULL};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|si", kwlist, &ip, &port)) {
         return NULL;
     }

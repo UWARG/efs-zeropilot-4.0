@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse  # Import argparse for command-line argument parsing
+import argparse
 import jsbsim
 import time
 import json
