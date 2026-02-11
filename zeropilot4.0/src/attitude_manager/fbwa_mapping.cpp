@@ -50,8 +50,8 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
     controlInputs.pitch = pitchOutput + FBWA_PID_OUTPUT_SHIFT; // setting desired pitch angle, adding 50 to shift to [0,100] range
 
     // Yaw control via rudder mixing
-    float rollInputCentered = controlInputs.roll - (MAX_RC_INPUT_VAL / 2.0f); // Centering roll input around 0
-    controlInputs.yaw = controlInputs.yaw + (yawRudderMixingConst * rollInputCentered); // Adjusting yaw based on roll input and mixing constant
+    float aileronSignalCentered = controlInputs.roll - (MAX_RC_INPUT_VAL / 2.0f); // Centering roll input around 0
+    controlInputs.yaw = controlInputs.yaw + (yawRudderMixingConst * aileronSignalCentered); // Yaw adjustment
     if (controlInputs.yaw < 0.0f) {
         controlInputs.yaw = 0.0f; // Ensuring yaw does not go below 0
     } else if (controlInputs.yaw > MAX_RC_INPUT_VAL) {
