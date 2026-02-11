@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import jsbsim
 import time
 import json
@@ -8,9 +9,10 @@ import os
 import asyncio
 from aiohttp import web
 import zeropilot
+from mavlink_decoder import MAVLinkDecoder
 
 class ZP_SITL:
-    def __init__(self):
+    def __init__(self, ip, port):
         # Initialize JSBSim
         self.fdm = jsbsim.FGFDMExec(None)
         self.fdm.load_model('c172p')
@@ -28,7 +30,7 @@ class ZP_SITL:
         self.arm_cmd = 0
         
         # ZeroPilot instance
-        self.zp = zeropilot.ZeroPilot()
+        self.zp = zeropilot.ZeroPilot(ip=ip, port=port)
         
         # State tracking
         self.armed = False
@@ -126,7 +128,7 @@ class ZP_SITL:
         }
 
 # Global SITL instance
-sitl = ZP_SITL()
+sitl = None
 
 # --- Web Server Logic ---
 
@@ -162,6 +164,44 @@ async def websocket_handler(request):
     
     return ws
 
+# Initialize MAVLink decoder
+mavlink_decoder = MAVLinkDecoder()
+
+async def rfd_viewer_handler(request):
+    """Handles real-time RFD message streaming."""
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+    
+    try:
+        while True:
+            messages = sitl.zp.get_rfd_messages()
+            for direction, message in messages:
+                # Try to decode as MAVLink
+                # TODO: If a message is split between two UDP messages, we currently don't handle it correctly and just stream the bytes. This is pretty rare though rn
+                decoded = mavlink_decoder.decode_hex_message(message)
+                
+                if decoded:
+                    msg_name, formatted = decoded
+                    await ws.send_json({
+                        "direction": direction,
+                        "raw": message,
+                        "decoded": formatted,
+                        "type": msg_name
+                    })
+                else:
+                    # Send raw if decoding fails
+                    await ws.send_json({
+                        "direction": direction,
+                        "raw": message,
+                        "decoded": None,
+                        "type": "UNKNOWN"
+                    })
+            await asyncio.sleep(0.1)
+    except Exception as e:
+        print(f"Telemetry Viewer Error: {e}")
+    finally:
+        await ws.close()
+
 def start_webserver():
     """Starts the aiohttp server in a dedicated thread."""
     loop = asyncio.new_event_loop()
@@ -170,6 +210,7 @@ def start_webserver():
     app = web.Application()
     app.router.add_get('/', index)
     app.router.add_get('/ws', websocket_handler)
+    app.router.add_get('/rfd', rfd_viewer_handler)
     
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
@@ -182,11 +223,21 @@ def start_webserver():
 # --- Main Execution ---
 
 def main():
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Run ZeroPilot SITL simulation.")
+    parser.add_argument("--ip", type=str, default="127.0.0.1", help="IP address for ZeroPilot UDP communication")
+    parser.add_argument("--port", type=int, default=14550, help="Port for ZeroPilot UDP communication")
+    args = parser.parse_args()
+
+    global sitl
+    sitl = ZP_SITL(args.ip, args.port)
+
     # 1. Start Web Server Thread
     server_thread = threading.Thread(target=start_webserver, daemon=True)
     server_thread.start()
     
     print("SITL Physics started. Target: 1000Hz via busy-wait.")
+    print("Mavlink UDP forwarding on {}:{}".format(args.ip, args.port))
 
     # 2. High-Precision Timing Loop
     target_dt = 0.001 # 1ms

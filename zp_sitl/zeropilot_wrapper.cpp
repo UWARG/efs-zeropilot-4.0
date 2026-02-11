@@ -13,10 +13,33 @@
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
+#include <functional>
+#include <string>
+#include <queue>
+#include <mutex>
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define TM_SCHEDULING_RATE_HZ 20
 #define AM_SCHEDULING_RATE_HZ 100
+
+std::queue<std::string> rfdTxMessages;
+std::queue<std::string> rfdRxMessages;
+std::mutex rfdMutex;
+
+static void telemLogCallback(const std::string& message, uint8_t direction) {
+    std::lock_guard<std::mutex> lock(rfdMutex);
+if (direction == 1) {
+    rfdTxMessages.push(message);
+    if (rfdTxMessages.size() > 100) {
+        rfdTxMessages.pop(); // Limit the queue size to 100 messages
+}
+    } else if (direction == 0) {
+        rfdRxMessages.push(message);
+        if (rfdRxMessages.size() > 100) {
+            rfdRxMessages.pop();
+        }
+    }
+}
 
 typedef struct {
     PyObject_HEAD
@@ -83,6 +106,15 @@ static void ZP_dealloc(ZPObject* self) {
 }
 
 static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
+    const char* ip = nullptr;
+    int port = 0;
+   
+    // Parse arguments from Python
+    static char* kwlist[] = {(char*)"ip", (char*)"port", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|si", kwlist, &ip, &port)) {
+        return NULL;
+    }
+    
     ZPObject* self = (ZPObject*)type->tp_alloc(type, 0);
     if (self != NULL) {
         self->sysUtils = new SITL_SystemUtils();
@@ -95,7 +127,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->logger = new SITL_Logger();
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
-        self->rfd = new SITL_RFD("127.0.0.1", 14550);
+        self->rfd = new SITL_RFD(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
         self->rollMotor = new SITL_Motor();
@@ -210,12 +242,34 @@ static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
     return Py_BuildValue("(iiii)", roll, pitch, yaw, throttle);
 }
 
+static PyObject* ZP_getRFDMessages(ZPObject* self, PyObject* args) {
+    std::lock_guard<std::mutex> lock(rfdMutex);
+    PyObject* list = PyList_New(0);
+
+    while (!rfdTxMessages.empty()) {
+        PyObject* tuple = Py_BuildValue("(is)", 1, rfdTxMessages.front().c_str());
+        PyList_Append(list, tuple);
+        Py_DECREF(tuple);
+        rfdTxMessages.pop();
+    }
+    
+    while (!rfdRxMessages.empty()) {
+        PyObject* tuple = Py_BuildValue("(is)", 0, rfdRxMessages.front().c_str());
+        PyList_Append(list, tuple);
+        Py_DECREF(tuple);
+        rfdRxMessages.pop();
+    }
+
+    return list;
+}
+
 static PyMethodDef ZP_methods[] = {
     {"update_from_plant", (PyCFunction)ZP_updateFromPlant, METH_VARARGS, "Update sensors from plant"},
     {"set_max_batt_capacity", (PyCFunction)ZP_setBatteryCapacity, METH_VARARGS, "Set max battery capacity"},
     {"set_rc", (PyCFunction)ZP_setRC, METH_VARARGS, "Set RC commands"},
     {"update", (PyCFunction)ZP_update, METH_NOARGS, "Run all managers"},
     {"get_motor_outputs", (PyCFunction)ZP_getMotorOutputs, METH_NOARGS, "Get motor outputs"},
+    {"get_rfd_messages", (PyCFunction)ZP_getRFDMessages, METH_NOARGS, "Get RFD messages"},
     {NULL}
 };
 

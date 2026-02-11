@@ -1,6 +1,11 @@
 #pragma once
 #include "rfd_iface.hpp"
 #include <cstring>
+#include <functional>
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <iostream>
 
 #ifdef _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
@@ -22,15 +27,18 @@
 
 class SITL_RFD : public IRFD {
 private:
+    using Config = SITL_Driver_Configs::SITL_RFD_Config;
 #ifdef _WIN32
     SOCKET sockfd; // Windows uses a specific SOCKET type
 #else
     int sockfd;
 #endif
     struct sockaddr_in destAddr;
-    
+    std::function<void(const std::string&, uint8_t)> telemLogCallback;
+
 public:
-    SITL_RFD(const char* ip = "127.0.0.1", int port = 14550) {
+    SITL_RFD(const char* ip, int port, std::function<void(const std::string&, uint8_t)> telemLogCallback = nullptr)
+        : telemLogCallback(telemLogCallback) {
 #ifdef _WIN32
         // Initialize Windows Sockets (Required on Windows)
         WSADATA wsaData;
@@ -43,8 +51,19 @@ public:
         
 #ifdef _WIN32
         if (sockfd == INVALID_SOCKET) return;
+        // Set non-blocking mode on Windows
+        u_long mode = 1;
+        ioctlsocket(sockfd, FIONBIO, &mode);
+        // Increase receive buffer on Windows
+        int rcvbuf = Config::RX_BUF_SZ_BYTES;
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (const char*)&rcvbuf, sizeof(rcvbuf));
 #else
         if (sockfd < 0) return;
+        // Set non-blocking mode on Unix
+        fcntl(sockfd, F_SETFL, O_NONBLOCK);
+        // Increase receive buffer on Unix
+        int rcvbuf = Config::RX_BUF_SZ_BYTES;
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbuf, sizeof(rcvbuf));
 #endif
         
         memset(&destAddr, 0, sizeof(destAddr));
@@ -71,10 +90,45 @@ public:
         if (sockfd >= 0) {
 #endif
             sendto(sockfd, (const char*)data, size, 0, (struct sockaddr*)&destAddr, sizeof(destAddr));
+            if (telemLogCallback) {
+                std::ostringstream oss;
+                for (uint16_t i = 0; i < size; ++i) {
+                    oss << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)data[i];
+                    if (i < size - 1) {
+                        oss << " "; // Add space between bytes
+                    }
+                }
+                oss << "\n"; // Add newline for clarity
+                telemLogCallback(oss.str(), 1);
+            }
         }
     }
     
     uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override {
+#ifdef _WIN32
+        if (sockfd != INVALID_SOCKET) {
+#else
+        if (sockfd >= 0) {
+#endif
+            struct sockaddr_in srcAddr;
+            socklen_t addrLen = sizeof(srcAddr);
+            int receivedBytes = recvfrom(sockfd, (char*)buffer, bufferSize, 0, (struct sockaddr*)&srcAddr, &addrLen);
+            
+            if (receivedBytes > 0) {
+                if (telemLogCallback) {
+                    std::ostringstream oss;
+                    for (int i = 0; i < receivedBytes; ++i) {
+                        oss << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (int)buffer[i];
+                        if (i < receivedBytes - 1) {
+                            oss << " ";
+                        }
+                    }
+                    oss << "\n";
+                    telemLogCallback(oss.str(), 0);
+                }
+                return static_cast<uint16_t>(receivedBytes);
+            }
+        }
         return 0;
     }
 };

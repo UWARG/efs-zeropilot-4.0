@@ -173,6 +173,20 @@
                 </div>
             </div>
         </div>
+
+        <div class="panel">
+            <h2>Telemetry Viewer</h2>
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <h3>Transmitted</h3>
+                    <div id="telem-tx" style="height: 300px; overflow-y: auto; background: #3d3d3d; padding: 10px; border-radius: 4px;"></div>
+                </div>
+                <div style="flex: 1;">
+                    <h3>Received</h3>
+                    <div id="telem-rx" style="height: 300px; overflow-y: auto; background: #3d3d3d; padding: 10px; border-radius: 4px;"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -197,6 +211,8 @@
                 
                 initSimulation(config);
             });
+
+            startRFDViewer();
         });
 
         function initSimulation(config) {
@@ -343,6 +359,39 @@
                 airspeedIndicator.setAirSpeed(state.airspeed);
                 altimeter.setAltitude(state.altitude);
             };
+        }
+
+        function startRFDViewer() {
+            const rfdWs = new WebSocket('ws://localhost:8080/rfd');
+            const txDiv = document.getElementById('telem-tx');
+            const rxDiv = document.getElementById('telem-rx');
+            const MAX_MESSAGES = 1000;
+            
+            rfdWs.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const div = data.direction === 1 ? txDiv : rxDiv;
+                const msgElem = document.createElement('div');
+                
+                // Display decoded message if available, otherwise raw
+                if (data.decoded) {
+                    msgElem.innerHTML = `<strong>${data.type}</strong><br/><pre style="margin: 5px 0; font-size: 11px; color: #aaa;">${data.decoded}</pre>`;
+                } else {
+                    msgElem.textContent = data.raw;
+                }
+                
+                msgElem.style.marginBottom = '10px';
+                msgElem.style.padding = '8px';
+                msgElem.style.background = '#1a1a1a';
+                msgElem.style.borderRadius = '4px';
+                div.insertBefore(msgElem, div.firstChild);
+                
+                // Remove oldest message if we exceed MAX_MESSAGES
+                while (div.children.length > MAX_MESSAGES) {
+                    div.removeChild(div.lastChild);
+                }
+            };
+            
+            rfdWs.onclose = () => console.log('RFD WebSocket closed');
         }
     </script>
 </body>
