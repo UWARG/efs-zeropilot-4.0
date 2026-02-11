@@ -29,10 +29,6 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
 
 // Setter for *yaw* rudder mixing const
 void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
-    if (newMixingConst < 0.0f || newMixingConst > 1.0f) {
-        return;
-    }
-
     yawRudderMixingConst = newMixingConst;
 }
 
