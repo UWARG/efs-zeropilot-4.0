@@ -9,7 +9,10 @@ import os
 import asyncio
 from aiohttp import web
 import zeropilot
-from mavlink_decoder import MAVLinkDecoder
+from util.mavlink_decoder import MAVLinkDecoder
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UI_PATH = os.path.join(BASE_DIR, 'ui')
 
 class ZP_SITL:
     def __init__(self, ip, port):
@@ -135,10 +138,16 @@ sitl = None
 # --- Web Server Logic ---
 
 async def index(request):
-    """Serves the frontend UI."""
-    if os.path.exists('./index.html'):
-        return web.FileResponse('./index.html')
-    return web.Response(text="Error: index.html not found in current directory.", status=404)
+    """Serves the frontend UI using the global UI_PATH."""
+    index_path = os.path.join(UI_PATH, 'index.html')
+    
+    if os.path.exists(index_path):
+        return web.FileResponse(index_path)
+    
+    return web.Response(
+        text=f"Error: index.html not found at {index_path}", 
+        status=404
+    )
 
 async def websocket_handler(request):
     """Handles real-time communication with the UI."""
@@ -213,6 +222,8 @@ def start_webserver():
     app.router.add_get('/', index)
     app.router.add_get('/ws', websocket_handler)
     app.router.add_get('/rfd', rfd_viewer_handler)
+    
+    app.router.add_static('/', path=UI_PATH, name='static')
     
     runner = web.AppRunner(app)
     loop.run_until_complete(runner.setup())
