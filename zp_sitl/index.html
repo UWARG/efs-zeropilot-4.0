@@ -17,7 +17,18 @@
         .value { color: #4CAF50; font-size: 18px; }
         .state { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .state-item { text-align: center; padding: 10px; background: #3d3d3d; border-radius: 4px; }
-        .instruments { display: flex; gap: 20px; justify-content: center; }
+        .instruments {
+            display: grid;
+            grid-template-columns: repeat(3, 210px); 
+            grid-template-rows: repeat(2, auto);
+            gap: 20px;
+            justify-content: center;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            margin: 0 auto;
+        }
+        .instruments span { display: flex; justify-content: center; align-items: center; }
         .arm-btn { 
             position: absolute;
             top: 20px;
@@ -137,15 +148,6 @@
             </div>
         </div>
 
-        <div class="panel">
-            <h2>Flight Instruments</h2>
-            <div class="instruments">
-                <span id="attitude"></span>
-                <span id="airspeed-indicator"></span>
-                <span id="altimeter"></span>
-            </div>
-        </div>
-
         <div class="panel controls-panel">
             <button id="arm-btn" class="arm-btn disarmed">ARM</button>
             <h2>RC Channels</h2>
@@ -175,6 +177,19 @@
         </div>
 
         <div class="panel">
+            <h2>Flight Instruments</h2>
+            <div class="instruments">
+                <span id="airspeed-indicator"></span>
+                <span id="attitude"></span>
+                <span id="altimeter"></span>
+
+                <span id="turn-coordinator"></span>
+                <span id="heading-indicator"></span>
+                <span id="vsi"></span>
+            </div>
+        </div>
+
+        <div class="panel">
             <h2>Telemetry Viewer</h2>
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
@@ -190,7 +205,7 @@
     </div>
 
     <script>
-        let attitude, airspeedIndicator, altimeter;
+        let airspeedIndicator, attitude, altimeter, turnCoordinator, headingIndicator, vsi;
         let ws;
 
         $(document).ready(function() {
@@ -216,18 +231,16 @@
         });
 
         function initSimulation(config) {
-            attitude = $.flightIndicator('#attitude', 'attitude', {
-                size:200, 
-                img_directory: 'https://cdn.jsdelivr.net/gh/sebmatton/jQuery-Flight-Indicators@master/img/'
-            });
-            airspeedIndicator = $.flightIndicator('#airspeed-indicator', 'airspeed', {
-                size:200,
-                img_directory: 'https://cdn.jsdelivr.net/gh/sebmatton/jQuery-Flight-Indicators@master/img/'
-            });
-            altimeter = $.flightIndicator('#altimeter', 'altimeter', {
-                size:200,
-                img_directory: 'https://cdn.jsdelivr.net/gh/sebmatton/jQuery-Flight-Indicators@master/img/'
-            });
+            const imgDir = 'https://cdn.jsdelivr.net/gh/sebmatton/jQuery-Flight-Indicators@master/img/';
+            const size = 200;
+
+            attitude = $.flightIndicator('#attitude', 'attitude', { size, img_directory: imgDir });
+            airspeedIndicator = $.flightIndicator('#airspeed-indicator', 'airspeed', { size, img_directory: imgDir });
+            altimeter = $.flightIndicator('#altimeter', 'altimeter', { size, img_directory: imgDir });
+
+            vsi = $.flightIndicator('#vsi', 'variometer', { size, img_directory: imgDir });
+            turnCoordinator = $.flightIndicator('#turn-coordinator', 'turn_coordinator', { size, img_directory: imgDir });
+            headingIndicator = $.flightIndicator('#heading-indicator', 'heading', { size, img_directory: imgDir });
 
             ws = new WebSocket('ws://localhost:8080/ws');
             
@@ -354,10 +367,13 @@
                     armBtn.className = 'arm-btn disarmed';
                 }
                 
+                airspeedIndicator.setAirSpeed(state.airspeed);
                 attitude.setRoll(-state.roll);
                 attitude.setPitch(state.pitch);
-                airspeedIndicator.setAirSpeed(state.airspeed);
                 altimeter.setAltitude(state.altitude);
+                turnCoordinator.setTurn(state.turn_rate);
+                headingIndicator.setHeading(state.yaw);
+                vsi.setVario(state.climb_rate / 1000);
             };
         }
 
