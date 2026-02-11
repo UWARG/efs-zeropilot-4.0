@@ -198,7 +198,7 @@ async def rfd_viewer_handler(request):
                     })
             await asyncio.sleep(0.1)
     except Exception as e:
-        print(f"RFD Viewer Error: {e}")
+        print(f"Telemetry Viewer Error: {e}")
     finally:
         await ws.close()
 

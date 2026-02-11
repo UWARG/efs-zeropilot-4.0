@@ -175,15 +175,15 @@
         </div>
 
         <div class="panel">
-            <h2>RFD Viewer</h2>
+            <h2>Telemetry Viewer</h2>
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;">
                     <h3>Transmitted</h3>
-                    <div id="rfd-tx" style="height: 300px; overflow-y: auto; background: #3d3d3d; padding: 10px; border-radius: 4px;"></div>
+                    <div id="telem-tx" style="height: 300px; overflow-y: auto; background: #3d3d3d; padding: 10px; border-radius: 4px;"></div>
                 </div>
                 <div style="flex: 1;">
                     <h3>Received</h3>
-                    <div id="rfd-rx" style="height: 300px; overflow-y: auto; background: #3d3d3d; padding: 10px; border-radius: 4px;"></div>
+                    <div id="telem-rx" style="height: 300px; overflow-y: auto; background: #3d3d3d; padding: 10px; border-radius: 4px;"></div>
                 </div>
             </div>
         </div>
@@ -363,8 +363,9 @@
 
         function startRFDViewer() {
             const rfdWs = new WebSocket('ws://localhost:8080/rfd');
-            const txDiv = document.getElementById('rfd-tx');
-            const rxDiv = document.getElementById('rfd-rx');
+            const txDiv = document.getElementById('telem-tx');
+            const rxDiv = document.getElementById('telem-rx');
+            const MAX_MESSAGES = 1000;
             
             rfdWs.onmessage = (event) => {
                 const data = JSON.parse(event.data);
@@ -383,6 +384,11 @@
                 msgElem.style.background = '#1a1a1a';
                 msgElem.style.borderRadius = '4px';
                 div.insertBefore(msgElem, div.firstChild);
+                
+                // Remove oldest message if we exceed MAX_MESSAGES
+                while (div.children.length > MAX_MESSAGES) {
+                    div.removeChild(div.lastChild);
+                }
             };
             
             rfdWs.onclose = () => console.log('RFD WebSocket closed');
