@@ -35,7 +35,7 @@ Then, to build and run:
 python sitl_main.py
 ```
 
-Open `http://localhost:8080` to control the simulation. You can use the sliders or connect a joystick. It also streams MAVLink onto UDP at `127.0.0.1:14550` so you can connect MissionPlanner alongside the UI.
+Open `http://localhost:8080` to control the simulation. You can use the sliders or connect a joystick. It also streams MAVLink onto UDP at `127.0.0.1:14550` so you can connect MissionPlanner alongside the UI. Optionally, set port and ip address for MAVLink through `python sitl_main.py --ip <ip> --port <port>`.
 
 ### FGFS Target
 
