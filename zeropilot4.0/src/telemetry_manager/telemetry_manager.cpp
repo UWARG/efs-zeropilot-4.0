@@ -67,18 +67,6 @@ void TelemetryManager::processMsgQueue() {
                 break;
             }
 
-            
-            case TMMessage_t::BATTERYINFO_DATA: {
-                auto batteryInfoData = tmqMessage.tmMessageData.batteryInfoData;
-                mavlink_msg_battery_info_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, 255, MAV_BATTERY_FUNCTION_UNKNOWN, MAV_BATTERY_TYPE_LIPO,
-                	batteryInfoData.state_of_health, batteryInfoData.cells_in_series, batteryInfoData.cycle_count, batteryInfoData.weight, 
-                	batteryInfoData.discharge_minimum_voltage, batteryInfoData.charging_minimum_voltage, batteryInfoData.resting_minimum_voltage,
-                	batteryInfoData.charging_maximum_voltage, batteryInfoData.charging_maximum_current, batteryInfoData.nominal_voltage,
-                	batteryInfoData.discharge_maximum_current, batteryInfoData.discharge_maximum_burst_current, batteryInfoData.design_capacity,
-                	batteryInfoData.full_charge_capacity, 0, 0, 0);
-                break;
-            }
-
             case TMMessage_t::RAW_IMU_DATA: {
                 auto rawImuData = tmqMessage.tmMessageData.rawImuData;
                 mavlink_msg_raw_imu_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, rawImuData.xacc, rawImuData.yacc, rawImuData.zacc, rawImuData.xgyro, rawImuData.ygyro, rawImuData.zgyro, rawImuData.xmag, rawImuData.ymag, rawImuData.zmag, rawImuData.id, rawImuData.temperature);

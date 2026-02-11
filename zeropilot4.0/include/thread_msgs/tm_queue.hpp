@@ -43,22 +43,6 @@ typedef union TMMessageData_u {
       uint8_t chargeState; // 1 = Normal, 2 = Low, 3 = Critical
   } bmData;
   struct{
-    uint8_t state_of_health; 
-    uint8_t cells_in_series;
-    uint16_t cycle_count;
-    uint16_t weight;
-    float discharge_minimum_voltage;
-    float charging_minimum_voltage;
-    float resting_minimum_voltage;
-    float charging_maximum_voltage;
-    float charging_maximum_current;
-    float nominal_voltage;
-    float discharge_maximum_current;
-    float discharge_maximum_burst_current;
-    float design_capacity;
-    float full_charge_capacity;
-  } batteryInfoData;
-  struct{
       int16_t xacc;
       int16_t yacc;
       int16_t zacc;
@@ -87,7 +71,6 @@ typedef struct TMMessage{
         GPS_RAW_DATA,
         RC_DATA,
         BM_DATA,
-        BATTERYINFO_DATA,
         RAW_IMU_DATA,
         ATTITUDE_DATA
     } dataType;
@@ -136,15 +119,6 @@ inline TMMessage_t bmDataPack(uint32_t time_boot_ms, int16_t temperature, float 
     const TMMessageData_t DATA = {.bmData ={temperature, mavlinkVoltageArray, current_battery,
     current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
     return TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
-}
-
-inline TMMessage_t batteryInfoDataPack(uint32_t time_boot_ms, uint8_t state_of_health, uint8_t cells_in_series, uint16_t cycle_count, uint16_t weight, 
-    float discharge_minimum_voltage, float charging_minimum_voltage, float resting_minimum_voltage, float charging_maximum_voltage, float charging_maximum_current, 
-    float nominal_voltage, float discharge_maximum_current, float discharge_maximum_burst_current, float design_capacity, float full_charge_capacity) {
-    const TMMessageData_t DATA = {.batteryInfoData ={state_of_health, cells_in_series, cycle_count, weight, discharge_minimum_voltage, charging_minimum_voltage, 
-        resting_minimum_voltage, charging_maximum_voltage, charging_maximum_current, nominal_voltage, discharge_maximum_current, discharge_maximum_burst_current, 
-        design_capacity, full_charge_capacity}};
-    return TMMessage_t{TMMessage_t::BATTERYINFO_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
