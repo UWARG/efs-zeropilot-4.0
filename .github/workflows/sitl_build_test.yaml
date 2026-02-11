@@ -30,6 +30,10 @@ jobs:
         cd zp_sitl
         ./scripts/build_sitl.sh
 
+    - name: SITL Syntax Check (Bytecode Compilation)
+      run: |
+        python -m compileall -q zp_sitl/
+
     - name: Test SITL runs
       run: |
         cd zp_sitl
