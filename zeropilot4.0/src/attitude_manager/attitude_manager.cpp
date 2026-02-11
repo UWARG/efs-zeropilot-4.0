@@ -1,5 +1,6 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
+
 #define AM_SCHEDULING_RATE_HZ 100
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
