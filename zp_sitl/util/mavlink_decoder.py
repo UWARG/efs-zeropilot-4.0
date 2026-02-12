@@ -40,27 +40,22 @@ class MAVLinkDecoder:
             if len(data) < 3 or (data[0] != 0xFE and data[0] != 0xFD):
                 return None
             
-            # Parse the message by feeding bytes one at a time
-            msg = None
+            # Parse ALL messages by feeding bytes one at a time
+            messages = []
             for byte in data:
                 msg = self.mav.parse_char(bytes([byte]))
                 if msg:
-                    break
+                    msg_name = msg.get_type()
+                    msg_dict = msg.to_dict()
+                    
+                    formatted = f"{msg_name}"
+                    for key, value in msg_dict.items():
+                        if key != 'mavpackettype':
+                            formatted += f"\n  {key}: {value}"
+                    
+                    messages.append((msg_name, formatted))
             
-            if msg is None:
-                return None
-            
-            # Extract message info
-            msg_name = msg.get_type()
-            msg_dict = msg.to_dict()
-            
-            # Format nicely
-            formatted = f"{msg_name}"
-            for key, value in msg_dict.items():
-                if key != 'mavpackettype':
-                    formatted += f"\n  {key}: {value}"
-            
-            return (msg_name, formatted)
+            return messages if messages else None
         except Exception as e:
             return None
     

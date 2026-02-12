@@ -144,6 +144,8 @@ function handleJoystick(ws, controls) {
 }
 
 function startRFDViewer() {
+    const MAX_MESSAGES = 1000;
+
     const rfdWs = new WebSocket('ws://localhost:8080/rfd');
     const txDiv = document.getElementById('telem-tx');
     const rxDiv = document.getElementById('telem-rx');
@@ -159,6 +161,6 @@ function startRFDViewer() {
             : data.raw;
         
         div.insertBefore(msgElem, div.firstChild);
-        if (div.children.length > 100) div.removeChild(div.lastChild);
+        if (div.children.length > MAX_MESSAGES) div.removeChild(div.lastChild);
     };
 }
