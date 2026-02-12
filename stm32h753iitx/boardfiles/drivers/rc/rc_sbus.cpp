@@ -1,7 +1,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdio>
-#include "rc.hpp"
+#include "rc_sbus.hpp"
 
 DataChunk_t channelMappings[SBUS_CHANNEL_COUNT][SBUS_MAX_BTYES_PER_CHANNEL] = {
     { //channel 1
@@ -54,33 +54,33 @@ DataChunk_t channelMappings[SBUS_CHANNEL_COUNT][SBUS_MAX_BTYES_PER_CHANNEL] = {
     }
 };
 
-RCReceiver::RCReceiver(UART_HandleTypeDef* uart) : uart(uart) {
-    memset(rawSbus, 0, SBUS_PACKET_SIZE);
+SBUSReceiver::SBUSReceiver(UART_HandleTypeDef* uart) : uart(uart) {
+    memset((void*)rawSbus, 0, SBUS_PACKET_SIZE);
 }
 
 
-UART_HandleTypeDef* RCReceiver::getHUART() {
+UART_HandleTypeDef* SBUSReceiver::getHUART() {
     return uart;
 }
 
-RCControl RCReceiver::getRCData() {
-    RCControl tmp = rcData;
+RCControl SBUSReceiver::getRCData() {
+	RCControl tmp = rcData;
     rcData.isDataNew = false;
     return tmp;
 }
 
-void RCReceiver::init() {
+void SBUSReceiver::init() {
     rcData.isDataNew = false;
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, rawSbus, SBUS_PACKET_SIZE);
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
 }
 
-void RCReceiver::startDMA() {
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, rawSbus, SBUS_PACKET_SIZE);
+void SBUSReceiver::startDMA() {
+    HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
 }
 
-void RCReceiver::parse() {
-
-    uint8_t *buf = rawSbus;
+void SBUSReceiver::parse() {
+    
+    uint8_t *buf = (uint8_t*)rawSbus;
 
     if ((buf[0] == HEADER_) && (buf[SBUS_PACKET_SIZE-1] == FOOTER_)) {
 
@@ -92,7 +92,11 @@ void RCReceiver::parse() {
     }
 }
 
-float RCReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx) {
+UART_HandleTypeDef * SBUSReceiver::getUart() {
+    return uart;
+}
+
+float SBUSReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx) {
     uint16_t res = 0;
 
     for (int i = 0; i < SBUS_MAX_BTYES_PER_CHANNEL; i++) {

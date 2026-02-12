@@ -5,6 +5,7 @@
 #include "logger.hpp"
 #include "motor.hpp"
 #include "motor_datatype.hpp"
+#include "rc_sbus.hpp"
 #include "rc_crsf.hpp"
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
