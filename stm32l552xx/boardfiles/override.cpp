@@ -48,7 +48,7 @@ void HAL_Delay(uint32_t Delay) {
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-    if (huart == rcHandle->getUart()){
+    if (huart == rcHandle->getHUART()){
         rcHandle->parse();
         rcHandle->startDMA();
     } else if (huart == rfdHandle->getHuart()) {
@@ -61,7 +61,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart == rcHandle->getUart()){
+  if(huart == rcHandle->getHUART()){
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {

@@ -31,11 +31,6 @@ class SBUSReceiver : public IRCReceiver {
          * @brief Updates RCControl values
          */
         void parse();
-
-        /**
-         * @brief Returns the UART handle used by the SBUS receiver
-         */
-        UART_HandleTypeDef * getUart();
        
     private:
         UART_HandleTypeDef *uart;

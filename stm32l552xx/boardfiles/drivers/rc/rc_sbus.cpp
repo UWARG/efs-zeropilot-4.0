@@ -92,10 +92,6 @@ void SBUSReceiver::parse() {
     }
 }
 
-UART_HandleTypeDef * SBUSReceiver::getUart() {
-    return uart;
-}
-
 float SBUSReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx) {
     uint16_t res = 0;
 
