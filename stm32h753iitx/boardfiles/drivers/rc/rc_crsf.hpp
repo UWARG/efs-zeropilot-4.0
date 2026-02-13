@@ -30,7 +30,7 @@ class CRSFReceiver : public IRCReceiver {
 
         void parse();
 
-        UART_HandleTypeDef * getUart();
+        UART_HandleTypeDef * getHUART();
         
     private:
         UART_HandleTypeDef *uart_;
