@@ -32,7 +32,7 @@ extern MotorControl *steeringMotorHandle;
 
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
-extern RFD *rfdHandle;
+extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
 

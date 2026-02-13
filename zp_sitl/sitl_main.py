@@ -178,14 +178,14 @@ async def websocket_handler(request):
 # Initialize MAVLink decoder
 mavlink_decoder = MAVLinkDecoder()
 
-async def rfd_viewer_handler(request):
-    """Handles real-time RFD message streaming."""
+async def telem_viewer_handler(request):
+    """Handles real-time TELEM message streaming."""
     ws = web.WebSocketResponse()
     await ws.prepare(request)
     
     try:
         while True:
-            messages = sitl.zp.get_rfd_messages()
+            messages = sitl.zp.get_telem_messages()
             for direction, message in messages:
                 # Try to decode as MAVLink
                 # TODO: If a message is split between two UDP messages, we currently don't handle it correctly and just stream the bytes. Currently ZP never splits messages, so it is not yet an issue.
@@ -220,7 +220,7 @@ def start_webserver():
     app = web.Application()
     app.router.add_get('/', index)
     app.router.add_get('/ws', websocket_handler)
-    app.router.add_get('/rfd', rfd_viewer_handler)
+    app.router.add_get('/telem', telem_viewer_handler)
     
     app.router.add_static('/', path=UI_PATH, name='static')
     

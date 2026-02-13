@@ -26,7 +26,7 @@ namespace SITL_Driver_Configs {
         static constexpr float MAX_BATTERY_CAPACITY_AH = 5.0f; // 5000mAh
     };
 
-    struct SITL_RFD_Config {
+    struct SITL_TELEM_Config {
         static constexpr uint32_t RX_BUF_SZ_BYTES = 1048576; // 1 MB receive buffer
     };
 }

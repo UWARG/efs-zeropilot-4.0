@@ -4,13 +4,13 @@
 
 TelemetryManager::TelemetryManager(
     ISystemUtils *systemUtilsDriver,
-    IRFD *rfdDriver,
+    ITelemLink *telemLinkDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
-    rfdDriver(rfdDriver),
+    telemLinkDriver(telemLinkDriver),
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
@@ -127,13 +127,13 @@ void TelemetryManager::transmit() {
         txBufIdx += MSG_LEN;
     }
 
-    rfdDriver->transmit(txBuffer, txBufIdx);
+    telemLinkDriver->transmit(txBuffer, txBufIdx);
 }
 
 void TelemetryManager::receive() {
     mavlink_message_t msgToRX{};
 
-    const uint16_t RECEIVED_BYTES = rfdDriver->receive(rxBuffer, sizeof(rxBuffer));
+    const uint16_t RECEIVED_BYTES = telemLinkDriver->receive(rxBuffer, sizeof(rxBuffer));
 
     // Use mavlink_parse_char to process one byte at a time
     for (uint16_t i = 0; i < RECEIVED_BYTES; ++i) {

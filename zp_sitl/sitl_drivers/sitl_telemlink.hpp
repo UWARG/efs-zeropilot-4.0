@@ -1,5 +1,5 @@
 #pragma once
-#include "rfd_iface.hpp"
+#include "telemlink_iface.hpp"
 #include <cstring>
 #include <functional>
 #include <string>
@@ -25,9 +25,9 @@
     #include <fcntl.h>
 #endif
 
-class SITL_RFD : public IRFD {
+class SITL_TELEM : public ITelemLink {
 private:
-    using Config = SITL_Driver_Configs::SITL_RFD_Config;
+    using Config = SITL_Driver_Configs::SITL_TELEM_Config;
 #ifdef _WIN32
     SOCKET sockfd; // Windows uses a specific SOCKET type
 #else
@@ -37,7 +37,7 @@ private:
     std::function<void(const std::string&, uint8_t)> telemLogCallback;
 
 public:
-    SITL_RFD(const char* ip, int port, std::function<void(const std::string&, uint8_t)> telemLogCallback = nullptr)
+    SITL_TELEM(const char* ip, int port, std::function<void(const std::string&, uint8_t)> telemLogCallback = nullptr)
         : telemLogCallback(telemLogCallback) {
 #ifdef _WIN32
         // Initialize Windows Sockets (Required on Windows)
@@ -72,7 +72,7 @@ public:
         inet_pton(AF_INET, ip, &destAddr.sin_addr);
     }
     
-    ~SITL_RFD() {
+    ~SITL_TELEM() {
 #ifdef _WIN32
         if (sockfd != INVALID_SOCKET) {
             closesocket(sockfd); // Windows uses closesocket()

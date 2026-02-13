@@ -58,7 +58,7 @@ MotorControl *steeringMotorHandle = nullptr;
 
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
-RFD *rfdHandle = nullptr;
+RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -112,7 +112,7 @@ void initDrivers()
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
-    rfdHandle = new (&rfdStorage) RFD(&huart3);
+    telemLinkHandle = new (&rfdStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
@@ -136,7 +136,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
-    rfdHandle->startReceive();
+    telemLinkHandle->startReceive();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};

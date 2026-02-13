@@ -1,10 +1,10 @@
 #pragma once
 
-#include "rfd_iface.hpp"
+#include "telemlink_iface.hpp"
 #include "rfd_defines.hpp"
 #include "stm32h7xx_hal.h"
 
-class RFD : public IRFD {
+class RFD : public ITelemLink {
 
 public:
     static RFD* instance; // assumes only one instance defined at a time
