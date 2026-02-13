@@ -22,7 +22,7 @@ public:
     void receiveCallback(uint16_t size);
 
     // Start DMA
-    void startReceive();
+    void init();
 
 private:
     uint16_t getRXTransferSize(uint16_t idx);

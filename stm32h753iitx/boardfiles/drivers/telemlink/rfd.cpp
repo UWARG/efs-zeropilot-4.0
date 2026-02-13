@@ -26,7 +26,7 @@ uint16_t RFD::getRXTransferSize(uint16_t idx) {
 	}
 }
 
-void RFD::startReceive() {
+void RFD::init() {
     if (huart) {
         HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
     }
