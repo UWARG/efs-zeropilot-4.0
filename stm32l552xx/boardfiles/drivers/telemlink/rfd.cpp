@@ -76,6 +76,6 @@ uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
     return dataRead;
 }
 
-UART_HandleTypeDef* RFD::getHuart() const {
+UART_HandleTypeDef* RFD::getHUART() const {
     return huart;
 }

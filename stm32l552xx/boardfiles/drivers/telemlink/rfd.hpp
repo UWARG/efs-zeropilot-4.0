@@ -16,7 +16,7 @@ public:
     uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override;
 
     // Getters
-    UART_HandleTypeDef* getHuart() const;
+    UART_HandleTypeDef* getHUART() const;
 
     // DMA callback
     void receiveCallback(uint16_t size);
