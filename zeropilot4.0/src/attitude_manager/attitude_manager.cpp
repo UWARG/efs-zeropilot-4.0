@@ -1,5 +1,6 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
+#include "logger.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -7,7 +8,6 @@ AttitudeManager::AttitudeManager(
     IIMU *imuDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue,
     MotorGroupInstance_t *rollMotors,
     MotorGroupInstance_t *pitchMotors,
     MotorGroupInstance_t *yawMotors,
@@ -20,7 +20,6 @@ AttitudeManager::AttitudeManager(
     imuDriver(imuDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
-    smLoggerQueue(smLoggerQueue),
     controlAlgorithm(),
     controlMsg({50, 50, 50, 0, 0, 0}),
     droneState(DRONE_STATE_DEFAULT),
@@ -83,8 +82,7 @@ void AttitudeManager::amUpdate() {
             outputToMotor(STEERING, 50);
 
             if (!failsafeTriggered) {
-              char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
+              Logger::log("Failsafe triggered");
               failsafeTriggered = true;
             }
         }
@@ -94,8 +92,7 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
+          Logger::log("Motor control restored");
           failsafeTriggered = false;
         }
     }

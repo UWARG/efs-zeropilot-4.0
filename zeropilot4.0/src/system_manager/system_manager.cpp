@@ -1,28 +1,31 @@
 #include "system_manager.hpp"
 #include "flightmode.hpp"
+#include "logger.hpp"
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
+    IFileSystem *fileSystemDriver,
     IRCReceiver *rcDriver,
 	IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<TMMessage_t> *tmQueue):
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
+        fileSystemDriver(fileSystemDriver),
         rcDriver(rcDriver),
 		pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
-        smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         oldDataCount(0),
-        rcConnected(false) {}
+        rcConnected(false) {
+            Logger::init(fileSystemDriver, systemUtilsDriver);
+        }
 
 void SystemManager::smUpdate() {
+    Logger::log("SM Loop Test");
+
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
@@ -33,14 +36,14 @@ void SystemManager::smUpdate() {
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
-            loggerDriver->log("RC Connected");
+            Logger::log("RC Connected");
             rcConnected = true;
         }
     } else {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
-            loggerDriver->log("RC Disconnected");
+            Logger::log("RC Disconnected");
             rcConnected = false;
         }
     }
@@ -78,13 +81,12 @@ void SystemManager::smUpdate() {
 		(void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
 	}
 
-    // Log if new messages
-    if (smLoggerQueue->count() > 0) {
-        sendMessagesToLogger();
-    }
-
     // Increment scheduling counter
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
+}
+
+SystemManager::~SystemManager() {
+    Logger::shutdown();
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
@@ -108,16 +110,4 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.flapAngle = rcData.aux2;
 
     amRCQueue->push(&rcDataMessage);
-}
-
-void SystemManager::sendMessagesToLogger() {
-    static char messages[16][100];
-    int msgCount = 0;
-
-    while (smLoggerQueue->count() > 0) {
-        smLoggerQueue->get(&messages[msgCount]);
-        msgCount++;
-    }
-
-    loggerDriver->log(messages, msgCount);
 }
