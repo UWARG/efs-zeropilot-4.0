@@ -37,14 +37,13 @@ TEST_F(SystemManagerTest, WatchdogRefresh) {
 }
 
 TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
-    RCControl validRCData = {
-        .isDataNew = true,
-        .roll = 50.0f,
-        .pitch = 50.0f,
-        .yaw = 50.0f,
-        .throttle = 50.0f,
-        .arm = 1.0f
-    };
+    RCControl validRCData;
+    validRCData.isDataNew = true;
+    validRCData.roll = 50.0f;
+    validRCData.pitch = 50.0f;
+    validRCData.yaw = 50.0f;
+    validRCData.throttle = 50.0f;
+    validRCData.arm = 1.0f;
 
     RCControl staleRCData = validRCData;
     staleRCData.isDataNew = false;
