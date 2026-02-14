@@ -15,7 +15,7 @@ void smMainLoopWrapper(void *arg)
   while(true)
   {
     smHandle->smUpdate();
-    osDelay(timeToTicks(SM_CONTROL_LOOP_DELAY));
+    osDelay(timeToTicks(SM_UPDATE_LOOP_DELAY_MS));
   }
 }
 

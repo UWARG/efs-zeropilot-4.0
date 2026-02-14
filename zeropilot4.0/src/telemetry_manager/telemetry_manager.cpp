@@ -1,4 +1,5 @@
 #include "telemetry_manager.hpp"
+
 #define SYSTEM_ID 1             // Suggested System ID by Mavlink
 #define COMPONENT_ID 1          // Suggested Component ID by MAVLINK
 
