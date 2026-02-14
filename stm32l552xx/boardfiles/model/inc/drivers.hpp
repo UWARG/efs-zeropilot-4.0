@@ -5,7 +5,7 @@
 #include "logger.hpp"
 #include "motor.hpp"
 #include "motor_datatype.hpp"
-#include "rc.hpp"
+#include "rc_sbus.hpp"
 #include "rc_crsf.hpp"
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
@@ -32,7 +32,7 @@ extern MotorControl *steeringMotorHandle;
 
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
-extern RFD *rfdHandle;
+extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
 

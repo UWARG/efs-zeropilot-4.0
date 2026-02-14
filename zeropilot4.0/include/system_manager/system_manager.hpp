@@ -27,6 +27,12 @@ typedef struct{
     uint32_t batteryLowCounterMs;
     uint32_t batteryCritcounterMs;
 } batteryData_t;
+#define SM_SCHEDULING_RATE_HZ 20
+#define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
+#define SM_TELEMETRY_RC_DATA_RATE_HZ 5
+
+#define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
+#define SM_RC_TIMEOUT_MS 500
 
 class SystemManager {
     public:
@@ -61,6 +67,8 @@ class SystemManager {
 
         uint8_t batteryCount;
         batteryData_t *batteryArray;
+        int oldDataCount;
+        bool rcConnected;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);

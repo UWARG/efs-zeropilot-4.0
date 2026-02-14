@@ -45,7 +45,7 @@ void initManagers()
     // TM initialization
     tmHandle = new (&tmHandleStorage) TelemetryManager(
         systemUtilsHandle,
-        rfdHandle,
+        telemLinkHandle,
         tmQueueHandle,
         amRCQueueHandle,
         messageBufferHandle

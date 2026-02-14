@@ -101,7 +101,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/rfd"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/telemlink"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/gps"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/systemutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/model/inc"/>
@@ -250,7 +250,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/rfd"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/telemlink"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/gps"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/systemutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/model/inc"/>

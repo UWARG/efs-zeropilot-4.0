@@ -1,8 +1,5 @@
 #include "system_manager.hpp"
-
-#define SM_SCHEDULING_RATE_HZ 20
-#define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
-#define SM_TELEMETRY_RC_DATA_RATE_HZ 5
+#include "flightmode.hpp"
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
@@ -35,6 +32,8 @@ SystemManager::SystemManager(
 SystemManager::~SystemManager(){
     delete[] batteryArray;
 }
+        oldDataCount(0),
+        rcConnected(false) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -42,22 +41,19 @@ void SystemManager::smUpdate() {
 
 
     // Get RC data from the RC receiver and passthrough to AM if new
-    static int oldDataCount = 0;
-    static bool rcConnected = true;
-
     RCControl rcData = rcDriver->getRCData();
     if (rcData.isDataNew) {
         oldDataCount = 0;
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
-            loggerDriver->log("RC Reconnected");
+            loggerDriver->log("RC Connected");
             rcConnected = true;
         }
     } else {
         oldDataCount += 1;
 
-        if ((oldDataCount * SM_CONTROL_LOOP_DELAY > SM_RC_TIMEOUT) && rcConnected) {
+        if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
             loggerDriver->log("RC Disconnected");
             rcConnected = false;
         }
@@ -69,7 +65,7 @@ void SystemManager::smUpdate() {
     }
 
     // Populate baseMode based on arm state
-    uint8_t baseMode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+    uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
     if (rcData.arm) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
@@ -82,8 +78,8 @@ void SystemManager::smUpdate() {
         systemStatus = MAV_STATE_STANDBY;
     }
 
-    // Custom mode not used, set to 0
-    uint32_t customMode = 0;
+    // Hardcoded to MANUAL for now, should come from RC input in future
+    uint32_t customMode = static_cast<uint32_t>(PlaneFlightMode_e::MANUAL);
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
