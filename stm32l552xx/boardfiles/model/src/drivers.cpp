@@ -18,7 +18,7 @@ extern I2C_HandleTypeDef hi2c1;
 // ----------------------------------------------------------------------------
 alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
 alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
-alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
+alignas(SDFileSystem) static uint8_t sdFileSystemStorage[sizeof(SDFileSystem)];
 
 alignas(MotorControl) static uint8_t leftAileronMotorStorage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t rightAileronMotorStorage[sizeof(MotorControl)];
@@ -36,7 +36,6 @@ alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
-alignas(MessageQueue<char[100]>) static uint8_t smLoggerQueueStorage[sizeof(MessageQueue<char[100]>)];
 alignas(MessageQueue<TMMessage_t>) static uint8_t tmQueueStorage[sizeof(MessageQueue<TMMessage_t>)];
 alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[sizeof(MessageQueue<mavlink_message_t>)];
 
@@ -45,7 +44,7 @@ alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[siz
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
+SDFileSystem *sdFileSystemHandle = nullptr;
 
 MotorControl *leftAileronMotorHandle = nullptr;
 MotorControl *rightAileronMotorHandle = nullptr;
@@ -63,7 +62,6 @@ IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
-MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
@@ -97,7 +95,7 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem();
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
@@ -118,7 +116,6 @@ void initDrivers()
 
     // Queues
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
 
@@ -137,6 +134,7 @@ void initDrivers()
     imuHandle->init();
     pmHandle->init();
     telemLinkHandle->init();
+    sdFileSystemHandle->init();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};

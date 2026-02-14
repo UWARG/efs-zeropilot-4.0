@@ -21,7 +21,6 @@ void initManagers()
         imuHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
-        smLoggerQueueHandle, 
         &rollMotors, 
         &pitchMotors, 
         &yawMotors, 
@@ -34,12 +33,11 @@ void initManagers()
     smHandle = new (&smHandleStorage) SystemManager(
         systemUtilsHandle, 
         iwdgHandle,
-        loggerHandle,
+        sdFileSystemHandle,
         rcHandle,
 		pmHandle,
         amRCQueueHandle,
-        tmQueueHandle,
-        smLoggerQueueHandle
+        tmQueueHandle
     );
 
     // TM initialization

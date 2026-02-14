@@ -14,6 +14,11 @@ from util.mavlink_decoder import MAVLinkDecoder
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UI_PATH = os.path.join(BASE_DIR, 'ui')
 
+# Change working directory to the mocked file system root
+file_system_path = os.path.join(BASE_DIR, 'file_system')
+os.makedirs(file_system_path, exist_ok=True)
+os.chdir(file_system_path)
+
 class ZP_SITL:
     def __init__(self, ip, port):
         # Initialize JSBSim

@@ -38,7 +38,6 @@ class AttitudeManager {
             IIMU *imuDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue,
             MotorGroupInstance_t *rollMotors,
             MotorGroupInstance_t *pitchMotors,
             MotorGroupInstance_t *yawMotors,
@@ -59,7 +58,6 @@ class AttitudeManager {
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
         IMessageQueue<TMMessage_t> *tmQueue;
-        IMessageQueue<char[100]> *smLoggerQueue;
 
         DirectMapping controlAlgorithm;
         RCMotorControlMessage_t controlMsg;
