@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "system_manager.hpp"
-#include "systemutils_mock.hpp"
-#include "iwdg_mock.hpp"
-#include "logger_mock.hpp"
-#include "rc_mock.hpp"
-#include "power_module_mock.hpp"
-#include "queue_mock.hpp"
+#include "mock_systemutils.hpp"
+#include "mock_iwdg.hpp"
+#include "mock_logger.hpp"
+#include "mock_rc.hpp"
+#include "mock_power_module.hpp"
+#include "mock_queue.hpp"
 
 using ::testing::_;
 using ::testing::Return;
