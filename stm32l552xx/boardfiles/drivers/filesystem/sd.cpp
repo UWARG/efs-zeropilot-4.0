@@ -66,7 +66,7 @@ FileStatus SDFileSystem::read(File* fp, void* buff, uint32_t btr, uint32_t* br) 
     if (!fp || !buff) return FILE_STATUS_ERROR;
     
     FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
-    FRESULT res = f_read(fil, buff, btr, br);
+    FRESULT res = f_read(fil, buff, btr, static_cast<UINT*>(br));
     return fresultToStatus(res);
 }
 
@@ -74,7 +74,7 @@ FileStatus SDFileSystem::write(File* fp, const void* buff, uint32_t btw, uint32_
     if (!fp || !buff) return FILE_STATUS_ERROR;
     
     FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
-    FRESULT res = f_write(fil, buff, btw, bw);
+    FRESULT res = f_write(fil, buff, btw, static_cast<UINT*>(bw));
     
 #ifdef SWO_LOGGING
     if (res == FR_OK && bw && *bw > 0) {
@@ -89,7 +89,7 @@ FileStatus SDFileSystem::lseek(File* fp, uint64_t ofs) {
     if (!fp) return FILE_STATUS_ERROR;
     
     FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
-    FRESULT res = f_lseek(fil, ofs);
+    FRESULT res = f_lseek(fil, static_cast<FSIZE_t>(ofs));
     return fresultToStatus(res);
 }
 
