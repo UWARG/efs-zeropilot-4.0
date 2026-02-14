@@ -33,7 +33,7 @@ typedef struct{
     MAV_BATTERY_CHARGE_STATE chargeState;
     uint32_t batteryLowCounterMs;
     uint32_t batteryCritcounterMs;
-} batteryData_t;
+} BatteryData_t;
 
 class SystemManager {
     public:
@@ -70,11 +70,11 @@ class SystemManager {
         bool rcConnected;
         
         uint8_t batteryCount;
-        batteryData_t *batteryArray;
+        BatteryData_t *batteryArray;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBMDataToTelemetryManager(batteryData_t batteryData);
+        void sendBMDataToTelemetryManager(const BatteryData_t &batteryData);
         void sendMessagesToLogger();
 };

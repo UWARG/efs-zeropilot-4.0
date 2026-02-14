@@ -22,7 +22,7 @@ SystemManager::SystemManager(
         oldDataCount(0),
         rcConnected(false),
         batteryCount(1),
-        batteryArray(new batteryData_t[batteryCount]){
+        batteryArray(new BatteryData_t[batteryCount]){
             for (size_t i = 0; i < batteryCount; i++){
                 batteryArray[i].batteryId = i;
                 batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
@@ -170,8 +170,8 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBMDataToTelemetryManager(const batteryData_t batteryData) {   
-    float voltages[1] = {batteryData.pmData.busVoltage};        
+void SystemManager::sendBMDataToTelemetryManager(const BatteryData_t &batteryData) {   
+    float voltages[1] = {batteryData.pmData.busVoltage};
     TMMessage_t bmDataMsg = bmDataPack(systemUtilsDriver->getCurrentTimestampMs(), batteryData.batteryId, INT16_MAX, voltages, 1, batteryData.pmData.charge, batteryData.pmData.current, batteryData.pmData.energy, -1, 0, batteryData.chargeState);
     tmQueue->push(&bmDataMsg);
 }
