@@ -20,7 +20,7 @@ void GeminiMavlink::init() {
     if(huart) {
         // Initialize DMA buffer for RC
         rcData_.isDataNew = false;
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
+        HAL_UARTEx_ReceiveToIdle_DMA(huart, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE); // to delete (see rx and tx logic for rfd->to implement for rc) because no more circular dma
         // Initialize DMA buffer for RFD
         HAL_UARTEx_ReceiveToIdle_DMA(huart, rfdRxBuffer, MAVLINK_MAX_PACKET_SIZE);
     }
@@ -38,6 +38,8 @@ void GeminiMavlink::irqhandler() {
 
 RCControl GeminiMavlink::getRCData() {
     
+    // RC CHANNEL RAW convert to RC control struct
+
     // Struct to fill
     RCControl data;
 
@@ -91,3 +93,21 @@ RCControl GeminiMavlink::getRCData() {
 UART_HandleTypeDef* GeminiMavlink::getHuart() const {
     return huart;
 }
+
+// add to rffdiface to forcerxbuffer take mavlink rcmessage and repack into sbus or crsfbuffer
+// if mavlink type is rcchannels then add a case
+
+// mavlink buffer of type rc control by 
+
+// void forcePushMavlink(blablabla) to convert mavlink to crsf + sbus
+
+// struct with:
+// chan1 to 8 raw, timebootms
+
+// questions:
+// is forcepushmavlink to ensure backward compatibility so that the mavlink is converted into crsf / sbus depending on what driver is being used?
+// takes an RCControl struct and then changes it into rawSbus, rcCrsf or GeminiMavlink (store as is)
+// instead of rawsbus RC
+// forcePushRC inside rc_iface.hpp just do nothing for now but put in the iface
+
+// mavlink packets ota -> dma buffer (rfd) -> processqueue rx message push into rc buffer -> sets write flag as false (SM calls getRC)
