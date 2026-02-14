@@ -4,12 +4,6 @@
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 
-#define BATTERY_LOW_VOLTAGE      10.5f
-#define BATTERY_CRITICAL_VOLTAGE 9.8f
-
-#define BATTERY_LOW_TIME_MS      10000
-#define BATTERY_CRITICAL_TIME_MS 3000
-
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
@@ -28,10 +22,19 @@ SystemManager::SystemManager(
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
-        chargeState(0), // MAV_BATTERY_CHARGE_STATE
-        batteryDataValid(0),
-        batteryLowCounterMs(0),
-        batteryCritcounterMs(0){}
+        batteryCount(1),
+        batteryArray(new batteryData_t[batteryCount]){
+            for (size_t i = 0; i < batteryCount; i++){
+                batteryArray[i].batteryId = i;
+                batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
+                batteryArray[i].batteryLowCounterMs = 0;
+                batteryArray[i].batteryCritcounterMs = 0;
+            }
+    }
+
+SystemManager::~SystemManager(){
+    delete[] batteryArray;
+}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -88,49 +91,55 @@ void SystemManager::smUpdate() {
     }
 
     // Send Battery Management data to TM and monitor battery state
-    PMData_t pmData;
-    uint8_t currState = chargeState;
-    if (pmDriver->readData(&pmData)) {
-        //Low battery detection 
-        if (pmData.busVoltage < BATTERY_LOW_VOLTAGE) {
-            batteryLowCounterMs += SM_CONTROL_LOOP_DELAY;
-            if (batteryLowCounterMs >= BATTERY_LOW_TIME_MS) {
-                chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
-            }
-            sendBMDataToTelemetryManager(pmData, MAV_BATTERY_CHARGE_STATE_LOW);
-        } else {
-            batteryLowCounterMs = 0;
-            chargeState = MAV_BATTERY_CHARGE_STATE_OK;
-        }
+    MAV_BATTERY_CHARGE_STATE currentBatteryState;
+    for (int i = 0; i < batteryCount; i++) {
+        if (pmDriver->readData(&(batteryArray[i].pmData))) {          
+            currentBatteryState = batteryArray[i].chargeState;
 
-        //Crtitical battery detection
-        if (pmData.busVoltage < BATTERY_CRITICAL_VOLTAGE) {
-            batteryCritcounterMs += SM_CONTROL_LOOP_DELAY;
-            if (batteryCritcounterMs >= BATTERY_CRITICAL_TIME_MS) {
-                chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
+            // Normal battery
+            if (batteryArray[i].pmData.busVoltage >= BATTERY_LOW_VOLTAGE){
+                batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_OK;
+                batteryArray[i].batteryLowCounterMs = 0;
+                batteryArray[i].batteryCritcounterMs = 0;
             }
-            sendBMDataToTelemetryManager(pmData, MAV_BATTERY_CHARGE_STATE_CRITICAL);
-        } else {
-            batteryCritcounterMs = 0;
-            chargeState = MAV_BATTERY_CHARGE_STATE_OK;
-        }  
-    }
+            
+            // Low battery detection
+            else if (batteryArray[i].pmData.busVoltage >= BATTERY_CRITICAL_VOLTAGE) {
+                batteryArray[i].batteryLowCounterMs += SM_CONTROL_LOOP_DELAY;
+                batteryArray[i].batteryCritcounterMs = 0;
+                if (batteryArray[i].batteryLowCounterMs >= BATTERY_LOW_TIME_MS) {
+                    batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
+                    sendBMDataToTelemetryManager(batteryArray[i]); //we can either transmit one for each pmDriver OR submit 1 overall
+                }
+            } 
+
+            // Critical battery detection
+            else {
+                batteryArray[i].batteryCritcounterMs += SM_CONTROL_LOOP_DELAY;
+                batteryArray[i].batteryLowCounterMs = 0;
+                if (batteryArray[i].batteryCritcounterMs >= BATTERY_CRITICAL_TIME_MS) {
+                    batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
+                    sendBMDataToTelemetryManager(batteryArray[i]); //we can either transmit one for each pmDriver OR submit 1 overall
+                }
+            } 
     
-    //Logging --> once per transition, checks if the state has yet to be logged and does so 
-    if (currState != chargeState) {
-        switch (chargeState) {
-            case MAV_BATTERY_CHARGE_STATE_OK:
-                loggerDriver->log("Battery State: OK");
-                break;
-            case MAV_BATTERY_CHARGE_STATE_LOW:
-                loggerDriver->log("Battery State: LOW");
-                break;
-            case MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                loggerDriver->log("Battery State: CRITICAL");
-                break;
-            default:
-                break;
-        }
+            // Logging --> once per transition, checks if the state has yet to be logged and does so 
+            if (currentBatteryState != batteryArray[i].chargeState) {
+                switch (batteryArray[i].chargeState) {
+                    case MAV_BATTERY_CHARGE_STATE_OK:
+                        loggerDriver->log("Battery State: OK");
+                        break;
+                    case MAV_BATTERY_CHARGE_STATE_LOW:
+                        loggerDriver->log("Battery State: LOW");
+                        break;
+                    case MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                        loggerDriver->log("Battery State: CRITICAL");
+                        break;
+                    default:
+                        break;
+                }
+            }    
+        }    
     }
 
     // Log if new messages
@@ -165,9 +174,9 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBMDataToTelemetryManager(const PMData_t &pmData, uint8_t charge_state) {   
-    float voltages[1] = {pmData.busVoltage ? pmData.busVoltage : INT16_MAX};
-    TMMessage_t bmDataMsg = bmDataPack(systemUtilsDriver->getCurrentTimestampMs(), INT16_MAX, voltages, 1, pmData.charge, pmData.current, pmData.energy, -1, 0, charge_state);
+void SystemManager::sendBMDataToTelemetryManager(const batteryData_t batteryData) {   
+    float voltages[1] = {batteryData.pmData.busVoltage};        
+    TMMessage_t bmDataMsg = bmDataPack(systemUtilsDriver->getCurrentTimestampMs(), batteryData.batteryId, INT16_MAX, voltages, 1, batteryData.pmData.charge, batteryData.pmData.current, batteryData.pmData.energy, -1, 0, batteryData.chargeState);
     tmQueue->push(&bmDataMsg);
 }
 

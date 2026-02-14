@@ -12,7 +12,21 @@
 #include "power_module_iface.hpp"
 
 #define SM_CONTROL_LOOP_DELAY 50
-#define SM_RC_TIMEOUT 500 
+#define SM_RC_TIMEOUT 500
+
+#define BATTERY_LOW_TIME_MS      10000
+#define BATTERY_CRITICAL_TIME_MS 3000
+
+static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
+static constexpr float BATTERY_CRITICAL_VOLTAGE = 9.8f;
+
+typedef struct{
+    uint8_t batteryId;
+    PMData_t pmData;
+    MAV_BATTERY_CHARGE_STATE chargeState;
+    uint32_t batteryLowCounterMs;
+    uint32_t batteryCritcounterMs;
+} batteryData_t;
 
 class SystemManager {
     public:
@@ -27,6 +41,8 @@ class SystemManager {
             IMessageQueue<char[100]> *smLoggerQueue
         );
 
+        ~SystemManager();
+        
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
 
     private:
@@ -43,14 +59,12 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
-        uint8_t chargeState; // MAV_BATTERY_CHARGE_STATE
-        bool batteryDataValid;
-        uint32_t batteryLowCounterMs;
-        uint32_t batteryCritcounterMs;
+        uint8_t batteryCount;
+        batteryData_t *batteryArray;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBMDataToTelemetryManager(const PMData_t &pmData, uint8_t charge_state);
+        void sendBMDataToTelemetryManager(batteryData_t batteryData);
         void sendMessagesToLogger();
 };
