@@ -69,7 +69,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.60348804" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -95,7 +95,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
@@ -244,7 +244,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>

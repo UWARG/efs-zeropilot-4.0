@@ -12,7 +12,21 @@ void Logger::init(IFileSystem* fs, ISystemUtils* sysUtils) {
     
     fileSystem->mkdir("logs");
     logFile = {};
-    fileSystem->open(&logFile, LOG_FILE, "a");
+    
+    // Find first available log file (0-255), default to 0 if all taken
+    char filename[32];
+    FileInfo fno;
+    uint32_t fileNum = 0;
+    for (uint32_t i = 0; i < 255; i++) {
+        snprintf(filename, sizeof(filename), "logs/system%u.log", i);
+        if (fileSystem->stat(filename, &fno) != FILE_STATUS_OK) {
+            fileNum = i;
+            break;
+        }
+    }
+    
+    snprintf(filename, sizeof(filename), "logs/system%u.log", fileNum);
+    fileSystem->open(&logFile, filename, "a");
 }
 
 void Logger::shutdown() {
@@ -30,7 +44,7 @@ void Logger::log(const char* format, ...) {
     
     // Add timestamp
     uint32_t ts = systemUtils->getCurrentTimestampMs() / 1000;
-    int tsLen = snprintf(buffer, 16, "[%us] ", ts);
+    int tsLen = snprintf(buffer, 10, "[%us] ", ts);
     
     // Add formatted message
     va_list args;

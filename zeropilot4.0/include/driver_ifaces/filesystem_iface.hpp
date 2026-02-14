@@ -15,7 +15,7 @@ typedef struct {
     char	name[255 + 1];	/* Primary file name */
 } FileInfo;
 
-struct File {
+struct alignas(4) File {
     char _storage[256];  // Safe margin: FIL (~200 bytes) + FILE (~150 bytes) + padding
 };
 
@@ -53,21 +53,4 @@ class IFileSystem {
         virtual int puts (const char* str, File* cp) = 0;								        /* Put a string to the file */
         virtual int printf (File* fp, const char* str, ...) = 0;						        /* Put a formatted string to the file */
         virtual char* gets (char* buff, int len, File* fp) = 0;						            /* Get a string from the file */
-
-
-
-        
-        
-        
-        
-// FUTURE API:
-        // 
-
-        // 
-        // FRESULT f_opendir (DIR* dp, const TCHAR* path);						/* Open a directory */
-        // FRESULT f_closedir (DIR* dp);										/* Close an open directory */
-        // FRESULT f_readdir (DIR* dp, FILINFO* fno);							/* Read a directory item */
-        // FRESULT f_chdir (const TCHAR* path);								/* Change current directory */
-        // FRESULT f_getcwd (TCHAR* buff, UINT len);							/* Get current directory */
-        // FileStatus forward (File* fp, uint32_t(*func)(const uint8_t*,uint32_t), uint32_t btf, uint32_t* bf);	/* Forward data to the stream */
 };
