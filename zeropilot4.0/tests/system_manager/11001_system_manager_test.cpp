@@ -65,21 +65,6 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
     }
 }
 
-TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
-    RCControl rcData;
-    rcData.isDataNew = false;
-    
-    EXPECT_CALL(mockRC, getRCData()).WillRepeatedly(Return(rcData));
-    EXPECT_CALL(mockAMQueue, push(_)).Times(0);
-    
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
-    
-    for (int i = 0; i < RC_FAILSAFE_ITERATIONS; i++) {
-        sm.smUpdate();
-    }
-}
-
 TEST_F(SystemManagerTest, HeartbeatSentToTelemetry) {  
     int heartbeatCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
