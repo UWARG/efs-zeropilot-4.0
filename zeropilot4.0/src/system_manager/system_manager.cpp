@@ -18,7 +18,9 @@ SystemManager::SystemManager(
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0),
+        smSchedulingCounter(0),        
+        oldDataCount(0),
+        rcConnected(false),
         batteryCount(1),
         batteryArray(new batteryData_t[batteryCount]){
             for (size_t i = 0; i < batteryCount; i++){
@@ -32,8 +34,6 @@ SystemManager::SystemManager(
 SystemManager::~SystemManager(){
     delete[] batteryArray;
 }
-        oldDataCount(0),
-        rcConnected(false) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog

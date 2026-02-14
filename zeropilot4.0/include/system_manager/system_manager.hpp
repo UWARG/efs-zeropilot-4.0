@@ -14,6 +14,13 @@
 #define SM_CONTROL_LOOP_DELAY 50
 #define SM_RC_TIMEOUT 500
 
+#define SM_SCHEDULING_RATE_HZ 20
+#define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
+#define SM_TELEMETRY_RC_DATA_RATE_HZ 5
+
+#define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
+#define SM_RC_TIMEOUT_MS 500
+
 #define BATTERY_LOW_TIME_MS      10000
 #define BATTERY_CRITICAL_TIME_MS 3000
 
@@ -27,12 +34,6 @@ typedef struct{
     uint32_t batteryLowCounterMs;
     uint32_t batteryCritcounterMs;
 } batteryData_t;
-#define SM_SCHEDULING_RATE_HZ 20
-#define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
-#define SM_TELEMETRY_RC_DATA_RATE_HZ 5
-
-#define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
-#define SM_RC_TIMEOUT_MS 500
 
 class SystemManager {
     public:
@@ -65,10 +66,11 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
-        uint8_t batteryCount;
-        batteryData_t *batteryArray;
         int oldDataCount;
         bool rcConnected;
+        
+        uint8_t batteryCount;
+        batteryData_t *batteryArray;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
