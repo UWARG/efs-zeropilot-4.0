@@ -20,7 +20,7 @@ SystemManager::SystemManager(
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         oldDataCount(0),
-        rcConnected(true) {}
+        rcConnected(false) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -33,7 +33,7 @@ void SystemManager::smUpdate() {
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
-            loggerDriver->log("RC Reconnected");
+            loggerDriver->log("RC Connected");
             rcConnected = true;
         }
     } else {
