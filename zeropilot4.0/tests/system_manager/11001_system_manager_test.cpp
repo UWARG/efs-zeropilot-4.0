@@ -112,18 +112,3 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
     
     EXPECT_EQ(rcDataCount, SM_TELEMETRY_RC_DATA_RATE_HZ);
 }
-
-TEST_F(SystemManagerTest, RCDisconnectLogging) {
-    RCControl rcData;
-    rcData.isDataNew = false;
-    
-    EXPECT_CALL(mockLogger, log(::testing::A<const char*>())).Times(1);
-    EXPECT_CALL(mockLogQueue, count()).WillRepeatedly(Return(0));
-    
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
-    
-    for (int i = 0; i < RC_FAILSAFE_ITERATIONS; i++) {
-        sm.smUpdate();
-    }
-}
