@@ -36,19 +36,33 @@ TEST_F(SystemManagerTest, WatchdogRefresh) {
     sm.smUpdate();
 }
 
-TEST_F(SystemManagerTest, NewRCDataForwarding) {
-    RCControl rcData;
-    rcData.isDataNew = true;
-    rcData.roll = 60.0f;
-    rcData.pitch = 70.0f;
-    
-    EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
-    EXPECT_CALL(mockAMQueue, push(_)).Times(1);
-    
+TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
+    RCControl validRCData = {
+        .isDataNew = true,
+        .roll = 50.0f,
+        .pitch = 50.0f,
+        .yaw = 50.0f,
+        .throttle = 50.0f,
+        .arm = 1.0f
+    };
+
+    RCControl staleRCData = validRCData;
+    staleRCData.isDataNew = false;
+
+    EXPECT_CALL(mockRC, getRCData())
+        .WillOnce(Return(validRCData))
+        .WillRepeatedly(Return(staleRCData));
+
+    EXPECT_CALL(mockAMQueue, push(_)).Times(1); 
+
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
-    
+
     sm.smUpdate();
+
+    for (int i = 0; i < RC_FAILSAFE_ITERATIONS; i++) {
+        sm.smUpdate();
+    }
 }
 
 TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
@@ -66,7 +80,7 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
     }
 }
 
-TEST_F(SystemManagerTest, HeartbeatSent) {  
+TEST_F(SystemManagerTest, HeartbeatSentToTelemetry) {  
     int heartbeatCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
         .WillRepeatedly(::testing::Invoke([&heartbeatCount](TMMessage_t* msg) {
