@@ -1,10 +1,6 @@
 #include "system_manager.hpp"
 #include "flightmode.hpp"
 
-#define SM_SCHEDULING_RATE_HZ 20
-#define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
-#define SM_TELEMETRY_RC_DATA_RATE_HZ 5
-
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
@@ -22,16 +18,15 @@ SystemManager::SystemManager(
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0) {}
+        smSchedulingCounter(0),
+        oldDataCount(0),
+        rcConnected(true) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
     // Get RC data from the RC receiver and passthrough to AM if new
-    static int oldDataCount = 0;
-    static bool rcConnected = true;
-
     RCControl rcData = rcDriver->getRCData();
     if (rcData.isDataNew) {
         oldDataCount = 0;
@@ -44,7 +39,7 @@ void SystemManager::smUpdate() {
     } else {
         oldDataCount += 1;
 
-        if ((oldDataCount * SM_CONTROL_LOOP_DELAY > SM_RC_TIMEOUT) && rcConnected) {
+        if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
             loggerDriver->log("RC Disconnected");
             rcConnected = false;
         }
