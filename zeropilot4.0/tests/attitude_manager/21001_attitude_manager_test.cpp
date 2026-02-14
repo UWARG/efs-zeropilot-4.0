@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "attitude_manager.hpp"
-#include "systemutils_mock.hpp"
-#include "gps_mock.hpp"
-#include "imu_mock.hpp"
-#include "queue_mock.hpp"
-#include "motor_mock.hpp"
+#include "mock_systemutils.hpp"
+#include "mock_gps.hpp"
+#include "mock_imu.hpp"
+#include "mock_queue.hpp"
+#include "mock_motor.hpp"
 
 using ::testing::_;
 using ::testing::Return;

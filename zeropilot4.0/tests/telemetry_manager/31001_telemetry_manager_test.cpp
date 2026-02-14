@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "telemetry_manager.hpp"
-#include "systemutils_mock.hpp"
-#include "telemlink_mock.hpp"
-#include "queue_mock.hpp"
+#include "mock_systemutils.hpp"
+#include "mock_telemlink.hpp"
+#include "mock_queue.hpp"
 
 using ::testing::_;
 using ::testing::Return;
