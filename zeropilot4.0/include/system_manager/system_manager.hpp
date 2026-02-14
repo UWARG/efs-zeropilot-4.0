@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "iwdg_iface.hpp"
 #include "systemutils_iface.hpp"
 #include "mavlink.h"
@@ -37,12 +38,13 @@ typedef struct{
 
 class SystemManager {
     public:
+        template<typename... pmDrivers>
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
             IRCReceiver *rcDriver,
-			IPowerModule *pmDriver,
+			pmDrivers*... pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue
@@ -57,8 +59,8 @@ class SystemManager {
 
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
         ILogger *loggerDriver; // Logger driver
-        IRCReceiver *rcDriver; // RC receiver driver
-        IPowerModule *pmDriver;
+        IRCReceiver *rcDriver; // RC receiver driver    
+        std::vector<IPowerModule*> pmDriver;
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
@@ -69,7 +71,6 @@ class SystemManager {
         int oldDataCount;
         bool rcConnected;
         
-        uint8_t batteryCount;
         BatteryData_t *batteryArray;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);

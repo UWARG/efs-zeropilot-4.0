@@ -1,12 +1,13 @@
 #include "system_manager.hpp"
 #include "flightmode.hpp"
 
+template<typename... pmDrivers>
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
-	IPowerModule *pmDriver,
+    pmDrivers*... pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue) :
@@ -14,16 +15,15 @@ SystemManager::SystemManager(
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
-		pmDriver(pmDriver),
+		pmDriver(pmDriver...),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),        
         oldDataCount(0),
         rcConnected(false),
-        batteryCount(1),
-        batteryArray(new BatteryData_t[batteryCount]){
-            for (size_t i = 0; i < batteryCount; i++){
+        batteryArray(new BatteryData_t[pmDriver.size()]){
+            for (size_t i = 0; i < pmDriver.size(); i++){
                 batteryArray[i].batteryId = i;
                 batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
                 batteryArray[i].batteryLowCounterMs = 0;
@@ -88,8 +88,8 @@ void SystemManager::smUpdate() {
 
     // Send Battery Management data to TM and monitor battery state
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
-    for (int i = 0; i < batteryCount; i++) {
-        if (pmDriver->readData(&(batteryArray[i].pmData))) {          
+    for (int i = 0; i < pmDriver.size(); i++) {
+        if (pmDriver[i]->readData(&(batteryArray[i].pmData))) {          
             currentBatteryState = batteryArray[i].chargeState;
 
             // Normal battery
