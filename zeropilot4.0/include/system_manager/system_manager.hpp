@@ -36,14 +36,14 @@ typedef struct{
     uint32_t batteryCritcounterMs;
 } BatteryData_t;
 
- template<typename T>
-        constexpr bool pDriverTypeCheck() {
-            return std::is_same<IPowerModule, T>::value;
-        }
+template<typename Drivers>
+constexpr bool pDriverTypeCheck() {
+    return std::is_same<IPowerModule, Drivers>::value;
+}
 
 class SystemManager {
     public:
-        template<typename... driverType,
+        template<typename... pmDriverType,
                 typename = typename std::enable_if<pDriverTypeCheck<pmDriverType...>()>::type>
         SystemManager(
             ISystemUtils *systemUtilsDriver,
