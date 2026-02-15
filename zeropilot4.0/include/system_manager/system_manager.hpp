@@ -71,7 +71,7 @@ class SystemManager {
         int oldDataCount;
         bool rcConnected;
         
-        BatteryData_t *batteryArray;
+        std::vector<BatteryData_t> batteryArray;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);

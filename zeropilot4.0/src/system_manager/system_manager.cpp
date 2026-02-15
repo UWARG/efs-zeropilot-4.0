@@ -22,18 +22,14 @@ SystemManager::SystemManager(
         smSchedulingCounter(0),        
         oldDataCount(0),
         rcConnected(false),
-        batteryArray(new BatteryData_t[pmDriver.size()]){
-            for (size_t i = 0; i < pmDriver.size(); i++){
+        batteryArray(this.pmDriver.size()){
+            for (size_t i = 0; i < batteryArray.size(); i++){
                 batteryArray[i].batteryId = i;
                 batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
                 batteryArray[i].batteryLowCounterMs = 0;
                 batteryArray[i].batteryCritcounterMs = 0;
             }
     }
-
-SystemManager::~SystemManager(){
-    delete[] batteryArray;
-}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -88,7 +84,7 @@ void SystemManager::smUpdate() {
 
     // Send Battery Management data to TM and monitor battery state
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
-    for (int i = 0; i < pmDriver.size(); i++) {
+    for (size_t i = 0; i < batteryArray.size(); i++){
         if (pmDriver[i]->readData(&(batteryArray[i].pmData))) {          
             currentBatteryState = batteryArray[i].chargeState;
 
