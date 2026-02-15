@@ -45,7 +45,7 @@ struct AllDriversValid<> : std::true_type {};
 template<typename T, typename... Rest>
 struct AllDriversValid<T, Rest...> 
     : std::conditional<
-        std::is_same<IPowerModule, typename std::remove_pointer<T>>::value,
+        std::is_base_of<IPowerModule, typename std::remove_pointer<T>::type>::value,
         AllDriversValid<Rest...>,
         std::false_type
     >::type {};
