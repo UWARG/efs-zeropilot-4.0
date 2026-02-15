@@ -7,7 +7,7 @@
 #include "sitl_drivers/sitl_logger.hpp"
 #include "sitl_drivers/sitl_rc.hpp"
 #include "sitl_drivers/sitl_powermodule.hpp"
-#include "sitl_drivers/sitl_rfd.hpp"
+#include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
@@ -22,21 +22,21 @@
 #define TM_SCHEDULING_RATE_HZ 20
 #define AM_SCHEDULING_RATE_HZ 100
 
-std::queue<std::string> rfdTxMessages;
-std::queue<std::string> rfdRxMessages;
-std::mutex rfdMutex;
+std::queue<std::string> telemTxMessages;
+std::queue<std::string> telemRxMessages;
+std::mutex telemMutex;
 
 static void telemLogCallback(const std::string& message, uint8_t direction) {
-    std::lock_guard<std::mutex> lock(rfdMutex);
+    std::lock_guard<std::mutex> lock(telemMutex);
 if (direction == 1) {
-    rfdTxMessages.push(message);
-    if (rfdTxMessages.size() > 100) {
-        rfdTxMessages.pop(); // Limit the queue size to 100 messages
+    telemTxMessages.push(message);
+    if (telemTxMessages.size() > 100) {
+        telemTxMessages.pop(); // Limit the queue size to 100 messages
 }
     } else if (direction == 0) {
-        rfdRxMessages.push(message);
-        if (rfdRxMessages.size() > 100) {
-            rfdRxMessages.pop();
+        telemRxMessages.push(message);
+        if (telemRxMessages.size() > 100) {
+            telemRxMessages.pop();
         }
     }
 }
@@ -58,7 +58,7 @@ typedef struct {
     SITL_Logger* logger;
     SITL_RC* rc;
     SITL_PowerModule* pm;
-    SITL_RFD* rfd;
+    SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
     SITL_Motor* rollMotor;
@@ -95,7 +95,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->logger;
     delete self->rc;
     delete self->pm;
-    delete self->rfd;
+    delete self->telem;
     delete self->imu;
     delete self->gps;
     delete self->rollMotor;
@@ -127,7 +127,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->logger = new SITL_Logger();
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
-        self->rfd = new SITL_RFD(ip, port, telemLogCallback);
+        self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
         self->rollMotor = new SITL_Motor();
@@ -155,7 +155,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->tm = new TelemetryManager(
-            self->sysUtils, self->rfd, self->tmQueue, self->amQueue, self->mavlinkQueue
+            self->sysUtils, self->telem, self->tmQueue, self->amQueue, self->mavlinkQueue
         );
         
         self->am = new AttitudeManager(
@@ -242,22 +242,22 @@ static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
     return Py_BuildValue("(iiii)", roll, pitch, yaw, throttle);
 }
 
-static PyObject* ZP_getRFDMessages(ZPObject* self, PyObject* args) {
-    std::lock_guard<std::mutex> lock(rfdMutex);
+static PyObject* ZP_getTelemMessages(ZPObject* self, PyObject* args) {
+    std::lock_guard<std::mutex> lock(telemMutex);
     PyObject* list = PyList_New(0);
 
-    while (!rfdTxMessages.empty()) {
-        PyObject* tuple = Py_BuildValue("(is)", 1, rfdTxMessages.front().c_str());
+    while (!telemTxMessages.empty()) {
+        PyObject* tuple = Py_BuildValue("(is)", 1, telemTxMessages.front().c_str());
         PyList_Append(list, tuple);
         Py_DECREF(tuple);
-        rfdTxMessages.pop();
+        telemTxMessages.pop();
     }
     
-    while (!rfdRxMessages.empty()) {
-        PyObject* tuple = Py_BuildValue("(is)", 0, rfdRxMessages.front().c_str());
+    while (!telemRxMessages.empty()) {
+        PyObject* tuple = Py_BuildValue("(is)", 0, telemRxMessages.front().c_str());
         PyList_Append(list, tuple);
         Py_DECREF(tuple);
-        rfdRxMessages.pop();
+        telemRxMessages.pop();
     }
 
     return list;
@@ -269,7 +269,7 @@ static PyMethodDef ZP_methods[] = {
     {"set_rc", (PyCFunction)ZP_setRC, METH_VARARGS, "Set RC commands"},
     {"update", (PyCFunction)ZP_update, METH_NOARGS, "Run all managers"},
     {"get_motor_outputs", (PyCFunction)ZP_getMotorOutputs, METH_NOARGS, "Get motor outputs"},
-    {"get_rfd_messages", (PyCFunction)ZP_getRFDMessages, METH_NOARGS, "Get RFD messages"},
+    {"get_telem_messages", (PyCFunction)ZP_getTelemMessages, METH_NOARGS, "Get TELEM messages"},
     {NULL}
 };
 

@@ -1,12 +1,6 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 
-#define AM_SCHEDULING_RATE_HZ 100
-#define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
-#define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
-#define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
-
-
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
@@ -36,7 +30,9 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
-    amSchedulingCounter(0) {}
+    amSchedulingCounter(0),
+    noDataCount(0),
+    failsafeTriggered(false) {}
 
 void AttitudeManager::amUpdate() {
 
@@ -75,14 +71,10 @@ void AttitudeManager::amUpdate() {
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
     
-    // Failsafe
-    static int noDataCount = 0;
-    static bool failsafeTriggered = false;
-
     if (controlRes != true) {
         ++noDataCount;
 
-        if (noDataCount * AM_CONTROL_LOOP_DELAY > AM_FAILSAFE_TIMEOUT) {
+        if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > AM_FAILSAFE_TIMEOUT_MS) {
             outputToMotor(YAW, 50);
             outputToMotor(PITCH, 50);
             outputToMotor(ROLL, 50);

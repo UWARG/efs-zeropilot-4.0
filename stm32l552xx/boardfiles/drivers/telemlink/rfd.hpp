@@ -1,10 +1,10 @@
 #pragma once
 
-#include "rfd_iface.hpp"
+#include "telemlink_iface.hpp"
 #include "rfd_defines.hpp"
 #include "stm32l5xx_hal.h"
 
-class RFD : public IRFD {
+class RFD : public ITelemLink {
 
 public:
     static RFD* instance; // assumes only one instance defined at a time
@@ -16,13 +16,13 @@ public:
     uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override;
 
     // Getters
-    UART_HandleTypeDef* getHuart() const;
+    UART_HandleTypeDef* getHUART() const;
 
     // DMA callback
     void receiveCallback(uint16_t size);
 
     // Start DMA
-    void startReceive();
+    void init();
 
 private:
     uint16_t getRXTransferSize(uint16_t idx);

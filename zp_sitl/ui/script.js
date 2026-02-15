@@ -21,7 +21,7 @@ $(document).ready(function() {
         initSimulation(config);
     });
 
-    startRFDViewer();
+    startTelemViewer();
 });
 
 function initSimulation(config) {
@@ -143,14 +143,14 @@ function handleJoystick(ws, controls) {
     }
 }
 
-function startRFDViewer() {
+function startTelemViewer() {
     const MAX_MESSAGES = 1000;
 
-    const rfdWs = new WebSocket('ws://localhost:8080/rfd');
+    const telemWs = new WebSocket('ws://localhost:8080/telem');
     const txDiv = document.getElementById('telem-tx');
     const rxDiv = document.getElementById('telem-rx');
     
-    rfdWs.onmessage = (event) => {
+    telemWs.onmessage = (event) => {
         const data = JSON.parse(event.data);
         const div = data.direction === 1 ? txDiv : rxDiv;
         const msgElem = document.createElement('div');

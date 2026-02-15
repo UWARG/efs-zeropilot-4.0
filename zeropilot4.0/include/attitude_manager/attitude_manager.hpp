@@ -12,9 +12,14 @@
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 
-#define AM_CONTROL_LOOP_DELAY 10
-#define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_CONTROL_LOOP_DELAY) / 1000.0f)
-#define AM_FAILSAFE_TIMEOUT 1000
+#define AM_SCHEDULING_RATE_HZ 100
+#define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
+#define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
+#define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
+
+#define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
+#define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
+#define AM_FAILSAFE_TIMEOUT_MS 1000
 
 typedef enum {
     YAW = 0,
@@ -68,6 +73,9 @@ class AttitudeManager {
         MotorGroupInstance_t *steeringMotors;
 
         uint8_t amSchedulingCounter;
+
+        int noDataCount;
+        bool failsafeTriggered;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 

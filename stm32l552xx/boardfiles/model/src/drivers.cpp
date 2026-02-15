@@ -31,7 +31,7 @@ alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
-alignas(RFD) static uint8_t rfdStorage[sizeof(RFD)];
+alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
@@ -58,7 +58,7 @@ MotorControl *steeringMotorHandle = nullptr;
 
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
-RFD *rfdHandle = nullptr;
+RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -112,7 +112,7 @@ void initDrivers()
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
-    rfdHandle = new (&rfdStorage) RFD(&huart3);
+    telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
@@ -136,7 +136,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
-    rfdHandle->startReceive();
+    telemLinkHandle->init();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
