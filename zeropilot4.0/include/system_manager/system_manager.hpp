@@ -36,9 +36,23 @@ typedef struct{
     uint32_t batteryCritcounterMs;
 } BatteryData_t;
 
-template<typename Drivers>
+template<typename... Drivers>
+struct AllDriversValid;
+
+template<>
+struct AllDriversValid<> : std::true_type {};
+
+template<typename T, typename... Rest>
+struct AllDriversValid<T, Rest...> 
+    : std::conditional<
+        std::is_same<IPowerModule, T>::value,
+        AllDriversValid<Rest...>,
+        std::false_type
+    >::type {};
+
+template<typename... Drivers>
 constexpr bool pDriverTypeCheck() {
-    return std::is_same<IPowerModule, Drivers>::value;
+    return AllDriversValid<Drivers...>::value;
 }
 
 class SystemManager {
