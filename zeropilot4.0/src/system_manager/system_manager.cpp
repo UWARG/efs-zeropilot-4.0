@@ -21,8 +21,8 @@ SystemManager::SystemManager(
         smSchedulingCounter(0),
         oldDataCount(0),
         rcConnected(false),
-        batteryArray(sizeof...(pmDriver),
-		pmDrivers{pmDriver...}){
+        batteryArray(sizeof...(pmDriver)),
+		pmDrivers{pmDriver...}{
             for (size_t i = 0; i < batteryArray.size(); i++){
                 batteryArray[i].batteryId = i;
                 batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
