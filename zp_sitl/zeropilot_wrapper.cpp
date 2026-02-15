@@ -150,8 +150,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->imu->init();
         
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
-            self->amQueue, self->tmQueue, self->logQueue
+            self->sysUtils, self->iwdg, self->logger, self->rc, 
+            self->amQueue, self->tmQueue, self->logQueue, self->pm
         );
         
         self->tm = new TelemetryManager(
