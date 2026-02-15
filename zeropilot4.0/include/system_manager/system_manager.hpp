@@ -38,16 +38,19 @@ typedef struct{
 
 class SystemManager {
     public:
-        template<typename... pmDrivers>
+        template<typename... pmDrivers, 
+                typename = typename std::enable_if<
+                (std::is_base_of<IPowerModule, pmDrivers>::value && ...)
+        >::type>
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
             IRCReceiver *rcDriver,
-			pmDrivers*... pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue
+            IMessageQueue<char[100]> *smLoggerQueue,
+			pmDrivers*... pmDriver
         );
 
         ~SystemManager();

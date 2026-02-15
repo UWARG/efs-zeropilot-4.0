@@ -1,28 +1,31 @@
 #include "system_manager.hpp"
 #include "flightmode.hpp"
 
-template<typename... pmDrivers>
+template<typename... pmDrivers, 
+                typename = typename std::enable_if<
+                (std::is_base_of<IPowerModule, pmDrivers>::value && ...)
+        >::type>
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
-    pmDrivers*... pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *smLoggerQueue,
+    pmDrivers*... pmDriver) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
-		pmDriver(pmDriver...),
+		pmDriver{pmDriver},
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
-        smSchedulingCounter(0),        
+        smSchedulingCounter(0),
         oldDataCount(0),
         rcConnected(false),
-        batteryArray(this.pmDriver.size()){
+        batteryArray(sizeof(pmDriver)){
             for (size_t i = 0; i < batteryArray.size(); i++){
                 batteryArray[i].batteryId = i;
                 batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
