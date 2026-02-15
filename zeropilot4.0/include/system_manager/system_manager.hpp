@@ -45,7 +45,7 @@ struct AllDriversValid<> : std::true_type {};
 template<typename T, typename... Rest>
 struct AllDriversValid<T, Rest...> 
     : std::conditional<
-        std::is_same<IPowerModule, T>::value,
+        std::is_same<IPowerModule, typename std::remove_pointer<T>>::value,
         AllDriversValid<Rest...>,
         std::false_type
     >::type {};
@@ -70,8 +70,6 @@ class SystemManager {
 			pmDriverType*... pmDriver
         );
 
-        ~SystemManager();
-        
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
 
     private:
