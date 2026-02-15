@@ -59,7 +59,7 @@ class SystemManager {
     public:
         template<typename... pmDriverType,
                 typename = typename std::enable_if<pDriverTypeCheck<pmDriverType...>()>::type>
-        SystemManager::SystemManager(
+        SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
