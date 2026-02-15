@@ -33,6 +33,7 @@ typedef union TMMessageData_u {
       uint16_t arm;
   } rcData;
   struct{
+      uint8_t batteryId;
       int16_t temperature;
       uint16_t* voltages;
       int16_t currentBattery;
@@ -40,7 +41,7 @@ typedef union TMMessageData_u {
       int32_t energyConsumed;
       int8_t batteryRemaining;
       int32_t timeRemaining;
-      uint8_t chargeState; // 1 = Normal, 2 = Low, 3 = Critical
+      uint8_t chargeState; // MAV_BATTERY_CHARGE_STATE
   } bmData;
   struct{
       int16_t xacc;
@@ -107,7 +108,7 @@ inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, fl
     return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t bmDataPack(uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
+inline TMMessage_t bmDataPack(uint32_t time_boot_ms, uint8_t batteryId, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
     int32_t energy_consumed, int8_t battery_remaining, int32_t time_remaining, uint8_t charge_state) {
     uint16_t mavlinkVoltageArray[16] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
     for (int i = 0; i < voltage_len; i++) {
@@ -116,7 +117,7 @@ inline TMMessage_t bmDataPack(uint32_t time_boot_ms, int16_t temperature, float 
     if (temperature == -1) {
         temperature = INT16_MAX;
     }
-    const TMMessageData_t DATA = {.bmData ={temperature, mavlinkVoltageArray, current_battery,
+    const TMMessageData_t DATA = {.bmData ={batteryId, temperature, mavlinkVoltageArray, current_battery,
     current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
     return TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
 }
