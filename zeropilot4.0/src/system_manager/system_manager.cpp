@@ -1,8 +1,7 @@
 #include "system_manager.hpp"
 #include "flightmode.hpp"
 
-template<typename... pmDrivers,
-    typename = typename std::enable_if<pDriverTypeCheck<pmDrivers...>()>::type>
+template<typename... driverType, typename>
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
@@ -11,12 +10,12 @@ SystemManager::SystemManager(
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    pmDrivers*... pmDriver) :
+    driverType*... pmDriver) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
-		pmDriver{pmDriver},
+		pmDrivers{pmDriver...},
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),

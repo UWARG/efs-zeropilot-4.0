@@ -43,8 +43,8 @@ typedef struct{
 
 class SystemManager {
     public:
-        template<typename... pmDrivers,
-                typename = typename std::enable_if<pDriverTypeCheck<pmDrivers...>()>::type>
+        template<typename... driverType,
+                typename = typename std::enable_if<pDriverTypeCheck<pmDriverType...>()>::type>
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
@@ -53,7 +53,7 @@ class SystemManager {
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-			pmDrivers*... pmDriver
+			pmDriverType*... pmDriver
         );
 
         ~SystemManager();
@@ -66,7 +66,7 @@ class SystemManager {
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
         ILogger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver    
-        std::vector<IPowerModule*> pmDriver;
+        std::vector<IPowerModule*> pmDrivers;
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
