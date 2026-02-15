@@ -59,7 +59,7 @@ class SystemManager {
     public:
         template<typename... pmDriverType,
                 typename = typename std::enable_if<pDriverTypeCheck<pmDriverType...>()>::type>
-        SystemManager(
+        SystemManager::SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
@@ -67,8 +67,26 @@ class SystemManager {
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-			pmDriverType*... pmDriver
-        );
+            pmDriverType*... pmDriver) :
+                systemUtilsDriver(systemUtilsDriver),
+                iwdgDriver(iwdgDriver),
+                loggerDriver(loggerDriver),
+                rcDriver(rcDriver),
+                amRCQueue(amRCQueue),
+                tmQueue(tmQueue),
+                smLoggerQueue(smLoggerQueue),
+                smSchedulingCounter(0),
+                oldDataCount(0),
+                rcConnected(false),
+                batteryArray(sizeof...(pmDriver)),
+                pmDrivers{pmDriver...}{
+                    for (size_t i = 0; i < batteryArray.size(); i++){
+                        batteryArray[i].batteryId = i;
+                        batteryArray[i].chargeState = MAV_BATTERY_CHARGE_STATE_UNDEFINED;
+                        batteryArray[i].batteryLowCounterMs = 0;
+                        batteryArray[i].batteryCritcounterMs = 0;
+                    }
+            }
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
 
