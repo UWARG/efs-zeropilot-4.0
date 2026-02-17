@@ -19,7 +19,7 @@ TEST_F(PIDTest, ProportionalControl) {
     pid.pidInitState();
     
     float output = pid.pidOutput(10.0f, 0.0f);
-    EXPECT_FLOAT_EQ(output, 10.0f);
+    EXPECT_FLOAT_EQ(output, KP * 10.0f);
 }
 
 TEST_F(PIDTest, IntegralAccumulation) {
