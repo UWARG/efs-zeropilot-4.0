@@ -43,28 +43,19 @@ TEST_F(FBWAMappingTest, YawRudderMixing) {
     EXPECT_NE(output.yaw, 50.0f);
 }
 
-TEST_F(FBWAMappingTest, YawClampingLower) {
+TEST_F(FBWAMappingTest, YawClampingBoundaries) {
     FBWAMapping mapper(CONTROL_PERIOD);
     mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
-    mapper.setYawRudderMixingConstant(-2.0f);
-    
-    RCMotorControlMessage_t input = {100.0f, 50.0f, 0.0f, 50.0f, 0.0f, 0.0f};
+    mapper.setYawRudderMixingConstant(0.5f);
     DroneState_t state = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    
-    RCMotorControlMessage_t output = mapper.runControl(input, state);
-    
-    EXPECT_GE(output.yaw, 0.0f);
-}
 
-TEST_F(FBWAMappingTest, YawClampingUpper) {
-    FBWAMapping mapper(CONTROL_PERIOD);
-    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
-    mapper.setYawRudderMixingConstant(2.0f);
-    
-    RCMotorControlMessage_t input = {100.0f, 50.0f, 100.0f, 50.0f, 0.0f, 0.0f};
-    DroneState_t state = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-    
-    RCMotorControlMessage_t output = mapper.runControl(input, state);
-    
-    EXPECT_LE(output.yaw, 100.0f);
+    // Case 1: Lower Clamping
+    RCMotorControlMessage_t inputLower = {20.0f, 50.0f, 10.0f, 50.0f, 0.0f, 0.0f};
+    RCMotorControlMessage_t outputLower = mapper.runControl(inputLower, state);
+    EXPECT_GE(outputLower.yaw, 0.0f);
+
+    // Case 2: Upper Clamping
+    RCMotorControlMessage_t inputUpper = {80.0f, 50.0f, 90.0f, 50.0f, 0.0f, 0.0f};
+    RCMotorControlMessage_t outputUpper = mapper.runControl(inputUpper, state);
+    EXPECT_LE(outputUpper.yaw, 100.0f);
 }
