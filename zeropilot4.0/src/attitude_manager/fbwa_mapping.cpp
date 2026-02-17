@@ -15,8 +15,6 @@ FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
     pitchPID.pidInitState();
 }
 
-FBWAMapping::~FBWAMapping() noexcept {}
-
 // Setter *roll* for PID consts
 void FBWAMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
     rollPID.setConstants(newKp, newKi, newKd, newTau);
@@ -25,6 +23,12 @@ void FBWAMapping::setRollPIDConstants(float newKp, float newKi, float newKd, flo
 // Setter for *pitch* PID consts
 void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
     pitchPID.setConstants(newKp, newKi, newKd, newTau);
+}
+
+// Resetter for both roll and pitch PIDs
+void FBWAMapping::resetControlLoopState() noexcept {
+    rollPID.pidInitState();
+    pitchPID.pidInitState();
 }
 
 // Setter for *yaw* rudder mixing const
