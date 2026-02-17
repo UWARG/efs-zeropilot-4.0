@@ -58,7 +58,13 @@ protected:
 };
 
 TEST_F(AttitudeManagerTest, MotorOutputTest) {
-    RCMotorControlMessage_t rcMsg = {60.0f, 70.0f, 55.0f, 80.0f, 1.0f, 30.0f};
+    RCMotorControlMessage_t rcMsg;
+    rcMsg.roll = 60.0f;
+    rcMsg.pitch = 70.0f;
+    rcMsg.yaw = 55.0f;
+    rcMsg.throttle = 80.0f;
+    rcMsg.arm = 1.0f;
+    rcMsg.flapAngle = 30.0f;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -77,7 +83,13 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
 }
 
 TEST_F(AttitudeManagerTest, DisarmThrottleZero) {
-    RCMotorControlMessage_t rcMsg = {50.0f, 50.0f, 50.0f, 80.0f, 0.0f, 0.0f};
+    RCMotorControlMessage_t rcMsg;
+    rcMsg.roll = 50.0f;
+    rcMsg.pitch = 50.0f;
+    rcMsg.yaw = 50.0f;
+    rcMsg.throttle = 80.0f;
+    rcMsg.arm = 0.0f;
+    rcMsg.flapAngle = 0.0f;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -110,7 +122,13 @@ TEST_F(AttitudeManagerTest, FailsafeTriggered) {
 }
 
 TEST_F(AttitudeManagerTest, FailsafeRecovery) {
-    RCMotorControlMessage_t rcMsg = {50.0f, 50.0f, 50.0f, 50.0f, 1.0f, 0.0f};
+    RCMotorControlMessage_t rcMsg;
+    rcMsg.roll = 50.0f;
+    rcMsg.pitch = 50.0f;
+    rcMsg.yaw = 50.0f;
+    rcMsg.throttle = 50.0f;
+    rcMsg.arm = 1.0f;
+    rcMsg.flapAngle = 0.0f;
     
     testing::Sequence seq;
     EXPECT_CALL(mockAMQueue, count())
@@ -140,7 +158,13 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     MotorInstance_t rollMotorWithTrim{&mockRollMotor, false, 5};
     MotorGroupInstance_t rollGroupWithTrim{&rollMotorWithTrim, 1};
     
-    RCMotorControlMessage_t rcMsg = {50.0f, 50.0f, 50.0f, 50.0f, 1.0f, 0.0f};
+    RCMotorControlMessage_t rcMsg;
+    rcMsg.roll = 50.0f;
+    rcMsg.pitch = 50.0f;
+    rcMsg.yaw = 50.0f;
+    rcMsg.throttle = 50.0f;
+    rcMsg.arm = 1.0f;
+    rcMsg.flapAngle = 0.0f;
     
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -160,7 +184,13 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
     MotorInstance_t rollMotorInverted{&mockRollMotor, true, 0};
     MotorGroupInstance_t rollGroupInverted{&rollMotorInverted, 1};
     
-    RCMotorControlMessage_t rcMsg = {30.0f, 50.0f, 50.0f, 50.0f, 1.0f, 0.0f};
+    RCMotorControlMessage_t rcMsg;
+    rcMsg.roll = 30.0f;
+    rcMsg.pitch = 50.0f;
+    rcMsg.yaw = 50.0f;
+    rcMsg.throttle = 50.0f;
+    rcMsg.arm = 1.0f;
+    rcMsg.flapAngle = 0.0f;
     
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -177,7 +207,13 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
 }
 
 TEST_F(AttitudeManagerTest, MotorClampingUpper) {
-    RCMotorControlMessage_t rcMsg = {150.0f, 50.0f, 50.0f, 50.0f, 1.0f, 0.0f};
+    RCMotorControlMessage_t rcMsg;
+    rcMsg.roll = 150.0f;
+    rcMsg.pitch = 50.0f;
+    rcMsg.yaw = 50.0f;
+    rcMsg.throttle = 50.0f;
+    rcMsg.arm = 1.0f;
+    rcMsg.flapAngle = 0.0f;
     
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -191,7 +227,14 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper) {
 }
 
 TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
-    RawImu_t rawImu = {100, -200, 1000, 50, -50, 25};
+    RawImu_t rawImu;
+    rawImu.xacc = 100;
+    rawImu.yacc = -200;
+    rawImu.zacc = 1000;
+    rawImu.xgyro = 50;
+    rawImu.ygyro = -50;
+    rawImu.zgyro = 25;
+
     EXPECT_CALL(mockIMU, readRawData()).WillRepeatedly(Return(rawImu));
     
     int rawImuCount = 0;
@@ -214,7 +257,14 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
 }
 
 TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
-    ScaledImu_t scaledImu = {0.1f, -0.2f, 1.0f, 0.05f, -0.05f, 0.025f};
+    ScaledImu_t scaledImu;
+    scaledImu.xacc = 0.1f;
+    scaledImu.yacc = -0.2f;
+    scaledImu.zacc = 1.0f;
+    scaledImu.xgyro = 0.05f;
+    scaledImu.ygyro = -0.05f;
+    scaledImu.zgyro = 0.025f;
+
     EXPECT_CALL(mockIMU, scaleIMUData(_)).WillRepeatedly(Return(scaledImu));
     
     int attitudeCount = 0;
@@ -237,11 +287,18 @@ TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
 }
 
 TEST_F(AttitudeManagerTest, RawGPSTelemetrySent) {
-    GpsData_t gpsData = {};
-    gpsData.isNew = true;
+    GpsData_t gpsData;
+    gpsData.time = {23, 3, 15, 12, 30, 45};
     gpsData.latitude = 43.6532f;
     gpsData.longitude = -79.3832f;
+    gpsData.groundSpeed = 500; // 5 m/s
     gpsData.numSatellites = 8;
+    gpsData.altitude = 100.0f;
+    gpsData.trackAngle = 90.0f;
+    gpsData.isNew = true;
+    gpsData.vx = 0.0f;
+    gpsData.vy = 5.0f;
+    gpsData.vz = 0.0f;
     
     EXPECT_CALL(mockGPS, readData()).WillRepeatedly(Return(gpsData));
     
