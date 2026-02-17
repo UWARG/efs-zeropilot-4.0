@@ -36,29 +36,28 @@ typedef struct{
     uint32_t batteryCritcounterMs;
 } BatteryData_t;
 
-template<typename... Drivers>
-struct AllDriversValid;
+template<typename... driverType> struct validPmDriverType;
 
 template<>
-struct AllDriversValid<> : std::true_type {};
+struct validPmDriverType<> : std::true_type {};
 
 template<typename T, typename... Rest>
-struct AllDriversValid<T, Rest...> 
-    : std::conditional<
+struct validPmDriverType<T, Rest...> : 
+    std::conditional<
         std::is_base_of<IPowerModule, typename std::remove_pointer<T>::type>::value,
-        AllDriversValid<Rest...>,
+        validPmDriverType<Rest...>,
         std::false_type
     >::type {};
 
-template<typename... Drivers>
+template<typename... DriverType>
 constexpr bool pDriverTypeCheck() {
-    return AllDriversValid<Drivers...>::value;
+    return validPmDriverType<DriverType...>::value;
 }
 
 class SystemManager {
     public:
-        template<typename... pmDriverType,
-                typename = typename std::enable_if<pDriverTypeCheck<pmDriverType...>()>::type>
+        template<typename... PmDriverType,
+                typename = typename std::enable_if<pDriverTypeCheck<PmDriverType...>()>::type>
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
@@ -67,7 +66,7 @@ class SystemManager {
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-            pmDriverType*... pmDriver) :
+            PmDriverType*... pmDriver) :
                 systemUtilsDriver(systemUtilsDriver),
                 iwdgDriver(iwdgDriver),
                 loggerDriver(loggerDriver),
