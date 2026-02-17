@@ -43,7 +43,7 @@ TEST_F(FBWAMappingTest, YawRudderMixing) {
     EXPECT_NE(output.yaw, 50.0f);
 }
 
-TEST_F(FBWAMappingTest, YawClampingBoundaries) {
+TEST_F(FBWAMappingTest, YawClamping) {
     FBWAMapping mapper(CONTROL_PERIOD);
     mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
     mapper.setYawRudderMixingConstant(0.5f);
@@ -53,6 +53,9 @@ TEST_F(FBWAMappingTest, YawClampingBoundaries) {
     RCMotorControlMessage_t inputLower = {20.0f, 50.0f, 10.0f, 50.0f, 0.0f, 0.0f};
     RCMotorControlMessage_t outputLower = mapper.runControl(inputLower, state);
     EXPECT_GE(outputLower.yaw, 0.0f);
+
+    // Resetting the state for the second case to avoid any influence from the first case's control loop state
+    mapper.resetControlLoopState();
 
     // Case 2: Upper Clamping
     RCMotorControlMessage_t inputUpper = {80.0f, 50.0f, 90.0f, 50.0f, 0.0f, 0.0f};
