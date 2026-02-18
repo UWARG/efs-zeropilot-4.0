@@ -22,7 +22,7 @@
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
 #define SM_RC_TIMEOUT_MS 500
 
-#define BATTERY_LOW_TIME_MS      10000
+#define BATTERY_LOW_TIME_MS 10000
 #define BATTERY_CRITICAL_TIME_MS 3000
 
 static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
@@ -94,7 +94,7 @@ class SystemManager {
 
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
         ILogger *loggerDriver; // Logger driver
-        IRCReceiver *rcDriver; // RC receiver driver    
+        IRCReceiver *rcDriver; // RC receiver driver
         std::vector<IPowerModule*> pmDrivers;
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
