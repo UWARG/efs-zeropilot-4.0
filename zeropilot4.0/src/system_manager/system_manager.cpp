@@ -75,6 +75,18 @@ void SystemManager::smUpdate() {
     }
 
     // Send Battery Management data to TM and monitor battery state
+    updateBatteryFSM();
+
+    // Log if new messages
+    if (smLoggerQueue->count() > 0) {
+        sendMessagesToLogger();
+    }
+
+    // Increment scheduling counter
+    smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
+}
+
+void SystemManager::updateBatteryFSM(){
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
     if (pmDriver->readData(&(batteryData.pmData))) {          
         currentBatteryState = batteryData.chargeState;
@@ -123,14 +135,6 @@ void SystemManager::smUpdate() {
             }
         }    
     }    
-
-    // Log if new messages
-    if (smLoggerQueue->count() > 0) {
-        sendMessagesToLogger();
-    }
-
-    // Increment scheduling counter
-    smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
