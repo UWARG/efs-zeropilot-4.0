@@ -36,10 +36,10 @@ void initManagers()
         iwdgHandle,
         loggerHandle,
         rcHandle,
+        pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle,
-        pmHandle
+        smLoggerQueueHandle
     );
 
     // TM initialization
