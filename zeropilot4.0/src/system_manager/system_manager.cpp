@@ -86,7 +86,7 @@ void SystemManager::smUpdate() {
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
 }
 
-void SystemManager::updateBatteryFSM(){
+void SystemManager::updateBatteryFSM() {
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
     if (pmDriver->readData(&(batteryData.pmData))) {          
         currentBatteryState = batteryData.chargeState;

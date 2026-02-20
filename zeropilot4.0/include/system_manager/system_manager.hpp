@@ -64,6 +64,7 @@ class SystemManager {
         bool rcConnected;
         
         BatteryData_t batteryData;
+        void updateBatteryFSM();
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
