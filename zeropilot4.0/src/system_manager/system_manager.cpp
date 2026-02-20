@@ -92,7 +92,7 @@ void SystemManager::smUpdate() {
             batteryData.batteryCritcounterMs = 0;
             if (batteryData.batteryLowCounterMs >= BATTERY_LOW_TIME_MS) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
-                sendBMDataToTelemetryManager(batteryData);
+                sendBatteryDataToTelemetryManager(batteryData);
             }
         } 
 
@@ -102,7 +102,7 @@ void SystemManager::smUpdate() {
             batteryData.batteryLowCounterMs = 0;
             if (batteryData.batteryCritcounterMs >= BATTERY_CRITICAL_TIME_MS) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
-                sendBMDataToTelemetryManager(batteryData);
+                sendBatteryDataToTelemetryManager(batteryData);
             }
         } 
 

@@ -118,7 +118,7 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, int16_t temperature, f
     }
     const TMMessageData_t DATA = {.batteryData ={temperature, mavlinkVoltageArray, current_battery,
     current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
-    return TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
+    return TMMessage_t{TMMessage_t::BATTERY_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {

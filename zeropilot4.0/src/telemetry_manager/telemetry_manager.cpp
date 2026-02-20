@@ -58,11 +58,11 @@ void TelemetryManager::processTXMsgQueue() {
             }
 
             case TMMessage_t::BATTERY_DATA: {
-                auto bmData = tmqMessage.tmMessageData.bmData;
-                uint32_t faultBitmask =  (bmData.chargeState == MAV_BATTERY_CHARGE_STATE_CRITICAL) ? MAV_BATTERY_FAULT_DEEP_DISCHARGE : 0;
+                auto batteryData = tmqMessage.tmMessageData.batteryData;
+                uint32_t faultBitmask =  (batteryData.chargeState == MAV_BATTERY_CHARGE_STATE_CRITICAL) ? MAV_BATTERY_FAULT_DEEP_DISCHARGE : 0;
                 mavlink_msg_battery_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, 255, MAV_BATTERY_FUNCTION_UNKNOWN, MAV_BATTERY_TYPE_LIPO,
-                	bmData.temperature, bmData.voltages, bmData.currentBattery, bmData.currentConsumed, bmData.energyConsumed, bmData.batteryRemaining,
-					bmData.timeRemaining, bmData.chargeState, {}, 0, faultBitmask);
+                	batteryData.temperature, batteryData.voltages, batteryData.currentBattery, batteryData.currentConsumed, batteryData.energyConsumed, 
+                    batteryData.batteryRemaining, batteryData.timeRemaining, batteryData.chargeState, {}, 0, faultBitmask);
                 break;
             }
 
