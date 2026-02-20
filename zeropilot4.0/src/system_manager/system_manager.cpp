@@ -21,7 +21,7 @@ SystemManager::SystemManager(
         smSchedulingCounter(0),
         oldDataCount(0),
         rcConnected(false),
-        batteryData({MAV_BATTERY_CHARGE_STATE_UNDEFINED, 0, 0}) {}
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_UNDEFINED, 0, 0}) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -100,9 +100,9 @@ void SystemManager::updateBatteryFSM() {
         
         // Low battery detection
         else if (batteryData.pmData.busVoltage >= BATTERY_CRITICAL_VOLTAGE) {
-            batteryData.batteryLowCounterMs += SM_CONTROL_LOOP_DELAY;
+            batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryCritcounterMs = 0;
-            if (batteryData.batteryLowCounterMs >= BATTERY_LOW_TIME_MS) {
+            if (batteryData.batteryLowCounterMs >= SM_BATTERY_CRITICAL_TIME_MS) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
                 sendBatteryDataToTelemetryManager(batteryData);
             }
@@ -110,9 +110,9 @@ void SystemManager::updateBatteryFSM() {
 
         // Critical battery detection
         else {
-            batteryData.batteryCritcounterMs += SM_CONTROL_LOOP_DELAY;
+            batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryLowCounterMs = 0;
-            if (batteryData.batteryCritcounterMs >= BATTERY_CRITICAL_TIME_MS) {
+            if (batteryData.batteryCritcounterMs >= SM_BATTERY_CRITICAL_TIME_MS) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
                 sendBatteryDataToTelemetryManager(batteryData);
             }
