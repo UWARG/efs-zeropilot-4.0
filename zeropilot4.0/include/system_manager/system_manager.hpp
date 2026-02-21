@@ -18,11 +18,12 @@
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
 #define SM_RC_TIMEOUT_MS 500
 
+#define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
 #define SM_BATTERY_LOW_TIME_MS 10000
 #define SM_BATTERY_CRITICAL_TIME_MS 3000
 
 static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
-static constexpr float BATTERY_CRITICAL_VOLTAGE = 9.8f;
+static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
 
 typedef struct{
     PMData_t pmData;

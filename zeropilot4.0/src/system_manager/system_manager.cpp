@@ -74,8 +74,11 @@ void SystemManager::smUpdate() {
         sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
     }
 
-    // Send Battery Management data to TM and monitor battery state
+    // Monitor Battery State and send Battery Data to TM at a 1Hz rate
     updateBatteryFSM();
+    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
+        sendBatteryDataToTelemetryManager(batteryData);
+    }
 
     // Log if new messages
     if (smLoggerQueue->count() > 0) {
@@ -102,7 +105,7 @@ void SystemManager::updateBatteryFSM() {
         else if (batteryData.pmData.busVoltage >= BATTERY_CRITICAL_VOLTAGE) {
             batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryCritcounterMs = 0;
-            if (batteryData.batteryLowCounterMs >= SM_BATTERY_CRITICAL_TIME_MS) {
+            if (batteryData.batteryLowCounterMs >= SM_BATTERY_LOW_TIME_MS) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
                 sendBatteryDataToTelemetryManager(batteryData);
             }
@@ -160,9 +163,9 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager (const BatteryData_t &batteryData) {   
+void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData) {   
     float voltages[1] = {batteryData.pmData.busVoltage};
-    TMMessage_t batteryDataMsg = batteryDataPack(systemUtilsDriver->getCurrentTimestampMs(), INT16_MAX, voltages, 1, batteryData.pmData.charge, batteryData.pmData.current, batteryData.pmData.energy, -1, 0, batteryData.chargeState);
+    TMMessage_t batteryDataMsg = batteryDataPack(systemUtilsDriver->getCurrentTimestampMs(), INT16_MAX, voltages, 1, batteryData.pmData.current, batteryData.pmData.charge, batteryData.pmData.energy, -1, 0, batteryData.chargeState);
     tmQueue->push(&batteryDataMsg);
 }
 
