@@ -77,7 +77,7 @@ void SystemManager::smUpdate() {
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
     updateBatteryFSM();
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
-        sendBatteryDataToTelemetryManager(batteryData);
+        sendBatteryDataToTelemetryManager(batteryData, 0);
     }
 
     // Log if new messages
@@ -157,11 +157,11 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData) {   
+void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, uint8_t batteryId) {   
     float voltages[1] = {batteryData.pmData.busVoltage};
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
-        0,
+        batteryId,
         INT16_MAX,
         voltages,
         1,
