@@ -94,24 +94,20 @@ void SystemManager::updateBatteryFSM() {
     if (pmDriver->readData(&(batteryData.pmData))) {          
         currentBatteryState = batteryData.chargeState;
 
-        // Normal battery
-        if (batteryData.pmData.busVoltage >= BATTERY_LOW_VOLTAGE){
+        if (batteryData.pmData.busVoltage >= BATTERY_LOW_VOLTAGE) {
+            // Normal battery
             batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK;
             batteryData.batteryLowCounterMs = 0;
             batteryData.batteryCritcounterMs = 0;
-        }
-        
-        // Low battery detection
-        else if (batteryData.pmData.busVoltage >= BATTERY_CRITICAL_VOLTAGE) {
+        } else if (batteryData.pmData.busVoltage >= BATTERY_CRITICAL_VOLTAGE) {
+            // Low battery detection
             batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryCritcounterMs = 0;
             if (batteryData.batteryLowCounterMs >= SM_BATTERY_LOW_TIME_MS) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
             }
-        } 
-
-        // Critical battery detection
-        else {
+        } else {
+            // Critical battery detection
             batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryLowCounterMs = 0;
             if (batteryData.batteryCritcounterMs >= SM_BATTERY_CRITICAL_TIME_MS) {
@@ -134,8 +130,8 @@ void SystemManager::updateBatteryFSM() {
                 default:
                     break;
             }
-        }    
-    }    
+        }
+    }
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {

@@ -139,7 +139,7 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, int16_t temperature, f
         b.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
     }
 
-    return msg; 
+    return msg;
 }
 
 inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
