@@ -28,7 +28,7 @@ namespace SITL_Driver_Configs {
         static constexpr float BATTERY_INTERNAL_RESISTANCE_OHMS = 0.020f; // Simulated internal resistance of the battery in Ohms
 
         static constexpr float CURRENT_DRAW_IDLE = 3.0f; // Simulated current draw at idle in Amps
-        static constexpr float CURRENT_DRAW_PER_RPM = 0.01f; // Simulated current draw per RPM in Amps
+        static constexpr float CURRENT_DRAW_PER_RPM = 0.012f; // Simulated current draw per RPM in Amps
     };
 
     struct SITL_TELEM_Config {
