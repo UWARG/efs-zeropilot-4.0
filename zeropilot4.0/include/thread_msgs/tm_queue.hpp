@@ -33,6 +33,7 @@ typedef union TMMessageData_u {
       uint16_t arm;
   } rcData;
   struct{
+      uint8_t batteryId;
       int16_t temperature;
       uint16_t voltages[10];
       int16_t currentBattery;
@@ -107,11 +108,13 @@ inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, fl
     return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,    
-    int32_t energy_consumed, int8_t battery_remaining, int32_t time_remaining, uint8_t charge_state) {
+inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, int16_t temperature, 
+                                    float *voltages, uint8_t voltage_len, int16_t current_instantaneous,
+                                    int32_t charge_accumulated, int32_t energy_consumed, int8_t battery_remaining, 
+                                    int32_t time_remaining, uint8_t charge_state) {
     
-    int16_t scaledCurrentBattery = static_cast<int16_t>(current_battery * 100.0); // A -> cA
-    int32_t scaledCurrentConsumed = static_cast<int32_t>(current_consumed / 3.6); // C -> mAh
+    int16_t scaledCurrentBattery = static_cast<int16_t>(current_instantaneous * 100.0); // A -> cA
+    int32_t scaledCurrentConsumed = static_cast<int32_t>(charge_accumulated / 3.6); // C -> mAh
     int32_t scaledEnergyConsumed = static_cast<int32_t>(energy_consumed / 100.0); // J -> hJ
     
     if (temperature == -1) {
@@ -120,7 +123,7 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, int16_t temperature, f
 
     TMMessage_t msg;
     msg.dataType = TMMessage_t::BATTERY_DATA;
-    msg.timestamp = time_boot_ms;
+    msg.timeBootMs = time_boot_ms;
 
     auto& b = msg.tmMessageData.batteryData;
     b.temperature = temperature;
