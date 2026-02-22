@@ -34,7 +34,7 @@ typedef union TMMessageData_u {
   } rcData;
   struct{
       int16_t temperature;
-      uint16_t* voltages;
+      uint16_t voltages[10];
       int16_t currentBattery;
       int32_t currentConsumed;
       int32_t energyConsumed;
@@ -107,21 +107,39 @@ inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, fl
     return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
+inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,    
     int32_t energy_consumed, int8_t battery_remaining, int32_t time_remaining, uint8_t charge_state) {
-    int16_t currentBattery = static_cast<int16_t>(current_battery * 100.0); // A -> cA
-    int32_t currentConsumed = static_cast<int32_t>((current_consumed * time_boot_ms) / 3600.0); // A -> mAh
-    int32_t energyConsumed = static_cast<int32_t>(energy_consumed / 100.0); // J -> hJ
-    uint16_t mavlinkVoltageArray[16] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
-    for (int i = 0; i < voltage_len; i++) {
-    	mavlinkVoltageArray[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
-    }
+    
+    int16_t scaledCurrentBattery = static_cast<int16_t>(current_battery * 100.0); // A -> cA
+    int32_t scaledCurrentConsumed = static_cast<int32_t>(current_consumed / 3.6); // C -> mAh
+    int32_t scaledEnergyConsumed = static_cast<int32_t>(energy_consumed / 100.0); // J -> hJ
+    
     if (temperature == -1) {
         temperature = INT16_MAX;
     }
-    const TMMessageData_t DATA = {.batteryData ={temperature, mavlinkVoltageArray, current_battery,
-    current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
-    return TMMessage_t{TMMessage_t::BATTERY_DATA, DATA, time_boot_ms};
+
+    TMMessage_t msg;
+    msg.dataType = TMMessage_t::BATTERY_DATA;
+    msg.timestamp = time_boot_ms;
+
+    auto& b = msg.tmMessageData.batteryData;
+    b.temperature = temperature;
+    b.currentBattery = scaledCurrentBattery;
+    b.currentConsumed = scaledCurrentConsumed;
+    b.energyConsumed = scaledEnergyConsumed;
+    b.batteryRemaining = battery_remaining;
+    b.timeRemaining = time_remaining;
+    b.chargeState = charge_state;
+
+    for (int i = 0; i < 10; i++) {
+        b.voltages[i] = UINT16_MAX;
+    }
+
+    for (int i = 0; i < voltage_len && i < 10; i++) {
+        b.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
+    }
+
+    return msg; 
 }
 
 inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
