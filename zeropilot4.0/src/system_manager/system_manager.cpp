@@ -159,6 +159,20 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
 
 void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
     float voltages[1] = {batteryData.pmData.busVoltage};
+
+    // SOC estimation (0-100 %) based on capacity
+    float consumedColoumbs = batteryData.pmData.charge;
+    float remainingColoumbs = (BATTERY_CAPACITY_MAH * 3.6f) - consumedColoumbs;
+    remainingColoumbs = remainingColoumbs < 0 ? 0 : remainingColoumbs; // Floor at 0
+    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (BATTERY_CAPACITY_MAH * 3.6f)) * 100.0f);
+
+    // Simple time remaining estimation based on current consumption
+    int32_t timeRemainingSec = 0; // Default to unknown if current is too low to estimate
+    if (batteryData.pmData.current > 0.5f) {
+        timeRemainingSec = static_cast<int32_t>(remainingColoumbs / batteryData.pmData.current);
+    }
+
+    // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
         BATTERY_ID,
@@ -168,8 +182,8 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
         batteryData.pmData.current,
         batteryData.pmData.charge,
         batteryData.pmData.energy,
-        -1,
-        0,
+        socPercentage,
+        timeRemainingSec,
         batteryData.chargeState
     );
     tmQueue->push(&batteryDataMsg);

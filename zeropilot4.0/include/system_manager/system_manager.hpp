@@ -24,6 +24,7 @@
 
 static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
 static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
+static constexpr float BATTERY_CAPACITY_MAH = 4000.0f;
 
 typedef struct{
     PMData_t pmData;
@@ -70,6 +71,6 @@ class SystemManager {
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBatteryDataToTelemetryManager (const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
+        void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
         void sendMessagesToLogger();
 };
