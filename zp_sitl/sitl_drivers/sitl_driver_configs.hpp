@@ -21,9 +21,14 @@ namespace SITL_Driver_Configs {
     struct SITL_PowerModule_Config {
         static constexpr float V_FULL = 16.8f;      // 4S fully charged voltage
         static constexpr float V_NOMINAL = 14.8f;   // 4S nominal voltage
-        static constexpr float V_EMPTY = 14.0f;     // 4S empty voltage
+        static constexpr float V_EMPTY = 12.0f;     // 4S empty voltage
 
-        static constexpr float MAX_BATTERY_CAPACITY_AH = 5.0f; // 5000mAh
+        static constexpr float MAX_BATTERY_CAPACITY_MAH = 5000.0f; // Battery capacity in mAh
+
+        static constexpr float BATTERY_INTERNAL_RESISTANCE_OHMS = 0.020f; // Simulated internal resistance of the battery in Ohms
+
+        static constexpr float CURRENT_DRAW_IDLE = 3.0f; // Simulated current draw at idle in Amps
+        static constexpr float CURRENT_DRAW_PER_RPM = 0.012f; // Simulated current draw per RPM in Amps
     };
 
     struct SITL_TELEM_Config {
