@@ -70,6 +70,6 @@ class SystemManager {
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBatteryDataToTelemetryManager (const BatteryData_t &batteryData, const uint8_t batteryId);
+        void sendBatteryDataToTelemetryManager (const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
         void sendMessagesToLogger();
 };
