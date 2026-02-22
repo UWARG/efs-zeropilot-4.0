@@ -23,7 +23,7 @@ public:
         // Linear interpolation for 4S Voltage
         pmData.busVoltage = Config::V_EMPTY + (capacityRatio * (Config::V_FULL - Config::V_EMPTY));
 
-        // Simulate current draw draw in Amps based on RPM
+        // Simulate current draw in Amps based on RPM
         pmData.current = (rpm * Config::CURRENT_DRAW_PER_RPM) + Config::CURRENT_DRAW_IDLE;
 
         // Simulate voltage drop due to internal resistance
