@@ -18,9 +18,12 @@ class FBWAMapping : public Flightmode {
         // Setter for *yaw* rudder mixing const
         void setYawRudderMixingConstant(float newMixingConst) noexcept;
 
+        // Resetter for both roll and pitch PIDs
+        void resetControlLoopState() noexcept;
+
         // Destructor
-        ~FBWAMapping() noexcept override;
-    
+        ~FBWAMapping() noexcept override = default;
+
     private:
         // Roll and Pitch PID class objects
         PID rollPID;
