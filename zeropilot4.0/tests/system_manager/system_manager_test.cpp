@@ -110,3 +110,25 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
     
     EXPECT_EQ(rcDataCount, SM_TELEMETRY_RC_DATA_RATE_HZ);
 }
+
+TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
+    EXPECT_CALL(mockPM, readData()).WillRepeatedly(Return(true));
+
+    int batteryDataCount = 0;
+    EXPECT_CALL(mockTMQueue, push(_))
+        .WillRepeatedly(::testing::Invoke([&batteryDataCount](TMMessage_t* msg) {
+            if (msg->dataType == TMMessage_t::BATTERY_DATA) {
+                batteryDataCount++;
+            }
+            return 0;
+        }));
+    
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+    
+    for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+    }
+    
+    EXPECT_EQ(batteryDataCount, SM_TELEMETRY_BATTERY_DATA_RATE_HZ);    
+}
