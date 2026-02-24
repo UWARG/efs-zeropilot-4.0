@@ -137,7 +137,7 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
     EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(true));
 
     EXPECT_CALL(mockTMQueue, push(_))
-        .WillRepeatedly(::testing::Invoke((TMMessage_t* msg) {
+        .WillRepeatedly(::testing::Invoke([](TMMessage_t* msg) {
             if (msg->dataType == TMMessage_t::BATTERY_DATA) {
                 EXPECT_EQ(msg->tmMessageData.batteryData.chargeState, MAV_BATTERY_CHARGE_STATE_LOW);
             }
@@ -158,7 +158,7 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
     EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(true));
 
     EXPECT_CALL(mockTMQueue, push(_))
-        .WillRepeatedly(::testing::Invoke((TMMessage_t* msg) {
+        .WillRepeatedly(::testing::Invoke([](TMMessage_t* msg) {
             if (msg->dataType == TMMessage_t::BATTERY_DATA) {
                 EXPECT_EQ(msg->tmMessageData.batteryData.chargeState, MAV_BATTERY_CHARGE_STATE_CRITICAL);
             }
