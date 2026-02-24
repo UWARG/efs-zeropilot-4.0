@@ -112,7 +112,7 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
 }
 
 TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
-    EXPECT_CALL(mockPM, readData()).WillRepeatedly(Return(true));
+    EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(true));
 
     int batteryDataCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
