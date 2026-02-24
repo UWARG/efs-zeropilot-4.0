@@ -132,3 +132,45 @@ TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
     
     EXPECT_EQ(batteryDataCount, SM_TELEMETRY_BATTERY_DATA_RATE_HZ);    
 }
+
+TEST_F(SystemManagerTest, BatteryLowDetection) {
+    EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(true));
+
+    EXPECT_CALL(mockTMQueue, push(_))
+        .WillRepeatedly(::testing::Invoke([&batteryDataCount](TMMessage_t* msg) {
+            if (msg->dataType == TMMessage_t::BATTERY_DATA) {
+                EXPECT_EQ(msg->tmMessageData.batteryData.chargeState, MAV_BATTERY_CHARGE_STATE_LOW);
+            }
+            return 0;
+    }));
+    
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+
+    sm.smUpdate();
+                     
+    for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+    }    
+}
+
+TEST_F(SystemManagerTest, BatteryCritDetection) {
+    EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(true));
+
+    EXPECT_CALL(mockTMQueue, push(_))
+        .WillRepeatedly(::testing::Invoke([&batteryDataCount](TMMessage_t* msg) {
+            if (msg->dataType == TMMessage_t::BATTERY_DATA) {
+                EXPECT_EQ(msg->tmMessageData.batteryData.chargeState, MAV_BATTERY_CHARGE_STATE_CRITICAL);
+            }
+            return 0;
+    }));
+    
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+
+    sm.smUpdate();
+                     
+    for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+    }    
+}
