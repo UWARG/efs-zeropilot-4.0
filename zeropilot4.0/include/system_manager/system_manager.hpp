@@ -26,6 +26,11 @@ static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
 static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
 static constexpr float BATTERY_CAPACITY_MAH = 4000.0f;
 
+static_assert(
+    BATTERY_LOW_VOLTAGE > BATTERY_CRITICAL_VOLTAGE,
+    "BATTERY_LOW_VOLTAGE must be greater than BATTERY_CRITICAL_VOLTAGE"
+);
+
 typedef struct{
     PMData_t pmData;
     MAV_BATTERY_CHARGE_STATE chargeState;
