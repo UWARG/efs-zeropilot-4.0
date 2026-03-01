@@ -91,7 +91,7 @@ void SystemManager::smUpdate() {
 
 void SystemManager::updateBatteryFSM() {
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
-    if (pmDriver->readData(&(batteryData.pmData))) {          
+    if (pmDriver->readData(&batteryData.pmData)) {          
         currentBatteryState = batteryData.chargeState;
 
         if (batteryData.pmData.busVoltage >= BATTERY_LOW_VOLTAGE) {
