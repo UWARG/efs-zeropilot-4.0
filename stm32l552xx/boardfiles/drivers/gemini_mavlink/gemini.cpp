@@ -26,14 +26,14 @@ void GeminiMavlink::init() {
     }
 }
 
-void GeminiMavlink::startDMA() {
-    if(huart) {
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
-    }
+void transmit(const uint8_t* data, uint16_t size) {
+
+    return;
+
 }
 
-void GeminiMavlink::irqhandler() {
-    memcpy(processBuffer, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
+uint16_t receive(uint8_t* buffer, uint16_t bufferSize) {
+    return 0;
 }
 
 RCControl GeminiMavlink::getRCData() {
@@ -88,11 +88,26 @@ RCControl GeminiMavlink::getRCData() {
 
 }
 
-
-
 UART_HandleTypeDef* GeminiMavlink::getHuart() const {
     return huart;
 }
+
+void GeminiMavlink::startDMA() {
+    if(huart) {
+        HAL_UARTEx_ReceiveToIdle_DMA(huart, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
+    }
+}
+
+void GeminiMavlink::irqhandler() {
+    memcpy(processBuffer, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
+}
+
+void GeminiMavlink::forcePushMavlink(const mavlink_message_t &msg) {
+
+
+}
+
+
 
 // add to rffdiface to forcerxbuffer take mavlink rcmessage and repack into sbus or crsfbuffer
 // if mavlink type is rcchannels then add a case
