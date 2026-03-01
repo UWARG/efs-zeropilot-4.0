@@ -113,13 +113,9 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
                                     int32_t charge_accumulated, int32_t energy_consumed, int8_t battery_remaining, 
                                     int32_t time_remaining, uint8_t charge_state) {
     
-    int16_t scaledCurrentBattery = static_cast<int16_t>(current_instantaneous * 100.0); // A -> cA
-    int32_t scaledCurrentConsumed = static_cast<int32_t>(charge_accumulated / 3.6); // C -> mAh
-    int32_t scaledEnergyConsumed = static_cast<int32_t>(energy_consumed / 100.0); // J -> hJ
-    
-    if (temperature == -1) {
-        temperature = INT16_MAX;
-    }
+    int16_t scaledCurrentBattery = current_instantaneous * 100; // A -> cA
+    int32_t scaledCurrentConsumed = (charge_accumulated * 1000) / 3600; // C -> mAh
+    int32_t scaledEnergyConsumed = energy_consumed / 100; // J -> hJ
 
     TMMessage_t msg;
     msg.dataType = TMMessage_t::BATTERY_DATA;

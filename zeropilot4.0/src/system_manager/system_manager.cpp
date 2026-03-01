@@ -158,7 +158,8 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
 }
 
 void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
-    float voltages[1] = {batteryData.pmData.busVoltage};
+    static constexpr uint8_t VOLTAGE_LEN = 1;
+    float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
 
     // SOC estimation (0-100 %) based on capacity
     float consumedColoumbs = batteryData.pmData.charge;
@@ -178,7 +179,7 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
         BATTERY_ID,
         INT16_MAX,
         voltages,
-        1,
+        VOLTAGE_LEN,
         batteryData.pmData.current,
         batteryData.pmData.charge,
         batteryData.pmData.energy,
