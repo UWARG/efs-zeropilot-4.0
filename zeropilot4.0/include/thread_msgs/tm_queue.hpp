@@ -125,21 +125,21 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
     msg.dataType = TMMessage_t::BATTERY_DATA;
     msg.timeBootMs = time_boot_ms;
 
-    auto& b = msg.tmMessageData.batteryData;
-    b.temperature = temperature;
-    b.currentBattery = scaledCurrentBattery;
-    b.currentConsumed = scaledCurrentConsumed;
-    b.energyConsumed = scaledEnergyConsumed;
-    b.batteryRemaining = battery_remaining;
-    b.timeRemaining = time_remaining;
-    b.chargeState = charge_state;
+    auto& batt_data = msg.tmMessageData.batteryData;
+    batt_data.temperature = temperature;
+    batt_data.currentBattery = scaledCurrentBattery;
+    batt_data.currentConsumed = scaledCurrentConsumed;
+    batt_data.energyConsumed = scaledEnergyConsumed;
+    batt_data.batteryRemaining = battery_remaining;
+    batt_data.timeRemaining = time_remaining;
+    batt_data.chargeState = charge_state;
 
     for (int i = 0; i < 10; i++) {
-        b.voltages[i] = UINT16_MAX;
+        batt_data.voltages[i] = UINT16_MAX;
     }
 
     for (int i = 0; i < voltage_len && i < 10; i++) {
-        b.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
+        batt_data.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
     }
 
     return msg;
