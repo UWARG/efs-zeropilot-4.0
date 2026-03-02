@@ -25,9 +25,12 @@ class GeminiMavlink: public IRCReceiver, public IRFD {
         RCControl getRCData() override;
         void startDMA();
 
+        void forcePushMAVLinkRC(RCControl rcData) override;
+
         // Helper
         UART_HandleTypeDef* getHuart() const;
         void irqhandler(); // in override.cpp check that out ()
+        
 
     private:
         UART_HandleTypeDef* huart;
