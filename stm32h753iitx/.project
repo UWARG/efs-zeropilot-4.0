@@ -34,12 +34,12 @@
 		<link>
 			<name>dronecan</name>
 			<type>2</type>
-			<location>C:/Users/adity/Desktop/dev/efs-zeropilot-4.0/external/dronecan/generated/src</location>
+			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/generated/src</location>
 		</link>
 		<link>
 			<name>libcanard</name>
 			<type>2</type>
-			<location>C:/Users/adity/Desktop/dev/efs-zeropilot-4.0/external/dronecan/libcanard</location>
+			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/libcanard</location>
 		</link>
 	</linkedResources>
 </projectDescription>
