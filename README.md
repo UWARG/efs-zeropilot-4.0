@@ -4,6 +4,16 @@ Custom flight controller autopilot system by WARG (Waterloo Aerial Robotics Grou
 
 **Documentation**: https://uwarg-docs.atlassian.net/wiki/spaces/ZP/pages/2668101634/ZeroPilot4.0+Design
 
+## Repo Setup
+
+Clone the repository and initialize submodules:
+
+```bash
+git clone https://github.com/UWARG/efs-zeropilot-4.0.git
+cd efs-zeropilot-4.0
+git submodule update --init --recursive
+```
+
 ## Project Structure
 
 ```
