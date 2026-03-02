@@ -31,6 +31,8 @@ class RCReceiver : public IRCReceiver {
          * @brief Updates RCControl values
          */
         void parse();
+
+        void forcePushMAVLinkRC(RCControl rcData);
        
     private:
         UART_HandleTypeDef *uart;
