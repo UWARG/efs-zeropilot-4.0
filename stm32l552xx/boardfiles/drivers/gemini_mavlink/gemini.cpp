@@ -26,65 +26,25 @@ void GeminiMavlink::init() {
     }
 }
 
-void transmit(const uint8_t* data, uint16_t size) {
+void GeminiMavlink::transmit(const uint8_t* data, uint16_t size) {
+
 
     return;
 
 }
 
-uint16_t receive(uint8_t* buffer, uint16_t bufferSize) {
+uint16_t GeminiMavlink::receive(uint8_t* buffer, uint16_t bufferSize) {
+    
+    
+    
     return 0;
 }
 
 RCControl GeminiMavlink::getRCData() {
     
-    // RC CHANNEL RAW convert to RC control struct
-
-    // Struct to fill
-    RCControl data;
-
-    // Data is not new by default
-    data.isDataNew = false;
-
-    // Mavlink
-    mavlink_message_t msg;
-    mavlink_status_t status;
-
-    // Saves copy of current data in processBuffer
-    uint8_t tmp[MAVLINK_MAX_PACKET_SIZE];
-    memcpy(tmp, processBuffer, MAVLINK_MAX_PACKET_SIZE);
-
-    // Parsing
-    for(uint16_t i = 0; i < MAVLINK_MAX_PACKET_SIZE; ++i) {
-
-        if(mavlink_parse_char(MAVLINK_CHANNEL, tmp[i], &msg, &status)){
-            switch(msg.msgid) {
-                case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE:
-                    {
-                        mavlink_rc_channels_override_t rc_raw;
-                        mavlink_msg_rc_channels_override_decode(&msg, &rc_raw);
-
-                        // Mapping (ask about throttle)
-                        data.roll = (float)((rc_raw.chan1_raw - 1000.0) / 10.0f);
-                        data.pitch = (float)((rc_raw.chan2_raw - 1000.0) / 10.0f);
-                        data.throttle = (float)((rc_raw.chan3_raw - 1000.0) / 10.0f);
-                        data.yaw = (float)((rc_raw.chan4_raw - 1000.0) / 10.0f);
-
-                        // Arm TBD
-                        
-                        data.isDataNew = true;
-                        
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        
-    }
-
-    // Return struct
-    return data;
+    RCControl tmp;
+    tmp.isDataNew = false;
+    return tmp;
 
 }
 
@@ -102,9 +62,8 @@ void GeminiMavlink::irqhandler() {
     memcpy(processBuffer, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
 }
 
-void GeminiMavlink::forcePushMavlink(const mavlink_message_t &msg) {
-
-
+void GeminiMavlink::forcePushMAVLinkRC(RCControl rcData) {
+    rcData_ = rcData;
 }
 
 
