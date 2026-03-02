@@ -18,10 +18,6 @@ GeminiMavlink::~GeminiMavlink() {
 
 void GeminiMavlink::init() {
     if(huart) {
-        // Initialize DMA buffer for RC
-        rcData_.isDataNew = false;
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE); // to delete (see rx and tx logic for rfd->to implement for rc) because no more circular dma
-        // Initialize DMA buffer for RFD
         HAL_UARTEx_ReceiveToIdle_DMA(huart, rfdRxBuffer, MAVLINK_MAX_PACKET_SIZE);
     }
 }
@@ -35,7 +31,7 @@ void GeminiMavlink::transmit(const uint8_t* data, uint16_t size) {
 
 uint16_t GeminiMavlink::receive(uint8_t* buffer, uint16_t bufferSize) {
     
-    
+
     
     return 0;
 }
@@ -54,7 +50,7 @@ UART_HandleTypeDef* GeminiMavlink::getHuart() const {
 
 void GeminiMavlink::startDMA() {
     if(huart) {
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, rcRxBuffer, MAVLINK_MAX_PACKET_SIZE);
+        HAL_UARTEx_ReceiveToIdle_DMA(huart, processBuffer, MAVLINK_MAX_PACKET_SIZE);
     }
 }
 
