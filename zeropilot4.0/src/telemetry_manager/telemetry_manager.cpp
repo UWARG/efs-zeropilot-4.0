@@ -43,6 +43,12 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::STATUSTEXT_DATA: {
+                auto& statusTextData = tmqMessage.tmMessageData.statusTextData;
+                mavlink_msg_statustext_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, statusTextData.severity, statusTextData.text, statusTextData.id, statusTextData.chunk_seq);
+                break;
+            }
+
             case TMMessage_t::GPS_RAW_DATA: {
                 auto& g = tmqMessage.tmMessageData.gpsRawData;
                 mavlink_msg_gps_raw_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,

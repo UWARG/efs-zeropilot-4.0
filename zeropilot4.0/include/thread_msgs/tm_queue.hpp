@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string.h>
 
 typedef union TMMessageData_u {
   struct{
@@ -7,6 +8,12 @@ typedef union TMMessageData_u {
       uint32_t customMode;
       uint8_t systemStatus;
   } heartbeatData;
+  struct{
+      uint8_t severity;
+      char text[50];
+      uint16_t id;
+      uint8_t chunk_seq;
+  } statusTextData;
   struct{
       uint8_t fixType;
       int32_t lat;
@@ -69,6 +76,7 @@ typedef union TMMessageData_u {
 typedef struct TMMessage{
     enum{
         HEARTBEAT_DATA,
+        STATUSTEXT_DATA,
         GPS_RAW_DATA,
         RC_DATA,
         BATTERY_DATA,
@@ -82,6 +90,21 @@ typedef struct TMMessage{
 inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
     const TMMessageData_t DATA = {.heartbeatData={base_mode, custom_mode, system_status }};
     return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+    TMMessageData_t DATA = {.statusTextData = {severity, "", id, chunk_seq }};
+
+    constexpr size_t max_len = sizeof(DATA.statusTextData.text) - 1; // Reserve space for null terminator
+
+    // Get length in a firmware safe way without using strlen which may read out of bounds if text is not null terminated
+    size_t len = 0;
+    while (len < max_len && text[len] != '\0') ++len;
+
+    memcpy(DATA.statusTextData.text, text, len); // Copy text without null terminator
+    DATA.statusTextData.text[len] = '\0'; // Ensure null termination
+
+    return TMMessage_t{TMMessage_t::STATUSTEXT_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32_t lat, int32_t lon, int32_t alt, 

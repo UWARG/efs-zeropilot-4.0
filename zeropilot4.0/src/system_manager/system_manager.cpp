@@ -190,6 +190,11 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
     tmQueue->push(&batteryDataMsg);
 }
 
+void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+    TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
+    tmQueue->push(&statusTextMsg);
+}
+
 void SystemManager::sendMessagesToLogger() {
     static char messages[16][100];
     int msgCount = 0;
