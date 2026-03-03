@@ -38,7 +38,7 @@ alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
-alignas(airspeed) static uint8_t asStorage[sizeof(airspeed)];
+alignas(Airspeed) static uint8_t asStorage[sizeof(Airspeed)];
 
 
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
@@ -67,7 +67,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
-airspeed *asHandle = nullptr;
+Airspeed *asHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -122,7 +122,7 @@ void initDrivers()
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
     imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_5);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
-    asHandle = new (&asStorage) airspeed(&hi2c2);
+    asHandle = new (&asStorage) Airspeed(&hi2c2);
 
     // Queues
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -146,7 +146,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     telemLinkHandle->init();
-    rfdHandle->startReceive();
+    // rfdHandle->startReceive(); <- possibly needed not sure
     asHandle->airspeedInit();
 
     // Motor instance bindings

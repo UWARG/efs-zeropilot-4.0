@@ -36,7 +36,7 @@ extern GPS *gpsHandle;
 extern IMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
-extern airspeed *asHandle;
+extern Airspeed *asHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
