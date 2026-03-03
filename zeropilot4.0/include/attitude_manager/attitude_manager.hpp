@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
+#include "fbwa_mapping.hpp"
 #include "motor_datatype.hpp"
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
@@ -11,9 +12,14 @@
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 
-#define AM_CONTROL_LOOP_DELAY 10
-#define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_CONTROL_LOOP_DELAY) / 1000.0f)
-#define AM_FAILSAFE_TIMEOUT 1000
+#define AM_SCHEDULING_RATE_HZ 100
+#define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
+#define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
+#define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
+
+#define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
+#define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
+#define AM_FAILSAFE_TIMEOUT_MS 1000
 
 typedef enum {
     YAW = 0,
@@ -66,16 +72,16 @@ class AttitudeManager {
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
 
-        bool previouslyArmed;
-        float armAltitude;
-
         uint8_t amSchedulingCounter;
+
+        int noDataCount;
+        bool failsafeTriggered;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
         void outputToMotor(ControlAxis_t axis, uint8_t percent);
 
-        void sendGPSDataToTelemetryManager(const GpsData_t &gpsData, const bool &armed);
+        void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
 
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
 

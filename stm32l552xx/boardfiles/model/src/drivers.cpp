@@ -30,8 +30,8 @@ alignas(MotorControl) static uint8_t rightFlapMotorStorage[sizeof(MotorControl)]
 alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
-alignas(RCReceiver) static uint8_t rcStorage[sizeof(RCReceiver)];
-alignas(RFD) static uint8_t rfdStorage[sizeof(RFD)];
+alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
+alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
@@ -57,8 +57,8 @@ MotorControl *rightFlapMotorHandle = nullptr;
 MotorControl *steeringMotorHandle = nullptr;
 
 GPS *gpsHandle = nullptr;
-RCReceiver *rcHandle = nullptr;
-RFD *rfdHandle = nullptr;
+CRSFReceiver *rcHandle = nullptr;
+RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -111,8 +111,8 @@ void initDrivers()
 
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
-    rcHandle = new (&rcStorage) RCReceiver(&huart4);
-    rfdHandle = new (&rfdStorage) RFD(&huart3);
+    rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
+    telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
@@ -136,16 +136,17 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
+    telemLinkHandle->init();
 
     // Motor instance bindings
-    leftAileronMotorInstance = {leftAileronMotorHandle, true};
-    rightAileronMotorInstance = {rightAileronMotorHandle, true};
-    elevatorMotorInstance = {elevatorMotorHandle, false};
-    rudderMotorInstance = {rudderMotorHandle, false};
-    throttleMotorInstance = {throttleMotorHandle, false};
-    leftFlapMotorInstance = {leftFlapMotorHandle, false};
-    rightFlapMotorInstance = {rightFlapMotorHandle, true};
-    steeringMotorInstance = {steeringMotorHandle, true};
+    leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
+    rightAileronMotorInstance = {rightAileronMotorHandle, true, 0};
+    elevatorMotorInstance = {elevatorMotorHandle, false, 0};
+    rudderMotorInstance = {rudderMotorHandle, false, 0};
+    throttleMotorInstance = {throttleMotorHandle, false, 0};
+    leftFlapMotorInstance = {leftFlapMotorHandle, false, 0};
+    rightFlapMotorInstance = {rightFlapMotorHandle, true, 0};
+    steeringMotorInstance = {steeringMotorHandle, true, 0};
 
     aileronMotorInstances[0] = leftAileronMotorInstance;
     aileronMotorInstances[1] = rightAileronMotorInstance;

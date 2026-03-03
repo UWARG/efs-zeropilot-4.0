@@ -1,12 +1,6 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 
-#define AM_SCHEDULING_RATE_HZ 100
-#define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
-#define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
-#define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
-
-
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
@@ -28,6 +22,7 @@ AttitudeManager::AttitudeManager(
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
     controlAlgorithm(),
+    controlMsg({50, 50, 50, 0, 0, 0}),
     droneState(DRONE_STATE_DEFAULT),
     rollMotors(rollMotors),
     pitchMotors(pitchMotors),
@@ -35,9 +30,9 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
-    previouslyArmed(false),
-    armAltitude(0.0f),
-    amSchedulingCounter(0) {}
+    amSchedulingCounter(0),
+    noDataCount(0),
+    failsafeTriggered(false) {}
 
 void AttitudeManager::amUpdate() {
 
@@ -67,17 +62,19 @@ void AttitudeManager::amUpdate() {
         sendAttitudeDataToTelemetryManager(attitude);
     }
 
+    // Send GPS data to telemetry manager
+    GpsData_t gpsData = gpsDriver->readData();
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
+        sendGPSDataToTelemetryManager(gpsData);
+    }
+
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
     
-    // Failsafe
-    static int noDataCount = 0;
-    static bool failsafeTriggered = false;
-
     if (controlRes != true) {
         ++noDataCount;
 
-        if (noDataCount * AM_CONTROL_LOOP_DELAY > AM_FAILSAFE_TIMEOUT) {
+        if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > AM_FAILSAFE_TIMEOUT_MS) {
             outputToMotor(YAW, 50);
             outputToMotor(PITCH, 50);
             outputToMotor(ROLL, 50);
@@ -106,12 +103,6 @@ void AttitudeManager::amUpdate() {
     // Disarm
     if (controlMsg.arm == 0) {
         controlMsg.throttle = 0;
-    }
-
-    // Send GPS data to telemetry manager
-    GpsData_t gpsData = gpsDriver->readData();
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData, controlMsg.arm > 0);
     }
 
 
@@ -163,42 +154,54 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
     for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
         MotorInstance_t *motor = (motorGroup->motors + i);
 
+        int32_t cmd = (int32_t)percent + motor->trim;
+
+        // Clamp cmd to [0, 100]
+        if (cmd > 100) {
+            cmd = 100;
+        } else if (cmd < 0) {
+            cmd = 0;
+        }
+
+        // Invert command if motor is inverted
         if (motor->isInverted) {
-            motor->motorInstance->set(100 - percent);
+            cmd = 100 - cmd;
         }
-        else {
-            motor->motorInstance->set(percent);
-        }
+
+        motor->motorInstance->set(cmd);
     }
 }
 
 
-void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData, const bool &armed) {
+void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     if (!gpsData.isNew) return;
 
-    if (armed) {
-        if (!previouslyArmed) {
-            armAltitude = gpsData.altitude;
-            previouslyArmed = true;
-        }
-    } else {
-        previouslyArmed = false;
-        armAltitude = 0.0f;
+    uint8_t fixType = (gpsData.numSatellites >= 4) ? 3 : 2; // 3 = 3D Fix, 2 = 2D Fix
+    
+    int32_t latE7 = static_cast<int32_t>(gpsData.latitude * 1e7f);
+    int32_t lonE7 = static_cast<int32_t>(gpsData.longitude * 1e7f);
+    int32_t altMM = static_cast<int32_t>(gpsData.altitude * 1000.0f);
+    
+    uint16_t velCmS = static_cast<uint16_t>(gpsData.groundSpeed);
+    
+    uint16_t cogCDeg = 65535;
+    if (gpsData.trackAngle != INVALID_TRACK_ANGLE) {
+        float normalizedAngle = gpsData.trackAngle;
+        while (normalizedAngle < 0) normalizedAngle += 360.0f;
+        cogCDeg = static_cast<uint16_t>(normalizedAngle * 100.0f);
     }
 
-    // calculate relative altitude
-    float relativeAltitude = previouslyArmed ? (gpsData.altitude - armAltitude) : 0.0f;
-
-    TMMessage_t gpsDataMsg = gposDataPack(
-        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
-        gpsData.altitude * 1000, // altitude in mm
-        gpsData.latitude * 1e7,
-        gpsData.longitude * 1e7,
-        relativeAltitude * 1000, // relative altitude in mm
-        gpsData.vx,
-        gpsData.vy,
-        gpsData.vz,
-        gpsData.trackAngle
+    TMMessage_t gpsDataMsg = gpsRawDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(),
+        fixType,
+        latE7,
+        lonE7,
+        altMM,
+        65535,  // eph: UINT16_MAX if unknown
+        65535,  // epv: UINT16_MAX if unknown
+        velCmS,
+        cogCDeg,
+        gpsData.numSatellites
     );
 
     tmQueue->push(&gpsDataMsg);

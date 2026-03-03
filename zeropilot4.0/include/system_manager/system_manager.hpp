@@ -11,8 +11,32 @@
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
 
-#define SM_CONTROL_LOOP_DELAY 50
-#define SM_RC_TIMEOUT 500 
+#define SM_SCHEDULING_RATE_HZ 20
+#define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
+#define SM_TELEMETRY_RC_DATA_RATE_HZ 5
+
+#define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
+#define SM_RC_TIMEOUT_MS 500
+
+#define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
+#define SM_BATTERY_LOW_TIME_MS 10000
+#define SM_BATTERY_CRITICAL_TIME_MS 3000
+
+static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
+static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
+static constexpr float BATTERY_CAPACITY_MAH = 4000.0f;
+
+static_assert(
+    BATTERY_LOW_VOLTAGE > BATTERY_CRITICAL_VOLTAGE,
+    "BATTERY_LOW_VOLTAGE must be greater than BATTERY_CRITICAL_VOLTAGE"
+);
+
+typedef struct{
+    PMData_t pmData;
+    MAV_BATTERY_CHARGE_STATE chargeState;
+    uint32_t batteryLowCounterMs;
+    uint32_t batteryCritcounterMs;
+} BatteryData_t;
 
 class SystemManager {
     public:
@@ -21,7 +45,7 @@ class SystemManager {
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
             IRCReceiver *rcDriver,
-			IPowerModule *pmDriver,
+            IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue
@@ -35,7 +59,7 @@ class SystemManager {
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
         ILogger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver
-        IPowerModule *pmDriver;
+        IPowerModule *pmDriver; // Power module driver
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
@@ -43,8 +67,15 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
+        int oldDataCount;
+        bool rcConnected;
+        
+        BatteryData_t batteryData;
+        void updateBatteryFSM();
+
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
+        void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
         void sendMessagesToLogger();
 };

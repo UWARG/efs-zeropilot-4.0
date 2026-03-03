@@ -20,7 +20,7 @@ void CRSFReceiver::init() {
     HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_PACKET_SIZE);
 }
 
-void forcePushMAVLinkRC(RCControl rcData) {
+void CRSFReceiver::forcePushMAVLinkRC(RCControl rcData) {
     // TODO: Add MAVLink RC support for crsf and sbus files
     return;
 }

@@ -10,6 +10,7 @@
 # build and debug artifacts
 build/
 Debug/
+Release/
 *.launch
 
 # remove build host

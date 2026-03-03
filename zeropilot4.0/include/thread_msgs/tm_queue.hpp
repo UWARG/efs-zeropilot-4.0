@@ -8,15 +8,22 @@ typedef union TMMessageData_u {
       uint8_t systemStatus;
   } heartbeatData;
   struct{
-      int32_t alt;
+      uint8_t fixType;
       int32_t lat;
       int32_t lon;
-      int32_t relativeAlt;
-      int16_t vx;
-      int16_t vy;
-      int16_t vz;
-      uint16_t hdg;
-  } gposData;
+      int32_t alt;
+      uint16_t eph;
+      uint16_t epv;
+      uint16_t vel;
+      uint16_t cog;
+      uint8_t satellitesVisible;
+      int32_t altEllipsoid;
+      uint32_t hAcc;
+      uint32_t vAcc;
+      uint32_t velAcc;
+      uint32_t hdgAcc;
+      uint16_t yaw;
+  } gpsRawData;
   struct{
       uint16_t roll;
       uint16_t pitch;
@@ -26,15 +33,16 @@ typedef union TMMessageData_u {
       uint16_t arm;
   } rcData;
   struct{
+      uint8_t batteryId;
       int16_t temperature;
-      uint16_t* voltages;
+      uint16_t voltages[10];
       int16_t currentBattery;
       int32_t currentConsumed;
       int32_t energyConsumed;
       int8_t batteryRemaining;
       int32_t timeRemaining;
-      uint8_t chargeState; // 1 = Normal, 2 = Low, 3 = Critical
-  } bmData;
+      uint8_t chargeState; // MAV_BATTERY_CHARGE_STATE
+  } batteryData;
   struct{
       int16_t xacc;
       int16_t yacc;
@@ -61,9 +69,9 @@ typedef union TMMessageData_u {
 typedef struct TMMessage{
     enum{
         HEARTBEAT_DATA,
-        GPOS_DATA,
+        GPS_RAW_DATA,
         RC_DATA,
-        BM_DATA,
+        BATTERY_DATA,
         RAW_IMU_DATA,
         ATTITUDE_DATA
     } dataType;
@@ -76,9 +84,17 @@ inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint3
     return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t gposDataPack(uint32_t time_boot_ms, int32_t alt, int32_t lat, int32_t lon, int32_t relative_alt, int16_t vx, int16_t vy, int16_t vz,uint16_t hdg) {
-    const TMMessageData_t DATA = {.gposData={alt, lat, lon, relative_alt, vx, vy, vz, hdg }};
-    return TMMessage_t{TMMessage_t::GPOS_DATA, DATA, time_boot_ms};
+inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32_t lat, int32_t lon, int32_t alt, 
+                                 uint16_t eph, uint16_t epv, uint16_t vel, uint16_t cog, uint8_t satellites,
+                                 int32_t alt_el = 0, uint32_t h_acc = 0, uint32_t v_acc = 0, 
+                                 uint32_t vel_acc = 0, uint32_t hdg_acc = 0, uint16_t yaw = 0) {
+    const TMMessageData_t DATA = {
+        .gpsRawData = {
+            fix_type, lat, lon, alt, eph, epv, vel, cog, satellites,
+            alt_el, h_acc, v_acc, vel_acc, hdg_acc, yaw
+        }
+    };
+    return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
@@ -92,18 +108,37 @@ inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, fl
     return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t bmDataPack(uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
-    int32_t energy_consumed, int8_t battery_remaining, int32_t time_remaining, uint8_t charge_state) {
-    uint16_t mavlinkVoltageArray[16] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
-    for (int i = 0; i < voltage_len; i++) {
-    	mavlinkVoltageArray[i] = static_cast<uint16_t>(voltages[i]);
+inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, int16_t temperature, 
+                                    float *voltages, uint8_t voltage_len, int16_t current_instantaneous,
+                                    int32_t charge_accumulated, int32_t energy_consumed, int8_t battery_remaining, 
+                                    int32_t time_remaining, uint8_t charge_state) {
+    
+    int16_t scaledCurrentBattery = current_instantaneous * 100; // A -> cA
+    int32_t scaledCurrentConsumed = (charge_accumulated * 1000) / 3600; // C -> mAh
+    int32_t scaledEnergyConsumed = energy_consumed / 100; // J -> hJ
+
+    TMMessage_t msg;
+    msg.dataType = TMMessage_t::BATTERY_DATA;
+    msg.timeBootMs = time_boot_ms;
+
+    auto& battData = msg.tmMessageData.batteryData;
+    battData.temperature = temperature;
+    battData.currentBattery = scaledCurrentBattery;
+    battData.currentConsumed = scaledCurrentConsumed;
+    battData.energyConsumed = scaledEnergyConsumed;
+    battData.batteryRemaining = battery_remaining;
+    battData.timeRemaining = time_remaining;
+    battData.chargeState = charge_state;
+
+    for (int i = 0; i < 10; i++) {
+        battData.voltages[i] = UINT16_MAX;
     }
-    if (temperature == -1) {
-        temperature = INT16_MAX;
+
+    for (int i = 0; i < voltage_len && i < 10; i++) {
+        battData.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
     }
-    const TMMessageData_t DATA = {.bmData ={temperature, mavlinkVoltageArray, current_battery,
-    current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
-    return TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
+
+    return msg;
 }
 
 inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
