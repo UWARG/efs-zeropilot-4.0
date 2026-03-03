@@ -14,22 +14,21 @@ class GeminiMavlink: public IRCReceiver, public IRFD {
 
         ~GeminiMavlink() override;
 
-        // Both IRFD and IRC
+        // Both RFD and RC
         void init();
 
-        // IRFD
+        // RFD
         void transmit(const uint8_t* data, uint16_t size) override; // similar to rfd
         uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override; // identical (almost) to rfd
 
-        // IRC
+        // RC
         RCControl getRCData() override;
-        void startDMA();
 
         void forcePushMAVLinkRC(RCControl rcData) override;
 
         // Helper
         UART_HandleTypeDef* getHuart() const;
-        void irqhandler(); // in override.cpp check that out ()
+        void irqhandler(uint16_t size); // in override.cpp check that out ()
         
 
     private:
@@ -42,6 +41,5 @@ class GeminiMavlink: public IRCReceiver, public IRFD {
 
         // RC
         RCControl rcData_;
-        uint8_t processBuffer[MAVLINK_MAX_PACKET_SIZE];
 
 };
