@@ -127,7 +127,7 @@ void SystemManager::updateBatteryFSM() {
                     loggerDriver->log("Battery State: LOW");
                     break;
                 case MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_ERROR, "Battery State: CRITICAL");
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
                     loggerDriver->log("Battery State: CRITICAL");
                     break;
                 default:
