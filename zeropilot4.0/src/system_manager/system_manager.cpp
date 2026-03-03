@@ -35,6 +35,7 @@ void SystemManager::smUpdate() {
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
             loggerDriver->log("RC Connected");
             rcConnected = true;
         }
@@ -42,6 +43,7 @@ void SystemManager::smUpdate() {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
             loggerDriver->log("RC Disconnected");
             rcConnected = false;
         }
