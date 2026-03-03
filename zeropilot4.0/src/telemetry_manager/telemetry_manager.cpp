@@ -45,7 +45,7 @@ void TelemetryManager::processTXMsgQueue() {
 
             case TMMessage_t::STATUSTEXT_DATA: {
                 auto& statusTextData = tmqMessage.tmMessageData.statusTextData;
-                mavlink_msg_statustext_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, statusTextData.severity, statusTextData.text, statusTextData.id, statusTextData.chunk_seq);
+                mavlink_msg_statustext_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, statusTextData.severity, statusTextData.text, statusTextData.id, statusTextData.chunkSeq);
                 break;
             }
 

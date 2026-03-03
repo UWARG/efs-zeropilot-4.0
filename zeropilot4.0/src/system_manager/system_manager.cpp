@@ -119,12 +119,15 @@ void SystemManager::updateBatteryFSM() {
         if (currentBatteryState != batteryData.chargeState) {
             switch (batteryData.chargeState) {
                 case MAV_BATTERY_CHARGE_STATE_OK:
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
                     loggerDriver->log("Battery State: OK");
                     break;
                 case MAV_BATTERY_CHARGE_STATE_LOW:
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
                     loggerDriver->log("Battery State: LOW");
                     break;
                 case MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_ERROR, "Battery State: CRITICAL");
                     loggerDriver->log("Battery State: CRITICAL");
                     break;
                 default:

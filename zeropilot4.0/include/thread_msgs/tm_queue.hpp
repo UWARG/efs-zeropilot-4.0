@@ -12,7 +12,7 @@ typedef union TMMessageData_u {
       uint8_t severity;
       char text[50];
       uint16_t id;
-      uint8_t chunk_seq;
+      uint8_t chunkSeq;
   } statusTextData;
   struct{
       uint8_t fixType;
@@ -93,18 +93,18 @@ inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint3
 }
 
 inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
-    TMMessageData_t DATA = {.statusTextData = {severity, "", id, chunk_seq }};
+    TMMessageData_t data = {.statusTextData = {severity, "", id, chunk_seq }};
 
-    constexpr size_t max_len = sizeof(DATA.statusTextData.text) - 1; // Reserve space for null terminator
+    constexpr size_t MAX_LEN = sizeof(data.statusTextData.text) - 1; // Reserve space for null terminator
 
     // Get length in a firmware safe way without using strlen which may read out of bounds if text is not null terminated
     size_t len = 0;
-    while (len < max_len && text[len] != '\0') ++len;
+    while (len < MAX_LEN && text[len] != '\0') ++len;
 
-    memcpy(DATA.statusTextData.text, text, len); // Copy text without null terminator
-    DATA.statusTextData.text[len] = '\0'; // Ensure null termination
+    memcpy(data.statusTextData.text, text, len); // Copy text without null terminator
+    data.statusTextData.text[len] = '\0'; // Ensure null termination
 
-    return TMMessage_t{TMMessage_t::STATUSTEXT_DATA, DATA, time_boot_ms};
+    return TMMessage_t{TMMessage_t::STATUSTEXT_DATA, data, time_boot_ms};
 }
 
 inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32_t lat, int32_t lon, int32_t alt, 
