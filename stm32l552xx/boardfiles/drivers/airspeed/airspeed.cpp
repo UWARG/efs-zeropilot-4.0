@@ -84,7 +84,7 @@ bool Airspeed::calculateAirspeed(double* data_out) {
 }
 
 
-bool Airspeed::I2C_Master_Receive_DMA() {
+void Airspeed::I2C_Master_Receive_DMA() {
     memcpy(
         getProcessRXBuffer(),
         getDMARXBuffer(),

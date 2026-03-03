@@ -7,5 +7,5 @@ protected:
 public:
     virtual ~AirspeedIFace() = default;
     
-    virtual void getAirspeedData() = 0;
+    virtual bool getAirspeedData(double* data_out) = 0;
 };

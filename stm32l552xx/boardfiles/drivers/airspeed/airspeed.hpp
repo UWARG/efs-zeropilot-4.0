@@ -48,10 +48,10 @@ public:
 
     //helper function to calculate airspeed
     bool calculateAirspeed(double* data_out);
-    bool I2C_Master_Receive_DMA();
+    void I2C_Master_Receive_DMA();
 
     // public getters
-    bool getAirspeedData(double* data_out);
+    bool getAirspeedData(double* data_out) override;
     I2C_HandleTypeDef* getI2C() { return hi2c; }
     uint8_t* getDMARXBuffer() { return dmaRXBuffer; }
     uint8_t* getProcessRXBuffer() { return processRXBuffer; }
