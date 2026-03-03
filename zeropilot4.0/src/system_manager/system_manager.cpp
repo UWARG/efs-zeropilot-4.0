@@ -21,7 +21,7 @@ SystemManager::SystemManager(
         smSchedulingCounter(0),
         oldDataCount(0),
         rcConnected(false),
-        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_UNDEFINED, 0, 0}) {}
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
