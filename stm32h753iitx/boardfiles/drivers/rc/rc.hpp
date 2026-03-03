@@ -15,7 +15,8 @@ class RCReceiver : public IRCReceiver {
         RCReceiver(UART_HandleTypeDef *uart);
 
         RCControl getRCData() override;
-
+        void forcePushMAVLinkRC(RCControl rcData) override;
+        
         UART_HandleTypeDef* getHUART();
 
         /**
