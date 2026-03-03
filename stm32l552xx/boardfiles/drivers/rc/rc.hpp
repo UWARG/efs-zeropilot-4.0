@@ -32,7 +32,7 @@ class RCReceiver : public IRCReceiver {
          */
         void parse();
 
-        void forcePushMAVLinkRC(RCControl rcData);
+        void forcePushMAVLinkRC(RCControl rcData) override;
        
     private:
         UART_HandleTypeDef *uart;
