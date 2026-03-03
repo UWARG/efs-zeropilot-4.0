@@ -101,7 +101,7 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if () {
-    airspeedHandle->I2C_DMA_CALLBACK();
+  if (airspeedHandle->getI2C()) {
+    airspeedHandle->I2C_Master_Receive_DMA(); // I don't know if this is the right way to error handle this
   }
 }
