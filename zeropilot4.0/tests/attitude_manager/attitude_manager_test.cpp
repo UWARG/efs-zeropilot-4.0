@@ -26,12 +26,12 @@ protected:
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
     
-    NiceMock<MockMotorControl> mockRollMotor(1);
-    NiceMock<MockMotorControl> mockPitchMotor(2);
-    NiceMock<MockMotorControl> mockYawMotor(4);
-    NiceMock<MockMotorControl> mockThrottleMotor(3);
-    NiceMock<MockMotorControl> mockFlapMotor(6);
-    NiceMock<MockMotorControl> mockSteeringMotor(8);
+    NiceMock<MockMotorControl> mockRollMotor;
+    NiceMock<MockMotorControl> mockPitchMotor;
+    NiceMock<MockMotorControl> mockYawMotor;
+    NiceMock<MockMotorControl> mockThrottleMotor;
+    NiceMock<MockMotorControl> mockFlapMotor;
+    NiceMock<MockMotorControl> mockSteeringMotor;
     
     MotorInstance_t rollMotorInst{&mockRollMotor, false, 0};
     MotorInstance_t pitchMotorInst{&mockPitchMotor, false, 0};
@@ -54,6 +54,13 @@ protected:
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
+
+        ON_CALL(mockRollMotor, getServoIdx()).WillByDefault(Return(1));
+        ON_CALL(mockPitchMotor, getServoIdx()).WillByDefault(Return(2));
+        ON_CALL(mockThrottleMotor, getServoIdx()).WillByDefault(Return(3));
+        ON_CALL(mockYawMotor, getServoIdx()).WillByDefault(Return(4));
+        ON_CALL(mockFlapMotor, getServoIdx()).WillByDefault(Return(6));
+        ON_CALL(mockSteeringMotor, getServoIdx()).WillByDefault(Return(8));
     }
 };
 
@@ -319,4 +326,24 @@ TEST_F(AttitudeManagerTest, RawGPSTelemetrySent) {
     }
     
     EXPECT_EQ(gpsCount, AM_TELEMETRY_GPS_DATA_RATE_HZ);
+}
+
+TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent) {
+    int servoOutputCount = 0;
+    EXPECT_CALL(mockTMQueue, push(_))
+        .WillRepeatedly(Invoke([&servoOutputCount](TMMessage_t* msg) {
+            if (msg->dataType == TMMessage_t::SERVO_OUTPUT_RAW) {
+                servoOutputCount++;
+            }
+            return 0;
+        }));
+    
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    
+    for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
+        am.amUpdate();
+    }
+    
+    EXPECT_EQ(servoOutputCount, AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ);
 }
