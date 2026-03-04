@@ -196,7 +196,7 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     
     uint16_t velCmS = static_cast<uint16_t>(gpsData.groundSpeed);
     
-    uint16_t cogCDeg = 65535;
+    uint16_t cogCDeg = UINT16_MAX;
     if (gpsData.trackAngle != INVALID_TRACK_ANGLE) {
         float normalizedAngle = gpsData.trackAngle;
         while (normalizedAngle < 0) normalizedAngle += 360.0f;
@@ -209,8 +209,8 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
         latE7,
         lonE7,
         altMM,
-        65535,  // eph: UINT16_MAX if unknown
-        65535,  // epv: UINT16_MAX if unknown
+        UINT16_MAX,  // eph: UINT16_MAX if unknown
+        UINT16_MAX,  // epv: UINT16_MAX if unknown
         velCmS,
         cogCDeg,
         gpsData.numSatellites

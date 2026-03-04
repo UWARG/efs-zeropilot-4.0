@@ -26,12 +26,12 @@ protected:
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
     
-    NiceMock<MockMotorControl> mockRollMotor;
-    NiceMock<MockMotorControl> mockPitchMotor;
-    NiceMock<MockMotorControl> mockYawMotor;
-    NiceMock<MockMotorControl> mockThrottleMotor;
-    NiceMock<MockMotorControl> mockFlapMotor;
-    NiceMock<MockMotorControl> mockSteeringMotor;
+    NiceMock<MockMotorControl> mockRollMotor(1);
+    NiceMock<MockMotorControl> mockPitchMotor(2);
+    NiceMock<MockMotorControl> mockYawMotor(4);
+    NiceMock<MockMotorControl> mockThrottleMotor(3);
+    NiceMock<MockMotorControl> mockFlapMotor(6);
+    NiceMock<MockMotorControl> mockSteeringMotor(8);
     
     MotorInstance_t rollMotorInst{&mockRollMotor, false, 0};
     MotorInstance_t pitchMotorInst{&mockPitchMotor, false, 0};
