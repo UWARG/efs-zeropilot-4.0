@@ -3,7 +3,7 @@
 #include "rc_iface.hpp"
 #include "telemlink_iface.hpp"
 #include "gemini_defines.hpp"
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx_hal.h"
 
 
 class GeminiMavlink: public IRCReceiver, public ITelemLink {
