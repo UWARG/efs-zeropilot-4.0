@@ -30,6 +30,7 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
+    lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false) {}
@@ -37,6 +38,11 @@ AttitudeManager::AttitudeManager(
 void AttitudeManager::amUpdate() {
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
+
+    // Send servo output raw data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
+        sendServosOutputRawToTelemetryManager();
+    }
 
     // Send IMU raw data to telemetry manager
     RawImu_t imuData = imuDriver->readRawData();
@@ -168,6 +174,12 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
             cmd = 100 - cmd;
         }
 
+        // Store for telemetry output
+        uint8_t servoIdx = motor->motorInstance->getServoIdx();
+        if (servoIdx < 16)
+            lastServoOutputs[servoIdx-1] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
+
+        // Send command to motor
         motor->motorInstance->set(cmd);
     }
 }
@@ -230,4 +242,14 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     );
 
     tmQueue->push(&attitudeDataMsg);
+}
+
+void AttitudeManager::sendServosOutputRawToTelemetryManager() {
+    TMMessage_t servoOutputMsg = servoOutputRawPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        0, // port hardcoded to 0 since we are using MAVLink2 with 16 servo outputs in one message
+        lastServoOutputs
+    );
+
+    tmQueue->push(&servoOutputMsg);
 }

@@ -57,6 +57,14 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::SERVO_OUTPUT_RAW: {
+                auto& s = tmqMessage.tmMessageData.servoOutputRawData;
+                mavlink_msg_servo_output_raw_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, s.port,
+                    s.servo1Raw, s.servo2Raw, s.servo3Raw, s.servo4Raw, s.servo5Raw, s.servo6Raw, s.servo7Raw, s.servo8Raw,
+                    s.servo9Raw, s.servo10Raw, s.servo11Raw, s.servo12Raw, s.servo13Raw, s.servo14Raw, s.servo15Raw, s.servo16Raw);
+                break;
+            }
+
             case TMMessage_t::RC_DATA: {
                 rcMsg = tmqMessage;
                 rc = true;

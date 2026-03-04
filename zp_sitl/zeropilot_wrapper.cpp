@@ -130,10 +130,10 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
-        self->rollMotor = new SITL_Motor();
-        self->pitchMotor = new SITL_Motor();
-        self->yawMotor = new SITL_Motor();
-        self->throttleMotor = new SITL_Motor();
+        self->rollMotor = new SITL_Motor(1);
+        self->pitchMotor = new SITL_Motor(2);
+        self->yawMotor = new SITL_Motor(4);
+        self->throttleMotor = new SITL_Motor(3);
         
         self->rollMotorInstance = {self->rollMotor, false};
         self->pitchMotorInstance = {self->pitchMotor, false};

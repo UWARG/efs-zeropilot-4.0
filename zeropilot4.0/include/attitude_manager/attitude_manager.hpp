@@ -16,6 +16,7 @@
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
+#define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
@@ -72,6 +73,8 @@ class AttitudeManager {
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
 
+        uint16_t lastServoOutputs[16];
+
         uint8_t amSchedulingCounter;
 
         int noDataCount;
@@ -82,8 +85,7 @@ class AttitudeManager {
         void outputToMotor(ControlAxis_t axis, uint8_t percent);
 
         void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
-
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+        void sendServosOutputRawToTelemetryManager();
 };

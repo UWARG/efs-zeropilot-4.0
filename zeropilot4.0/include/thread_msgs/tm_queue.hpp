@@ -31,6 +31,25 @@ typedef union TMMessageData_u {
       uint32_t hdgAcc;
       uint16_t yaw;
   } gpsRawData;
+  struct {
+      uint8_t port;
+      uint16_t servo1Raw;
+      uint16_t servo2Raw;
+      uint16_t servo3Raw;
+      uint16_t servo4Raw;
+      uint16_t servo5Raw;
+      uint16_t servo6Raw;
+      uint16_t servo7Raw;
+      uint16_t servo8Raw;
+      uint16_t servo9Raw;
+      uint16_t servo10Raw;
+      uint16_t servo11Raw;
+      uint16_t servo12Raw;
+      uint16_t servo13Raw;
+      uint16_t servo14Raw;
+      uint16_t servo15Raw;
+      uint16_t servo16Raw;
+  } servoOutputRawData;
   struct{
       uint16_t roll;
       uint16_t pitch;
@@ -78,6 +97,7 @@ typedef struct TMMessage{
         HEARTBEAT_DATA,
         STATUSTEXT_DATA,
         GPS_RAW_DATA,
+        SERVO_OUTPUT_RAW,
         RC_DATA,
         BATTERY_DATA,
         RAW_IMU_DATA,
@@ -118,6 +138,19 @@ inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32
         }
     };
     return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const uint16_t servo_values[16]) {
+    const TMMessageData_t DATA = {
+        .servoOutputRawData = {
+            port,
+            servo_values[0], servo_values[1], servo_values[2], servo_values[3],
+            servo_values[4], servo_values[5], servo_values[6], servo_values[7],
+            servo_values[8], servo_values[9], servo_values[10], servo_values[11],
+            servo_values[12], servo_values[13], servo_values[14], servo_values[15]
+        }
+    };
+    return TMMessage_t{TMMessage_t::SERVO_OUTPUT_RAW, DATA, time_boot_ms};
 }
 
 inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
