@@ -1,4 +1,4 @@
-#include "Airspeed.hpp"
+#include "airspeed.hpp"
 #include <cstring>
 
 /*

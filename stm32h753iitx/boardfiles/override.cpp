@@ -91,8 +91,8 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 #endif
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (airspeedHandle->getI2C()) {
-    airspeedHandle->I2C_Master_Receive_DMA(); // I don't know if this is the right way to error handle this
+  if (hi2c == asHandle->getI2C()) {
+    asHandle->I2C_Master_Receive_DMA(); // I don't know if this is the right way to error handle this
   }
 }
 

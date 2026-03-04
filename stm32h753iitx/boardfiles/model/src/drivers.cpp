@@ -146,7 +146,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     telemLinkHandle->init();
-    // rfdHandle->startReceive(); <- possibly needed not sure
+    //rfdHandle->startReceive(); //<- possibly needed not sure
     asHandle->airspeedInit();
 
     // Motor instance bindings
