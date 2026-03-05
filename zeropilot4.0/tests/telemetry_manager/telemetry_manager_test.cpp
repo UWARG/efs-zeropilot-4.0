@@ -32,6 +32,23 @@ TEST_F(TelemetryManagerTest, HeartbeatProcessing) {
     tm.tmUpdate();
 }
 
+TEST_F(TelemetryManagerTest, StatusTextProcessing) {
+    TMMessage_t stMsg = {};
+    stMsg.dataType = TMMessage_t::STATUSTEXT_DATA;
+    stMsg.tmMessageData.statusTextData.severity = MAV_SEVERITY_CRITICAL;
+    snprintf(stMsg.tmMessageData.statusTextData.text, 50, "CRITICAL ERROR");
+    stMsg.tmMessageData.statusTextData.id = 1;
+    stMsg.tmMessageData.statusTextData.chunkSeq = 0;
+
+    EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(stMsg), Return(0)));
+    EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
+
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    tm.tmUpdate();
+}
+
 TEST_F(TelemetryManagerTest, GPSRawDataProcessing) {
     TMMessage_t gpsMsg = gpsRawDataPack(1000, 3, 436532000, -793832000, 100000, 100, 100, 500, 9000, 8);
     
@@ -45,6 +62,23 @@ TEST_F(TelemetryManagerTest, GPSRawDataProcessing) {
     tm.tmUpdate();
 }
 
+TEST_F(TelemetryManagerTest, ServoOutputRawProcessing) {
+    TMMessage_t servoMsg = {};
+    servoMsg.dataType = TMMessage_t::SERVO_OUTPUT_RAW;
+    servoMsg.timeBootMs = 1234;
+    servoMsg.tmMessageData.servoOutputRawData.port = 0;
+    servoMsg.tmMessageData.servoOutputRawData.servo1Raw = 1500;
+    servoMsg.tmMessageData.servoOutputRawData.servo2Raw = 1100;
+
+    EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(servoMsg), Return(0)));
+    EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
+
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    tm.tmUpdate();
+}
+
 TEST_F(TelemetryManagerTest, RCDataProcessing) {
     TMMessage_t rcMsg = rcDataPack(1000, 50, 50, 50, 50, 0, 1);
     
@@ -54,6 +88,40 @@ TEST_F(TelemetryManagerTest, RCDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    tm.tmUpdate();
+}
+
+TEST_F(TelemetryManagerTest, BatteryDataProcessing_Normal) {
+    TMMessage_t batMsg = {};
+    batMsg.dataType = TMMessage_t::BATTERY_DATA;
+    batMsg.tmMessageData.batteryData.batteryId = 0;
+    batMsg.tmMessageData.batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK; 
+    batMsg.tmMessageData.batteryData.temperature = 2500; // 25°C
+    batMsg.tmMessageData.batteryData.currentBattery = 500;
+
+    EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(batMsg), Return(0)));
+    EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
+
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    tm.tmUpdate();
+}
+
+TEST_F(TelemetryManagerTest, BatteryDataProcessing_CriticalFault) {
+    TMMessage_t batMsg = {};
+    batMsg.dataType = TMMessage_t::BATTERY_DATA;
+    batMsg.tmMessageData.batteryData.batteryId = 0;
+    // This triggers: faultBitmask = MAV_BATTERY_FAULT_DEEP_DISCHARGE
+    batMsg.tmMessageData.batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL; 
+    batMsg.tmMessageData.batteryData.currentBattery = 1000;
+
+    EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(batMsg), Return(0)));
+    EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
+
     TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
