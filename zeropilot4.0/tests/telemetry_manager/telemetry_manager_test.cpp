@@ -43,6 +43,7 @@ TEST_F(TelemetryManagerTest, StatusTextProcessing) {
     EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(stMsg), Return(0)));
     EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
     TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
@@ -73,6 +74,7 @@ TEST_F(TelemetryManagerTest, ServoOutputRawProcessing) {
     EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(servoMsg), Return(0)));
     EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
     TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
@@ -103,6 +105,7 @@ TEST_F(TelemetryManagerTest, BatteryDataProcessing_Normal) {
     EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(batMsg), Return(0)));
     EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
     TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
@@ -120,6 +123,7 @@ TEST_F(TelemetryManagerTest, BatteryDataProcessing_CriticalFault) {
     EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(batMsg), Return(0)));
     EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
     TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
