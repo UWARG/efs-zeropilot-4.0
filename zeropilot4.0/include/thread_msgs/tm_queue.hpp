@@ -2,6 +2,10 @@
 #include <cstdint>
 #include <string.h>
 
+static constexpr uint8_t TM_QUEUE_STATUSTEXT_CHAR_COUNT = 50;
+static constexpr uint8_t TM_QUEUE_RC_CHANNELS_COUNT = 18;
+static constexpr uint8_t TM_QUEUE_BATTERY_VOLTAGES_COUNT = 10;
+
 typedef union TMMessageData_u {
   struct{
       uint8_t baseMode;
@@ -10,7 +14,7 @@ typedef union TMMessageData_u {
   } heartbeatData;
   struct{
       uint8_t severity;
-      char text[50];
+      char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT];
       uint16_t id;
       uint8_t chunkSeq;
   } statusTextData;
@@ -51,17 +55,13 @@ typedef union TMMessageData_u {
       uint16_t servo16Raw;
   } servoOutputRawData;
   struct{
-      uint16_t roll;
-      uint16_t pitch;
-      uint16_t yaw;
-      uint16_t throttle;
-      uint16_t flapAngle;
-      uint16_t arm;
+      uint8_t channelCount;
+      uint16_t channels[TM_QUEUE_RC_CHANNELS_COUNT];
   } rcData;
   struct{
       uint8_t batteryId;
       int16_t temperature;
-      uint16_t voltages[10];
+      uint16_t voltages[TM_QUEUE_BATTERY_VOLTAGES_COUNT];
       int16_t currentBattery;
       int32_t currentConsumed;
       int32_t energyConsumed;
@@ -112,7 +112,7 @@ inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint3
     return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT], uint16_t id, uint8_t chunk_seq) {
     TMMessageData_t data = {.statusTextData = {severity, "", id, chunk_seq }};
 
     constexpr size_t MAX_LEN = sizeof(data.statusTextData.text) - 1; // Reserve space for null terminator
@@ -153,15 +153,13 @@ inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const
     return TMMessage_t{TMMessage_t::SERVO_OUTPUT_RAW, DATA, time_boot_ms};
 }
 
-inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
-    auto rollPPM = static_cast<uint16_t>(1000 + roll * 10);
-    auto pitchPPM = static_cast<uint16_t>(1000 + pitch * 10);
-    auto yawPPM = static_cast<uint16_t>(1000 + yaw * 10);
-    auto throttlePPM = static_cast<uint16_t>(1000 + throttle * 10);
-    auto flapAnglePPM = static_cast<uint16_t>(1000 + flap_angle * 10);
-    auto armPPM = static_cast<uint16_t>(1000 + arm * 10);
-    const TMMessageData_t DATA = {.rcData ={rollPPM, pitchPPM, yawPPM, throttlePPM, flapAnglePPM, armPPM }};
-    return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
+inline TMMessage_t rcDataPack(uint32_t time_boot_ms, const float* controlSignals, uint8_t size) {
+    TMMessageData_t data;
+    data.rcData.channelCount = size;
+    for (int i = 0; i < TM_QUEUE_RC_CHANNELS_COUNT; i++) {
+        data.rcData.channels[i] = (i < size) ? static_cast<uint16_t>(1000 + controlSignals[i] * 10) : UINT16_MAX;
+    }
+    return TMMessage_t{TMMessage_t::RC_DATA, data, time_boot_ms};
 }
 
 inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, int16_t temperature, 
@@ -186,11 +184,11 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
     battData.timeRemaining = time_remaining;
     battData.chargeState = charge_state;
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < TM_QUEUE_BATTERY_VOLTAGES_COUNT; i++) {
         battData.voltages[i] = UINT16_MAX;
     }
 
-    for (int i = 0; i < voltage_len && i < 10; i++) {
+    for (int i = 0; i < voltage_len && i < TM_QUEUE_BATTERY_VOLTAGES_COUNT; i++) {
         battData.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
     }
 

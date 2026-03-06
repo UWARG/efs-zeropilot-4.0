@@ -82,7 +82,8 @@ TEST_F(TelemetryManagerTest, ServoOutputRawProcessing) {
 }
 
 TEST_F(TelemetryManagerTest, RCDataProcessing) {
-    TMMessage_t rcMsg = rcDataPack(1000, 50, 50, 50, 50, 0, 1);
+    float controlSignals[16] = {50, 50, 50, 50, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    TMMessage_t rcMsg = rcDataPack(1000, controlSignals, 16);
     
     EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
