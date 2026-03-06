@@ -140,7 +140,7 @@ void SystemManager::updateBatteryFSM() {
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
-    TMMessage_t rcDataMsg =  rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.roll, rcData.pitch, rcData.yaw, rcData.throttle, rcData.aux2, rcData.arm);
+    TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
     tmQueue->push(&rcDataMsg);
 }
 
