@@ -65,11 +65,15 @@ typedef struct {
     SITL_Motor* pitchMotor;
     SITL_Motor* yawMotor;
     SITL_Motor* throttleMotor;
+    SITL_Motor* flapMotor;
+    SITL_Motor* steerMotor;
     
     MotorInstance_t rollMotorInstance;
     MotorInstance_t pitchMotorInstance;
     MotorInstance_t yawMotorInstance;
     MotorInstance_t throttleMotorInstance;
+    MotorInstance_t flapMotorInstance;
+    MotorInstance_t steerMotorInstance;
     MotorGroupInstance_t rollGroup;
     MotorGroupInstance_t pitchGroup;
     MotorGroupInstance_t yawGroup;
@@ -102,6 +106,8 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->pitchMotor;
     delete self->yawMotor;
     delete self->throttleMotor;
+    delete self->flapMotor;
+    delete self->steerMotor;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -134,18 +140,22 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->pitchMotor = new SITL_Motor(2);
         self->yawMotor = new SITL_Motor(4);
         self->throttleMotor = new SITL_Motor(3);
+        self->flapMotor = new SITL_Motor(5);
+        self->steerMotor = new SITL_Motor(6);
         
         self->rollMotorInstance = {self->rollMotor, false};
         self->pitchMotorInstance = {self->pitchMotor, false};
         self->yawMotorInstance = {self->yawMotor, false};
         self->throttleMotorInstance = {self->throttleMotor, false};
+        self->flapMotorInstance = {self->flapMotor, false};
+        self->steerMotorInstance = {self->steerMotor, false};
         
         self->rollGroup = {&self->rollMotorInstance, 1};
         self->pitchGroup = {&self->pitchMotorInstance, 1};
         self->yawGroup = {&self->yawMotorInstance, 1};
         self->throttleGroup = {&self->throttleMotorInstance, 1};
-        self->flapGroup = {nullptr, 0};
-        self->steeringGroup = {nullptr, 0};
+        self->flapGroup = {&self->flapMotorInstance, 1};
+        self->steeringGroup = {&self->steerMotorInstance, 1};
         
         self->imu->init();
         
@@ -201,11 +211,11 @@ static PyObject* ZP_setBatteryCapacity(ZPObject* self, PyObject* args) {
 }
 
 static PyObject* ZP_setRC(ZPObject* self, PyObject* args) {
-    float roll, pitch, yaw, throttle, arm;
-    if (!PyArg_ParseTuple(args, "fffff", &roll, &pitch, &yaw, &throttle, &arm))
+    float roll, pitch, yaw, throttle, arm, flap, fltmode;
+    if (!PyArg_ParseTuple(args, "fffffff", &roll, &pitch, &yaw, &throttle, &arm, &flap, &fltmode))
         return NULL;
     
-    self->rc->update_from_commands(roll, pitch, yaw, throttle, arm);
+    self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, flap, fltmode);
     Py_RETURN_NONE;
 }
 
@@ -238,8 +248,10 @@ static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
     uint32_t pitch = self->pitchMotor->get();
     uint32_t yaw = self->yawMotor->get();
     uint32_t throttle = self->throttleMotor->get();
+    uint32_t flap = self->flapMotor->get();
+    uint32_t steer = self->steerMotor->get();
     
-    return Py_BuildValue("(iiii)", roll, pitch, yaw, throttle);
+    return Py_BuildValue("(iiiiii)", roll, pitch, yaw, throttle, flap, steer);
 }
 
 static PyObject* ZP_getTelemMessages(ZPObject* self, PyObject* args) {

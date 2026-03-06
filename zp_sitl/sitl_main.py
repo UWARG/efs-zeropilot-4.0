@@ -30,6 +30,8 @@ class ZP_SITL:
         self.pitch_cmd = 50
         self.yaw_cmd = 50
         self.throttle_cmd = 0
+        self.flap_cmd = 0
+        self.fltmode_cmd = 0
         self.arm_cmd = 0
         
         # ZeroPilot instance
@@ -92,7 +94,7 @@ class ZP_SITL:
             # 2. Sync RC commands and update logic
             self.zp.set_rc(
                 self.roll_cmd, self.pitch_cmd, 
-                self.yaw_cmd, self.throttle_cmd, self.arm_cmd
+                self.yaw_cmd, self.throttle_cmd, self.arm_cmd, self.flap_cmd, self.fltmode_cmd
             )
             # Advances 1 ms in simulation time
             result = self.zp.update()
@@ -102,11 +104,13 @@ class ZP_SITL:
                 raise RuntimeError("ZeroPilot Watchdog Timeout!")
             
             # 3. Apply ZeroPilot motor outputs back to JSBSim
-            r_out, p_out, y_out, t_out = self.zp.get_motor_outputs()
+            r_out, p_out, y_out, t_out, f_out, s_out = self.zp.get_motor_outputs()
             self.fdm['fcs/aileron-cmd-norm'] = (r_out - 50) / 50.0
             self.fdm['fcs/elevator-cmd-norm'] = -((p_out - 50) / 50.0)
             self.fdm['fcs/rudder-cmd-norm'] = -((y_out - 50) / 50.0)
             self.fdm['fcs/throttle-cmd-norm'] = t_out / 100.0
+            self.fdm['fcs/flap-cmd-norm'] = f_out / 100.0
+            self.fdm['fcs/steer-cmd-norm'] = (s_out - 50) / 50.0
             
             # Run the physics engine for one 1ms step
             self.fdm.run()
@@ -115,7 +119,7 @@ class ZP_SITL:
 
     def get_state(self):
         """Returns the current flight state for the UI."""
-        r_out, p_out, y_out, t_out = self.zp.get_motor_outputs()
+        r_out, p_out, y_out, t_out, f_out, s_out = self.zp.get_motor_outputs()
         return {
             'roll': math.degrees(self.fdm['attitude/phi-rad']),
             'pitch': math.degrees(self.fdm['attitude/theta-rad']),
@@ -129,6 +133,8 @@ class ZP_SITL:
             'pitch_output': p_out,
             'yaw_output': y_out,
             'throttle_output': t_out,
+            'flap_output': f_out,
+            'steer_output': s_out,
             'armed': self.armed,
         }
 
@@ -165,6 +171,8 @@ async def websocket_handler(request):
                     sitl.pitch_cmd = data['pitch']
                     sitl.yaw_cmd = data['yaw']
                     sitl.throttle_cmd = data['throttle']
+                    sitl.flap_cmd = data.get('flap')
+                    sitl.fltmode_cmd = data.get('fltmode')
                 elif data['type'] == 'arm':
                     sitl.armed = not sitl.armed
                     sitl.arm_cmd = 100 if sitl.armed else 0

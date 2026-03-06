@@ -51,6 +51,66 @@ function initSimulation(config) {
     controls.throttle.value = config.throttle;
     document.getElementById('throttle-val').textContent = config.throttle;
 
+    // Flap switch
+    let flapPosition = 0;
+    const flapValues = [0, 50, 100];
+    const flapThumb = document.getElementById('flap-thumb');
+    const flapTrack = document.querySelector('.switch-track');
+    
+    flapTrack.addEventListener('click', (e) => {
+        const rect = flapTrack.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percent = clickX / rect.width;
+        
+        if (percent < 0.33) flapPosition = 0;
+        else if (percent < 0.67) flapPosition = 1;
+        else flapPosition = 2;
+        
+        flapThumb.style.left = `${flapPosition * 33.33}%`;
+        document.getElementById('flap-val').textContent = `${flapValues[flapPosition]}%`;
+        
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'control',
+                roll: parseInt(controls.roll.value),
+                pitch: parseInt(controls.pitch.value),
+                yaw: parseInt(controls.yaw.value),
+                throttle: parseInt(controls.throttle.value),
+                flap: flapValues[flapPosition],
+                fltmode: fltmodeValues[fltmodePosition]
+            }));
+        }
+    });
+
+    // Flight mode switch
+    let fltmodePosition = 0;
+    const fltmodeValues = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5];
+    const fltmodeThumb = document.getElementById('fltmode-thumb');
+    const fltmodeTrack = document.querySelector('.switch-track-6');
+    
+    fltmodeTrack.addEventListener('click', (e) => {
+        const rect = fltmodeTrack.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percent = clickX / rect.width;
+        
+        fltmodePosition = Math.min(5, Math.floor(percent * 6));
+        
+        fltmodeThumb.style.left = `${fltmodePosition * 16.67}%`;
+        document.getElementById('fltmode-val').textContent = `${fltmodePosition + 1}`;
+        
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'control',
+                roll: parseInt(controls.roll.value),
+                pitch: parseInt(controls.pitch.value),
+                yaw: parseInt(controls.yaw.value),
+                throttle: parseInt(controls.throttle.value),
+                flap: flapValues[flapPosition],
+                fltmode: fltmodeValues[fltmodePosition]
+            }));
+        }
+    });
+
     handleJoystick(ws, controls);
 
     document.getElementById('arm-btn').addEventListener('click', () => {
@@ -67,7 +127,9 @@ function initSimulation(config) {
                     roll: parseInt(controls.roll.value),
                     pitch: parseInt(controls.pitch.value),
                     yaw: parseInt(controls.yaw.value),
-                    throttle: parseInt(controls.throttle.value)
+                    throttle: parseInt(controls.throttle.value),
+                    flap: flapValues[flapPosition],
+                    fltmode: fltmodeValues[fltmodePosition]
                 }));
             }
         });
@@ -96,6 +158,7 @@ function updateUI(state) {
     document.getElementById('pitch-out').textContent = state.pitch_output.toFixed(1);
     document.getElementById('yaw-out').textContent = state.yaw_output.toFixed(1);
     document.getElementById('throttle-out').textContent = state.throttle_output.toFixed(1);
+    document.getElementById('flap-out').textContent = state.flap_output.toFixed(1);
     
     const armBtn = document.getElementById('arm-btn');
     armBtn.textContent = state.armed ? 'DISARM' : 'ARM';
@@ -112,11 +175,18 @@ function updateUI(state) {
 
 function handleJoystick(ws, controls) {
     let joystickConnected = false;
+    let flapPosition = 0;
+    const flapValues = [0, 50, 100];
+    let fltmodePosition = 0;
+    const fltmodeValues = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5];
+    
     window.addEventListener("gamepadconnected", (e) => {
         joystickConnected = true;
         document.getElementById('joy-note').textContent = "Joystick Connected: " + e.gamepad.id;
         pollJoystick();
     });
+
+    let lastL = false, lastR = false, lastZL = false, lastZR = false;
 
     function pollJoystick() {
         if (!joystickConnected) return;
@@ -126,14 +196,51 @@ function handleJoystick(ws, controls) {
         const applyDeadzone = (val) => (Math.abs(val) < 0.05 ? 0 : val);
         const norm = (val) => Math.round((val + 1) * 50);
 
+        // L/R bumpers (buttons 4 and 5)
+        const L = gp.buttons[4]?.pressed;
+        const R = gp.buttons[5]?.pressed;
+        
+        if (L && !lastL) {
+            flapPosition = Math.max(0, flapPosition - 1);
+            document.getElementById('flap-thumb').style.left = `${flapPosition * 33.33}%`;
+            document.getElementById('flap-val').textContent = `${flapValues[flapPosition]}%`;
+        }
+        if (R && !lastR) {
+            flapPosition = Math.min(2, flapPosition + 1);
+            document.getElementById('flap-thumb').style.left = `${flapPosition * 33.33}%`;
+            document.getElementById('flap-val').textContent = `${flapValues[flapPosition]}%`;
+        }
+        lastL = L;
+        lastR = R;
+
+        // ZL/ZR triggers (buttons 6 and 7)
+        const ZL = gp.buttons[6]?.pressed;
+        const ZR = gp.buttons[7]?.pressed;
+        
+        if (ZL && !lastZL) {
+            fltmodePosition = Math.max(0, fltmodePosition - 1);
+            document.getElementById('fltmode-thumb').style.left = `${fltmodePosition * 16.67}%`;
+            document.getElementById('fltmode-val').textContent = `${fltmodePosition + 1}`;
+        }
+        if (ZR && !lastZR) {
+            fltmodePosition = Math.min(5, fltmodePosition + 1);
+            document.getElementById('fltmode-thumb').style.left = `${fltmodePosition * 16.67}%`;
+            document.getElementById('fltmode-val').textContent = `${fltmodePosition + 1}`;
+        }
+        lastZL = ZL;
+        lastZR = ZR;
+
         const joyData = {
             roll: norm(applyDeadzone(gp.axes[2])),
             pitch: norm(applyDeadzone(gp.axes[3])),
             yaw: norm(applyDeadzone(gp.axes[0])),
-            throttle: norm(applyDeadzone(-gp.axes[1]))
+            throttle: norm(applyDeadzone(-gp.axes[1])),
+            flap: flapValues[flapPosition],
+            fltmode: fltmodeValues[fltmodePosition]
         };
 
         Object.entries(joyData).forEach(([key, val]) => {
+            if (key === 'flap' || key === 'fltmode') return;
             controls[key].value = val;
             document.getElementById(`${key}-val`).textContent = val;
         });
