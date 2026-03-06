@@ -47,7 +47,6 @@ void HAL_Delay(uint32_t Delay) {
 
 /* interrupt callback functions */
 
-
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart == rcHandle->getHUART()){
         rcHandle->parse();
