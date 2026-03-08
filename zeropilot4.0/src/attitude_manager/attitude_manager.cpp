@@ -21,7 +21,8 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
-    controlAlgorithm(),
+    directMappingControlAlgorithm(),
+    flyByWireControlAlgorithm(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
     rollMotors(rollMotors),
@@ -111,8 +112,12 @@ void AttitudeManager::amUpdate() {
         controlMsg.throttle = 0;
     }
 
-
-    RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
+    RCMotorControlMessage_t motorOutputs;
+    if(controlMsg.flightMode == PlaneFlightMode_e::MANUAL){
+        motorOutputs = directMappingControlAlgorithm.runControl(controlMsg, droneState);
+    } else if (controlMsg.flightMode == PlaneFlightMode_e::FBWA){
+        motorOutputs = flyByWireControlAlgorithm.runControl(controlMsg, droneState);
+    }
 
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
