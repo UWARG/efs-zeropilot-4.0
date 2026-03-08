@@ -41,6 +41,7 @@ void HAL_Delay(uint32_t Delay) {
 /* interrupt callback functions */
 
 
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart == rcHandle->getHUART()){
         rcHandle->parse();
@@ -51,8 +52,20 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     }
     // GPS dma callback
     else if (huart == gpsHandle->getHUART()) {
-      gpsHandle->processGPSData();
+      gpsHandle->processGPSData(GPS_IDLE_DETECTED_CALLBACK);
     }
+}
+
+void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart == gpsHandle->getHUART()) {
+    gpsHandle->processGPSData(GPS_HALF_CPLT_CALLBACK);
+  }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart == gpsHandle->getHUART()) {
+    gpsHandle->processGPSData(GPS_CPLT_CALLBACK);
+  }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {

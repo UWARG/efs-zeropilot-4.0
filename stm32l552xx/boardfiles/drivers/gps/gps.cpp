@@ -1,6 +1,6 @@
 #include <cstring>
-
 #include "gps.hpp"
+#include <cstdint>
 
 GPS::GPS(UART_HandleTypeDef* huart) : huart(huart) {}
 
@@ -68,8 +68,10 @@ GpsData_t GPS::readData() {
     return tempData;
 }
 
-void GPS::processGPSData() {
-    memcpy(processBuffer, rxBuffer, MAX_NMEA_DATA_LENGTH);
+void GPS::processGPSData(GpsCallbackStatus_e status) {
+    processBuffer = (status == GPS_HALF_CPLT_CALLBACK) ? rxBuffer : 
+        (status == GPS_CPLT_CALLBACK) ? rxBuffer + (RX_BUFFER_SIZE/2) :
+            processBuffer;
 }
 //
 bool GPS::parseUBX() {
