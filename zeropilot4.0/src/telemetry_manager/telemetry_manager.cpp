@@ -101,11 +101,14 @@ void TelemetryManager::processTXMsgQueue() {
     }
 
 	if (rc) {
-		auto rcData = rcMsg.tmMessageData.rcData;
+		auto& rcData = rcMsg.tmMessageData.rcData;
 		mavlink_message_t mavlinkMessage = {0};
-		mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, 6,
-			rcData.roll, rcData.pitch, rcData.throttle, rcData.yaw, rcData.arm, rcData.flapAngle,  // Channel arrangement from system manager
-			UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX,  UINT16_MAX,  UINT16_MAX, UINT16_MAX, UINT8_MAX);
+		mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, rcData.channelCount,
+			rcData.channels[0], rcData.channels[1], rcData.channels[2], rcData.channels[3], 
+			rcData.channels[4], rcData.channels[5], rcData.channels[6], rcData.channels[7], 
+			rcData.channels[8], rcData.channels[9], rcData.channels[10], rcData.channels[11], 
+			rcData.channels[12], rcData.channels[13], rcData.channels[14], rcData.channels[15], 
+			rcData.channels[16], rcData.channels[17], UINT8_MAX);
 		if (mavlinkMessage.len == 0) {
 			return;
 		}
