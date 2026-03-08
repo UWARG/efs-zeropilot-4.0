@@ -19,7 +19,7 @@ class RCControl {
         float &arm      = controlSignals[4];
         float &aux1     = controlSignals[5];
         float &aux2     = controlSignals[6];
-        float &flightMode     = controlSignals[7];
+        float &flightModeRaw     = controlSignals[7];
         float &aux4     = controlSignals[8];
         float &aux5     = controlSignals[9];
         float &aux6     = controlSignals[10];
@@ -44,7 +44,7 @@ class RCControl {
             arm       = 0.0f;
             aux1      = 0.0f;
             aux2      = 0.0f;
-            flightMode      = 0.0f;
+            flightModeRaw      = 0.0f;
             aux4      = 0.0f;
             aux5      = 0.0f;
             aux6      = 0.0f;

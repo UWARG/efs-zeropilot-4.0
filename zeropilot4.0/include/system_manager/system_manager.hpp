@@ -23,7 +23,10 @@
 #define SM_BATTERY_CRITICAL_TIME_MS 3000
 
 #define SM_FLIGHT_MODE1_MAX 23.0f
-#define SM_FLIGHT_MODE2_MAX 36.0f
+#define SM_FLIGHT_MODE2_MAX 36.1f
+#define SM_FLIGHT_MODE3_MAX 49.1f
+#define SM_FLIGHT_MODE4_MAX 62.1f
+#define SM_FLIGHT_MODE5_MAX 75.1f
 
 static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
 static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
