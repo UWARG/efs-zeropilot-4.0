@@ -68,8 +68,8 @@ void SystemManager::smUpdate() {
         systemStatus = MAV_STATE_STANDBY;
     }
 
-    // Hardcoded to MANUAL for now, should come from RC input in future
-    uint32_t customMode = static_cast<uint32_t>(PlaneFlightMode_e::MANUAL);
+    PlaneFlightMode_e flightMode = decodeFlightMode(rcData.aux4);
+    uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
@@ -158,6 +158,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm;
     rcDataMessage.flapAngle = rcData.aux2;
+    rcDataMessage.flightMode = decodeFlightMode(rcData.aux3);
 
     amRCQueue->push(&rcDataMessage);
 }
@@ -198,6 +199,22 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
 void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
     TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
     tmQueue->push(&statusTextMsg);
+}
+
+PlaneFlightMode_e SystemManager::decodeFlightMode(float auxValue)
+{
+    if (auxValue < SM_FLIGHT_MODE1_MAX) {
+        // Button 1
+        return PlaneFlightMode_e::MANUAL;
+    }
+    else if (auxValue < SM_FLIGHT_MODE2_MAX) {
+        // Button 2
+        return PlaneFlightMode_e::FBWA;
+    }
+    else {
+        // Buttons 3–6 (default to manual for now)
+        return PlaneFlightMode_e::MANUAL;
+    }
 }
 
 void SystemManager::sendMessagesToLogger() {

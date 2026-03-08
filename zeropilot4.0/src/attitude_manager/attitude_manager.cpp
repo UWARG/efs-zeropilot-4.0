@@ -22,7 +22,7 @@ AttitudeManager::AttitudeManager(
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
     controlAlgorithm(),
-    controlMsg({50, 50, 50, 0, 0, 0}),
+    controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
     rollMotors(rollMotors),
     pitchMotors(pitchMotors),

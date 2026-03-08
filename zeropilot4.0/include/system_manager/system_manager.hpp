@@ -22,6 +22,9 @@
 #define SM_BATTERY_LOW_TIME_MS 10000
 #define SM_BATTERY_CRITICAL_TIME_MS 3000
 
+#define SM_FLIGHT_MODE1_MAX 23.0f
+#define SM_FLIGHT_MODE2_MAX 36.0f
+
 static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
 static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
 static constexpr float BATTERY_CAPACITY_MAH = 4000.0f;
@@ -78,6 +81,8 @@ class SystemManager {
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
         void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
         void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
+
+        PlaneFlightMode_e SystemManager::decodeFlightMode(float auxValue);
 
         void sendMessagesToLogger();
 };
