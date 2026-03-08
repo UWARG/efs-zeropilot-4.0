@@ -68,7 +68,7 @@ void SystemManager::smUpdate() {
         systemStatus = MAV_STATE_STANDBY;
     }
 
-    PlaneFlightMode_e flightMode = decodeFlightMode(rcData.aux4);
+    PlaneFlightMode_e flightMode = decodeFlightMode(rcData.flightMode);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
@@ -158,7 +158,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm;
     rcDataMessage.flapAngle = rcData.aux2;
-    rcDataMessage.flightMode = decodeFlightMode(rcData.aux3);
+    rcDataMessage.flightMode = decodeFlightMode(rcData.flightMode);
 
     amRCQueue->push(&rcDataMessage);
 }

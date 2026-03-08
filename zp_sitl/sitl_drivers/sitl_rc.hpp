@@ -13,7 +13,7 @@ public:
         rcData.throttle = throttle;
         rcData.arm = arm;
         rcData.aux2 = flap;
-        rcData.aux3 = fltmode;
+        rcData.flightMode = fltmode;
         rcData.isDataNew = true;
     }
     
