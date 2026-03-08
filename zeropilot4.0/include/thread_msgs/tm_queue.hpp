@@ -176,6 +176,7 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
     msg.timeBootMs = time_boot_ms;
 
     auto& battData = msg.tmMessageData.batteryData;
+    battData.batteryId = battery_id;
     battData.temperature = temperature;
     battData.currentBattery = scaledCurrentBattery;
     battData.currentConsumed = scaledCurrentConsumed;
