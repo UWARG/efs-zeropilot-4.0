@@ -21,10 +21,12 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
+    activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
+    currentFlightMode(PlaneFlightMode_e::MANUAL),
     rollMotors(rollMotors),
     pitchMotors(pitchMotors),
     yawMotors(yawMotors),
@@ -34,7 +36,23 @@ AttitudeManager::AttitudeManager(
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
-    failsafeTriggered(false) {}
+    failsafeTriggered(false) {
+
+    // Set PID constants and rudder mixing constant for FBWA control law
+    fbwaCLAW.setRollPIDConstants(
+        AM_FBWA_ROLL_P_GAIN,
+        AM_FBWA_ROLL_I_GAIN,
+        AM_FBWA_ROLL_D_GAIN,
+        AM_FBWA_ROLL_D_TAU
+    );
+    fbwaCLAW.setPitchPIDConstants(
+        AM_FBWA_PITCH_P_GAIN,
+        AM_FBWA_PITCH_I_GAIN,
+        AM_FBWA_PITCH_D_GAIN,
+        AM_FBWA_PITCH_D_TAU
+    );
+    fbwaCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
+}
 
 void AttitudeManager::amUpdate() {
 

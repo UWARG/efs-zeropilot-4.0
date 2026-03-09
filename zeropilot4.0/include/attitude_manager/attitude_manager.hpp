@@ -22,6 +22,17 @@
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 #define AM_FAILSAFE_TIMEOUT_MS 1000
 
+// PID constants and rudder mixing constant for FBWA control law
+static constexpr float AM_FBWA_ROLL_P_GAIN = 62.2f;
+static constexpr float AM_FBWA_ROLL_I_GAIN = 29.5f;
+static constexpr float AM_FBWA_ROLL_D_GAIN = 6.9f;
+static constexpr float AM_FBWA_ROLL_D_TAU = 0.02f;
+static constexpr float AM_FBWA_PITCH_P_GAIN = 112.0f;
+static constexpr float AM_FBWA_PITCH_I_GAIN = 60.0f;
+static constexpr float AM_FBWA_PITCH_D_GAIN = 14.1f;
+static constexpr float AM_FBWA_PITCH_D_TAU = 0.02f;
+static constexpr float AM_FBWA_RUDDER_MIXING = 0.5f;
+
 typedef enum {
     YAW = 0,
     PITCH,
