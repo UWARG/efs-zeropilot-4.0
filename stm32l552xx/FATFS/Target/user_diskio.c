@@ -33,7 +33,6 @@
 /* USER CODE BEGIN DECL */
 
 /* Includes ------------------------------------------------------------------*/
-#include "logger_config.h"
 #include "user_diskio.h"
 #include "user_diskio_sdmmc.h"
 #include "user_diskio_spi.h"

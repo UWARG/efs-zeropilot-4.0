@@ -3,7 +3,7 @@
 #include "iwdg_iface.hpp"
 #include "systemutils_iface.hpp"
 #include "mavlink.h"
-#include "logger_iface.hpp"
+#include "logger.hpp"
 #include "rc_iface.hpp"
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
@@ -59,7 +59,7 @@ class SystemManager {
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
-            ILogger *loggerDriver,
+            Logger *loggerDriver,
             IRCReceiver *rcDriver,
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
@@ -73,7 +73,7 @@ class SystemManager {
         ISystemUtils *systemUtilsDriver; // System utilities instance
 
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
-        ILogger *loggerDriver; // Logger driver
+        Logger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver; // Power module driver
         

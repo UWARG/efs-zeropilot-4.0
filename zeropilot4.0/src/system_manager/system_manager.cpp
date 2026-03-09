@@ -4,7 +4,7 @@
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
+    Logger *loggerDriver,
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
@@ -26,6 +26,7 @@ SystemManager::SystemManager(
 void SystemManager::smUpdate() {
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
+    loggerDriver->log("Hey the logger works");
 
 
     // Get RC data from the RC receiver and passthrough to AM if new

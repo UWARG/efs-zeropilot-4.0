@@ -3,6 +3,7 @@
 #include "systemutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
+#include "SDIO.hpp"
 #include "motor.hpp"
 #include "motor_datatype.hpp"
 #include "rc_sbus.hpp"
@@ -20,6 +21,7 @@ extern SystemUtils *systemUtilsHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
+extern SDIO *textIOHandle;
 
 extern MotorControl *leftAileronMotorHandle;
 extern MotorControl *rightAileronMotorHandle;
