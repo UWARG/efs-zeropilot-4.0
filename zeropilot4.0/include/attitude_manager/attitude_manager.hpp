@@ -62,10 +62,12 @@ class AttitudeManager {
         IMessageQueue<TMMessage_t> *tmQueue;
         IMessageQueue<char[100]> *smLoggerQueue;
 
-        DirectMapping manualCLAW;
-        FBWAMapping fbwaCLAW;
+        Flightmode *activeCLAW;     // Pointer to current active Control Law
+        DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
+        FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         RCMotorControlMessage_t controlMsg;
         DroneState_t droneState;
+        PlaneFlightMode_e currentFlightMode;
 
         MotorGroupInstance_t *rollMotors;
         MotorGroupInstance_t *pitchMotors;

@@ -68,6 +68,7 @@ void SystemManager::smUpdate() {
         systemStatus = MAV_STATE_STANDBY;
     }
 
+    // Decode flight mode from raw value and include in custom mode for HEARTBEAT telemetry
     PlaneFlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
