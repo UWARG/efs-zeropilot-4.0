@@ -62,8 +62,8 @@ class AttitudeManager {
         IMessageQueue<TMMessage_t> *tmQueue;
         IMessageQueue<char[100]> *smLoggerQueue;
 
-        DirectMapping directMappingControlAlgorithm;
-        FBWAMapping flyByWireControlAlgorithm;
+        DirectMapping manualCLAW;
+        FBWAMapping fbwaCLAW;
         RCMotorControlMessage_t controlMsg;
         DroneState_t droneState;
 

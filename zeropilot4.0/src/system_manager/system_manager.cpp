@@ -68,7 +68,7 @@ void SystemManager::smUpdate() {
         systemStatus = MAV_STATE_STANDBY;
     }
 
-    PlaneFlightMode_e flightMode = decodeFlightMode(rcData.flightModeRaw);
+    PlaneFlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
@@ -158,7 +158,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm;
     rcDataMessage.flapAngle = rcData.aux2;
-    rcDataMessage.flightMode = decodeFlightMode(rcData.flightModeRaw);
+    rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
     amRCQueue->push(&rcDataMessage);
 }
@@ -201,25 +201,25 @@ void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, cons
     tmQueue->push(&statusTextMsg);
 }
 
-PlaneFlightMode_e SystemManager::decodeFlightMode(float flightModeRawValue)
+PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue)
 {
-    if (flightModeRawValue < SM_FLIGHT_MODE1_MAX) {
+    if (flightModeRawValue < SM_FLIGHTMODE1_MAX) {
         // Button 1
         return PlaneFlightMode_e::MANUAL;
     }
-    else if (flightModeRawValue < SM_FLIGHT_MODE2_MAX) {
+    else if (flightModeRawValue < SM_FLIGHTMODE2_MAX) {
         // Button 2
         return PlaneFlightMode_e::FBWA;
     }
-    else if (flightModeRawValue < SM_FLIGHT_MODE3_MAX){
+    else if (flightModeRawValue < SM_FLIGHTMODE3_MAX){
         // Button 3
         return PlaneFlightMode_e::MANUAL;
     }
-    else if (flightModeRawValue < SM_FLIGHT_MODE4_MAX){
+    else if (flightModeRawValue < SM_FLIGHTMODE4_MAX){
         // Button 4 
         return PlaneFlightMode_e::MANUAL;
     }
-    else if (flightModeRawValue < SM_FLIGHT_MODE5_MAX){
+    else if (flightModeRawValue < SM_FLIGHTMODE5_MAX){
         // Button 5
         return PlaneFlightMode_e::MANUAL;
     } else {
