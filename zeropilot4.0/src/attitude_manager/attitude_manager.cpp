@@ -145,7 +145,6 @@ void AttitudeManager::amUpdate() {
 
     RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
     
-
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
     outputToMotor(ROLL, motorOutputs.roll);
