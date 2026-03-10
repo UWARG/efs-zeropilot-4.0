@@ -220,7 +220,7 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
     EXPECT_TRUE(sawCritical);
 }
 
-TEST_F(SystemManagerTest, VerifyAllSixFlightModeTransitions) {
+TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
     // Helper to scale μs to the float values used by decodeRawFlightMode
     auto scalePWM = [](float pwm) { return (pwm - 1000.0f) / 10.0f; };
 
@@ -229,12 +229,12 @@ TEST_F(SystemManagerTest, VerifyAllSixFlightModeTransitions) {
         float pwm;
         PlaneFlightMode_e expected;
     } testCases[] = {
-        {1165.0f, SystemManager::SM_FLIGHTMODE1},
-        {1295.0f, SystemManager::SM_FLIGHTMODE2},
-        {1425.0f, SystemManager::SM_FLIGHTMODE3},
-        {1555.0f, SystemManager::SM_FLIGHTMODE4},
-        {1685.0f, SystemManager::SM_FLIGHTMODE5},
-        {1815.0f, SystemManager::SM_FLIGHTMODE6}
+        {1165.0f, SM_FLIGHTMODE1},
+        {1295.0f, SM_FLIGHTMODE2},
+        {1425.0f, SM_FLIGHTMODE3},
+        {1555.0f, SM_FLIGHTMODE4},
+        {1685.0f, SM_FLIGHTMODE5},
+        {1815.0f, SM_FLIGHTMODE6}
     };
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
