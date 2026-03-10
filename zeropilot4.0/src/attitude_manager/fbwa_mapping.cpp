@@ -36,7 +36,7 @@ void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
     yawRudderMixingConst = newMixingConst;
 }
 
-void FBWAMapping::activateFlightMode(){
+void FBWAMapping::activateFlightMode() {
     resetControlLoopState();
 }
 

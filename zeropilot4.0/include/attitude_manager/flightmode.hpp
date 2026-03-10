@@ -10,6 +10,7 @@ class Flightmode {
 
     public:
         virtual ~Flightmode() = default;
+
         virtual void activateFlightMode() = 0;
         virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
 };

@@ -52,6 +52,9 @@ AttitudeManager::AttitudeManager(
         AM_FBWA_PITCH_D_TAU
     );
     fbwaCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
+
+    // Activate the activeCLAW
+    activeCLAW->activateFlightMode();
 }
 
 void AttitudeManager::amUpdate() {
@@ -144,7 +147,7 @@ void AttitudeManager::amUpdate() {
     }
 
     RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
-    
+
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
     outputToMotor(ROLL, motorOutputs.roll);
