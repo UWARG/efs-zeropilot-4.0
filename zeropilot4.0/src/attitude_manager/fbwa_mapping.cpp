@@ -36,6 +36,10 @@ void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
     yawRudderMixingConst = newMixingConst;
 }
 
+void FBWAMapping::activateFlightMode() {
+    resetControlLoopState();
+}
+
 // Main control mapping function for FBWA mode
 RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
     // Convert RC inputs into radians

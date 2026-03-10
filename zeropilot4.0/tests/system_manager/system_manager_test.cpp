@@ -219,3 +219,44 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
 
     EXPECT_TRUE(sawCritical);
 }
+
+TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
+    // Helper to scale μs to the float values used by decodeRawFlightMode
+    auto scalePWM = [](float pwm) { return (pwm - 1000.0f) / 10.0f; };
+
+    // Internal test mapping: Nominal PWM -> Expected Enum from SystemManager constants
+    struct {
+        float pwm;
+        PlaneFlightMode_e expected;
+    } testCases[] = {
+        {1165.0f, SM_FLIGHTMODE1},
+        {1295.0f, SM_FLIGHTMODE2},
+        {1425.0f, SM_FLIGHTMODE3},
+        {1555.0f, SM_FLIGHTMODE4},
+        {1685.0f, SM_FLIGHTMODE5},
+        {1815.0f, SM_FLIGHTMODE6}
+    };
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+
+    for (const auto& test : testCases) {
+        RCControl rcData;
+        rcData.isDataNew = true;
+        rcData.fltModeRaw = scalePWM(test.pwm);
+        rcData.arm = 1; // Armed to ensure data flows
+
+        // Expect the RC driver to return our test value
+        EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
+
+        // Verify the exact enum reaches the Attitude Manager queue
+        EXPECT_CALL(mockAMQueue, push(::testing::Field(&RCMotorControlMessage_t::flightMode, test.expected)))
+            .Times(1);
+
+        sm.smUpdate();
+
+        // Reset mocks for the next button case
+        ::testing::Mock::VerifyAndClearExpectations(&mockRC);
+        ::testing::Mock::VerifyAndClearExpectations(&mockAMQueue);
+    }
+}

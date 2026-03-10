@@ -72,6 +72,7 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
     rcMsg.throttle = 80.0f;
     rcMsg.arm = 1.0f;
     rcMsg.flapAngle = 30.0f;
+    rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -97,6 +98,7 @@ TEST_F(AttitudeManagerTest, DisarmThrottleZero) {
     rcMsg.throttle = 80.0f;
     rcMsg.arm = 0.0f;
     rcMsg.flapAngle = 0.0f;
+    rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -136,6 +138,7 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery) {
     rcMsg.throttle = 50.0f;
     rcMsg.arm = 1.0f;
     rcMsg.flapAngle = 0.0f;
+    rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
     testing::Sequence seq;
     EXPECT_CALL(mockAMQueue, count())
@@ -172,6 +175,7 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     rcMsg.throttle = 50.0f;
     rcMsg.arm = 1.0f;
     rcMsg.flapAngle = 0.0f;
+    rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -198,6 +202,7 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
     rcMsg.throttle = 50.0f;
     rcMsg.arm = 1.0f;
     rcMsg.flapAngle = 0.0f;
+    rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
@@ -221,6 +226,7 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper) {
     rcMsg.throttle = 50.0f;
     rcMsg.arm = 1.0f;
     rcMsg.flapAngle = 0.0f;
+    rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
