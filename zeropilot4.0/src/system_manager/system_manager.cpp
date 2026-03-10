@@ -205,26 +205,26 @@ void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, cons
 PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
         // Button 1
-        return PlaneFlightMode_e::MANUAL;
+        return SM_FLIGHTMODE1;
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE2_MAX) {
         // Button 2
-        return PlaneFlightMode_e::FBWA;
+        return SM_FLIGHTMODE2;
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE3_MAX) {
         // Button 3
-        return PlaneFlightMode_e::MANUAL;
+        return SM_FLIGHTMODE3;
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE4_MAX) {
         // Button 4 
-        return PlaneFlightMode_e::MANUAL;
+        return SM_FLIGHTMODE4;
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE5_MAX) {
         // Button 5
-        return PlaneFlightMode_e::MANUAL;
+        return SM_FLIGHTMODE5;
     } else {
         // Button 6
-        return PlaneFlightMode_e::MANUAL;
+        return SM_FLIGHTMODE6;
     }
 }
 

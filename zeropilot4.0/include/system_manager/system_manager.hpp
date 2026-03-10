@@ -22,6 +22,14 @@
 #define SM_BATTERY_LOW_TIME_MS 10000
 #define SM_BATTERY_CRITICAL_TIME_MS 3000
 
+// Flightmode constants
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE1 = PlaneFlightMode_e::MANUAL;
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE2 = PlaneFlightMode_e::FBWA;
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE3 = PlaneFlightMode_e::MANUAL;
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE4 = PlaneFlightMode_e::MANUAL;
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE5 = PlaneFlightMode_e::MANUAL;
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE6 = PlaneFlightMode_e::MANUAL;
+
 // Calculated using 1165, 1295, 1425, 1555, 1685, and 1815 us as nominal values
 static constexpr float SM_FLIGHTMODE1_MAX = 23.0f; // (1165 + 1295) / 2 = 1230 -> scaled/offset to 23.0
 static constexpr float SM_FLIGHTMODE2_MAX = 36.0f; // (1295 + 1425) / 2 = 1360 -> scaled/offset to 36.0
