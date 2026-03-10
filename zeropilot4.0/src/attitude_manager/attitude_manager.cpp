@@ -130,12 +130,21 @@ void AttitudeManager::amUpdate() {
         controlMsg.throttle = 0;
     }
 
-    RCMotorControlMessage_t motorOutputs;
-    if(controlMsg.flightMode == PlaneFlightMode_e::MANUAL){
-        motorOutputs = manualCLAW.runControl(controlMsg, droneState);
-    } else if (controlMsg.flightMode == PlaneFlightMode_e::FBWA){
-        motorOutputs = fbwaCLAW.runControl(controlMsg, droneState);
+    if (controlMsg.flightMode != currentFlightMode) {
+        switch (controlMsg.flightMode) {
+            case PlaneFlightMode_e::MANUAL:
+                activeCLAW = &manualCLAW;
+                break;
+            case PlaneFlightMode_e::FBWA:
+                activeCLAW = &fbwaCLAW;
+                break;
+        }
+        activeCLAW->activateFlightMode();
+        currentFlightMode = controlMsg.flightMode;
     }
+
+    RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
+    
 
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);

@@ -7,6 +7,8 @@ class FBWAMapping : public Flightmode {
     public:
         FBWAMapping(float control_iter_period_s) noexcept;
 
+        void activateFlightMode() override;
+
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
 
         // Setter *roll* for PID consts
