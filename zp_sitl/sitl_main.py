@@ -8,11 +8,13 @@ import threading
 import os
 import asyncio
 from aiohttp import web
-import zeropilot
+import zeropilot # type: ignore
 from util.mavlink_decoder import MAVLinkDecoder
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UI_PATH = os.path.join(BASE_DIR, 'ui')
+
+SITL_RATE_HZ = 1000
 
 class ZP_SITL:
     def __init__(self, ip, port):
@@ -20,8 +22,8 @@ class ZP_SITL:
         self.fdm = jsbsim.FGFDMExec(None)
         self.fdm.load_model('c172p')
         
-        # Set internal JSBSim timestep to 1ms (1kHz)
-        self.dt = 0.001
+        # Set internal JSBSim timestep
+        self.dt = 1.0 / SITL_RATE_HZ
         self.fdm.set_dt(self.dt)
         self.fdm.run_ic()
         
@@ -35,7 +37,7 @@ class ZP_SITL:
         self.arm_cmd = 0
         
         # ZeroPilot instance
-        self.zp = zeropilot.ZeroPilot(ip=ip, port=port)
+        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ, ip=ip, port=port)
         
         # State tracking
         self.armed = False
@@ -70,7 +72,7 @@ class ZP_SITL:
         self.initialized = True
 
     def step(self):
-        """The 1kHz hot-loop step."""
+        """The hot-loop step."""
         if not self.initialized:
             return
         
@@ -256,11 +258,11 @@ def main():
     server_thread = threading.Thread(target=start_webserver, daemon=True)
     server_thread.start()
     
-    print("SITL Physics started. Target: 1000Hz via busy-wait.")
+    print(f"SITL Physics started. Target: {SITL_RATE_HZ}Hz via busy-wait.")
     print("Mavlink UDP forwarding on {}:{}".format(args.ip, args.port))
 
     # 2. High-Precision Timing Loop
-    target_dt = 0.001 # 1ms
+    target_dt = 1.0 / SITL_RATE_HZ
     next_step = time.perf_counter()
 
     try:

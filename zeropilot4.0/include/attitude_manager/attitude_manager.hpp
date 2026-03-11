@@ -23,13 +23,13 @@
 #define AM_FAILSAFE_TIMEOUT_MS 1000
 
 // PID constants and rudder mixing constant for FBWA control law
-static constexpr float AM_FBWA_ROLL_P_GAIN = 1.244f;
-static constexpr float AM_FBWA_ROLL_I_GAIN = 0.590f;
-static constexpr float AM_FBWA_ROLL_D_GAIN = 0.138f;
+static constexpr float AM_FBWA_ROLL_P_GAIN = 1.120f;
+static constexpr float AM_FBWA_ROLL_I_GAIN = 0.100f;
+static constexpr float AM_FBWA_ROLL_D_GAIN = 0.650f;
 static constexpr float AM_FBWA_ROLL_D_TAU = 0.02f;
-static constexpr float AM_FBWA_PITCH_P_GAIN = 2.240f;
-static constexpr float AM_FBWA_PITCH_I_GAIN = 1.200f;
-static constexpr float AM_FBWA_PITCH_D_GAIN = 0.282f;
+static constexpr float AM_FBWA_PITCH_P_GAIN = 2.250f;
+static constexpr float AM_FBWA_PITCH_I_GAIN = 0.250f;
+static constexpr float AM_FBWA_PITCH_D_GAIN = 1.400f;
 static constexpr float AM_FBWA_PITCH_D_TAU = 0.02f;
 static constexpr float AM_FBWA_RUDDER_MIXING = 0.5f;
 

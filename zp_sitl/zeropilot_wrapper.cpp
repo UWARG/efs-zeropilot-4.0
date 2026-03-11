@@ -81,6 +81,7 @@ typedef struct {
     MotorGroupInstance_t flapGroup;
     MotorGroupInstance_t steeringGroup;
     
+    uint32_t sitlRateHz;
     uint32_t smCounter;
     uint32_t tmCounter;
     uint32_t amCounter;
@@ -114,10 +115,11 @@ static void ZP_dealloc(ZPObject* self) {
 static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
     const char* ip = nullptr;
     int port = 0;
+    uint32_t sitlRateHz = 1000;
    
     // Parse arguments from Python
-    static char* kwlist[] = {(char*)"ip", (char*)"port", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|si", kwlist, &ip, &port)) {
+    static char* kwlist[] = {(char*)"sitl_rate_hz", (char*)"ip", (char*)"port", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|isi", kwlist, &sitlRateHz, &ip, &port)) {
         return NULL;
     }
     
@@ -175,6 +177,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
             &self->throttleGroup, &self->flapGroup, &self->steeringGroup
         );
         
+        self->sitlRateHz = sitlRateHz;
         self->smCounter = 0;
         self->tmCounter = 0;
         self->amCounter = 0;
@@ -220,15 +223,15 @@ static PyObject* ZP_setRC(ZPObject* self, PyObject* args) {
 }
 
 static PyObject* ZP_update(ZPObject* self, PyObject* args) {
-    if (self->smCounter % (1000/SM_SCHEDULING_RATE_HZ) == 0) {
+    if (self->smCounter % (self->sitlRateHz / SM_SCHEDULING_RATE_HZ) == 0) {
         self->sm->smUpdate();
     }
     
-    if (self->tmCounter % (1000/TM_SCHEDULING_RATE_HZ) == 0) {
+    if (self->tmCounter % (self->sitlRateHz / TM_SCHEDULING_RATE_HZ) == 0) {
         self->tm->tmUpdate();
     }
     
-    if (self->amCounter % (1000/AM_SCHEDULING_RATE_HZ) == 0) {
+    if (self->amCounter % (self->sitlRateHz / AM_SCHEDULING_RATE_HZ) == 0) {
         self->am->amUpdate();
     }
     
