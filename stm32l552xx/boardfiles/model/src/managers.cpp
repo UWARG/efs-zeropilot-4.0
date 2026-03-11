@@ -34,7 +34,7 @@ void initManagers()
     smHandle = new (&smHandleStorage) SystemManager(
         systemUtilsHandle, 
         iwdgHandle,
-        loggerHandle,
+        textIOHandle,
         rcHandle,
 		pmHandle,
         amRCQueueHandle,

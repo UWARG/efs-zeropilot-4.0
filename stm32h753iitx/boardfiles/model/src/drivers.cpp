@@ -100,7 +100,7 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg1);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    loggerHandle = new (&loggerStorage) Logger(, systemUtilsHandle); // Initialized later in RTOS task
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 1);

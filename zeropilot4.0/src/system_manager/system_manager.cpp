@@ -4,20 +4,20 @@
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
+    ITextIO *textIODriver,
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *loggerQueue) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
+        logger(textIODriver, systemUtilsDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
-        smLoggerQueue(smLoggerQueue),
+        loggerQueue(loggerQueue),
         smSchedulingCounter(0),
         oldDataCount(0),
         rcConnected(false),
@@ -36,7 +36,8 @@ void SystemManager::smUpdate() {
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
-            loggerDriver->log("RC Connected");
+            strcpy(logBuf, "RC Connected");
+            loggerQueue->push(&logBuf);
             rcConnected = true;
         }
     } else {
@@ -44,7 +45,8 @@ void SystemManager::smUpdate() {
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
-            loggerDriver->log("RC Disconnected");
+            strcpy(logBuf, "RC Disconnected");
+            loggerQueue->push(&logBuf);
             rcConnected = false;
         }
     }
@@ -84,7 +86,7 @@ void SystemManager::smUpdate() {
     }
 
     // Log if new messages
-    if (smLoggerQueue->count() > 0) {
+    if (loggerQueue->count() > 0) {
         sendMessagesToLogger();
     }
 
@@ -122,16 +124,19 @@ void SystemManager::updateBatteryFSM() {
         if (currentBatteryState != batteryData.chargeState) {
             switch (batteryData.chargeState) {
                 case MAV_BATTERY_CHARGE_STATE_OK:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
-                    loggerDriver->log("Battery State: OK");
+                    strcpy(logBuf, "Battery State: OK");
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, logBuf);
+                    loggerQueue->push(&logBuf);
                     break;
                 case MAV_BATTERY_CHARGE_STATE_LOW:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
-                    loggerDriver->log("Battery State: LOW");
+                    strcpy(logBuf, "Battery State: LOW");
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, logBuf);
+                    loggerQueue->push(&logBuf);
                     break;
                 case MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
-                    loggerDriver->log("Battery State: CRITICAL");
+                    strcpy(logBuf, "Battery State: CRITICAL");
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, logBuf);
+                    loggerQueue->push(&logBuf);
                     break;
                 default:
                     break;
@@ -229,13 +234,13 @@ PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
 }
 
 void SystemManager::sendMessagesToLogger() {
-    static char messages[16][100];
+    static char messages[MAX_LOG_MESSAGES_PER_LOOP][100];
     int msgCount = 0;
 
-    while (smLoggerQueue->count() > 0) {
-        smLoggerQueue->get(&messages[msgCount]);
+    while (loggerQueue->count() > 0 && msgCount < MAX_LOG_MESSAGES_PER_LOOP) {
+        loggerQueue->get(&messages[msgCount]);
         msgCount++;
     }
 
-    loggerDriver->log(messages, msgCount);
+    logger.log(messages, msgCount);
 }

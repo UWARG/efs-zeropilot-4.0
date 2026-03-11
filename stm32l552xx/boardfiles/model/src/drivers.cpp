@@ -18,6 +18,7 @@ extern I2C_HandleTypeDef hi2c1;
 // ----------------------------------------------------------------------------
 alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
 alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
+alignas(SDIO) static uint8_t textIOStorage[sizeof(SDIO)];
 alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
 
 alignas(MotorControl) static uint8_t leftAileronMotorStorage[sizeof(MotorControl)];
@@ -45,7 +46,7 @@ alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[siz
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
+SDIO *textIOHandle = nullptr;
 
 MotorControl *leftAileronMotorHandle = nullptr;
 MotorControl *rightAileronMotorHandle = nullptr;
@@ -97,7 +98,7 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    textIOHandle = new (&textIOStorage) SDIO();
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
