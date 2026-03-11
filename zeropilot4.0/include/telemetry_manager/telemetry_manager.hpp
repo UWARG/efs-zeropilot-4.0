@@ -19,16 +19,27 @@ class TelemetryManager {
     mavlink_status_t status;
     mavlink_message_t message;
     mavlink_message_t overflowBuf;
-    bool overflowMsgPending;
+    bool isInitialized = false;
+    bool overflowMsgPending = false;
 
-    void handleRxMsg(const mavlink_message_t &msg);
-    void processMsgQueue();
-    void transmit();
-    void reconstructMsg();
+    ZP_ERROR_e handleRxMsg(const mavlink_message_t &msg);
+    ZP_ERROR_e processMsgQueue();
+    ZP_ERROR_e transmit();
+    ZP_ERROR_e reconstructMsg();
 
   public:
     TelemetryManager(ISystemUtils *systemUtilsDriver, IRFD *rfdDriver, IMessageQueue<TMMessage_t>  *tmQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *messageBuffer);
     ~TelemetryManager();
+    
+    ZP_ERROR_e init() {
+      if (isInitialized) return ZP_ERROR_ALREADY_INITIALIZED;
+      if (!systemUtilsDriver || !rfdDriver || 
+          !tmQueueDriver || !amQueueDriver || !messageBuffer) {
+          return ZP_ERROR_NULLPTR;
+      }
+      isInitialized = true;
+      return ZP_ERROR_OK;
+    }
 
-    void tmUpdate();
+    ZP_ERROR_e tmUpdate();
 };

@@ -71,17 +71,35 @@ typedef struct TMMessage{
     uint32_t timeBootMs = 0;
 } TMMessage_t;
 
-inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
+inline ZP_ERROR_e heartbeatPack(TMMessage_t *data, uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     const TMMessageData_t DATA = {.heartbeatData={base_mode, custom_mode, system_status }};
-    return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
-inline TMMessage_t gposDataPack(uint32_t time_boot_ms, int32_t alt, int32_t lat, int32_t lon, int32_t relative_alt, int16_t vx, int16_t vy, int16_t vz,uint16_t hdg) {
+inline ZP_ERROR_e gposDataPack(TMMessage_t *data, uint32_t time_boot_ms, int32_t alt, int32_t lat, int32_t lon, int32_t relative_alt, int16_t vx, int16_t vy, int16_t vz,uint16_t hdg) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     const TMMessageData_t DATA = {.gposData={alt, lat, lon, relative_alt, vx, vy, vz, hdg }};
-    return TMMessage_t{TMMessage_t::GPOS_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::GPOS_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
-inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
+inline ZP_ERROR_e rcDataPack(TMMessage_t *data, uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+    if (roll < 0.0f || roll > 100.0f)       return ZP_ERROR_INVALID_PARAM;
+    if (pitch < 0.0f || pitch > 100.0f)     return ZP_ERROR_INVALID_PARAM;
+    if (yaw < 0.0f || yaw > 100.0f)         return ZP_ERROR_INVALID_PARAM;
+    if (throttle < 0.0f || throttle > 100.0f) return ZP_ERROR_INVALID_PARAM;
+    if (flap_angle < 0.0f || flap_angle > 100.0f) return ZP_ERROR_INVALID_PARAM;
+    if (arm < 0.0f || arm > 100.0f)         return ZP_ERROR_INVALID_PARAM;
+
     auto rollPPM = static_cast<uint16_t>(1000 + roll * 10);
     auto pitchPPM = static_cast<uint16_t>(1000 + pitch * 10);
     auto yawPPM = static_cast<uint16_t>(1000 + yaw * 10);
@@ -89,11 +107,21 @@ inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, fl
     auto flapAnglePPM = static_cast<uint16_t>(1000 + flap_angle * 10);
     auto armPPM = static_cast<uint16_t>(1000 + arm * 10);
     const TMMessageData_t DATA = {.rcData ={rollPPM, pitchPPM, yawPPM, throttlePPM, flapAnglePPM, armPPM }};
-    return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
-inline TMMessage_t bmDataPack(uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
+inline ZP_ERROR_e bmDataPack(TMMessage_t *data, uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
     int32_t energy_consumed, int8_t battery_remaining, int32_t time_remaining, uint8_t charge_state) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+    if (voltages == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+    if (voltage_len > 16) {
+        return ZP_ERROR_MEMORY_OVERFLOW;
+    }
     uint16_t mavlinkVoltageArray[16] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
     for (int i = 0; i < voltage_len; i++) {
     	mavlinkVoltageArray[i] = static_cast<uint16_t>(voltages[i]);
@@ -103,23 +131,32 @@ inline TMMessage_t bmDataPack(uint32_t time_boot_ms, int16_t temperature, float 
     }
     const TMMessageData_t DATA = {.bmData ={temperature, mavlinkVoltageArray, current_battery,
     current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
-    return TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
+    *data =  TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
-inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
+inline ZP_ERROR_e rawImuDataPack(TMMessage_t *data, uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     int16_t xmag = 0;
     int16_t ymag = 0;
     int16_t zmag = 0;
     uint8_t id = 0;
     int16_t temperature = 0;
     const TMMessageData_t DATA = {.rawImuData ={xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag, id, temperature }};
-    return TMMessage_t{TMMessage_t::RAW_IMU_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::RAW_IMU_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
-inline TMMessage_t attitudeDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw) {
+inline ZP_ERROR_e attitudeDataPack(TMMessage_t *data, uint32_t time_boot_ms, float roll, float pitch, float yaw) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     float rollspeed = 0.0f;
     float pitchspeed = 0.0f;
     float yawspeed = 0.0f;
     const TMMessageData_t DATA = {.attitudeData ={roll, pitch, yaw, rollspeed, pitchspeed, yawspeed }};
-    return TMMessage_t{TMMessage_t::ATTITUDE_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::ATTITUDE_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }

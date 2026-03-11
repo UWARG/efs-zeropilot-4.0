@@ -16,3 +16,19 @@ typedef enum {
     ZP_ERROR_MEMORY_OVERFLOW,      // Buffer or FIFO queue overflow
     ZP_ERROR_PARSE,                // Failed to parse input
 } ZP_ERROR_e;
+
+#define ZP_RETURN_IF_ERROR(expr)       \
+    do {                               \
+        ZP_ERROR_e _err = (expr);     \
+        if (_err != ZP_ERROR_OK) {    \
+            return _err;              \
+        }                              \
+    } while (0)
+
+#define ZP_CHECK_NULL(ptr)             \
+    do {                               \
+        if ((ptr) == NULL) {          \
+            return ZP_ERROR_NULLPTR;  \
+        }                              \
+    } while (0)
+

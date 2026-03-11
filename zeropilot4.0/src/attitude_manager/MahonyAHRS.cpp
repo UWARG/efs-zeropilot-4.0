@@ -23,6 +23,7 @@
 
 #include "MahonyAHRS.hpp"
 #include <math.h>
+#include <error.h>
 
 //-------------------------------------------------------------------------------------------
 // Definitions
@@ -55,7 +56,7 @@ Mahony::Mahony()
 //-------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float az)
+ZP_ERROR_e Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float az)
 {
 	float recipNorm;
 	float halfvx, halfvy, halfvz;
@@ -72,7 +73,7 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
 
 		// Normalise accelerometer measurement
-		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
+		ZP_RETURN_IF_ERROR(invSqrt(ax * ax + ay * ay + az * az, &recipNorm));
 		ax *= recipNorm;
 		ay *= recipNorm;
 		az *= recipNorm;
@@ -122,7 +123,7 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 	q3 += (qa * gz + qb * gy - qc * gx);
 
 	// Normalise quaternion
-	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+	ZP_RETURN_IF_ERROR(invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3, &recipNorm));
 	q0 *= recipNorm;
 	q1 *= recipNorm;
 	q2 *= recipNorm;
@@ -131,13 +132,18 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 	roll = atan2f(q0*q1 + q2*q3, 0.5f - q1*q1 - q2*q2);
 	pitch = asinf(-2.0f * (q1*q3 - q0*q2));
 	yaw = atan2f(q1*q2 + q0*q3, 0.5f - q2*q2 - q3*q3);
+
+	return ZP_ERROR_OK;
 }
 
 //-------------------------------------------------------------------------------------------
 // Fast inverse square-root
 
-float Mahony::invSqrt(float x)
+ZP_ERROR_e Mahony::invSqrt(float x, float *output)
 {
+	if (output == nullptr) return ZP_ERROR_NULLPTR;
+	if (x <= 0) return ZP_ERROR_INVALID_PARAM;
+
 	float halfx = 0.5f * x;
 	union { float f; long l; } i;
 	i.f = x;
@@ -145,7 +151,8 @@ float Mahony::invSqrt(float x)
 	float y = i.f;
 	y = y * (1.5f - (halfx * y * y));
 	y = y * (1.5f - (halfx * y * y));
-	return y;
+	*output = y;
+	return ZP_ERROR_OK;
 }
 
 //============================================================================================

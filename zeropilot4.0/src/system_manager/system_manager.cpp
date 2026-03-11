@@ -24,56 +24,36 @@ SystemManager::SystemManager(
         smSchedulingCounter(0) {}
 
 ZP_ERROR_e SystemManager::smUpdate() {
-    ZP_ERROR_e err;
-
     // Kick the watchdog
-    err = iwdgDriver->refreshWatchdog();
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(iwdgDriver->refreshWatchdog());
 
     // Get RC data from the RC receiver and passthrough to AM if new
     static int oldDataCount = 0;
     static bool rcConnected = true;
 
     RCControl rcData;
-    err = rcDriver->getRCData(&rcData);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(rcDriver->getRCData(&rcData));
 
     if (rcData.isDataNew) {
         oldDataCount = 0;
-        err = sendRCDataToAttitudeManager(rcData);
-        if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        ZP_RETURN_IF_ERROR(sendRCDataToAttitudeManager(rcData));
 
         if (!rcConnected) {
-            err = loggerDriver->log("RC Reconnected");
-            if (err != ZP_ERROR_OK) {
-                return err;
-            }
+            ZP_RETURN_IF_ERROR(loggerDriver->log("RC Reconnected"));
             rcConnected = true;
         }
     } else {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_MAIN_DELAY > 500) && rcConnected) {
-            err = loggerDriver->log("RC Disconnected");
-            if (err != ZP_ERROR_OK) {
-                return err;
-            }
+            ZP_RETURN_IF_ERROR(loggerDriver->log("RC Disconnected"));
             rcConnected = false;
         }
     }
 
     // Send RC data to TM
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_RC_DATA_RATE_HZ) == 0) {
-        err = sendRCDataToTelemetryManager(rcData);
-        if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        ZP_RETURN_IF_ERROR(sendRCDataToTelemetryManager(rcData));
     }
 
     // Populate baseMode based on arm state
@@ -95,33 +75,22 @@ ZP_ERROR_e SystemManager::smUpdate() {
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
-        err = sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
-         if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        ZP_RETURN_IF_ERROR(sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus));
     }
 
     if (pmDriver) {
 		PMData_t pmData;
-		bool pmDataValid = pmDriver->readData(&pmData);
+		ZP_RETURN_IF_ERROR(pmDriver->readData(&pmData));
 		(void)pmDataValid; // TODO: remove when used, this line is to suppress -Wunused-variable
-        if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        
 	}
 
     // Log if new messages
     int msgCount = 0;
-    err = smLoggerQueue->count(&msgCount);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(smLoggerQueue->count(&msgCount));
 
     if (msgCount > 0) {
-        err = sendMessagesToLogger();
-        if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        ZP_RETURN_IF_ERROR(sendMessagesToLogger());
     }
 
     // Increment scheduling counter
@@ -131,45 +100,30 @@ ZP_ERROR_e SystemManager::smUpdate() {
 }
 
 ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
-    ZP_ERROR_e err;
     uint32_t timestamp;
 
-    err = systemUtilsDriver->getCurrentTimestampMs(&timestamp);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(systemUtilsDriver->getCurrentTimestampMs(&timestamp));
 
     TMMessage_t rcDataMsg = rcDataPack(timestamp, rcData.roll, rcData.pitch, rcData.yaw, rcData.throttle, rcData.aux2, rcData.arm);
 
-    err = tmQueue->push(&rcDataMsg);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(tmQueue->push(&rcDataMsg));
 
     return ZP_ERROR_OK;
 }
 
 ZP_ERROR_e SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
-    ZP_ERROR_e err;
     uint32_t timestamp;
 
-    err = systemUtilsDriver->getCurrentTimestampMs(&timestamp);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(systemUtilsDriver->getCurrentTimestampMs(&timestamp));
 
     TMMessage_t hbDataMsg = heartbeatPack(timestamp, baseMode, customMode, systemStatus);
 
-    err = tmQueue->push(&hbDataMsg);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(tmQueue->push(&hbDataMsg));
 
     return ZP_ERROR_OK;
 }
 
 ZP_ERROR_e SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
-    ZP_ERROR_e err;
     RCMotorControlMessage_t rcDataMessage;
 
     rcDataMessage.roll = rcData.roll;
@@ -179,42 +133,26 @@ ZP_ERROR_e SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.arm = rcData.arm;
     rcDataMessage.flapAngle = rcData.aux2;
 
-    err = amRCQueue->push(&rcDataMessage);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(amRCQueue->push(&rcDataMessage));
 
     return ZP_ERROR_OK;
 }
 
 ZP_ERROR_e SystemManager::sendMessagesToLogger() {
-    ZP_ERROR_e err;
     static char messages[16][100];
     int msgCount = 0;
     int queueCount = 0;
 
-    err = smLoggerQueue->count(&queueCount);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(smLoggerQueue->count(&queueCount));
 
     while (queueCount > 0) {
-        err = smLoggerQueue->get(&messages[msgCount]);
-        if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        ZP_RETURN_IF_ERROR(smLoggerQueue->get(&messages[msgCount]));
         msgCount++;
 
-        err = smLoggerQueue->count(&queueCount);
-        if (err != ZP_ERROR_OK) {
-            return err;
-        }
+        ZP_RETURN_IF_ERROR(smLoggerQueue->count(&queueCount));
     }
 
-    err = loggerDriver->log(messages, msgCount);
-    if (err != ZP_ERROR_OK) {
-        return err;
-    }
+    ZP_RETURN_IF_ERROR(loggerDriver->log(messages, msgCount));
 
     return ZP_ERROR_OK;
 }

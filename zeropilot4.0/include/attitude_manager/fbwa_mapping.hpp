@@ -8,16 +8,19 @@ class FBWAMapping : public Flightmode {
     public:
         FBWAMapping() noexcept;
 
-        RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
+        ZP_ERROR_e init();
 
+        ZP_ERROR_e runControl(RCMotorControlMessage_t *controlOutput, const RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
+        
         // Setter *roll* for PID consts
-        void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        ZP_ERROR_e setRollPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
 
         // Setter for *pitch* PID consts
-        void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        ZP_ERROR_e setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
 
         // Destructor
         ~FBWAMapping() noexcept override;
+        bool isInitialized = false;
     
     private:
 
