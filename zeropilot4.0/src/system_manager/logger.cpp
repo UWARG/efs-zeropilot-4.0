@@ -33,7 +33,7 @@ int Logger::log(const char message[100]) {
     char msgToSend[112]; //10 for timestamp, 100 for message, 2 for new line
 
     uint32_t ts = sysUtils->getCurrentTimestampMs() / 1000;
-    int tsStrLen = snprintf(msgToSend, 10, "%us: ", ts);
+    int tsStrLen = snprintf(msgToSend, 10, "%lus: ", ts);
 
     int res;
     res = textIO->open(logFile, FA_WRITE | FA_OPEN_APPEND);
@@ -55,7 +55,7 @@ int Logger::log(const char message[][100], int count) {
     char msgToSend[112]; //10 for timestamp, 100 for message, 2 for new line
 
     uint32_t ts = sysUtils->getCurrentTimestampMs() / 1000;
-    int tsStrLen = snprintf(msgToSend, 10, "%us: ", ts);
+    int tsStrLen = snprintf(msgToSend, 10, "%lus: ", ts);
 
     int res;
     textIO->open(logFile, FA_WRITE | FA_OPEN_APPEND);

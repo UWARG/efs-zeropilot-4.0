@@ -237,7 +237,7 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         {1815.0f, SM_FLIGHTMODE6}
     };
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockTextIO, &mockRC, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     for (const auto& test : testCases) {
