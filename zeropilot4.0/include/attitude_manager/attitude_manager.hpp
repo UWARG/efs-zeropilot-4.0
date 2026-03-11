@@ -26,11 +26,11 @@
 static constexpr float AM_FBWA_ROLL_P_GAIN = 1.120f;
 static constexpr float AM_FBWA_ROLL_I_GAIN = 0.100f;
 static constexpr float AM_FBWA_ROLL_D_GAIN = 0.650f;
-static constexpr float AM_FBWA_ROLL_D_TAU = 0.05f;
+static constexpr float AM_FBWA_ROLL_D_TAU = 0.02f;
 static constexpr float AM_FBWA_PITCH_P_GAIN = 2.250f;
 static constexpr float AM_FBWA_PITCH_I_GAIN = 0.250f;
 static constexpr float AM_FBWA_PITCH_D_GAIN = 1.400f;
-static constexpr float AM_FBWA_PITCH_D_TAU = 0.05f;
+static constexpr float AM_FBWA_PITCH_D_TAU = 0.02f;
 static constexpr float AM_FBWA_RUDDER_MIXING = 0.5f;
 
 typedef enum {
