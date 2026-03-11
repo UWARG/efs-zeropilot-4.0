@@ -115,9 +115,9 @@ void AttitudeManager::amUpdate() {
               smLoggerQueue->push(&errorMsg);
               failsafeTriggered = true;
             }
-        }
 
-        return;
+            return;
+        }
     } else {
         noDataCount = 0;
 

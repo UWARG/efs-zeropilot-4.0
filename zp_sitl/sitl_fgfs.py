@@ -6,10 +6,12 @@ import os
 import tempfile
 import pygame
 import sys
-import zeropilot
+import zeropilot # type: ignore
 
 # Suppress pygame and JSBSim chatter
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
+SITL_RATE_HZ = 1000
 
 class ZP_FGFS_SITL:
     def __init__(self, fg_host="127.0.0.1", fg_port=5550):
@@ -25,10 +27,10 @@ class ZP_FGFS_SITL:
         self.fg_out_file = self._create_fg_directive(fg_host, fg_port)
         self.fdm.load_model('c172p')
         self.fdm.set_output_directive(self.fg_out_file)
-        self.fdm.set_dt(0.001)
+        self.fdm.set_dt(1.0 / SITL_RATE_HZ)
 
         # 3. State Setup
-        self.zp = zeropilot.ZeroPilot()
+        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ)
         self.running = True
         self.armed = False
         self.paused = True 
@@ -181,7 +183,7 @@ if __name__ == '__main__':
     os.system('cls' if os.name == 'nt' else 'clear')
     threading.Thread(target=sitl.update_joystick, daemon=True).start()
 
-    target_dt, next_step, last_print = 0.001, time.perf_counter(), 0
+    target_dt, next_step, last_print = (1.0 / SITL_RATE_HZ), time.perf_counter(), 0
     try:
         while True:
             while time.perf_counter() < next_step: pass
