@@ -5,6 +5,7 @@ AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
+    IAirspeed *airspeedDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -18,12 +19,14 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    airspeedDriver(airspeedDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    fbwbCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
     currentFlightMode(PlaneFlightMode_e::MANUAL),
@@ -53,6 +56,33 @@ AttitudeManager::AttitudeManager(
         AM_FBWA_PITCH_D_TAU
     );
     fbwaCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
+
+    // Set PID constants for FBWB control law
+    fbwbCLAW.setRollPIDConstants(
+        AM_FBWA_ROLL_P_GAIN,
+        AM_FBWA_ROLL_I_GAIN,
+        AM_FBWA_ROLL_D_GAIN,
+        AM_FBWA_ROLL_D_TAU
+    );
+    fbwbCLAW.setPitchPIDConstants(
+        AM_FBWA_PITCH_P_GAIN,
+        AM_FBWA_PITCH_I_GAIN,
+        AM_FBWA_PITCH_D_GAIN,
+        AM_FBWA_PITCH_D_TAU
+    );
+    fbwbCLAW.setTotalEnergyPIDConstants(
+        AM_FBWB_TOTAL_ENERGY_P_GAIN,
+        AM_FBWB_TOTAL_ENERGY_I_GAIN,
+        AM_FBWB_TOTAL_ENERGY_D_GAIN,
+        AM_FBWB_TOTAL_ENERGY_D_TAU
+    );
+    fbwbCLAW.setEnergyBalancePIDConstants(
+        AM_FBWB_ENERGY_BALANCE_P_GAIN,
+        AM_FBWB_ENERGY_BALANCE_I_GAIN,
+        AM_FBWB_ENERGY_BALANCE_D_GAIN,
+        AM_FBWB_ENERGY_BALANCE_D_TAU
+    );
+    fbwbCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
@@ -93,8 +123,15 @@ void AttitudeManager::amUpdate() {
 
     // Send GPS data to telemetry manager
     GpsData_t gpsData = gpsDriver->readData();
+    droneState.altitude = gpsData.altitude;
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
         sendGPSDataToTelemetryManager(gpsData);
+    }
+
+    // Read airspeed
+    double airspeedData = 0.0f;
+    if (airspeedDriver->getAirspeedData(&airspeedData)) {
+        droneState.airspeed = airspeedData;
     }
 
     // Get data from Queue and motor outputs
@@ -145,6 +182,9 @@ void AttitudeManager::amUpdate() {
                 break;
             case PlaneFlightMode_e::FBWA:
                 activeCLAW = &fbwaCLAW;
+                break;
+            case PlaneFlightMode_e::FBWB:
+                activeCLAW = &fbwbCLAW;
                 break;
         }
         activeCLAW->activateFlightMode();

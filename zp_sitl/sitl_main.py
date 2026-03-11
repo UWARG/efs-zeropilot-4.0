@@ -89,6 +89,7 @@ class ZP_SITL:
                 self.fdm['position/h-sl-ft'] * 0.3048,
                 self.fdm['velocities/vg-fps'] * 0.3048,
                 self.fdm['attitude/psi-deg'],
+                self.fdm['velocities/vc-kts'] * 0.5144, # m/s
                 self.fdm['propulsion/total-fuel-lbs'],
                 self.fdm['propulsion/engine/propeller-rpm']
             )

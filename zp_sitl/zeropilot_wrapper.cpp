@@ -10,6 +10,7 @@
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
+#include "sitl_drivers/sitl_airspeed.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
@@ -61,6 +62,7 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
+    SITL_Airspeed* airspeed;
     SITL_Motor* rollMotor;
     SITL_Motor* pitchMotor;
     SITL_Motor* yawMotor;
@@ -103,6 +105,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
+    delete self->airspeed;
     delete self->rollMotor;
     delete self->pitchMotor;
     delete self->yawMotor;
@@ -138,6 +141,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
+        self->airspeed = new SITL_Airspeed();
         self->rollMotor = new SITL_Motor(1);
         self->pitchMotor = new SITL_Motor(2);
         self->yawMotor = new SITL_Motor(4);
@@ -171,7 +175,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->gps, self->imu,
+            self->sysUtils, self->gps, self->imu, self->airspeed,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->rollGroup, &self->pitchGroup, &self->yawGroup,
             &self->throttleGroup, &self->flapGroup, &self->steeringGroup
@@ -189,17 +193,20 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double roll_rad, pitch_rad;
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
+    double airspeed_mps;
     float fuel_lbs, rpm;
     
-    if (!PyArg_ParseTuple(args, "ddddddddddff",
+    if (!PyArg_ParseTuple(args, "dddddddddddff",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
+        &airspeed_mps,
         &fuel_lbs, &rpm))
         return NULL;
     
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
+    self->airspeed->update_from_plant(airspeed_mps);
     self->pm->update_from_plant(fuel_lbs, rpm);
     
     Py_RETURN_NONE;
