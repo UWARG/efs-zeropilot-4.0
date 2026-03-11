@@ -111,8 +111,8 @@ void AttitudeManager::amUpdate() {
             outputToMotor(STEERING, 50);
 
             if (!failsafeTriggered) {
-              char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
+              strcpy(logBuf, "Failsafe triggered");
+              smLoggerQueue->push(&logBuf);
               failsafeTriggered = true;
             }
         }
@@ -122,9 +122,9 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
-          failsafeTriggered = false;
+            strcpy(logBuf, "Motor control restored");
+            smLoggerQueue->push(&logBuf);
+            failsafeTriggered = false;
         }
     }
 
@@ -217,7 +217,6 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
         motor->motorInstance->set(cmd);
     }
 }
-
 
 void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     if (!gpsData.isNew) return;

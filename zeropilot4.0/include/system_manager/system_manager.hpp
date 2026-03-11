@@ -22,6 +22,8 @@
 #define SM_BATTERY_LOW_TIME_MS 10000
 #define SM_BATTERY_CRITICAL_TIME_MS 3000
 
+#define MAX_LOG_MESSAGES_PER_LOOP 16
+
 // Flightmode constants
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE1 = PlaneFlightMode_e::MANUAL;
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE2 = PlaneFlightMode_e::FBWA;
@@ -59,12 +61,12 @@ class SystemManager {
         SystemManager(
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
-            Logger *loggerDriver,
+            ITextIO *textIODriver,
             IRCReceiver *rcDriver,
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue
+            IMessageQueue<char[100]> *loggerQueue
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
@@ -73,13 +75,14 @@ class SystemManager {
         ISystemUtils *systemUtilsDriver; // System utilities instance
 
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
-        Logger *loggerDriver; // Logger driver
+        Logger logger; // Logger instance
+        char logBuf[100];
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver; // Power module driver
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
-        IMessageQueue<char[100]> *smLoggerQueue; // Queue driver for rx communication from other modules to the System Manager for logging
+        IMessageQueue<char[100]> *loggerQueue; // Queue driver for rx communication from other modules to the System Manager for logging
 
         uint8_t smSchedulingCounter;
 

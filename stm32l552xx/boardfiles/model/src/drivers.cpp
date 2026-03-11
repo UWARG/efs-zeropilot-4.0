@@ -46,7 +46,6 @@ alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[siz
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
 SDIO *textIOHandle = nullptr;
 
 MotorControl *leftAileronMotorHandle = nullptr;
@@ -100,8 +99,6 @@ void initDrivers()
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
     textIOHandle = new (&textIOStorage) SDIO();
-    loggerHandle = new (&loggerStorage) Logger(textIOHandle, systemUtilsHandle);
-    loggerHandle->init();
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);

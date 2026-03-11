@@ -8,7 +8,6 @@ Logger::Logger(ITextIO *textIO, ISystemUtils *sysUtils) : textIO(textIO), sysUti
 }
 
 int Logger::init() {
-#if defined(SD_CARD_LOGGING)
     sysUtils->delayMs(1000); //wait for SD card to stabilize
 
     int res;
@@ -28,10 +27,6 @@ int Logger::init() {
     }
 
     return res;
-#elif defined(SWO_LOGGING)
-    return 0;
-#endif
-
 }
 
 int Logger::log(const char message[100]) {
@@ -40,7 +35,6 @@ int Logger::log(const char message[100]) {
     uint32_t ts = sysUtils->getCurrentTimestampMs() / 1000;
     int tsStrLen = snprintf(msgToSend, 10, "%us: ", ts);
 
-#if defined(SD_CARD_LOGGING)
     int res;
     res = textIO->open(logFile, FA_WRITE | FA_OPEN_APPEND);
 
@@ -48,15 +42,13 @@ int Logger::log(const char message[100]) {
     snprintf(msgToSend + tsStrLen + strlen(message), 3, "\r\n");
     res = textIO->write(msgToSend);
 
+#if defined(DEBUG)
+    printf("%s", msgToSend);
+#endif
+
     res = textIO->close();
 
     return res;
-#elif defined(SWO_LOGGING)
-    snprintf(msgToSend + tsStrLen, 100, message);
-    snprintf(msgToSend + tsStrLen + strlen(message), 3, "\r\n");
-    printf("%s", msgToSend);
-    return 0;
-#endif
 }
 
 int Logger::log(const char message[][100], int count) {
@@ -65,7 +57,6 @@ int Logger::log(const char message[][100], int count) {
     uint32_t ts = sysUtils->getCurrentTimestampMs() / 1000;
     int tsStrLen = snprintf(msgToSend, 10, "%us: ", ts);
 
-#if defined(SD_CARD_LOGGING)
     int res;
     textIO->open(logFile, FA_WRITE | FA_OPEN_APPEND);
 
@@ -73,17 +64,13 @@ int Logger::log(const char message[][100], int count) {
       snprintf(msgToSend + tsStrLen, 100, message[i]);
       snprintf(msgToSend + tsStrLen + strlen(message[i]), 3, "\r\n");
       res = textIO->write(msgToSend);
+
+#if defined(DEBUG)
+        printf("%s", msgToSend);
+#endif
     }
 
     res = textIO->close();
 
     return res;
-#elif defined(SWO_LOGGING)
-    for (int i = 0; i < count; i++) {
-      snprintf(msgToSend + tsStrLen, 100, message[i]);
-      snprintf(msgToSend + tsStrLen + strlen(message[i]), 3, "\r\n");
-      printf("%s", msgToSend);
-    }
-    return 0;
-#endif
 }
