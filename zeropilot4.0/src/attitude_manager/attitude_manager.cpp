@@ -130,8 +130,9 @@ void AttitudeManager::amUpdate() {
     }
 
     // Update armedFlag and activateFlightMode() on rising edge
-    if (controlMsg.arm != armedFlag) {
-        armedFlag = controlMsg.arm;
+    bool currArmed = (controlMsg.arm != 0);
+    if (currArmed != armedFlag) {
+        armedFlag = currArmed;
         if (armedFlag) {
             activeCLAW->activateFlightMode();
         }
