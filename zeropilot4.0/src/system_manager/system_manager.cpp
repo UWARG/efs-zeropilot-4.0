@@ -160,7 +160,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = rcData.pitch;
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
-    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD ? true : false;
+    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
