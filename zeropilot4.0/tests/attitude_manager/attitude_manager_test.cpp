@@ -70,7 +70,7 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
     rcMsg.pitch = 70.0f;
     rcMsg.yaw = 55.0f;
     rcMsg.throttle = 80.0f;
-    rcMsg.arm = 100.0f;
+    rcMsg.arm = true;
     rcMsg.flapAngle = 30.0f;
     rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
 
@@ -96,7 +96,7 @@ TEST_F(AttitudeManagerTest, DisarmThrottleZero) {
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 80.0f;
-    rcMsg.arm = 0.0f;
+    rcMsg.arm = false;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
 
@@ -136,7 +136,7 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery) {
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
-    rcMsg.arm = 100.0f;
+    rcMsg.arm = true;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
@@ -173,7 +173,7 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
-    rcMsg.arm = 100.0f;
+    rcMsg.arm = true;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
@@ -200,7 +200,7 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
-    rcMsg.arm = 100.0f;
+    rcMsg.arm = true;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
@@ -224,7 +224,7 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper) {
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
-    rcMsg.arm = 100.0f;
+    rcMsg.arm = true;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = PlaneFlightMode_e::MANUAL;
     
