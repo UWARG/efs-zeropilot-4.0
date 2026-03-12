@@ -43,7 +43,7 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
     validRCData.pitch = 50.0f;
     validRCData.yaw = 50.0f;
     validRCData.throttle = 50.0f;
-    validRCData.arm = 1.0f;
+    validRCData.arm = 100.0f;
 
     RCControl staleRCData = validRCData;
     staleRCData.isDataNew = false;
@@ -244,7 +244,7 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         RCControl rcData;
         rcData.isDataNew = true;
         rcData.fltModeRaw = scalePWM(test.pwm);
-        rcData.arm = 1; // Armed to ensure data flows
+        rcData.arm = 100.0f; // Armed to ensure data flows
 
         // Expect the RC driver to return our test value
         EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));

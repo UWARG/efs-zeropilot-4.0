@@ -87,6 +87,8 @@ class AttitudeManager {
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
 
+        bool armedFlag;
+
         uint16_t lastServoOutputs[16];
 
         uint8_t amSchedulingCounter;
