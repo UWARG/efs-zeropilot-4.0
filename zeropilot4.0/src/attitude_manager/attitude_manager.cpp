@@ -33,6 +33,7 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
+    armedFlag(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
@@ -128,11 +129,15 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Disarm
-    if (controlMsg.arm == 0) {
-        controlMsg.throttle = 0;
+    // Update armedFlag and activateFlightMode() on rising edge
+    if (controlMsg.arm != armedFlag) {
+        armedFlag = controlMsg.arm;
+        if (armedFlag) {
+            activeCLAW->activateFlightMode();
+        }
     }
 
+    // Update current flightmode if changed
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
             case PlaneFlightMode_e::MANUAL:
@@ -146,8 +151,15 @@ void AttitudeManager::amUpdate() {
         currentFlightMode = controlMsg.flightMode;
     }
 
+    // Run the active control law
     RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
 
+    // Disarm logic
+    if (!armedFlag) {
+        motorOutputs.throttle = 0;
+    }
+
+    // Output to motors
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
     outputToMotor(ROLL, motorOutputs.roll);
