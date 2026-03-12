@@ -54,9 +54,12 @@ void SystemManager::smUpdate() {
         sendRCDataToTelemetryManager(rcData);
     }
 
+    // Set armed status based on SM_RC_ARM_THRESHOLD
+    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
+
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    if (rcData.arm) {
+    if (armed) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -64,7 +67,7 @@ void SystemManager::smUpdate() {
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (!rcConnected) {
         systemStatus = MAV_STATE_CRITICAL;
-    } else if (!rcData.arm) {
+    } else if (!armed) {
         systemStatus = MAV_STATE_STANDBY;
     }
 
@@ -157,7 +160,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = rcData.pitch;
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
-    rcDataMessage.arm = rcData.arm;
+    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD ? true : false;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 

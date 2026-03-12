@@ -22,6 +22,9 @@
 #define SM_BATTERY_LOW_TIME_MS 10000
 #define SM_BATTERY_CRITICAL_TIME_MS 3000
 
+// RC Arm threshold
+static constexpr float SM_RC_ARM_THRESHOLD = 50.0f;
+
 // Flightmode constants
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE1 = PlaneFlightMode_e::MANUAL;
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE2 = PlaneFlightMode_e::FBWA;

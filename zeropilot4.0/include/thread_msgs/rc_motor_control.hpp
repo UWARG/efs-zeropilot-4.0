@@ -12,7 +12,7 @@ typedef struct {
     float pitch;
     float yaw;
     float throttle;
-    float arm;
+    bool arm;
     float flapAngle;
     PlaneFlightMode_e flightMode;
 } RCMotorControlMessage_t;
