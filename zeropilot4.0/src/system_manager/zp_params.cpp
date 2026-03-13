@@ -37,7 +37,7 @@ void init() {
     initSingleParam(ZP_PARAM_ID::KFF_RDDRMIX,   "KFF_RDDRMIX",   0.500f, MAV_PARAM_TYPE_REAL32);
 }
 
-void bindCallback(ZP_PARAM_ID id, void* context, ParamSetterCb setter) {
+void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb setter) {
     uint16_t index = static_cast<uint16_t>(id);
     if (index < getCount()) {
         params[index].context = context;
@@ -56,12 +56,17 @@ float get(ZP_PARAM_ID id) {
 bool setParamById(const char* param_id, float new_value) {
     for (uint16_t i = 0; i < getCount(); ++i) {
         if (std::strncmp(params[i].param_id, param_id, PARAM_MAX_IDENTIFIER_LEN) == 0) {
-            params[i].param_value = new_value;
-
-            // Notify any registered class instance of the update (e.g., PID controller)
+            
+            // 1. If there's a setter, let it decide if the value is okay first
             if (params[i].setter != nullptr) {
-                params[i].setter(params[i].context, new_value);
+                if (!params[i].setter(params[i].context, new_value)) {
+                    // Rejection! Don't update the registry, just return false
+                    return false;
+                }
             }
+
+            // 2. If setter succeeded (or there is no setter), commit to registry
+            params[i].param_value = new_value;
             return true;
         }
     }

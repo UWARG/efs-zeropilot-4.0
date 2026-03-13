@@ -5,7 +5,7 @@
 #define PARAM_MAX_IDENTIFIER_LEN 17
 
 // Function pointer signature for parameter callbacks
-typedef void (*ParamSetterCb)(void* context, float newValue);
+typedef bool (*ParamSetterCb)(void* context, float newValue);
 
 typedef struct {
     char param_id[PARAM_MAX_IDENTIFIER_LEN];
@@ -36,7 +36,13 @@ namespace ZP_PARAM {
     void init();
 
     // Bind a callback to a specific parameter
-    void bindCallback(ZP_PARAM_ID id, void* context, ParamSetterCb setter);
+    void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb setter);
+
+    // Templated wrapper for bindCallbackInternal
+    template <typename T>
+    void bindCallback(ZP_PARAM_ID id, T* context, bool (*setter)(T*, float)) {
+        bindCallbackInternal(id, static_cast<void*>(context), reinterpret_cast<ParamSetterCb>(setter));
+    }
 
     // Get current config value
     float get(ZP_PARAM_ID id);

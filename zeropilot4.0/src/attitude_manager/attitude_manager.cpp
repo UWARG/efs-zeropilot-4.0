@@ -2,17 +2,6 @@
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
 
-// Forward Declarations for ZP_PARAM Callbacks
-static void updatePIDRollKp(void* context, float val);
-static void updatePIDRollKi(void* context, float val);
-static void updatePIDRollKd(void* context, float val);
-static void updatePIDRollTau(void* context, float val);
-static void updatePIDPitchKp(void* context, float val);
-static void updatePIDPitchKi(void* context, float val);
-static void updatePIDPitchKd(void* context, float val);
-static void updatePIDPitchTau(void* context, float val);
-static void updateKffRddrmix(void* context, float val);
-
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
@@ -52,15 +41,15 @@ AttitudeManager::AttitudeManager(
     failsafeTriggered(false) {
 
     // Bind all ZP Param setters relevant to AM
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KP, &fbwaCLAW, updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KI, &fbwaCLAW, updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KD, &fbwaCLAW, updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_TAU, &fbwaCLAW, updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KP, &fbwaCLAW, updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KI, &fbwaCLAW, updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KD, &fbwaCLAW, updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_TAU, &fbwaCLAW, updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, &fbwaCLAW, updateKffRddrmix);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KP, this, AttitudeManager::updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KI, this, AttitudeManager::updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KD, this, AttitudeManager::updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_TAU, this, AttitudeManager::updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KP, this, AttitudeManager::updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KI, this, AttitudeManager::updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KD, this, AttitudeManager::updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_TAU, this, AttitudeManager::updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
 
     // Set PID constants and rudder mixing constant for FBWA control law
     fbwaCLAW.setRollPIDConstants(
@@ -327,39 +316,66 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
 // STATIC FUNCTIONS ONLY FOR PARAM CHAINING
 // ==============================================================
-static void updatePIDRollKp(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getRollPID()->setKp(val);
+bool AttitudeManager::updatePIDRollKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setKp(val);
+    return true;
 }
 
-static void updatePIDRollKi(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getRollPID()->setKi(val);
+bool AttitudeManager::updatePIDRollKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setKi(val);
+    return true;
 }
 
-static void updatePIDRollKd(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getRollPID()->setKd(val);
+bool AttitudeManager::updatePIDRollKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setKd(val);
+    return true;
 }
 
-static void updatePIDRollTau(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getRollPID()->setTau(val);
+bool AttitudeManager::updatePIDRollTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setTau(val);
+    return true;
 }
 
-static void updatePIDPitchKp(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getPitchPID()->setKp(val);
+bool AttitudeManager::updatePIDPitchKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setKp(val);
+    return true;
 }
 
-static void updatePIDPitchKi(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getPitchPID()->setKi(val);
+bool AttitudeManager::updatePIDPitchKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setKi(val);
+    return true;
 }
 
-static void updatePIDPitchKd(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getPitchPID()->setKd(val);
+bool AttitudeManager::updatePIDPitchKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setKd(val);
+    return true;
 }
 
-static void updatePIDPitchTau(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->getPitchPID()->setTau(val);
+bool AttitudeManager::updatePIDPitchTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setTau(val);
+    return true;
 }
 
-static void updateKffRddrmix(void* context, float val) {
-    static_cast<FBWAMapping*>(context)->setYawRudderMixingConstant(val);
+bool AttitudeManager::updateKffRddrmix(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 1.0f) return false;
+
+    static_cast<AttitudeManager*>(context)->fbwaCLAW.setYawRudderMixingConstant(val);
+    return true;
 }
 // ==============================================================

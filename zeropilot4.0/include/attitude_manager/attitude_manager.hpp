@@ -93,4 +93,15 @@ class AttitudeManager {
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
+
+        // ZP_PARAM callback functions
+        static bool updatePIDRollKp(AttitudeManager* context, float val);
+        static bool updatePIDRollKi(AttitudeManager* context, float val);
+        static bool updatePIDRollKd(AttitudeManager* context, float val);
+        static bool updatePIDRollTau(AttitudeManager* context, float val);
+        static bool updatePIDPitchKp(AttitudeManager* context, float val);
+        static bool updatePIDPitchKi(AttitudeManager* context, float val);
+        static bool updatePIDPitchKd(AttitudeManager* context, float val);
+        static bool updatePIDPitchTau(AttitudeManager* context, float val);
+        static bool updateKffRddrmix(AttitudeManager* context, float val);
 };
