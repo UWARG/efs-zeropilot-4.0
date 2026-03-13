@@ -12,7 +12,13 @@ class PID {
 
         // For the PID roll & pitch consts -> may choose these to be optimized real-time dep. on optimization alg. chosen
         void setConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
-        
+
+        // Setter for individual constants to be passed to ZP_PARAM layer
+        void setKp(float newKp) noexcept;
+        void setKi(float newKi) noexcept;
+        void setKd(float newKd) noexcept;
+        void setTau(float newTau) noexcept;
+
         // Computes PID for a measurement with its desired setpoint passed in
         float pidOutput(float setpoint, float measurement) noexcept;
 

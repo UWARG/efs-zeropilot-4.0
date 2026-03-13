@@ -1,4 +1,5 @@
 #include "telemetry_manager.hpp"
+#include "zp_params.hpp"
 
 #define SYSTEM_ID 1             // Suggested System ID by Mavlink
 #define COMPONENT_ID 1          // Suggested Component ID by MAVLINK
@@ -15,14 +16,48 @@ TelemetryManager::TelemetryManager(
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
-    overflowMsgPending(false) {}
+    overflowMsgPending(false),
+    currParamListTxIdx(ZP_PARAM::getCount()),
+    reqParamTxIdx(ZP_PARAM::getCount()) {}
 
 TelemetryManager::~TelemetryManager() = default;
 
 void TelemetryManager::tmUpdate() {
 	receive();
+    processParamTx();
     processTXMsgQueue();
     transmit();
+}
+
+void TelemetryManager::processParamTx() {
+    uint16_t totalCount = ZP_PARAM::getCount();
+    uint16_t idx = totalCount;
+
+    if (reqParamTxIdx < totalCount) {
+        idx = reqParamTxIdx;
+        reqParamTxIdx = totalCount;
+    } else if (currParamListTxIdx < totalCount) {
+        idx = currParamListTxIdx++;
+    }
+
+    if (idx < totalCount) {
+        // Fetch from global namespace
+        Param_t* p = ZP_PARAM::getParamByIndex(idx);
+        if (!p) return;
+
+        mavlink_message_t mavlinkMessage = {0};
+        mavlink_msg_param_value_pack(
+            SYSTEM_ID,
+            COMPONENT_ID,
+            &mavlinkMessage,
+            p->param_id,
+            p->param_value,
+            p->param_type,
+            totalCount,
+            idx
+        );
+        packedMsgBuffer->push(&mavlinkMessage);
+    }
 }
 
 void TelemetryManager::processTXMsgQueue() {
@@ -165,21 +200,44 @@ void TelemetryManager::receive() {
 
 void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
     switch (msg.msgid) {
-        case MAVLINK_MSG_ID_PARAM_SET: {
-            float valueToSet;
-            char paramToSet[MAVLINK_MAX_IDENTIFIER_LEN] = {};
-            uint8_t valueType;
-            valueToSet = mavlink_msg_param_set_get_param_value(&msg);
-            valueType = mavlink_msg_param_set_get_param_type(&msg);
+        case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
+            currParamListTxIdx = 0;
+            break;
+        }
 
-            if(paramToSet[0] == 'A'){ // Would prefer to do this using an ENUM LUT but if this is the only param being set its whatever
-                RCMotorControlMessage_t armDisarmMsg{};
-                armDisarmMsg.arm = valueToSet;
-                amQueueDriver->push(&armDisarmMsg);
+        case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
+            int16_t param_index = mavlink_msg_param_request_read_get_param_index(&msg);
+            if (param_index != -1) {
+                reqParamTxIdx = param_index;
+            } else {
+                char paramId[PARAM_MAX_IDENTIFIER_LEN];
+                mavlink_msg_param_request_read_get_param_id(&msg, paramId);
+                // Use the namespace to find the index
+                reqParamTxIdx = ZP_PARAM::getIndexById(paramId);
             }
-            mavlink_message_t response = {};
-            mavlink_msg_param_value_pack(SYSTEM_ID, COMPONENT_ID, &response, paramToSet, valueToSet, valueType, 1, 0);
-            packedMsgBuffer->push(&response);
+            break;
+        }
+
+        case MAVLINK_MSG_ID_PARAM_SET: {
+            mavlink_param_set_t set_msg;
+            mavlink_msg_param_set_decode(&msg, &set_msg);
+
+            // Update the global registry
+            if (ZP_PARAM::setParamById(set_msg.param_id, set_msg.param_value)) {
+                // Enqueue response
+                mavlink_message_t response = {0};
+                mavlink_msg_param_value_pack(
+                    SYSTEM_ID,
+                    COMPONENT_ID,
+                    &response,
+                    set_msg.param_id,
+                    set_msg.param_value,
+                    set_msg.param_type,
+                    ZP_PARAM::getCount(),
+                    ZP_PARAM::getIndexById(set_msg.param_id)
+                );
+                packedMsgBuffer->push(&response);
+            }
             break;
         }
 

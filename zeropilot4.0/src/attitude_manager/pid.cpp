@@ -24,6 +24,11 @@ void PID::setConstants(float newKp, float newKi, float newKd, float newTau) noex
     tau = newTau;
 }
 
+void PID::setKp(float newKp) noexcept { kp = newKp; }
+void PID::setKi(float newKi) noexcept { ki = newKi; }
+void PID::setKd(float newKd) noexcept { kd = newKd; }
+void PID::setTau(float newTau) noexcept { tau = newTau; }
+
 // Update method
 float PID::pidOutput(float setpoint, float measurement) noexcept {
     // Calculate error

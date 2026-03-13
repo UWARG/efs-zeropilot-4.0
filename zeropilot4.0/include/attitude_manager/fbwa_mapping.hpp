@@ -23,6 +23,10 @@ class FBWAMapping : public Flightmode {
         // Resetter for both roll and pitch PIDs
         void resetControlLoopState() noexcept;
 
+        // Getter for PID objects
+        PID *getRollPID() noexcept;
+        PID *getPitchPID() noexcept;
+
         // Destructor
         ~FBWAMapping() noexcept override = default;
 

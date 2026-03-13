@@ -34,6 +34,10 @@ void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
     yawRudderMixingConst = newMixingConst;
 }
 
+// Getter for PID objects
+PID *FBWAMapping::getRollPID() noexcept { return &rollPID; }
+PID *FBWAMapping::getPitchPID() noexcept { return &pitchPID; }
+
 void FBWAMapping::activateFlightMode() {
     resetControlLoopState();
 }

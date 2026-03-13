@@ -1,5 +1,17 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
+#include "zp_params.hpp"
+
+// Forward Declarations for ZP_PARAM Callbacks
+static void updatePIDRollKp(void* context, float val);
+static void updatePIDRollKi(void* context, float val);
+static void updatePIDRollKd(void* context, float val);
+static void updatePIDRollTau(void* context, float val);
+static void updatePIDPitchKp(void* context, float val);
+static void updatePIDPitchKi(void* context, float val);
+static void updatePIDPitchKd(void* context, float val);
+static void updatePIDPitchTau(void* context, float val);
+static void updateKffRddrmix(void* context, float val);
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -39,20 +51,33 @@ AttitudeManager::AttitudeManager(
     noDataCount(0),
     failsafeTriggered(false) {
 
+    // Bind all ZP Param setters relevant to AM
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KP, &fbwaCLAW, updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KI, &fbwaCLAW, updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KD, &fbwaCLAW, updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_TAU, &fbwaCLAW, updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KP, &fbwaCLAW, updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KI, &fbwaCLAW, updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KD, &fbwaCLAW, updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_TAU, &fbwaCLAW, updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, &fbwaCLAW, updateKffRddrmix);
+
     // Set PID constants and rudder mixing constant for FBWA control law
     fbwaCLAW.setRollPIDConstants(
-        AM_FBWA_ROLL_P_GAIN,
-        AM_FBWA_ROLL_I_GAIN,
-        AM_FBWA_ROLL_D_GAIN,
-        AM_FBWA_ROLL_D_TAU
+        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KP),
+        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KI),
+        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KD),
+        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_TAU)
     );
     fbwaCLAW.setPitchPIDConstants(
-        AM_FBWA_PITCH_P_GAIN,
-        AM_FBWA_PITCH_I_GAIN,
-        AM_FBWA_PITCH_D_GAIN,
-        AM_FBWA_PITCH_D_TAU
+        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KP),
+        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KI),
+        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KD),
+        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_TAU)
     );
-    fbwaCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
+    fbwaCLAW.setYawRudderMixingConstant(
+        ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX)
+    );
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
@@ -299,3 +324,42 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
     tmQueue->push(&servoOutputMsg);
 }
+
+// STATIC FUNCTIONS ONLY FOR PARAM CHAINING
+// ==============================================================
+static void updatePIDRollKp(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getRollPID()->setKp(val);
+}
+
+static void updatePIDRollKi(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getRollPID()->setKi(val);
+}
+
+static void updatePIDRollKd(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getRollPID()->setKd(val);
+}
+
+static void updatePIDRollTau(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getRollPID()->setTau(val);
+}
+
+static void updatePIDPitchKp(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getPitchPID()->setKp(val);
+}
+
+static void updatePIDPitchKi(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getPitchPID()->setKi(val);
+}
+
+static void updatePIDPitchKd(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getPitchPID()->setKd(val);
+}
+
+static void updatePIDPitchTau(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->getPitchPID()->setTau(val);
+}
+
+static void updateKffRddrmix(void* context, float val) {
+    static_cast<FBWAMapping*>(context)->setYawRudderMixingConstant(val);
+}
+// ==============================================================
