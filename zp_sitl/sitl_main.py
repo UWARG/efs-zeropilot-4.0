@@ -14,7 +14,14 @@ from util.mavlink_decoder import MAVLinkDecoder
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UI_PATH = os.path.join(BASE_DIR, 'ui')
 
+# SITL Scheduling Rate Hz
 SITL_RATE_HZ = 1000
+
+# Unit Conversions
+KTS_TO_FPS = 1.68781
+FT_TO_M = 0.3048
+FPS_TO_MPS = 0.3048
+FPS_TO_KTS = 0.592484
 
 class ZP_SITL:
     def __init__(self, ip, port):
@@ -69,6 +76,15 @@ class ZP_SITL:
         
         self.fdm.run_ic()
         self.zp.set_max_batt_capacity(self.fdm['propulsion/total-fuel-lbs'])
+
+        # Apply initial environment settings
+        self.fdm['atmosphere/wind-north-fps'] = config.get('wind_north', 0) * KTS_TO_FPS
+        self.fdm['atmosphere/wind-east-fps'] = config.get('wind_east', 0) * KTS_TO_FPS
+        self.fdm['atmosphere/wind-down-fps'] = config.get('wind_down', 0) * KTS_TO_FPS
+        self.fdm['atmosphere/turb-type'] = config.get('turb_type', 0)
+        self.fdm['atmosphere/turbulence/milspec/severity'] = config.get('turb_severity', 0)
+        self.fdm['atmosphere/turbulence/milspec/windspeed_at_20ft_AGL-fps'] = config.get('turb_windspeed', 0) * KTS_TO_FPS
+
         self.initialized = True
 
     def step(self):
@@ -86,8 +102,8 @@ class ZP_SITL:
                 self.fdm['velocities/r-rad_sec'],
                 self.fdm['position/lat-geod-deg'],
                 self.fdm['position/long-gc-deg'],
-                self.fdm['position/h-sl-ft'] * 0.3048,
-                self.fdm['velocities/vg-fps'] * 0.3048,
+                self.fdm['position/h-sl-ft'] * FT_TO_M,
+                self.fdm['velocities/vg-fps'] * FPS_TO_MPS,
                 self.fdm['attitude/psi-deg'],
                 self.fdm['velocities/vc-kts'] * 0.5144, # m/s
                 self.fdm['propulsion/total-fuel-lbs'],
@@ -129,6 +145,8 @@ class ZP_SITL:
             'yaw': math.degrees(self.fdm['attitude/psi-rad']),
             'altitude': self.fdm['position/h-sl-ft'],
             'airspeed': self.fdm['velocities/vc-kts'],
+            'groundspeed': self.fdm['velocities/vg-fps'] * FPS_TO_KTS,
+            'track': math.degrees(self.fdm['flight-path/psi-gt-rad']),
             'climb_rate': -self.fdm['velocities/v-down-fps'] * 60.0, # ft/min
             'turn_rate': math.degrees(self.fdm['velocities/r-rad_sec']),
             'rpm': self.fdm['propulsion/engine/propeller-rpm'],
@@ -179,6 +197,13 @@ async def websocket_handler(request):
                 elif data['type'] == 'arm':
                     sitl.armed = not sitl.armed
                     sitl.arm_cmd = 100 if sitl.armed else 0
+                elif data['type'] == 'environment':
+                    sitl.fdm['atmosphere/wind-north-fps'] = data['wind_north'] * KTS_TO_FPS
+                    sitl.fdm['atmosphere/wind-east-fps'] = data['wind_east'] * KTS_TO_FPS
+                    sitl.fdm['atmosphere/wind-down-fps'] = data['wind_down'] * KTS_TO_FPS
+                    sitl.fdm['atmosphere/turb-type'] = data['turb_type']
+                    sitl.fdm['atmosphere/turbulence/milspec/severity'] = data['turb_severity']
+                    sitl.fdm['atmosphere/turbulence/milspec/windspeed_at_20ft_AGL-fps'] = data['turb_windspeed'] * KTS_TO_FPS
                 elif data['type'] == 'state':
                     await ws.send_json(sitl.get_state())
             except Exception as e:

@@ -12,7 +12,13 @@ $(document).ready(function() {
             pitch: parseFloat(document.getElementById('init-pitch').value),
             heading: parseFloat(document.getElementById('init-heading').value),
             throttle: parseFloat(document.getElementById('init-throttle').value),
-            engine: document.getElementById('init-engine').checked
+            engine: document.getElementById('init-engine').checked,
+            wind_north: parseFloat(document.getElementById('init-wind-north').value),
+            wind_east: parseFloat(document.getElementById('init-wind-east').value),
+            wind_down: parseFloat(document.getElementById('init-wind-down').value),
+            turb_type: parseInt(document.getElementById('init-turb-type').value),
+            turb_severity: parseInt(document.getElementById('init-turb-severity').value),
+            turb_windspeed: parseFloat(document.getElementById('init-turb-windspeed').value)
         };
         
         document.getElementById('startup-modal').classList.add('hidden');
@@ -22,6 +28,10 @@ $(document).ready(function() {
     });
 
     startTelemViewer();
+
+    document.getElementById('init-turb-severity').addEventListener('input', (e) => {
+        document.getElementById('init-turb-severity-val').textContent = e.target.value;
+    });
 });
 
 function initSimulation(config) {
@@ -135,6 +145,39 @@ function initSimulation(config) {
         });
     });
 
+    // Environment settings modal — sync initial values
+    document.getElementById('env-wind-north').value = config.wind_north;
+    document.getElementById('env-wind-east').value = config.wind_east;
+    document.getElementById('env-wind-down').value = config.wind_down;
+    document.getElementById('env-turb-type').value = config.turb_type;
+    document.getElementById('env-turb-severity').value = config.turb_severity;
+    document.getElementById('env-turb-severity-val').textContent = config.turb_severity;
+    document.getElementById('env-turb-windspeed').value = config.turb_windspeed;
+
+    document.getElementById('env-btn').addEventListener('click', () => {
+        document.getElementById('env-modal').classList.remove('hidden');
+    });
+    document.getElementById('env-turb-severity').addEventListener('input', (e) => {
+        document.getElementById('env-turb-severity-val').textContent = e.target.value;
+    });
+    document.getElementById('env-close').addEventListener('click', () => {
+        document.getElementById('env-modal').classList.add('hidden');
+    });
+    document.getElementById('env-apply').addEventListener('click', () => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'environment',
+                wind_north: parseFloat(document.getElementById('env-wind-north').value),
+                wind_east: parseFloat(document.getElementById('env-wind-east').value),
+                wind_down: parseFloat(document.getElementById('env-wind-down').value),
+                turb_type: parseInt(document.getElementById('env-turb-type').value),
+                turb_severity: parseInt(document.getElementById('env-turb-severity').value),
+                turb_windspeed: parseFloat(document.getElementById('env-turb-windspeed').value)
+            }));
+        }
+        document.getElementById('env-modal').classList.add('hidden');
+    });
+
     // Request State Updates
     setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type: 'state'}));
@@ -152,6 +195,8 @@ function updateUI(state) {
     document.getElementById('yaw').textContent = state.yaw.toFixed(1) + '\u00B0';
     document.getElementById('altitude').textContent = state.altitude.toFixed(0) + ' ft';
     document.getElementById('airspeed').textContent = state.airspeed.toFixed(1) + ' kts';
+    document.getElementById('groundspeed').textContent = state.groundspeed.toFixed(1) + ' kts';
+    document.getElementById('track').textContent = state.track.toFixed(1) + '\u00B0';
     document.getElementById('rpm').textContent = state.rpm.toFixed(0);
     
     document.getElementById('roll-out').textContent = state.roll_output.toFixed(1);
