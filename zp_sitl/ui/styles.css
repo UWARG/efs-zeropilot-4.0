@@ -7,7 +7,7 @@ body { font-family: Arial; margin: 20px; background: #1e1e1e; color: #fff; }
 label { margin-bottom: 5px; font-weight: bold; }
 input[type="range"] { width: 100%; }
 .value { color: #4CAF50; font-size: 18px; }
-.state { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.state { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .state-item { text-align: center; padding: 10px; background: #3d3d3d; border-radius: 4px; }
 .instruments {
     display: grid;
@@ -32,7 +32,7 @@ input[type="range"] { width: 100%; }
     width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9);
     justify-content: center; align-items: center; z-index: 1000;
 }
-.startup-form { background: #2d2d2d; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; }
+.startup-form { background: #2d2d2d; padding: 30px; border-radius: 8px; max-width: 700px; width: 90%; }
 .form-group { margin-bottom: 15px; }
 .form-group input[type="number"] { width: 100%; padding: 8px; background: #3d3d3d; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; }
 .start-btn { width: 100%; padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
@@ -48,3 +48,21 @@ input[type="range"] { width: 100%; }
 .switch-track-6:hover { border-color: #5a5a5a; }
 .switch-thumb-6 { position: absolute; width: calc(16.67% - 4px); height: calc(100% - 4px); background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); border-radius: 8px; transition: left 0.2s ease-out; left: 2px; top: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
 .switch-labels-6 { display: flex; justify-content: space-around; font-size: 11px; color: #888; font-weight: 500; }
+
+.state-panel { position: relative; }
+.env-btn {
+    position: absolute; top: 20px; right: 20px;
+    padding: 8px 16px; font-size: 14px; font-weight: bold;
+    background: #555; color: #fff; border: none; border-radius: 6px;
+    cursor: pointer; transition: all 0.3s;
+}
+.env-btn:hover { background: #666; }
+.env-modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+.env-modal.hidden { display: none; }
+.env-modal-content { background: #2d2d2d; padding: 30px; border-radius: 8px; max-width: 400px; width: 90%; }
+.env-modal-content select { width: 100%; padding: 8px; background: #3d3d3d; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; }
+.env-modal-btn { flex: 1; padding: 12px; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+.env-modal-btn.apply { background: #4CAF50; }
+.env-modal-btn.apply:hover { background: #45a049; }
+.env-modal-btn.close { background: #555; }
+.env-modal-btn.close:hover { background: #666; }
