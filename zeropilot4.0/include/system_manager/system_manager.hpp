@@ -28,7 +28,7 @@ static constexpr float SM_RC_ARM_THRESHOLD = 50.0f;
 // Flightmode constants
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE1 = PlaneFlightMode_e::MANUAL;
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE2 = PlaneFlightMode_e::FBWA;
-static constexpr PlaneFlightMode_e SM_FLIGHTMODE3 = PlaneFlightMode_e::MANUAL;
+static constexpr PlaneFlightMode_e SM_FLIGHTMODE3 = PlaneFlightMode_e::FBWB;
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE4 = PlaneFlightMode_e::MANUAL;
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE5 = PlaneFlightMode_e::MANUAL;
 static constexpr PlaneFlightMode_e SM_FLIGHTMODE6 = PlaneFlightMode_e::MANUAL;

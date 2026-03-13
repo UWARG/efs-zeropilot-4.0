@@ -4,8 +4,10 @@
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "fbwa_mapping.hpp"
+#include "fbwb_mapping.hpp"
 #include "motor_datatype.hpp"
 #include "gps_iface.hpp"
+#include "airspeed_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
 #include "MahonyAHRS.hpp"
@@ -33,6 +35,16 @@ static constexpr float AM_FBWA_PITCH_D_GAIN = 1.400f;
 static constexpr float AM_FBWA_PITCH_D_TAU = 0.02f;
 static constexpr float AM_FBWA_RUDDER_MIXING = 0.5f;
 
+// PID constants for FBWB control law
+static constexpr float AM_FBWB_TOTAL_ENERGY_P_GAIN = 0.0f; // TODO: set TE P-gain
+static constexpr float AM_FBWB_TOTAL_ENERGY_I_GAIN = 0.0f; // TODO set TE I-gain
+static constexpr float AM_FBWB_TOTAL_ENERGY_D_GAIN = 0.0f;
+static constexpr float AM_FBWB_TOTAL_ENERGY_D_TAU = 0.02f;
+static constexpr float AM_FBWB_ENERGY_BALANCE_P_GAIN = 0.0f; // TODO: set EB P-gain
+static constexpr float AM_FBWB_ENERGY_BALANCE_I_GAIN = 0.0f; // TODO: set EB I-gain
+static constexpr float AM_FBWB_ENERGY_BALANCE_D_GAIN = 0.0f;
+static constexpr float AM_FBWB_ENERGY_BALANCE_D_TAU = 0.02f;
+
 typedef enum {
     YAW = 0,
     PITCH,
@@ -48,6 +60,7 @@ class AttitudeManager {
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
+            IAirspeed *airspeedDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
@@ -66,6 +79,7 @@ class AttitudeManager {
 
         IGPS *gpsDriver;
         IIMU *imuDriver;
+        IAirspeed *airspeedDriver;
 
         Mahony mahonyFilter;
 
@@ -76,6 +90,7 @@ class AttitudeManager {
         Flightmode *activeCLAW;     // Pointer to current active Control Law
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
+        FBWBMapping fbwbCLAW;       // Fly-By-Wire B Control Law (TECS)
         RCMotorControlMessage_t controlMsg;
         DroneState_t droneState;
         PlaneFlightMode_e currentFlightMode;

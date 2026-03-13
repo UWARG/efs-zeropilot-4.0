@@ -131,6 +131,7 @@ class ZP_FGFS_SITL:
             self.fdm['velocities/r-rad_sec'], self.fdm['position/lat-geod-deg'],
             self.fdm['position/long-gc-deg'], self.fdm['position/h-sl-ft'] * 0.3048,
             self.fdm['velocities/vg-fps'] * 0.3048, self.fdm['attitude/psi-deg'],
+            self.fdm['velocities/vc-kts'] * 0.5144, # m/s
             self.fdm['propulsion/total-fuel-lbs'], self.fdm['propulsion/engine/propeller-rpm']
         )
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
