@@ -234,7 +234,7 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         float pwm;
         PlaneFlightMode_e expected;
     } testCases[] = {
-        {1165.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE1)))};
+        {1165.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE1)))},
         {1295.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE2)))},
         {1425.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE3)))},
         {1555.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE4)))},
