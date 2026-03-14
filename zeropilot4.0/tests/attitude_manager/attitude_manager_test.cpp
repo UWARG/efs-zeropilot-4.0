@@ -18,7 +18,7 @@ using ::testing::NiceMock;
 
 class AttitudeManagerTest : public ::testing::Test {
 protected:
-    static int AM_RC_FAILSAFE_ITERATIONS = (((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;
+    static int AM_RC_FAILSAFE_ITERATIONS;
     
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockGPS> mockGPS;
@@ -356,3 +356,6 @@ TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent) {
     
     EXPECT_EQ(servoOutputCount, AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ);
 }
+
+int AttitudeManagerTest::AM_RC_FAILSAFE_ITERATIONS =
+    static_cast<int>(((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;

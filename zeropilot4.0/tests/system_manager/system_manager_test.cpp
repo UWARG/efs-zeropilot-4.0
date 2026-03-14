@@ -16,7 +16,7 @@ using ::testing::NiceMock;
 
 class SystemManagerTest : public ::testing::Test {
 protected:
-    static int RC_FAILSAFE_ITERATIONS = ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000) / SM_UPDATE_LOOP_DELAY_MS) + 5;
+    static int RC_FAILSAFE_ITERATIONS;
     
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockWatchdog> mockWatchdog;
@@ -265,3 +265,6 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         ::testing::Mock::VerifyAndClearExpectations(&mockAMQueue);
     }
 }
+
+int SystemManagerTest::RC_FAILSAFE_ITERATIONS =
+    ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000) / SM_UPDATE_LOOP_DELAY_MS) + 5;
