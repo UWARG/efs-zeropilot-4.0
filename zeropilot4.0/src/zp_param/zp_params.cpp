@@ -9,7 +9,7 @@ namespace ZP_PARAM {
 static Param_t params[static_cast<uint16_t>(ZP_PARAM_ID::PARAM_COUNT)];
 
 // Internal helper to initialize a single entry
-static void initSingleParam(ZP_PARAM_ID id, const char* name, float default_val, uint8_t type) {
+static void initParam(ZP_PARAM_ID id, const char* name, float default_val, uint8_t type) {
     uint16_t index = static_cast<uint16_t>(id);
     if (index >= static_cast<uint16_t>(ZP_PARAM_ID::PARAM_COUNT)) return;
 
@@ -27,29 +27,29 @@ void init() {
     std::memset(params, 0, sizeof(params));
 
     // Define your parameter set
-    initSingleParam(ZP_PARAM_ID::PID_ROLL_KP,   "PID_ROLL_KP",   1.120f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_ROLL_KI,   "PID_ROLL_KI",   0.100f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_ROLL_KD,   "PID_ROLL_KD",   0.650f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_ROLL_TAU,  "PID_ROLL_TAU",  0.020f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_PITCH_KP,  "PID_PITCH_KP",  2.250f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_PITCH_KI,  "PID_PITCH_KI",  0.250f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_PITCH_KD,  "PID_PITCH_KD",  1.400f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::PID_PITCH_TAU, "PID_PITCH_TAU", 0.020f, MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::KFF_RDDRMIX,   "KFF_RDDRMIX",   0.500f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_ROLL_KP,   "PID_ROLL_KP",   1.120f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_ROLL_KI,   "PID_ROLL_KI",   0.100f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_ROLL_KD,   "PID_ROLL_KD",   0.650f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_ROLL_TAU,  "PID_ROLL_TAU",  0.020f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_PITCH_KP,  "PID_PITCH_KP",  2.250f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_PITCH_KI,  "PID_PITCH_KI",  0.250f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_PITCH_KD,  "PID_PITCH_KD",  1.400f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PID_PITCH_TAU, "PID_PITCH_TAU", 0.020f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::KFF_RDDRMIX,   "KFF_RDDRMIX",   0.500f, MAV_PARAM_TYPE_REAL32);
 
-    initSingleParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
-    initSingleParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(PlaneFlightMode_e::FBWA),   MAV_PARAM_TYPE_UINT32);
-    initSingleParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
-    initSingleParam(ZP_PARAM_ID::FLTMODE4, "FLTMODE4", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
-    initSingleParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
-    initSingleParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(PlaneFlightMode_e::FBWA),   MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE4, "FLTMODE4", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
 
-    initSingleParam(ZP_PARAM_ID::RC_FS_TIMEOUT, "RC_FS_TIMEOUT", 0.5f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::RC_FS_TIMEOUT, "RC_FS_TIMEOUT", 0.5f, MAV_PARAM_TYPE_REAL32);
 
-    initSingleParam(ZP_PARAM_ID::BATT_LOW_VOLT,     "BATT_LOW_VOLT",    10.5f,     MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::BATT_CRT_VOLT,     "BATT_CRT_VOLT",    10.2f,     MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::BATT_CAPACITY,     "BATT_CAPACITY",    4000.0f,   MAV_PARAM_TYPE_REAL32);
-    initSingleParam(ZP_PARAM_ID::BATT_LOW_TIMER,    "BATT_LOW_TIMER",   5.0f,      MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::BATT_LOW_VOLT,     "BATT_LOW_VOLT",    10.5f,     MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::BATT_CRT_VOLT,     "BATT_CRT_VOLT",    10.2f,     MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::BATT_CAPACITY,     "BATT_CAPACITY",    4000.0f,   MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::BATT_LOW_TIMER,    "BATT_LOW_TIMER",   5.0f,      MAV_PARAM_TYPE_REAL32);
 }
 
 void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter) {
