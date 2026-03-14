@@ -18,7 +18,7 @@ using ::testing::NiceMock;
 
 class AttitudeManagerTest : public ::testing::Test {
 protected:
-    static constexpr int AM_RC_FAILSAFE_ITERATIONS = (AM_FAILSAFE_TIMEOUT_MS / AM_UPDATE_LOOP_DELAY_MS) + 5;
+    static int AM_RC_FAILSAFE_ITERATIONS = (((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;
     
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockGPS> mockGPS;
