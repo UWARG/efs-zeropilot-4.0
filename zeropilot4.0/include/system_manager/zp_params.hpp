@@ -28,6 +28,16 @@ enum class ZP_PARAM_ID : uint16_t {
     PID_PITCH_KD,
     PID_PITCH_TAU,
     KFF_RDDRMIX,
+    FLTMODE1,
+    FLTMODE2,
+    FLTMODE3,
+    FLTMODE4,
+    FLTMODE5,
+    FLTMODE6,
+    BATT_LOW_VOLT,
+    BATT_CRT_VOLT,
+    BATT_CAPACITY,
+    BATT_LOW_TIMER,
     PARAM_COUNT
 };
 

@@ -1,5 +1,6 @@
 #include "zp_params.hpp"
 #include "mavlink.h"
+#include "flightmode.hpp"
 #include <cstring>
 
 namespace ZP_PARAM {
@@ -35,6 +36,18 @@ void init() {
     initSingleParam(ZP_PARAM_ID::PID_PITCH_KD,  "PID_PITCH_KD",  1.400f, MAV_PARAM_TYPE_REAL32);
     initSingleParam(ZP_PARAM_ID::PID_PITCH_TAU, "PID_PITCH_TAU", 0.020f, MAV_PARAM_TYPE_REAL32);
     initSingleParam(ZP_PARAM_ID::KFF_RDDRMIX,   "KFF_RDDRMIX",   0.500f, MAV_PARAM_TYPE_REAL32);
+
+    initSingleParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initSingleParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(PlaneFlightMode_e::FBWA),   MAV_PARAM_TYPE_UINT32);
+    initSingleParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initSingleParam(ZP_PARAM_ID::FLTMODE4, "FLTMODE4", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initSingleParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initSingleParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+
+    initSingleParam(ZP_PARAM_ID::BATT_LOW_VOLT,     "BATT_LOW_VOLT",    10.5f,     MAV_PARAM_TYPE_REAL32);
+    initSingleParam(ZP_PARAM_ID::BATT_CRT_VOLT,     "BATT_CRT_VOLT",    10.2f,     MAV_PARAM_TYPE_REAL32);
+    initSingleParam(ZP_PARAM_ID::BATT_CAPACITY,     "BATT_CAPACITY",    4000.0f,   MAV_PARAM_TYPE_REAL32);
+    initSingleParam(ZP_PARAM_ID::BATT_LOW_TIMER,    "BATT_LOW_TIMER",   5.0f,      MAV_PARAM_TYPE_REAL32);
 }
 
 void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb setter) {
