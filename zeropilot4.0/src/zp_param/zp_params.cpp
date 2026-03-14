@@ -14,11 +14,11 @@ static void initSingleParam(ZP_PARAM_ID id, const char* name, float default_val,
     if (index >= static_cast<uint16_t>(ZP_PARAM_ID::PARAM_COUNT)) return;
 
     // Ensure clean string copy and null termination
-    std::strncpy(params[index].param_id, name, PARAM_MAX_IDENTIFIER_LEN - 1);
-    params[index].param_id[PARAM_MAX_IDENTIFIER_LEN - 1] = '\0';
+    std::strncpy(params[index].paramId, name, PARAM_MAX_IDENTIFIER_LEN - 1);
+    params[index].paramId[PARAM_MAX_IDENTIFIER_LEN - 1] = '\0';
     
-    params[index].param_value = default_val;
-    params[index].param_type = type;
+    params[index].paramValue = default_val;
+    params[index].paramType = type;
     params[index].context = nullptr;
     params[index].setter = nullptr;
 }
@@ -50,7 +50,7 @@ void init() {
     initSingleParam(ZP_PARAM_ID::BATT_LOW_TIMER,    "BATT_LOW_TIMER",   5.0f,      MAV_PARAM_TYPE_REAL32);
 }
 
-void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb setter) {
+void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter) {
     uint16_t index = static_cast<uint16_t>(id);
     if (index < getCount()) {
         params[index].context = context;
@@ -61,14 +61,14 @@ void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb setter) {
 float get(ZP_PARAM_ID id) {
     uint16_t index = static_cast<uint16_t>(id);
     if (index < static_cast<uint16_t>(ZP_PARAM_ID::PARAM_COUNT)) {
-        return params[index].param_value;
+        return params[index].paramValue;
     }
     return 0.0f; // Should never run
 }
 
-bool setParamById(const char* param_id, float new_value) {
+bool setParamById(const char* paramId, float new_value) {
     for (uint16_t i = 0; i < getCount(); ++i) {
-        if (std::strncmp(params[i].param_id, param_id, PARAM_MAX_IDENTIFIER_LEN) == 0) {
+        if (std::strncmp(params[i].paramId, paramId, PARAM_MAX_IDENTIFIER_LEN) == 0) {
             
             // 1. If there's a setter, let it decide if the value is okay first
             if (params[i].setter != nullptr) {
@@ -79,7 +79,7 @@ bool setParamById(const char* param_id, float new_value) {
             }
 
             // 2. If setter succeeded (or there is no setter), commit to registry
-            params[i].param_value = new_value;
+            params[i].paramValue = new_value;
             return true;
         }
     }
@@ -93,9 +93,9 @@ Param_t* getParamByIndex(uint16_t index) {
     return nullptr;
 }
 
-int16_t getIndexById(const char* param_id) {
+int16_t getIndexById(const char* paramId) {
     for (uint16_t i = 0; i < getCount(); ++i) {
-        if (strcmp(params[i].param_id, param_id) == 0) return i;
+        if (strcmp(params[i].paramId, paramId) == 0) return i;
     }
     return static_cast<int16_t>(ZP_PARAM_ID::PARAM_COUNT);
 }

@@ -5,20 +5,20 @@
 #define PARAM_MAX_IDENTIFIER_LEN 17
 
 // Function pointer signature for parameter callbacks
-typedef bool (*ParamSetterCb)(void* context, float newValue);
+typedef bool (*ParamSetterCb_t)(void* context, float newValue);
 
 typedef struct {
-    char param_id[PARAM_MAX_IDENTIFIER_LEN];
-    float param_value;
-    uint8_t param_type;
+    char paramId[PARAM_MAX_IDENTIFIER_LEN];
+    float paramValue;
+    uint8_t paramType;
     
     // Callback routing
     void* context;        // Pointer to the object instance
-    ParamSetterCb setter; // Function pointer to trigger when updated
+    ParamSetterCb_t setter; // Function pointer to trigger when updated
 } Param_t;
 
 // Enumeration for indexing into the global parameter array
-enum class ZP_PARAM_ID : uint16_t {
+enum class ZP_PARAM_ID : uint16_t { // NOLINT
     PID_ROLL_KP = 0,
     PID_ROLL_KI,
     PID_ROLL_KD,
@@ -46,22 +46,22 @@ namespace ZP_PARAM {
     void init();
 
     // Bind a callback to a specific parameter
-    void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb setter);
+    void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter);
 
     // Templated wrapper for bindCallbackInternal
     template <typename T>
     void bindCallback(ZP_PARAM_ID id, T* context, bool (*setter)(T*, float)) {
-        bindCallbackInternal(id, static_cast<void*>(context), reinterpret_cast<ParamSetterCb>(setter));
+        bindCallbackInternal(id, static_cast<void*>(context), reinterpret_cast<ParamSetterCb_t>(setter));
     }
 
     // Get current config value
     float get(ZP_PARAM_ID id);
 
     // MAVLink/Telemetry interaction
-    bool setParamById(const char* param_id, float new_value);
+    bool setParamById(const char* paramId, float new_value);
     
     // Accessors
     Param_t* getParamByIndex(uint16_t index);
-    int16_t getIndexById(const char* param_id);
+    int16_t getIndexById(const char* paramId);
     uint16_t getCount();
 }

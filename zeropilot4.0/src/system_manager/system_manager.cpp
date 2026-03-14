@@ -25,12 +25,12 @@ SystemManager::SystemManager(
         rcConnected(false),
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0})
 {
-    static constexpr ZP_PARAM_ID fltModeParams[SM_FLIGHTMODE_COUNT] = {
+    static constexpr ZP_PARAM_ID FLTMODE_PARAMS[SM_FLIGHTMODE_COUNT] = {
         ZP_PARAM_ID::FLTMODE1, ZP_PARAM_ID::FLTMODE2, ZP_PARAM_ID::FLTMODE3,
         ZP_PARAM_ID::FLTMODE4, ZP_PARAM_ID::FLTMODE5, ZP_PARAM_ID::FLTMODE6
     };
     for (uint8_t i = 0; i < SM_FLIGHTMODE_COUNT; i++) {
-        flightModes[i] = static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(fltModeParams[i])));
+        flightModes[i] = static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(FLTMODE_PARAMS[i])));
     }
 
     ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE1, this, SystemManager::updateFltMode<0>);
