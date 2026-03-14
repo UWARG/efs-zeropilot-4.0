@@ -34,6 +34,7 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     FLTMODE4,
     FLTMODE5,
     FLTMODE6,
+    RC_FS_TIMEOUT,
     BATT_LOW_VOLT,
     BATT_CRT_VOLT,
     BATT_CAPACITY,

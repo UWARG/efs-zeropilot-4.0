@@ -60,7 +60,7 @@ void SystemManager::smUpdate() {
     } else {
         oldDataCount += 1;
 
-        if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
+        if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > (ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000)) && rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
             loggerDriver->log("RC Disconnected");
             rcConnected = false;

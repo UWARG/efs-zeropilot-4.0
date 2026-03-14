@@ -17,7 +17,6 @@
 #define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
-#define SM_RC_TIMEOUT_MS 500
 
 // RC Arm threshold
 static constexpr float SM_RC_ARM_THRESHOLD = 50.0f;

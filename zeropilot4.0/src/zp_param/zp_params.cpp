@@ -44,6 +44,8 @@ void init() {
     initSingleParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     initSingleParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
 
+    initSingleParam(ZP_PARAM_ID::RC_FS_TIMEOUT, "RC_FS_TIMEOUT", 0.5f, MAV_PARAM_TYPE_REAL32);
+
     initSingleParam(ZP_PARAM_ID::BATT_LOW_VOLT,     "BATT_LOW_VOLT",    10.5f,     MAV_PARAM_TYPE_REAL32);
     initSingleParam(ZP_PARAM_ID::BATT_CRT_VOLT,     "BATT_CRT_VOLT",    10.2f,     MAV_PARAM_TYPE_REAL32);
     initSingleParam(ZP_PARAM_ID::BATT_CAPACITY,     "BATT_CAPACITY",    4000.0f,   MAV_PARAM_TYPE_REAL32);
