@@ -103,4 +103,7 @@ class AttitudeManager {
         static bool updatePIDPitchKd(AttitudeManager* context, float val);
         static bool updatePIDPitchTau(AttitudeManager* context, float val);
         static bool updateKffRddrmix(AttitudeManager* context, float val);
+        static bool updateRollLimitDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
 };

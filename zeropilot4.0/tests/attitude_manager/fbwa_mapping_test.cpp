@@ -9,6 +9,7 @@ protected:
 TEST_F(FBWAMappingTest, RollPIDControl) {
     FBWAMapping mapper(CONTROL_PERIOD);
     mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setRollLimitDeg(45.0f);
     
     RCMotorControlMessage_t input;
     input.roll = 100.0f;
@@ -28,6 +29,8 @@ TEST_F(FBWAMappingTest, RollPIDControl) {
 TEST_F(FBWAMappingTest, PitchPIDControl) {
     FBWAMapping mapper(CONTROL_PERIOD);
     mapper.setPitchPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setPitchLimitMaxDeg(20.0f);
+    mapper.setPitchLimitMinDeg(-20.0f);
     
     RCMotorControlMessage_t input;
     input.roll = 50.0f;
@@ -47,6 +50,7 @@ TEST_F(FBWAMappingTest, PitchPIDControl) {
 TEST_F(FBWAMappingTest, YawRudderMixing) {
     FBWAMapping mapper(CONTROL_PERIOD);
     mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setRollLimitDeg(45.0f);
     mapper.setYawRudderMixingConstant(0.5f);
     
     RCMotorControlMessage_t input;
@@ -67,6 +71,7 @@ TEST_F(FBWAMappingTest, YawRudderMixing) {
 TEST_F(FBWAMappingTest, YawClamping) {
     FBWAMapping mapper(CONTROL_PERIOD);
     mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setRollLimitDeg(45.0f);
     mapper.setYawRudderMixingConstant(0.5f);
 
     DroneState_t state = DRONE_STATE_DEFAULT;

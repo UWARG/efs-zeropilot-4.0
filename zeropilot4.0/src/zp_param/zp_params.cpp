@@ -37,6 +37,10 @@ void init() {
     initParam(ZP_PARAM_ID::PID_PITCH_TAU, "PID_PITCH_TAU", 0.020f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::KFF_RDDRMIX,   "KFF_RDDRMIX",   0.500f, MAV_PARAM_TYPE_REAL32);
 
+    initParam(ZP_PARAM_ID::ROLL_LIMIT_DEG, "ROLL_LIMIT_DEG", 45.0f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, "PTCH_LIM_MAX_DEG", 20.0f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, "PTCH_LIM_MIN_DEG", -20.0f, MAV_PARAM_TYPE_REAL32);
+
     initParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(PlaneFlightMode_e::FBWA),   MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
@@ -70,17 +74,16 @@ float get(ZP_PARAM_ID id) {
 
 bool setParamById(const char* paramId, float new_value) {
     for (uint16_t i = 0; i < getCount(); ++i) {
-        if (std::strncmp(params[i].paramId, paramId, PARAM_MAX_IDENTIFIER_LEN) == 0) {
+        if (std::strncmp(params[i].paramId, paramId, PARAM_MAX_IDENTIFIER_LEN - 1) == 0) {
             
-            // 1. If there's a setter, let it decide if the value is okay first
+            // If there's a setter, let it decide if the value is okay first
             if (params[i].setter != nullptr) {
                 if (!params[i].setter(params[i].context, new_value)) {
-                    // Rejection! Don't update the registry, just return false
-                    return false;
+                    return false; // Param change rejected
                 }
             }
 
-            // 2. If setter succeeded (or there is no setter), commit to registry
+            // If setter succeeded (or there is no setter), commit to registry
             params[i].paramValue = new_value;
             return true;
         }
@@ -97,8 +100,9 @@ Param_t* getParamByIndex(uint16_t index) {
 
 int16_t getIndexById(const char* paramId) {
     for (uint16_t i = 0; i < getCount(); ++i) {
-        if (strcmp(params[i].paramId, paramId) == 0) return i;
+        if (std::strncmp(params[i].paramId, paramId, PARAM_MAX_IDENTIFIER_LEN - 1) == 0) return i;
     }
+
     return static_cast<int16_t>(ZP_PARAM_ID::PARAM_COUNT);
 }
 

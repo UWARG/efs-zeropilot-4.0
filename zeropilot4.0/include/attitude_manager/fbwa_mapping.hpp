@@ -20,6 +20,15 @@ class FBWAMapping : public Flightmode {
         // Setter for *yaw* rudder mixing const
         void setYawRudderMixingConstant(float newMixingConst) noexcept;
 
+        // Setter for *rollLimitRad*
+        void setRollLimitDeg(float newRollLimitDeg) noexcept;
+
+        // Setter for *pitchLimitMaxRad*
+        void setPitchLimitMaxDeg(float newPitchLimitMaxDeg) noexcept;
+
+        // Setter for *pitchLimitMinRad*
+        void setPitchLimitMinDeg(float newPitchLimitMinDeg) noexcept;
+
         // Resetter for both roll and pitch PIDs
         void resetControlLoopState() noexcept;
 
@@ -38,6 +47,11 @@ class FBWAMapping : public Flightmode {
         // Yaw rudder mixing constant
         float yawRudderMixingConst;
 
+        // Values for roll/pitch limits
+        float rollLimitRad;
+        float pitchLimitMaxRad;
+        float pitchLimitMinRad;
+
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
         static constexpr float OUTPUT_MAX = +1.0f;
@@ -45,12 +59,6 @@ class FBWAMapping : public Flightmode {
         // Integral limits (to prevent windup)
         static constexpr float INTEGRAL_MIN = -0.5f;
         static constexpr float INTEGRAL_MAX = +0.5f;
-
-        // Roll and Pitch Angle Ranges (in radians)
-        static constexpr float ROLL_MIN_ANGLE_RAD = -0.785f;  // -45 degrees
-        static constexpr float ROLL_MAX_ANGLE_RAD = 0.785f;   // +45 degrees
-        static constexpr float PITCH_MIN_ANGLE_RAD = -0.349f; // -20 degrees
-        static constexpr float PITCH_MAX_ANGLE_RAD = 0.349f;  // +20 degrees
 
         // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
         static constexpr float FBWA_PID_OUTPUT_SCALE = 50.0f;

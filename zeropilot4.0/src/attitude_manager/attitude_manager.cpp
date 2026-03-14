@@ -50,8 +50,11 @@ AttitudeManager::AttitudeManager(
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KD, this, AttitudeManager::updatePIDPitchKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_TAU, this, AttitudeManager::updatePIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, this, AttitudeManager::updatePitchLimMinDeg);
 
-    // Set PID constants and rudder mixing constant for FBWA control law
+    // Set PID constants, rddr mixing constant, and roll/pitch limits for FBWA control law
     fbwaCLAW.setRollPIDConstants(
         ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KP),
         ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KI),
@@ -64,9 +67,10 @@ AttitudeManager::AttitudeManager(
         ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KD),
         ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_TAU)
     );
-    fbwaCLAW.setYawRudderMixingConstant(
-        ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX)
-    );
+    fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
+    fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
+    fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
+    fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
@@ -319,63 +323,84 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 bool AttitudeManager::updatePIDRollKp(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setKp(val);
+    context->fbwaCLAW.getRollPID()->setKp(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDRollKi(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setKi(val);
+    context->fbwaCLAW.getRollPID()->setKi(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDRollKd(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setKd(val);
+    context->fbwaCLAW.getRollPID()->setKd(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDRollTau(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getRollPID()->setTau(val);
+    context->fbwaCLAW.getRollPID()->setTau(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDPitchKp(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setKp(val);
+    context->fbwaCLAW.getPitchPID()->setKp(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDPitchKi(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setKi(val);
+    context->fbwaCLAW.getPitchPID()->setKi(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDPitchKd(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setKd(val);
+    context->fbwaCLAW.getPitchPID()->setKd(val);
     return true;
 }
 
 bool AttitudeManager::updatePIDPitchTau(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.getPitchPID()->setTau(val);
+    context->fbwaCLAW.getPitchPID()->setTau(val);
     return true;
 }
 
 bool AttitudeManager::updateKffRddrmix(AttitudeManager* context, float val) {
     if (val < 0.0f || val > 1.0f) return false;
 
-    static_cast<AttitudeManager*>(context)->fbwaCLAW.setYawRudderMixingConstant(val);
+    context->fbwaCLAW.setYawRudderMixingConstant(val);
+    return true;
+}
+
+bool AttitudeManager::updateRollLimitDeg(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+
+    context->fbwaCLAW.setRollLimitDeg(val);
+    return true;
+}
+
+bool AttitudeManager::updatePitchLimMaxDeg(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+    
+    context->fbwaCLAW.setPitchLimitMaxDeg(val);
+    return true;
+}
+
+bool AttitudeManager::updatePitchLimMinDeg(AttitudeManager* context, float val) {
+    if (val < -90.0f || val > 0.0f) return false;
+    
+    context->fbwaCLAW.setPitchLimitMinDeg(val);
     return true;
 }
 // ==============================================================
