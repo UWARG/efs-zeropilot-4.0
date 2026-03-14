@@ -32,7 +32,6 @@ class TelemetryManager {
     bool overflowMsgPending;
 
     uint16_t currParamListTxIdx;
-    uint16_t reqParamTxIdx;
 
     uint8_t txBuffer[TM_MAX_TX_BYTES];
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
@@ -42,6 +41,7 @@ class TelemetryManager {
     void transmit();
     void receive();
     void processParamTx();
+    void enqueueParamValueTx(uint16_t index);
 
   public:
     TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);

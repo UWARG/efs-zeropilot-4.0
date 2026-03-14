@@ -17,8 +17,7 @@ TelemetryManager::TelemetryManager(
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
     overflowMsgPending(false),
-    currParamListTxIdx(ZP_PARAM::getCount()),
-    reqParamTxIdx(ZP_PARAM::getCount()) {}
+    currParamListTxIdx(ZP_PARAM::getCount()) {}
 
 TelemetryManager::~TelemetryManager() = default;
 
@@ -30,33 +29,10 @@ void TelemetryManager::tmUpdate() {
 }
 
 void TelemetryManager::processParamTx() {
-    uint16_t totalCount = ZP_PARAM::getCount();
-    uint16_t idx = totalCount;
-
-    if (reqParamTxIdx < totalCount) {
-        idx = reqParamTxIdx;
-        reqParamTxIdx = totalCount;
-    } else if (currParamListTxIdx < totalCount) {
-        idx = currParamListTxIdx++;
-    }
-
-    if (idx < totalCount) {
-        // Fetch from global namespace
-        Param_t* p = ZP_PARAM::getParamByIndex(idx);
-        if (!p) return;
-
-        mavlink_message_t mavlinkMessage = {0};
-        mavlink_msg_param_value_pack(
-            SYSTEM_ID,
-            COMPONENT_ID,
-            &mavlinkMessage,
-            p->param_id,
-            p->param_value,
-            p->param_type,
-            totalCount,
-            idx
-        );
-        packedMsgBuffer->push(&mavlinkMessage);
+    if (currParamListTxIdx < ZP_PARAM::getCount()) {
+        // Use the helper to pack and push the current index
+        enqueueParamValueTx(currParamListTxIdx);
+        ++currParamListTxIdx;
     }
 }
 
@@ -207,14 +183,13 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
 
         case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
             int16_t param_index = mavlink_msg_param_request_read_get_param_index(&msg);
-            if (param_index != -1) {
-                reqParamTxIdx = param_index;
-            } else {
+            if (param_index == -1) {
                 char paramId[PARAM_MAX_IDENTIFIER_LEN];
                 mavlink_msg_param_request_read_get_param_id(&msg, paramId);
-                // Use the namespace to find the index
-                reqParamTxIdx = ZP_PARAM::getIndexById(paramId);
+                param_index = ZP_PARAM::getIndexById(paramId);
             }
+
+            enqueueParamValueTx(param_index);
             break;
         }
 
@@ -222,27 +197,26 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             mavlink_param_set_t set_msg;
             mavlink_msg_param_set_decode(&msg, &set_msg);
 
-            // Update the global registry
             if (ZP_PARAM::setParamById(set_msg.param_id, set_msg.param_value)) {
-                // Enqueue response
-                mavlink_message_t response = {0};
-                mavlink_msg_param_value_pack(
-                    SYSTEM_ID,
-                    COMPONENT_ID,
-                    &response,
-                    set_msg.param_id,
-                    set_msg.param_value,
-                    set_msg.param_type,
-                    ZP_PARAM::getCount(),
-                    ZP_PARAM::getIndexById(set_msg.param_id)
-                );
-                packedMsgBuffer->push(&response);
+                enqueueParamValueTx(ZP_PARAM::getIndexById(set_msg.param_id));
             }
             break;
         }
 
-        default: {
+        default:
             break;
-        }
     }
+}
+
+void TelemetryManager::enqueueParamValueTx(uint16_t index) {
+    Param_t* p = ZP_PARAM::getParamByIndex(index);
+    if (!p) return;
+
+    mavlink_message_t response = {0};
+    mavlink_msg_param_value_pack(
+        SYSTEM_ID, COMPONENT_ID, &response,
+        p->param_id, p->param_value, p->param_type,
+        ZP_PARAM::getCount(), index
+    );
+    packedMsgBuffer->push(&response);
 }
