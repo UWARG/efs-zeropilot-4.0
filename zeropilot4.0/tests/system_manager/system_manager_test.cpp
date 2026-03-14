@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "system_manager.hpp"
+#include "zp_params.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_iwdg.hpp"
 #include "mock_logger.hpp"
@@ -25,6 +26,10 @@ protected:
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
+
+    void SetUp() override {
+        ZP_PARAM::init();
+    }
 };
 
 TEST_F(SystemManagerTest, WatchdogRefresh) {
@@ -136,11 +141,11 @@ TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
 TEST_F(SystemManagerTest, BatteryLowDetection) {
 
     // Voltage safely inside LOW band:
-    // BATTERY_CRITICAL_VOLTAGE <= V < BATTERY_LOW_VOLTAGE
+    // BATT_LOW_VOLT <= V < BATT_CRT_VOLT
     EXPECT_CALL(mockPM, readData(_))
         .WillRepeatedly(::testing::Invoke([](PMData_t* data) {
             data->busVoltage =
-                (BATTERY_LOW_VOLTAGE + BATTERY_CRITICAL_VOLTAGE) / 2.0f;
+                (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT) + ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) / 2.0f;
             data->current = 1.0f;
             data->charge = 0;
             data->energy = 0;
@@ -164,7 +169,7 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToLow =
-        SM_BATTERY_LOW_TIME_MS / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to low state
+        (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to low state
 
     const int totalLoops =
         loopsToLow + SM_SCHEDULING_RATE_HZ;  // one extra cycle to ensure telemetry boundary
@@ -180,11 +185,11 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
 TEST_F(SystemManagerTest, BatteryCritDetection) {
 
     // Voltage safely below CRITICAL threshold
-    // V < BATTERY_CRITICAL_VOLTAGE
+    // V < BATT_CRT_VOLT
     EXPECT_CALL(mockPM, readData(_))
         .WillRepeatedly(::testing::Invoke([](PMData_t* data) {
             data->busVoltage =
-                BATTERY_CRITICAL_VOLTAGE - 0.1f;
+                ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT) - 0.1f;
             data->current = 1.0f;
             data->charge = 0;
             data->energy = 0;
@@ -208,7 +213,7 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToCritical =
-        SM_BATTERY_CRITICAL_TIME_MS / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to critical state
+        (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to critical state
 
     const int totalLoops =
         loopsToCritical + SM_SCHEDULING_RATE_HZ;  // one extra cycle to ensure telemetry boundary
@@ -229,12 +234,12 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         float pwm;
         PlaneFlightMode_e expected;
     } testCases[] = {
-        {1165.0f, SM_FLIGHTMODE1},
-        {1295.0f, SM_FLIGHTMODE2},
-        {1425.0f, SM_FLIGHTMODE3},
-        {1555.0f, SM_FLIGHTMODE4},
-        {1685.0f, SM_FLIGHTMODE5},
-        {1815.0f, SM_FLIGHTMODE6}
+        {1165.0f, ZP_PARAM::get(ZP_PARAM_ID::FLTMODE1)},
+        {1295.0f, ZP_PARAM::get(ZP_PARAM_ID::FLTMODE2)},
+        {1425.0f, ZP_PARAM::get(ZP_PARAM_ID::FLTMODE3)},
+        {1555.0f, ZP_PARAM::get(ZP_PARAM_ID::FLTMODE4)},
+        {1685.0f, ZP_PARAM::get(ZP_PARAM_ID::FLTMODE5)},
+        {1815.0f, ZP_PARAM::get(ZP_PARAM_ID::FLTMODE6)}
     };
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,

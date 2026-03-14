@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "attitude_manager.hpp"
+#include "zp_params.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_gps.hpp"
 #include "mock_imu.hpp"
@@ -48,6 +49,8 @@ protected:
     MotorGroupInstance_t steeringGroup{&steeringMotorInst, 1};
     
     void SetUp() override {
+        ZP_PARAM::init();
+
         ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Return(1000));
         ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImu_t{0, 0, 0, 0, 0, 0}));
         ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImu_t{0, 0, 0, 0, 0, 0}));
