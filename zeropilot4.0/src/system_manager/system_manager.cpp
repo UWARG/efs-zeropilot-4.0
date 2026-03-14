@@ -20,7 +20,7 @@ SystemManager::SystemManager(
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
-        flightModes({}),
+        flightModes{},
         oldDataCount(0),
         rcConnected(false),
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0})
