@@ -19,14 +19,14 @@ typedef struct {
 
 // Enumeration for indexing into the global parameter array
 enum class ZP_PARAM_ID : uint16_t { // NOLINT
-    PID_ROLL_KP = 0,
-    PID_ROLL_KI,
-    PID_ROLL_KD,
-    PID_ROLL_TAU,
-    PID_PITCH_KP,
-    PID_PITCH_KI,
-    PID_PITCH_KD,
-    PID_PITCH_TAU,
+    RLL2SRV_P = 0,
+    RLL2SRV_I,
+    RLL2SRV_D,
+    RLL2SRV_TAU,
+    PTCH2SRV_P,
+    PTCH2SRV_I,
+    PTCH2SRV_D,
+    PTCH2SRV_TAU,
     KFF_RDDRMIX,
     ROLL_LIMIT_DEG,
     PTCH_LIM_MAX_DEG,

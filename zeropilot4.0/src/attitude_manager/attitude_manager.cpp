@@ -41,14 +41,14 @@ AttitudeManager::AttitudeManager(
     failsafeTriggered(false) {
 
     // Bind all ZP Param setters relevant to AM
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KP, this, AttitudeManager::updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KI, this, AttitudeManager::updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_KD, this, AttitudeManager::updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_ROLL_TAU, this, AttitudeManager::updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KP, this, AttitudeManager::updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KI, this, AttitudeManager::updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_KD, this, AttitudeManager::updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PID_PITCH_TAU, this, AttitudeManager::updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P, this, AttitudeManager::updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I, this, AttitudeManager::updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D, this, AttitudeManager::updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU, this, AttitudeManager::updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P, this, AttitudeManager::updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I, this, AttitudeManager::updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D, this, AttitudeManager::updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU, this, AttitudeManager::updatePIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
@@ -56,16 +56,16 @@ AttitudeManager::AttitudeManager(
 
     // Set PID constants, rddr mixing constant, and roll/pitch limits for FBWA control law
     fbwaCLAW.setRollPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KP),
-        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KI),
-        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_KD),
-        ZP_PARAM::get(ZP_PARAM_ID::PID_ROLL_TAU)
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU)
     );
     fbwaCLAW.setPitchPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KP),
-        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KI),
-        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_KD),
-        ZP_PARAM::get(ZP_PARAM_ID::PID_PITCH_TAU)
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU)
     );
     fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
     fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
