@@ -9,7 +9,7 @@ TEST(DirectMappingTest, PassthroughControl) {
     input.pitch = 75.0f;
     input.yaw = 50.0f;
     input.throttle = 80.0f;
-    input.arm = 1.0f;
+    input.arm = true;
     input.flapAngle = 30.0f;
 
     DroneState_t state;
@@ -25,6 +25,6 @@ TEST(DirectMappingTest, PassthroughControl) {
     EXPECT_FLOAT_EQ(output.pitch, 75.0f);
     EXPECT_FLOAT_EQ(output.yaw, 50.0f);
     EXPECT_FLOAT_EQ(output.throttle, 80.0f);
-    EXPECT_FLOAT_EQ(output.arm, 1.0f);
+    EXPECT_TRUE(output.arm);
     EXPECT_FLOAT_EQ(output.flapAngle, 30.0f);
 }

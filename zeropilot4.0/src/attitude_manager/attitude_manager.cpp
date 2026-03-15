@@ -21,22 +21,51 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
-    controlAlgorithm(),
-    controlMsg({50, 50, 50, 0, 0, 0}),
+    activeCLAW(&manualCLAW),
+    manualCLAW(),
+    fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
+    currentFlightMode(PlaneFlightMode_e::MANUAL),
     rollMotors(rollMotors),
     pitchMotors(pitchMotors),
     yawMotors(yawMotors),
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
+    armedFlag(false),
+    lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
-    failsafeTriggered(false) {}
+    failsafeTriggered(false) {
+
+    // Set PID constants and rudder mixing constant for FBWA control law
+    fbwaCLAW.setRollPIDConstants(
+        AM_FBWA_ROLL_P_GAIN,
+        AM_FBWA_ROLL_I_GAIN,
+        AM_FBWA_ROLL_D_GAIN,
+        AM_FBWA_ROLL_D_TAU
+    );
+    fbwaCLAW.setPitchPIDConstants(
+        AM_FBWA_PITCH_P_GAIN,
+        AM_FBWA_PITCH_I_GAIN,
+        AM_FBWA_PITCH_D_GAIN,
+        AM_FBWA_PITCH_D_TAU
+    );
+    fbwaCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
+
+    // Activate the activeCLAW
+    activeCLAW->activateFlightMode();
+}
 
 void AttitudeManager::amUpdate() {
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
+
+    // Send servo output raw data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
+        sendServoOutputRawToTelemetryManager();
+    }
 
     // Send IMU raw data to telemetry manager
     RawImu_t imuData = imuDriver->readRawData();
@@ -87,9 +116,9 @@ void AttitudeManager::amUpdate() {
               smLoggerQueue->push(&errorMsg);
               failsafeTriggered = true;
             }
-        }
 
-        return;
+            return;
+        }
     } else {
         noDataCount = 0;
 
@@ -100,14 +129,37 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Disarm
-    if (controlMsg.arm == 0) {
-        controlMsg.throttle = 0;
+    // Update armedFlag and activateFlightMode() on rising edge
+    if (controlMsg.arm != armedFlag) {
+        armedFlag = controlMsg.arm;
+        if (armedFlag) {
+            activeCLAW->activateFlightMode();
+        }
     }
 
+    // Update current flightmode if changed
+    if (controlMsg.flightMode != currentFlightMode) {
+        switch (controlMsg.flightMode) {
+            case PlaneFlightMode_e::MANUAL:
+                activeCLAW = &manualCLAW;
+                break;
+            case PlaneFlightMode_e::FBWA:
+                activeCLAW = &fbwaCLAW;
+                break;
+        }
+        activeCLAW->activateFlightMode();
+        currentFlightMode = controlMsg.flightMode;
+    }
 
-    RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
+    // Run the active control law
+    RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
 
+    // Disarm logic
+    if (!armedFlag) {
+        motorOutputs.throttle = 0;
+    }
+
+    // Output to motors
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
     outputToMotor(ROLL, motorOutputs.roll);
@@ -168,6 +220,12 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
             cmd = 100 - cmd;
         }
 
+        // Store for telemetry output
+        uint8_t servoIdx = motor->motorInstance->getServoIdx();
+        if (servoIdx < 16)
+            lastServoOutputs[servoIdx - 1] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
+
+        // Send command to motor
         motor->motorInstance->set(cmd);
     }
 }
@@ -184,7 +242,7 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     
     uint16_t velCmS = static_cast<uint16_t>(gpsData.groundSpeed);
     
-    uint16_t cogCDeg = 65535;
+    uint16_t cogCDeg = UINT16_MAX;
     if (gpsData.trackAngle != INVALID_TRACK_ANGLE) {
         float normalizedAngle = gpsData.trackAngle;
         while (normalizedAngle < 0) normalizedAngle += 360.0f;
@@ -197,8 +255,8 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
         latE7,
         lonE7,
         altMM,
-        65535,  // eph: UINT16_MAX if unknown
-        65535,  // epv: UINT16_MAX if unknown
+        UINT16_MAX,  // eph: UINT16_MAX if unknown
+        UINT16_MAX,  // epv: UINT16_MAX if unknown
         velCmS,
         cogCDeg,
         gpsData.numSatellites
@@ -230,4 +288,14 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     );
 
     tmQueue->push(&attitudeDataMsg);
+}
+
+void AttitudeManager::sendServoOutputRawToTelemetryManager() {
+    TMMessage_t servoOutputMsg = servoOutputRawPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        0, // port hardcoded to 0 since we are using MAVLink2 with 16 servo outputs in one message
+        lastServoOutputs
+    );
+
+    tmQueue->push(&servoOutputMsg);
 }

@@ -43,11 +43,25 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::STATUSTEXT_DATA: {
+                auto& statusTextData = tmqMessage.tmMessageData.statusTextData;
+                mavlink_msg_statustext_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, statusTextData.severity, statusTextData.text, statusTextData.id, statusTextData.chunkSeq);
+                break;
+            }
+
             case TMMessage_t::GPS_RAW_DATA: {
                 auto& g = tmqMessage.tmMessageData.gpsRawData;
                 mavlink_msg_gps_raw_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
                     g.fixType, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellitesVisible, g.altEllipsoid, 
                     g.hAcc, g.vAcc, g.velAcc, g.hdgAcc, g.yaw);
+                break;
+            }
+
+            case TMMessage_t::SERVO_OUTPUT_RAW: {
+                auto& s = tmqMessage.tmMessageData.servoOutputRawData;
+                mavlink_msg_servo_output_raw_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, s.port,
+                    s.servo1Raw, s.servo2Raw, s.servo3Raw, s.servo4Raw, s.servo5Raw, s.servo6Raw, s.servo7Raw, s.servo8Raw,
+                    s.servo9Raw, s.servo10Raw, s.servo11Raw, s.servo12Raw, s.servo13Raw, s.servo14Raw, s.servo15Raw, s.servo16Raw);
                 break;
             }
 
@@ -60,7 +74,7 @@ void TelemetryManager::processTXMsgQueue() {
             case TMMessage_t::BATTERY_DATA: {
                 auto batteryData = tmqMessage.tmMessageData.batteryData;
                 uint32_t faultBitmask =  (batteryData.chargeState == MAV_BATTERY_CHARGE_STATE_CRITICAL) ? MAV_BATTERY_FAULT_DEEP_DISCHARGE : 0;
-                mavlink_msg_battery_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, batteryData.batteryId, MAV_BATTERY_FUNCTION_UNKNOWN, MAV_BATTERY_TYPE_LIPO,
+                mavlink_msg_battery_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, batteryData.batteryId, MAV_BATTERY_FUNCTION_ALL, MAV_BATTERY_TYPE_LIPO,
                 	batteryData.temperature, batteryData.voltages, batteryData.currentBattery, batteryData.currentConsumed, batteryData.energyConsumed, 
                     batteryData.batteryRemaining, batteryData.timeRemaining, batteryData.chargeState, {}, 0, faultBitmask);
                 break;
@@ -87,11 +101,14 @@ void TelemetryManager::processTXMsgQueue() {
     }
 
 	if (rc) {
-		auto rcData = rcMsg.tmMessageData.rcData;
+		auto& rcData = rcMsg.tmMessageData.rcData;
 		mavlink_message_t mavlinkMessage = {0};
-		mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, 6,
-			rcData.roll, rcData.pitch, rcData.throttle, rcData.yaw, rcData.arm, rcData.flapAngle,  // Channel arrangement from system manager
-			UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX,  UINT16_MAX,  UINT16_MAX, UINT16_MAX, UINT8_MAX);
+		mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, rcData.channelCount,
+			rcData.channels[0], rcData.channels[1], rcData.channels[2], rcData.channels[3], 
+			rcData.channels[4], rcData.channels[5], rcData.channels[6], rcData.channels[7], 
+			rcData.channels[8], rcData.channels[9], rcData.channels[10], rcData.channels[11], 
+			rcData.channels[12], rcData.channels[13], rcData.channels[14], rcData.channels[15], 
+			rcData.channels[16], rcData.channels[17], UINT8_MAX);
 		if (mavlinkMessage.len == 0) {
 			return;
 		}

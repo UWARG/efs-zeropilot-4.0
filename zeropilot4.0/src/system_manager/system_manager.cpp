@@ -21,7 +21,7 @@ SystemManager::SystemManager(
         smSchedulingCounter(0),
         oldDataCount(0),
         rcConnected(false),
-        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_UNDEFINED, 0, 0}) {}
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}) {}
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
@@ -35,6 +35,7 @@ void SystemManager::smUpdate() {
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
             loggerDriver->log("RC Connected");
             rcConnected = true;
         }
@@ -42,6 +43,7 @@ void SystemManager::smUpdate() {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
             loggerDriver->log("RC Disconnected");
             rcConnected = false;
         }
@@ -52,9 +54,12 @@ void SystemManager::smUpdate() {
         sendRCDataToTelemetryManager(rcData);
     }
 
+    // Set armed status based on SM_RC_ARM_THRESHOLD
+    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
+
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    if (rcData.arm) {
+    if (armed) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -62,12 +67,13 @@ void SystemManager::smUpdate() {
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (!rcConnected) {
         systemStatus = MAV_STATE_CRITICAL;
-    } else if (!rcData.arm) {
+    } else if (!armed) {
         systemStatus = MAV_STATE_STANDBY;
     }
 
-    // Hardcoded to MANUAL for now, should come from RC input in future
-    uint32_t customMode = static_cast<uint32_t>(PlaneFlightMode_e::MANUAL);
+    // Decode flight mode from raw value and include in custom mode for HEARTBEAT telemetry
+    PlaneFlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
+    uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
@@ -119,12 +125,15 @@ void SystemManager::updateBatteryFSM() {
         if (currentBatteryState != batteryData.chargeState) {
             switch (batteryData.chargeState) {
                 case MAV_BATTERY_CHARGE_STATE_OK:
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
                     loggerDriver->log("Battery State: OK");
                     break;
                 case MAV_BATTERY_CHARGE_STATE_LOW:
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
                     loggerDriver->log("Battery State: LOW");
                     break;
                 case MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
                     loggerDriver->log("Battery State: CRITICAL");
                     break;
                 default:
@@ -135,7 +144,7 @@ void SystemManager::updateBatteryFSM() {
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
-    TMMessage_t rcDataMsg =  rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.roll, rcData.pitch, rcData.yaw, rcData.throttle, rcData.aux2, rcData.arm);
+    TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
     tmQueue->push(&rcDataMsg);
 }
 
@@ -151,8 +160,9 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = rcData.pitch;
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
-    rcDataMessage.arm = rcData.arm;
+    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
     rcDataMessage.flapAngle = rcData.aux2;
+    rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
     amRCQueue->push(&rcDataMessage);
 }
@@ -188,6 +198,37 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
         batteryData.chargeState
     );
     tmQueue->push(&batteryDataMsg);
+}
+
+void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+    TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
+    tmQueue->push(&statusTextMsg);
+}
+
+PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
+    if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
+        // Button 1
+        return SM_FLIGHTMODE1;
+    }
+    else if (flightModeRawValue <= SM_FLIGHTMODE2_MAX) {
+        // Button 2
+        return SM_FLIGHTMODE2;
+    }
+    else if (flightModeRawValue <= SM_FLIGHTMODE3_MAX) {
+        // Button 3
+        return SM_FLIGHTMODE3;
+    }
+    else if (flightModeRawValue <= SM_FLIGHTMODE4_MAX) {
+        // Button 4 
+        return SM_FLIGHTMODE4;
+    }
+    else if (flightModeRawValue <= SM_FLIGHTMODE5_MAX) {
+        // Button 5
+        return SM_FLIGHTMODE5;
+    } else {
+        // Button 6
+        return SM_FLIGHTMODE6;
+    }
 }
 
 void SystemManager::sendMessagesToLogger() {
