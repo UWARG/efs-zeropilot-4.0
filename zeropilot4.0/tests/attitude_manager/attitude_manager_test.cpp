@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "attitude_manager.hpp"
+#include "zp_params.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_gps.hpp"
 #include "mock_imu.hpp"
@@ -17,7 +18,7 @@ using ::testing::NiceMock;
 
 class AttitudeManagerTest : public ::testing::Test {
 protected:
-    static constexpr int AM_RC_FAILSAFE_ITERATIONS = (AM_FAILSAFE_TIMEOUT_MS / AM_UPDATE_LOOP_DELAY_MS) + 5;
+    int AM_RC_FAILSAFE_ITERATIONS;
     
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockGPS> mockGPS;
@@ -48,6 +49,11 @@ protected:
     MotorGroupInstance_t steeringGroup{&steeringMotorInst, 1};
     
     void SetUp() override {
+        ZP_PARAM::init();
+
+        AM_RC_FAILSAFE_ITERATIONS =
+            static_cast<int>(((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;
+
         ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Return(1000));
         ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImu_t{0, 0, 0, 0, 0, 0}));
         ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImu_t{0, 0, 0, 0, 0, 0}));
