@@ -18,13 +18,13 @@ FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
 }
 
 // Setter *roll* for PID consts
-void FBWAMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
-    rollPID.setConstants(newKp, newKi, newKd, newTau);
+void FBWAMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Setter for *pitch* PID consts
-void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
-    pitchPID.setConstants(newKp, newKi, newKd, newTau);
+void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Resetter for both roll and pitch PIDs

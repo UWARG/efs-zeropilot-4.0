@@ -45,10 +45,12 @@ AttitudeManager::AttitudeManager(
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I, this, AttitudeManager::updatePIDRollKi);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D, this, AttitudeManager::updatePIDRollKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU, this, AttitudeManager::updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX, this, AttitudeManager::updatePIDRollIMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P, this, AttitudeManager::updatePIDPitchKp);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I, this, AttitudeManager::updatePIDPitchKi);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D, this, AttitudeManager::updatePIDPitchKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU, this, AttitudeManager::updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX, this, AttitudeManager::updatePIDPitchIMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
@@ -59,13 +61,15 @@ AttitudeManager::AttitudeManager(
         ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
         ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
         ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
-        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU)
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_IMAX)
     );
     fbwaCLAW.setPitchPIDConstants(
         ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
         ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
         ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
-        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU)
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
     );
     fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
     fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
@@ -348,6 +352,14 @@ bool AttitudeManager::updatePIDRollTau(AttitudeManager* context, float val) {
     return true;
 }
 
+bool AttitudeManager::updatePIDRollIMax(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    context->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+
 bool AttitudeManager::updatePIDPitchKp(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
@@ -373,6 +385,14 @@ bool AttitudeManager::updatePIDPitchTau(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 
     context->fbwaCLAW.getPitchPID()->setTau(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchIMax(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    context->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     return true;
 }
 

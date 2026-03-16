@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "flightmode.hpp"
 #include "pid.hpp"
 
@@ -12,10 +13,10 @@ class FBWAMapping : public Flightmode {
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
 
         // Setter *roll* for PID consts
-        void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for *pitch* PID consts
-        void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for *yaw* rudder mixing const
         void setYawRudderMixingConstant(float newMixingConst) noexcept;
