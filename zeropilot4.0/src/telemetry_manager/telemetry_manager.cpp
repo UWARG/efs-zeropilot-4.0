@@ -185,9 +185,9 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             break;
         }
         case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {
-            uint8_t target_system = mavlink_msg_rc_channels_override_get_target_system(&msg);
-            uint8_t target_component = mavlink_msg_rc_channels_override_get_target_component(&msg);
-            uint16_t channels[18] = {
+            const uint8_t NUMBER_OF_CHANNELS = 16;
+
+            uint16_t channels[NUMBER_OF_CHANNELS] = {
                 mavlink_msg_rc_channels_override_get_chan1_raw(&msg),
                 mavlink_msg_rc_channels_override_get_chan2_raw(&msg),
                 mavlink_msg_rc_channels_override_get_chan3_raw(&msg),
@@ -204,31 +204,15 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
                 mavlink_msg_rc_channels_override_get_chan14_raw(&msg),
                 mavlink_msg_rc_channels_override_get_chan15_raw(&msg),
                 mavlink_msg_rc_channels_override_get_chan16_raw(&msg),
-                mavlink_msg_rc_channels_override_get_chan17_raw(&msg),
-                mavlink_msg_rc_channels_override_get_chan18_raw(&msg)
             };
 
-            mavlink_message_t response = {};
-            mavlink_msg_rc_channels_override_pack(SYSTEM_ID, COMPONENT_ID, &response, target_system, target_component,
-                                                  channels[0],
-                                                  channels[1],
-                                                  channels[2],
-                                                  channels[3],
-                                                  channels[4],
-                                                  channels[5],
-                                                  channels[6],
-                                                  channels[7],
-                                                  channels[8],
-                                                  channels[9],
-                                                  channels[10],
-                                                  channels[11],
-                                                  channels[12],
-                                                  channels[13],
-                                                  channels[14],
-                                                  channels[15],
-                                                  channels[16],
-                                                  channels[17]);
-            rcDriver->forcePushMAVLinkRC(&response);
+            RCControl rcData;
+            rcData.isDataNew = true;
+
+            for(uint8_t i = 0; i < NUMBER_OF_CHANNELS; i++){
+                rcData.controlSignals[i] = channels[i];
+            }
+            rcDriver->forcePushMAVLinkRC(rcData);
 
         }
 
