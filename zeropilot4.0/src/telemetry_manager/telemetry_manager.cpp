@@ -6,12 +6,14 @@
 TelemetryManager::TelemetryManager(
     ISystemUtils *systemUtilsDriver,
     ITelemLink *telemLinkDriver,
+    IRCReceiver *rcDriver, 
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
+    rcDriver(rcDriver),
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
@@ -181,6 +183,53 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             mavlink_msg_param_value_pack(SYSTEM_ID, COMPONENT_ID, &response, paramToSet, valueToSet, valueType, 1, 0);
             packedMsgBuffer->push(&response);
             break;
+        }
+        case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {
+            uint8_t target_system = mavlink_msg_rc_channels_override_get_target_system(&msg);
+            uint8_t target_component = mavlink_msg_rc_channels_override_get_target_component(&msg);
+            uint16_t channels[18] = {
+                mavlink_msg_rc_channels_override_get_chan1_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan2_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan3_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan4_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan5_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan6_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan7_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan8_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan9_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan10_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan11_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan12_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan13_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan14_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan15_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan16_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan17_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan18_raw(&msg)
+            };
+
+            mavlink_message_t response = {};
+            mavlink_msg_rc_channels_override_pack(SYSTEM_ID, COMPONENT_ID, &response, target_system, target_component,
+                                                  channels[0],
+                                                  channels[1],
+                                                  channels[2],
+                                                  channels[3],
+                                                  channels[4],
+                                                  channels[5],
+                                                  channels[6],
+                                                  channels[7],
+                                                  channels[8],
+                                                  channels[9],
+                                                  channels[10],
+                                                  channels[11],
+                                                  channels[12],
+                                                  channels[13],
+                                                  channels[14],
+                                                  channels[15],
+                                                  channels[16],
+                                                  channels[17]);
+            rcDriver->forcePushMAVLinkRC(&response);
+
         }
 
         default: {
