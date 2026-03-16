@@ -1,7 +1,7 @@
 #include "fbwb_mapping.hpp"
 
 FBWBMapping::FBWBMapping(float control_iter_period_s) noexcept :
-    FBWAMapping(control_iter_period_s),
+    FBWAMapping(control_iter_period_s), // all FBWA fields are already initialized
     totalEnergyPID(0.0f, 0.0f, 0.0f,
         0.0f, PID_OUTPUT_MIN, PID_OUTPUT_MAX,
         PID_INTEGRAL_MIN, PID_INTEGRAL_MAX,
@@ -43,7 +43,36 @@ void FBWBMapping::activateFlightMode() {
 }
 
 RCMotorControlMessage_t FBWBMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
-    // TODO: Add FBWB TECS logic, for now is a DirectMapping
+    // because the target altitude is an integration of pitch, we add this each time
+    float targetClimbRate = (controlInputs.pitch / MAX_RC_INPUT_VAL) * 2 * MAX_ALTITUDE_DELTA_MPS - MAX_ALTITUDE_DELTA_MPS; // convert to m/s
+    targetAltitude_m += targetClimbRate * dt_s; // integration
+
+    // run every 10 calls, and run on initialization too. The counter loops from 0 - 9.
+    if(outerLoopSchedulingCounter == 0){
+        // convert to m/s and scale to [20, 60]
+        float targetThrottle = (controlInputs.throttle / MAX_RC_INPUT_VAL) * (MAX_AIRSPEED_MPS - MIN_AIRSPEED_MPS) + MIN_AIRSPEED_MPS;
+
+        float height = targetAltitude_m;
+        float velocity = targetThrottle;
+
+        float measuredVelocity = droneState.airspeed;
+        float measuredHeight = droneState.altitude;
+        
+        float totalEnergy = (velocity * velocity) / (2 * GRAVITY_MSS) + height;
+        float energyBalance = height - (velocity * velocity) / (2 * GRAVITY_MSS);
+
+        float meauredTotalEnergy = (measuredVelocity * measuredVelocity) / (2 * GRAVITY_MSS) + measuredHeight;
+        float measuredEnergyBalance = measuredHeight - (measuredVelocity * measuredVelocity) / (2 * GRAVITY_MSS);
+
+        float throttleOutput = totalEnergyPID.pidOutput(totalEnergy, meauredTotalEnergy);
+        float pitchOutput = energyBalancePID.pidOutput(energyBalance, measuredEnergyBalance);
+
+        controlInputs.throttle = (throttleOutput * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
+        controlInputs.pitch = (pitchOutput * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT; 
+    }
+
+    FBWAMapping::runControl(controlInputs, droneState); // call the inner loop on the active frequency, should be 100Hz
+    outerLoopSchedulingCounter = (++outerLoopSchedulingCounter) % OUTER_LOOP_DIVIDER;
     return controlInputs;
 }
 
