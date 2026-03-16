@@ -41,8 +41,8 @@ TEST_F(PIDTest, IntegralWindupClamping) {
     }
     
     float output = pid.pidOutput(100.0f, 0.0f);
-    EXPECT_LE(output, INTEGRAL_MAX);
-    EXPECT_GE(output, INTEGRAL_MIN);
+    EXPECT_LE(output, OUTPUT_MAX * (INTEGRAL_MAX_PCT / 100.0f));
+    EXPECT_GE(output, OUTPUT_MIN * (INTEGRAL_MAX_PCT / 100.0f));
 }
 
 TEST_F(PIDTest, OutputClamping) {
