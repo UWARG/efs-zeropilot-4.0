@@ -216,14 +216,15 @@ void CAN::sendCANTx() {
 
 	if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
 		FDCAN_TxHeaderTypeDef txHeader;
-
-		txHeader.Identifier = frame->id;
+		txHeader.Identifier = frame->id & CANARD_CAN_EXT_ID_MASK;
 		txHeader.IdType = FDCAN_EXTENDED_ID;
 		txHeader.TxFrameType = FDCAN_DATA_FRAME;
 		txHeader.DataLength = getFDCANDLC(frame->data_len);
 		txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
 		txHeader.BitRateSwitch = FDCAN_BRS_OFF;
 		txHeader.FDFormat = FDCAN_CLASSIC_CAN;
+		txHeader.TxEventFifoControl = FDCAN_STORE_TX_EVENTS;
+		txHeader.MessageMarker = 3;
 
 		uint8_t txData[8];
 		memcpy(txData, frame->data, frame->data_len);
