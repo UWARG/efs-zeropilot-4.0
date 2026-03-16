@@ -8,9 +8,9 @@ protected:
     const float KD = 0.05f;
     const float TAU = 0.02f;
     const float DT = 0.01f;
-    const float OUTPUT_MIN = -1.0f;
-    const float OUTPUT_MAX = 1.0f;
-    const float INTEGRAL_MAX_PCT = 0.25f;
+    const float OUTPUT_MIN = -50.0f;
+    const float OUTPUT_MAX = 50.0f;
+    const uint8_t INTEGRAL_MAX_PCT = 25;
 };
 
 TEST_F(PIDTest, ProportionalControl) {
