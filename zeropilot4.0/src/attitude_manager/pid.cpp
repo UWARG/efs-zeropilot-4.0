@@ -1,13 +1,13 @@
 #include "pid.hpp"
 
 // Constructor
-PID::PID(float kp, float ki, float kd,
-         float tau, float outputMinLim, float outputMaxLim,
-         float integralMinLim, float integralMaxLim, float t) noexcept : 
+PID::PID(float kp, float ki, float kd, float tau,
+         float outputMinLim, float outputMaxLim, uint8_t integralMaxPct,
+         float t) noexcept : 
             kp(kp), ki(ki), kd(kd), tau(tau), t(t),
             outputMinLim(outputMinLim), outputMaxLim(outputMaxLim),
-            integralMinLim(outputMinLim), integralMaxLim(outputMaxLim)
-{}
+            integralMinLim((integralMaxPct / 100.0f) * outputMinLim),
+            integralMaxLim((integralMaxPct / 100.0f) * outputMaxLim) {}
 
 // Initialization method - Can be used as resetter
 void PID::pidInitState() noexcept {

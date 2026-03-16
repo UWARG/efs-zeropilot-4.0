@@ -2,12 +2,12 @@
 #include "unit_conversions.hpp"
 
 FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
-    rollPID(0.0f, 0.0f, 0.0f,
-        0.0f, OUTPUT_MIN, OUTPUT_MAX,
-        INTEGRAL_MIN, INTEGRAL_MAX, control_iter_period_s),
-    pitchPID(0.0f, 0.0f, 0.0f,
-        0.0f, OUTPUT_MIN, OUTPUT_MAX,
-        INTEGRAL_MIN, INTEGRAL_MAX, control_iter_period_s),
+    rollPID(0.0f, 0.0f, 0.0f, 0.0f,
+        OUTPUT_MIN, OUTPUT_MAX, 100,
+        control_iter_period_s),
+    pitchPID(0.0f, 0.0f, 0.0f, 0.0f, 
+        OUTPUT_MIN, OUTPUT_MAX, 100,
+        control_iter_period_s),
     yawRudderMixingConst(0.0f),
     rollLimitRad(0.0f),
     pitchLimitMaxRad(0.0f),

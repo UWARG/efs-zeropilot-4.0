@@ -5,9 +5,9 @@
 class PID {
     public:
         // PID object constructor
-        PID(float kp, float ki, float kd, 
-            float tau, float outputMinLim, float outputMaxLim,
-            float integralMinLim, float integralMaxLim, float t) noexcept;
+        PID(float kp, float ki, float kd, float tau, 
+            float outputMinLim, float outputMaxLim, uint8_t integralMaxPct,
+            float t) noexcept;
 
         // PID object's state var initialized (or reset)
         void pidInitState() noexcept;
