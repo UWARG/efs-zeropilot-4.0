@@ -21,6 +21,7 @@
 #include "rc_motor_control.hpp"
 #include "telemlink_iface.hpp"
 #include "rc_iface.hpp"
+
 class TelemetryManager {
   private:
     ISystemUtils *systemUtilsDriver;                        // System Utils Driver
@@ -43,7 +44,7 @@ class TelemetryManager {
     void receive();
 
   public:
-    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
+    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IRCReceiver *rcDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();
 
     void tmUpdate();
