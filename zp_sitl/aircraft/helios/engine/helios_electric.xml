@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<electric_engine name="Helios_Electric">
+  <power unit="WATTS"> 700.0 </power>
+</electric_engine>

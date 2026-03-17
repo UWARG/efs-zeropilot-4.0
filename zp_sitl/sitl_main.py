@@ -24,10 +24,11 @@ FPS_TO_MPS = 0.3048
 FPS_TO_KTS = 0.592484
 
 class ZP_SITL:
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, model='c172p'):
         # Initialize JSBSim
-        self.fdm = jsbsim.FGFDMExec(None)
-        self.fdm.load_model('c172p')
+        root_dir = BASE_DIR if os.path.isdir(os.path.join(BASE_DIR, 'aircraft', model)) else None
+        self.fdm = jsbsim.FGFDMExec(root_dir)
+        self.fdm.load_model(model)
         
         # Set internal JSBSim timestep
         self.dt = 1.0 / SITL_RATE_HZ
@@ -43,6 +44,18 @@ class ZP_SITL:
         self.fltmode_cmd = 0
         self.arm_cmd = 0
         
+        # Detect engine type (electric engines have no fuel)
+        if root_dir:
+            with open(os.path.join(BASE_DIR, 'aircraft', model, model + '.xml')) as f:
+                self.is_electric = 'electric' in f.read().lower()
+        else:
+            self.is_electric = False
+
+        # Electric battery simulation (no JSBSim battery model exists)
+        # Capacity in mAh, matching SITL_PowerModule_Config::MAX_BATTERY_CAPACITY_MAH
+        self.batt_capacity = 5000.0
+        self.batt_remaining = self.batt_capacity
+
         # ZeroPilot instance
         self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ, ip=ip, port=port)
         
@@ -67,7 +80,8 @@ class ZP_SITL:
         
         engine_on = config.get('engine', False)
         self.fdm['propulsion/set-running'] = -1 if engine_on else 0
-        self.fdm['fcs/mixture-cmd-norm'] = 1.0 if engine_on else 0.0
+        if not self.is_electric:
+            self.fdm['fcs/mixture-cmd-norm'] = 1.0 if engine_on else 0.0
         
         self.throttle_cmd = config.get('throttle', 0)
         self.fdm['fcs/throttle-cmd-norm'] = self.throttle_cmd / 100.0
@@ -75,7 +89,11 @@ class ZP_SITL:
         self.arm_cmd = 100 if engine_on else 0
         
         self.fdm.run_ic()
-        self.zp.set_max_batt_capacity(self.fdm['propulsion/total-fuel-lbs'])
+        if self.is_electric:
+            self.batt_remaining = self.batt_capacity
+            self.zp.set_max_batt_capacity(self.batt_capacity)
+        else:
+            self.zp.set_max_batt_capacity(self.fdm['propulsion/total-fuel-lbs'])
 
         # Apply initial environment settings
         self.fdm['atmosphere/wind-north-fps'] = config.get('wind_north', 0) * KTS_TO_FPS
@@ -94,6 +112,16 @@ class ZP_SITL:
         
         try:
             # 1. Update ZeroPilot sensors
+            rpm = self.fdm['propulsion/engine/propeller-rpm']
+            if self.is_electric:
+                # Drain battery in mAh: current(A) * dt(s) / 3.6 = mAh
+                current = rpm * 0.012 + 3.0
+                self.batt_remaining -= current * self.dt / 3.6
+                self.batt_remaining = max(self.batt_remaining, 0.0)
+                fuel_or_batt = self.batt_remaining
+            else:
+                fuel_or_batt = self.fdm['propulsion/total-fuel-lbs']
+
             self.zp.update_from_plant(
                 self.fdm['attitude/phi-rad'],
                 self.fdm['attitude/theta-rad'],
@@ -105,8 +133,8 @@ class ZP_SITL:
                 self.fdm['position/h-sl-ft'] * FT_TO_M,
                 self.fdm['velocities/vg-fps'] * FPS_TO_MPS,
                 self.fdm['attitude/psi-deg'],
-                self.fdm['propulsion/total-fuel-lbs'],
-                self.fdm['propulsion/engine/propeller-rpm']
+                fuel_or_batt,
+                rpm
             )
             
             # 2. Sync RC commands and update logic
@@ -274,10 +302,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run ZeroPilot SITL simulation.")
     parser.add_argument("--ip", type=str, default="127.0.0.1", help="IP address for ZeroPilot UDP communication")
     parser.add_argument("--port", type=int, default=14550, help="Port for ZeroPilot UDP communication")
+    parser.add_argument("--model", type=str, default="c172p", help="JSBSim aircraft model name (e.g. c172p, helios)")
     args = parser.parse_args()
 
     global sitl
-    sitl = ZP_SITL(args.ip, args.port)
+    sitl = ZP_SITL(args.ip, args.port, args.model)
 
     # 1. Start Web Server Thread
     server_thread = threading.Thread(target=start_webserver, daemon=True)

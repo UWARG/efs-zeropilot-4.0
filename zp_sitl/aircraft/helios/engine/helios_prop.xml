@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<propeller version="1.01" name="helios_prop">
+  <ixx> 0.002 </ixx>
+  <diameter unit="IN"> 10.0 </diameter>
+  <numblades> 4 </numblades>
+  <gearratio> 1.0 </gearratio>
+  <cp_factor> 1.00 </cp_factor>
+  <ct_factor> 1.00 </ct_factor>
+
+  <table name="C_THRUST" type="internal">
+    <tableData>
+      0.0 7.5106
+      0.1 7.2005
+      0.2 6.8904
+      0.3 6.3392
+      0.4 5.6915
+      0.5 5.0162
+      0.6 4.0585
+      0.7 3.0800
+      0.8 1.6675
+      1.0 -0.5650
+      1.2 -2.9560
+      1.4 -5.3194
+    </tableData>
+  </table>
+
+  <table name="C_POWER" type="internal">
+    <tableData>
+      0.0 5.0448
+      0.1 5.0448
+      0.2 4.9217
+      0.3 4.8036
+      0.4 4.5280
+      0.5 4.1490
+      0.6 3.8094
+      0.7 3.1991
+      0.8 2.6134
+      1.0 0.9351
+      1.2 -1.4913
+      1.4 -4.4886
+      1.6 -7.6189
+    </tableData>
+  </table>
+
+  <table name="CT_MACH" type="internal">
+    <tableData>
+      0.85 1.0
+      1.05 0.8
+    </tableData>
+  </table>
+
+  <table name="CP_MACH" type="internal">
+    <tableData>
+      0.85 1.0
+      1.05 1.8
+      2.00 1.4
+    </tableData>
+  </table>
+</propeller>
