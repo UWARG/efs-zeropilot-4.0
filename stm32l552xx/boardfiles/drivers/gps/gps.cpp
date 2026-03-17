@@ -9,7 +9,7 @@ UART_HandleTypeDef* GPS::getHUART() {
 }
 
 bool GPS::init() {
-    HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
+    HAL_StatusTypeDef success = HAL_UART_Receive_DMA(
 		huart,
 		rxBuffer,
 		MAX_NMEA_DATA_LENGTH
