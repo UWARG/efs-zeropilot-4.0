@@ -33,7 +33,7 @@ private:
     GpsData_t validData;
     GpsData_t tempData;
 
-    uint8_t rxBuffer[MAX_NMEA_DATA_LENGTH + RX_BUFFER_PADDING_SIZE];
+    uint8_t rxBuffer[MAX_NMEA_DATA_LENGTH*3 + RX_BUFFER_PADDING_SIZE];
     uint8_t* processBuffer = rxBuffer;
     UART_HandleTypeDef *huart;
 
