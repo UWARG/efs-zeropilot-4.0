@@ -1,4 +1,3 @@
-#include "stm32h7xx_hal.h"
 #include <cstring>
 
 #include "gps.hpp"
@@ -12,7 +11,7 @@ bool GPS::init() {
 		MAX_NMEA_DATA_LENGTH
     );
 
-    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
+    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
 
     HAL_StatusTypeDef messagesuccess = enableMessage(0x01, 0x11); //enable ubx velecef messages
     
@@ -53,6 +52,7 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
 
 GpsData_t GPS::readData() {
     __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
+    __HAL_DMA_DISABLE_IT(huart, DMA_IT_TC);
 
     bool success = parseRMC() && parseGGA() && parseUBX();
     tempData.isNew = success;
@@ -60,7 +60,8 @@ GpsData_t GPS::readData() {
 
     validData.isNew = false;
 
-   __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
+   __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
+   __HAL_DMA_ENABLE_IT(huart, DMA_IT_TC);
 
     return tempData;
 }
@@ -72,6 +73,7 @@ void GPS::rxCallback() {
 		rxBuffer,
 		MAX_NMEA_DATA_LENGTH
     );
+    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
 }
 
 UART_HandleTypeDef* GPS::getHUART() {
@@ -84,7 +86,7 @@ bool GPS::parseUBX() {
     // find sync
     while (!(processBuffer[idx] == 0xB5 && processBuffer[idx+1] == 0x62)) {
         idx++;
-        if (idx >= MAX_NMEA_DATA_LENGTH) return false;  // not found
+        if (idx >= MAX_NMEA_DATA_LENGTH-1) return false;  // not found
     }
     // check class
     if (processBuffer[idx+2] != 0x01 || processBuffer[idx+3] != 0x11) {
