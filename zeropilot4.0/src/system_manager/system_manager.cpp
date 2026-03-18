@@ -54,7 +54,7 @@ void SystemManager::smUpdate() {
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
-            loggerDriver->log("RC Connected");
+            // loggerDriver->log("RC Connected"); (TODO: Uncomment after rearchitecture)
             rcConnected = true;
         }
     } else {
@@ -62,7 +62,7 @@ void SystemManager::smUpdate() {
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > (ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000)) && rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
-            loggerDriver->log("RC Disconnected");
+            // loggerDriver->log("RC Disconnected"); (TODO: Uncomment after rearchitecture)
             rcConnected = false;
         }
     }
@@ -146,15 +146,15 @@ void SystemManager::updateBatteryFSM() {
             switch (batteryData.chargeState) {
                 case MAV_BATTERY_CHARGE_STATE_OK:
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
-                    loggerDriver->log("Battery State: OK");
+                    // loggerDriver->log("Battery State: OK"); (TODO: Uncomment after rearchitecture)
                     break;
                 case MAV_BATTERY_CHARGE_STATE_LOW:
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
-                    loggerDriver->log("Battery State: LOW");
+                    // loggerDriver->log("Battery State: LOW"); (TODO: Uncomment after rearchitecture)
                     break;
                 case MAV_BATTERY_CHARGE_STATE_CRITICAL:
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
-                    loggerDriver->log("Battery State: CRITICAL");
+                    // loggerDriver->log("Battery State: CRITICAL"); (TODO: Uncomment after rearchitecture)
                     break;
                 default:
                     break;
@@ -257,7 +257,7 @@ void SystemManager::sendMessagesToLogger() {
         msgCount++;
     }
 
-    loggerDriver->log(messages, msgCount);
+    // loggerDriver->log(messages, msgCount); (TODO: Uncomment after rearchitecture)
 }
 
 // Flight mode param callback (template instantiated per slot)
