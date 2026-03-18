@@ -51,7 +51,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     }
     // GPS dma callback
     else if (huart == gpsHandle->getHUART()) {
-      gpsHandle->processGPSData();
+      gpsHandle->rxCallback();
     }
 }
 
