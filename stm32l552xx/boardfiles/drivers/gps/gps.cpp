@@ -66,7 +66,7 @@ GpsData_t GPS::readData() {
 
 void GPS::rxCallback() {
     memcpy(processBuffer, rxBuffer, MAX_NMEA_DATA_LENGTH);
-    HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
+    HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
 		rxBuffer,
 		MAX_NMEA_DATA_LENGTH
