@@ -37,7 +37,7 @@ void SystemManager::smUpdate() {
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
             // loggerDriver->log("RC Connected"); (TODO: Uncomment after rearchitecture)
-         rcConnected = true;
+            rcConnected = true;
         }
     } else {
         oldDataCount += 1;
