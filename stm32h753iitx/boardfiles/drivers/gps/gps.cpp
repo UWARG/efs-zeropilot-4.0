@@ -52,7 +52,7 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
 
 GpsData_t GPS::readData() {
     __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
-    __HAL_DMA_DISABLE_IT(huart, DMA_IT_TC);
+    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_TC);
 
     bool success = parseRMC() && parseGGA() && parseUBX();
     tempData.isNew = success;
@@ -61,7 +61,7 @@ GpsData_t GPS::readData() {
     validData.isNew = false;
 
    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
-   __HAL_DMA_ENABLE_IT(huart, DMA_IT_TC);
+   __HAL_DMA_ENABLE_IT(huart->hdmarx, DMA_IT_TC);
 
     return tempData;
 }
