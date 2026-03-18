@@ -6,6 +6,13 @@
 #include "gps_defines.hpp"
 #include <cmath>
 
+static constexpr uint8_t MAX_NMEA_DATA_LENGTH_PER_LINE = 82;
+static constexpr uint8_t NUM_NMEA_DATA_LINES = 8;
+static constexpr uint16_t MAX_NMEA_DATA_LENGTH = MAX_NMEA_DATA_LENGTH_PER_LINE * NUM_NMEA_DATA_LINES;
+static constexpr uint32_t DECIMAL_PRECISION = 1e6;
+static constexpr uint16_t RX_BUFFER_PADDING_SIZE = 16;
+static constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
+
 class GPS : public IGPS {
 
 public:
