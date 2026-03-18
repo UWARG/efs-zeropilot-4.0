@@ -2,7 +2,6 @@
 
 #include "stm32l5xx.h"
 #include "gps_iface.hpp"
-#include "gps_datatypes.hpp"
 #include "gps_defines.hpp"
 #include <cmath>
 
