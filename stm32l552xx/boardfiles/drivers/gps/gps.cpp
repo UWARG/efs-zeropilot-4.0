@@ -4,10 +4,6 @@
 
 GPS::GPS(UART_HandleTypeDef* huart) : huart(huart) {}
 
-UART_HandleTypeDef* GPS::getHUART() {
-    return huart;
-}
-
 bool GPS::init() {
     HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
@@ -55,7 +51,7 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
 }
 
 GpsData_t GPS::readData() {
-   __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_TC);
+    __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
 
     bool success = parseRMC() && parseGGA() && parseUBX();
     tempData.isNew = success;
@@ -63,15 +59,24 @@ GpsData_t GPS::readData() {
 
     validData.isNew = false;
 
-   __HAL_DMA_ENABLE_IT(huart->hdmarx, DMA_IT_TC);
+   __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
 
     return tempData;
 }
 
-void GPS::processGPSData() {
+void GPS::rxCallback() {
     memcpy(processBuffer, rxBuffer, MAX_NMEA_DATA_LENGTH);
+    HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
+		huart,
+		rxBuffer,
+		MAX_NMEA_DATA_LENGTH
+    );
 }
-//
+
+UART_HandleTypeDef* GPS::getHUART() {
+    return huart;
+}
+
 bool GPS::parseUBX() {
     int idx = 0;
 

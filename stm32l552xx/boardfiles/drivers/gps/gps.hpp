@@ -16,7 +16,7 @@ public:
     GPS(UART_HandleTypeDef *huart);
 
     bool init();
-    void processGPSData();
+    void rxCallback();
 
 private:
     GpsData_t validData;
@@ -39,7 +39,6 @@ private:
     bool getVy(int &idx);
     bool getVz(int &idx);
 
-
     // RMC helper functions
     bool getTimeRMC(int &idx);
     bool getLatitudeRMC(int &idx);
@@ -47,8 +46,6 @@ private:
     bool getSpeedRMC(int &idx);
     bool getTrackAngleRMC(int &idx);
     bool getDateRMC(int &idx);
-
-
 
     // GGA helper functions
     bool getNumSatellitesGGA(int &idx);
