@@ -53,7 +53,7 @@ class ZP_SITL:
 
         # Electric battery simulation (no JSBSim battery model exists)
         # Capacity in mAh, matching SITL_PowerModule_Config::MAX_BATTERY_CAPACITY_MAH
-        self.batt_capacity = 5000.0
+        self.batt_capacity = 3300.0
         self.batt_remaining = self.batt_capacity
 
         # ZeroPilot instance
@@ -115,7 +115,7 @@ class ZP_SITL:
             rpm = self.fdm['propulsion/engine/propeller-rpm']
             if self.is_electric:
                 # Drain battery in mAh: current(A) * dt(s) / 3.6 = mAh
-                current = rpm * 0.012 + 3.0
+                current = 1.6 + (0.000000182 * (rpm ** 2))
                 self.batt_remaining -= current * self.dt / 3.6
                 self.batt_remaining = max(self.batt_remaining, 0.0)
                 fuel_or_batt = self.batt_remaining

@@ -24,7 +24,7 @@ public:
         pmData.busVoltage = Config::V_EMPTY + (capacityRatio * (Config::V_FULL - Config::V_EMPTY));
 
         // Simulate current draw in Amps based on RPM
-        pmData.current = (rpm * Config::CURRENT_DRAW_PER_RPM) + Config::CURRENT_DRAW_IDLE;
+        pmData.current = Config::CURRENT_DRAW_IDLE + (Config::CURRENT_DRAW_RPM_SQUARED * (rpm * rpm));
 
         // Simulate voltage drop due to internal resistance
         pmData.busVoltage -= pmData.current * Config::BATTERY_INTERNAL_RESISTANCE_OHMS;
