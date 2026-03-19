@@ -42,7 +42,7 @@ static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -
 
 // Battery related constants
 static constexpr float BATTERY_LOW_VOLTAGE = 14.0f;
-static constexpr float BATTERY_CRITICAL_VOLTAGE = 13.6;
+static constexpr float BATTERY_CRITICAL_VOLTAGE = 13.6f;
 static constexpr float BATTERY_CAPACITY_MAH = 3300.0f;
 
 static_assert(
