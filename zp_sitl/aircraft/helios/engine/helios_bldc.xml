@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<brushless_dc_motor name="Helios_Electric">
+<brushless_dc_motor name="AT2820_880KV">
   <velocityconstant> 880 </velocityconstant>
   <coilresistance> 0.039 </coilresistance>
   <noloadcurrent> 1.6 </noloadcurrent>

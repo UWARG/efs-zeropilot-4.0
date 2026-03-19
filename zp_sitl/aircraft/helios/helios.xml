@@ -130,7 +130,7 @@
 
  <propulsion>
 
-  <engine file="helios_electric">
+  <engine file="helios_bldc">
     <location unit="IN">
       <x> 36.0 </x>
       <y>  0.0 </y>
