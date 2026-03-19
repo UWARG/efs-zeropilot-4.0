@@ -1,52 +1,65 @@
 <?xml version="1.0"?>
-<propeller version="1.01" name="gemfan_vortex_10x5e">
+<propeller version="1.01" name="gemfan_10x5e">
   <ixx> 0.00015 </ixx>
   <diameter unit="IN"> 10.0 </diameter>
   <numblades> 2 </numblades>
   <gearratio> 1.0 </gearratio>
-  <cp_factor> 1.00 </cp_factor>
-  <ct_factor> 1.00 </ct_factor>
+  <cp_factor> 1.0 </cp_factor>
+  <ct_factor> 1.0 </ct_factor>
 
   <table name="C_THRUST" type="internal">
     <tableData>
-      0.0   0.1150
-      0.1   0.1080
-      0.2   0.0980
-      0.3   0.0860
-      0.4   0.0710
-      0.5   0.0520
-      0.6   0.0310
-      0.7   0.0050
-      0.8  -0.0200
+      0.00   0.1037
+      0.04   0.1000
+      0.11   0.0934
+      0.15   0.0880
+      0.20   0.0826
+      0.25   0.0761
+      0.29   0.0694
+      0.35   0.0576
+      0.40   0.0494
+      0.45   0.0399
+      0.50   0.0267
+      0.55   0.0181
+      0.60   0.0086
+      0.64  -0.0001
     </tableData>
   </table>
 
   <table name="C_POWER" type="internal">
     <tableData>
-      0.0   0.0480
-      0.1   0.0470
-      0.2   0.0450
-      0.3   0.0420
-      0.4   0.0360
-      0.5   0.0290
-      0.6   0.0190
-      0.7   0.0060
-      0.8  -0.0100
+      0.00   0.0380
+      0.04   0.0384
+      0.11   0.0388
+      0.15   0.0381
+      0.20   0.0382
+      0.25   0.0386
+      0.29   0.0359
+      0.35   0.0327
+      0.40   0.0304
+      0.45   0.0286
+      0.50   0.0281
+      0.55   0.0180
+      0.60   0.0127
+      0.64   0.0083
     </tableData>
   </table>
 
   <table name="CT_MACH" type="internal">
     <tableData>
-      0.85 1.0
-      1.05 0.8
+      0.20  1.000
+      0.40  1.017
+      0.60  1.045
+      0.80  1.095
     </tableData>
   </table>
 
   <table name="CP_MACH" type="internal">
     <tableData>
-      0.85 1.0
-      1.05 1.8
-      2.00 1.4
+      0.20  1.000
+      0.40  0.960
+      0.60  0.968
+      0.80  1.040
     </tableData>
   </table>
 </propeller>
