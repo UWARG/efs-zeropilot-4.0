@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <brushless_dc_motor name="Helios_Electric">
   <velocityconstant> 880 </velocityconstant>
-  <coilresistance> 0.016 </coilresistance>
-  <noloadcurrent> 2.7 </noloadcurrent>
+  <coilresistance> 0.039 </coilresistance>
+  <noloadcurrent> 1.6 </noloadcurrent>
   <maxvolts> 14.8 </maxvolts>
 </brushless_dc_motor>
