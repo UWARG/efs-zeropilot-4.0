@@ -31,7 +31,7 @@ static constexpr float AM_FBWA_PITCH_P_GAIN = 2.250f;
 static constexpr float AM_FBWA_PITCH_I_GAIN = 0.250f;
 static constexpr float AM_FBWA_PITCH_D_GAIN = 1.400f;
 static constexpr float AM_FBWA_PITCH_D_TAU = 0.02f;
-static constexpr float AM_FBWA_RUDDER_MIXING = 0.0f;
+static constexpr float AM_FBWA_RUDDER_MIXING = 0.5f;
 
 typedef enum {
     YAW = 0,
