@@ -76,12 +76,12 @@ DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* Definitions for defaultTask */
-//osThreadId_t defaultTaskHandle;
-//const osThreadAttr_t defaultTask_attributes = {
-//  .name = "defaultTask",
-//  .stack_size = 128 * 4
-//  .priority = (osPriority_t) osPriorityNormal,
-//};
+// osThreadId_t defaultTaskHandle;
+// const osThreadAttr_t defaultTask_attributes = {
+//   .name = "defaultTask",
+//   .priority = (osPriority_t) osPriorityNormal,
+//   .stack_size = 128 * 4
+// };
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -236,10 +236,12 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE
-                              |RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI
+                              |RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.LSIDiv = RCC_LSI_DIV1;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
