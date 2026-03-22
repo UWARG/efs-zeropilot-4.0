@@ -115,6 +115,20 @@ void initDrivers()
 
     // TODO: Cleanup!
     canHandle = new (&canStorage) CAN(&hfdcan1);
+
+    FDCAN_FilterTypeDef sFilterConfig;
+    sFilterConfig.IdType = FDCAN_EXTENDED_ID;
+    sFilterConfig.FilterIndex = 0;
+    sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+    sFilterConfig.FilterID1 = 0x000;
+    sFilterConfig.FilterID2 = 0x000;  // mask=0 accepts everything
+    HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
+
+    HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_ACCEPT_IN_RX_FIFO0,
+                                  FDCAN_ACCEPT_IN_RX_FIFO0,
+                                  FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE);
+
     if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
   		Error_Handler();
   	}
