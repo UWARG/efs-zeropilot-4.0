@@ -1,4 +1,5 @@
 #include <Python.h>
+#include "zp_params.hpp"
 #include "system_manager.hpp"
 #include "telemetry_manager.hpp"
 #include "attitude_manager.hpp"
@@ -125,6 +126,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
     
     ZPObject* self = (ZPObject*)type->tp_alloc(type, 0);
     if (self != NULL) {
+        ZP_PARAM::init();
+
         self->sysUtils = new SITL_SystemUtils();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
         self->tmQueue = new SITL_Queue<TMMessage_t>();
