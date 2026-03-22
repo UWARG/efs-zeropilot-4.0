@@ -48,4 +48,5 @@ class FBWBMapping : public FBWAMapping {
 
         // Maximum Altitude Change Rate (in m/s)
         static constexpr float MAX_ALTITUDE_DELTA_MPS = 2.50f; // 2.50m/s = 500 feet/min
+        static constexpr float MIN_ALTITUDE_DELTA_MPS = -2.50f; // 2.50m/s = 500 feet/min
 };
