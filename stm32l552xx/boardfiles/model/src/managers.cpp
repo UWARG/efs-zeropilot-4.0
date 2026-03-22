@@ -39,7 +39,8 @@ void initManagers()
 		pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle
+        smLoggerQueueHandle,
+        m10AccessoryHandle
     );
 
     // TM initialization

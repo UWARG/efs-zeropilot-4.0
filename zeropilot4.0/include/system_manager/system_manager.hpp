@@ -7,6 +7,7 @@
 #include "rc_iface.hpp"
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
+#include "m10_accessory_iface.hpp"
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
@@ -67,7 +68,8 @@ class SystemManager {
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue
+            IMessageQueue<char[100]> *smLoggerQueue,
+            IM10Accessory *m10AccessoryDriver = nullptr
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
@@ -79,6 +81,7 @@ class SystemManager {
         ILogger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver; // Power module driver
+        IM10Accessory *m10AccessoryDriver; // M10 safety switch / buzzer driver
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
@@ -92,7 +95,7 @@ class SystemManager {
         BatteryData_t batteryData;
         void updateBatteryFSM();
 
-        void sendRCDataToAttitudeManager(const RCControl &rcData);
+        void sendRCDataToAttitudeManager(const RCControl &rcData, bool armed);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
         void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);

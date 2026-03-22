@@ -1,4 +1,6 @@
 #include "drivers.hpp"
+#include "main.h"
+#include "m10_accessory.hpp"
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
 
@@ -33,6 +35,7 @@ alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
+alignas(M10Accessory) static uint8_t m10AccessoryStorage[sizeof(M10Accessory)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
@@ -60,6 +63,7 @@ GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
+IM10Accessory *m10AccessoryHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -114,6 +118,12 @@ void initDrivers()
     rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
+    m10AccessoryHandle = new (&m10AccessoryStorage) M10Accessory(
+        GPS_SAFETY_SW_GPIO_Port,
+        GPS_SAFETY_SW_Pin,
+        GPS_BUZZER_GPIO_Port,
+        GPS_BUZZER_Pin
+    );
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
     // Queues
@@ -135,6 +145,7 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    static_cast<M10Accessory *>(m10AccessoryHandle)->init();
     pmHandle->init();
     telemLinkHandle->init();
 

@@ -93,6 +93,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/telemlink"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/gps"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/m10_accessory"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/systemutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/model/inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/museq"/>
@@ -219,6 +220,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/telemlink"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/gps"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/m10_accessory"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/systemutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/model/inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/museq"/>
@@ -255,6 +257,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/telemlink"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/gps"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/m10_accessory"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/systemutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/model/inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/museq"/>

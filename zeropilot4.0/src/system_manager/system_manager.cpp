@@ -9,12 +9,14 @@ SystemManager::SystemManager(
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *smLoggerQueue,
+    IM10Accessory *m10AccessoryDriver) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
+        m10AccessoryDriver(m10AccessoryDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
@@ -27,12 +29,24 @@ void SystemManager::smUpdate() {
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
-
     // Get RC data from the RC receiver and passthrough to AM if new
     RCControl rcData = rcDriver->getRCData();
+    const bool armRequested = rcData.arm > SM_RC_ARM_THRESHOLD;
+    const bool safetySwitchPressed =
+        (m10AccessoryDriver == nullptr) || m10AccessoryDriver->readSafetySwitch();
+    const bool armed = armRequested && safetySwitchPressed;
+
+    if (m10AccessoryDriver != nullptr) {
+        if (safetySwitchPressed) {
+            m10AccessoryDriver->buzzerOff();
+        } else {
+            m10AccessoryDriver->buzzerOn();
+        }
+    }
+
     if (rcData.isDataNew) {
         oldDataCount = 0;
-        sendRCDataToAttitudeManager(rcData);
+        sendRCDataToAttitudeManager(rcData, armed);
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
@@ -53,9 +67,6 @@ void SystemManager::smUpdate() {
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_RC_DATA_RATE_HZ) == 0) {
         sendRCDataToTelemetryManager(rcData);
     }
-
-    // Set armed status based on SM_RC_ARM_THRESHOLD
-    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
 
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
@@ -153,14 +164,14 @@ void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32
     tmQueue->push(&hbDataMsg);
 }
 
-void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
+void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData, bool armed) {
     RCMotorControlMessage_t rcDataMessage;
 
     rcDataMessage.roll = rcData.roll;
     rcDataMessage.pitch = rcData.pitch;
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
-    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    rcDataMessage.arm = armed;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 

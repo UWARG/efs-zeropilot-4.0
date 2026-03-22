@@ -14,6 +14,7 @@
 #include "gps.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
+#include "m10_accessory_iface.hpp"
 #include "power_module.hpp"
 
 extern SystemUtils *systemUtilsHandle;
@@ -34,6 +35,7 @@ extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
+extern IM10Accessory *m10AccessoryHandle;
 extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;

@@ -4,6 +4,7 @@
 #include "mock_systemutils.hpp"
 #include "mock_iwdg.hpp"
 #include "mock_logger.hpp"
+#include "mock_m10_accessory.hpp"
 #include "mock_rc.hpp"
 #include "mock_power_module.hpp"
 #include "mock_queue.hpp"
@@ -22,6 +23,7 @@ protected:
     NiceMock<MockLogger> mockLogger;
     NiceMock<MockRCReceiver> mockRC;
     NiceMock<MockPowerModule> mockPM;
+    NiceMock<MockM10Accessory> mockAccessory;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
@@ -34,6 +36,35 @@ TEST_F(SystemManagerTest, WatchdogRefresh) {
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     sm.smUpdate();
+}
+
+TEST_F(SystemManagerTest, SafetySwitchBlocksArmingAndSoundsBuzzer) {
+    RCControl rcData{};
+    rcData.isDataNew = true;
+    rcData.roll = 50.0f;
+    rcData.pitch = 50.0f;
+    rcData.yaw = 50.0f;
+    rcData.throttle = 50.0f;
+    rcData.arm = 100.0f;
+
+    EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
+    EXPECT_CALL(mockAccessory, readSafetySwitch()).WillOnce(Return(false));
+    EXPECT_CALL(mockAccessory, buzzerOn()).Times(1);
+    EXPECT_CALL(mockAccessory, buzzerOff()).Times(0);
+
+    bool forwardedArm = true;
+    EXPECT_CALL(mockAMQueue, push(_))
+        .WillOnce(Invoke([&forwardedArm](RCMotorControlMessage_t *msg) {
+            forwardedArm = msg->arm;
+            return 0;
+        }));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockAccessory);
+
+    sm.smUpdate();
+
+    EXPECT_FALSE(forwardedArm);
 }
 
 TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
