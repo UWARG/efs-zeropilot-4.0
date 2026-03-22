@@ -27,6 +27,14 @@ set(TM_INC
     "include/thread_msgs/"
 )
 
+# zp param files
+set(ZP_PARAM_SRC
+    "src/zp_param/zp_params.cpp"
+)
+set(ZP_PARAM_INC
+    "include/zp_param/"
+)
+
 # external library files (does not apply compiler warnings)
 set(EXTERNAL_INC
     "../external/c_library_v2/all/"
@@ -37,6 +45,7 @@ set(ZP_SRC
     ${AM_SRC}
     ${SM_SRC}
     ${TM_SRC}
+    ${ZP_PARAM_SRC}
 )
 set(ZP_INC
     "include/driver_ifaces/"
@@ -44,4 +53,5 @@ set(ZP_INC
     ${AM_INC}
     ${SM_INC}
     ${TM_INC}
+    ${ZP_PARAM_INC}
 )
