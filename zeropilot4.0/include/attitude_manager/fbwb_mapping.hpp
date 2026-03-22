@@ -11,8 +11,8 @@ class FBWBMapping : public FBWAMapping {
 
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
 
-        void setTotalEnergyPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
-        void setEnergyBalancePIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        void setTotalEnergyPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        void setEnergyBalancePIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         void resetControlLoopState() noexcept;
 

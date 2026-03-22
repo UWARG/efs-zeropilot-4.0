@@ -22,18 +22,6 @@
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
-#define AM_FAILSAFE_TIMEOUT_MS 1000
-
-// PID constants and rudder mixing constant for FBWA control law
-static constexpr float AM_FBWA_ROLL_P_GAIN = 1.120f;
-static constexpr float AM_FBWA_ROLL_I_GAIN = 0.100f;
-static constexpr float AM_FBWA_ROLL_D_GAIN = 0.650f;
-static constexpr float AM_FBWA_ROLL_D_TAU = 0.02f;
-static constexpr float AM_FBWA_PITCH_P_GAIN = 2.250f;
-static constexpr float AM_FBWA_PITCH_I_GAIN = 0.250f;
-static constexpr float AM_FBWA_PITCH_D_GAIN = 1.400f;
-static constexpr float AM_FBWA_PITCH_D_TAU = 0.02f;
-static constexpr float AM_FBWA_RUDDER_MIXING = 0.5f;
 
 // PID constants for FBWB control law
 static constexpr float AM_FBWB_TOTAL_ENERGY_P_GAIN = 0.0f; // TODO: set TE P-gain
@@ -119,4 +107,20 @@ class AttitudeManager {
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
+
+        // ZP_PARAM callback functions
+        static bool updatePIDRollKp(AttitudeManager* context, float val);
+        static bool updatePIDRollKi(AttitudeManager* context, float val);
+        static bool updatePIDRollKd(AttitudeManager* context, float val);
+        static bool updatePIDRollTau(AttitudeManager* context, float val);
+        static bool updatePIDRollIMax(AttitudeManager* context, float val);
+        static bool updatePIDPitchKp(AttitudeManager* context, float val);
+        static bool updatePIDPitchKi(AttitudeManager* context, float val);
+        static bool updatePIDPitchKd(AttitudeManager* context, float val);
+        static bool updatePIDPitchTau(AttitudeManager* context, float val);
+        static bool updatePIDPitchIMax(AttitudeManager* context, float val);
+        static bool updateKffRddrmix(AttitudeManager* context, float val);
+        static bool updateRollLimitDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
 };

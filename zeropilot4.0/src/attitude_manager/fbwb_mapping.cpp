@@ -3,12 +3,10 @@
 FBWBMapping::FBWBMapping(float control_iter_period_s) noexcept :
     FBWAMapping(control_iter_period_s), // all FBWA fields are already initialized
     totalEnergyPID(0.0f, 0.0f, 0.0f,
-        0.0f, PID_OUTPUT_MIN, PID_OUTPUT_MAX,
-        PID_INTEGRAL_MIN, PID_INTEGRAL_MAX,
+        0.0f, PID_OUTPUT_MIN, PID_OUTPUT_MAX, 100,
         control_iter_period_s * OUTER_LOOP_DIVIDER),
     energyBalancePID(0.0f, 0.0f, 0.0f,
-        0.0f, PID_OUTPUT_MIN, PID_OUTPUT_MAX,
-        PID_INTEGRAL_MIN, PID_INTEGRAL_MAX,
+        0.0f, PID_OUTPUT_MIN, PID_OUTPUT_MAX, 100,
         control_iter_period_s * OUTER_LOOP_DIVIDER),
     isInitialized(false),
     targetAltitude_m(0.0f),
@@ -21,12 +19,12 @@ FBWBMapping::FBWBMapping(float control_iter_period_s) noexcept :
     energyBalancePID.pidInitState();
 }
 
-void FBWBMapping::setTotalEnergyPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
-    totalEnergyPID.setConstants(newKp, newKi, newKd, newTau);
+void FBWBMapping::setTotalEnergyPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    totalEnergyPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
-void FBWBMapping::setEnergyBalancePIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
-    energyBalancePID.setConstants(newKp, newKi, newKd, newTau);
+void FBWBMapping::setEnergyBalancePIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    energyBalancePID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 void FBWBMapping::resetControlLoopState() noexcept {

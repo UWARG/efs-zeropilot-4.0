@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "flightmode.hpp"
 #include "pid.hpp"
 
@@ -12,16 +13,29 @@ class FBWAMapping : public Flightmode {
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
 
         // Setter *roll* for PID consts
-        void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for *pitch* PID consts
-        void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau) noexcept;
+        void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for *yaw* rudder mixing const
         void setYawRudderMixingConstant(float newMixingConst) noexcept;
 
+        // Setter for *rollLimitRad*
+        void setRollLimitDeg(float newRollLimitDeg) noexcept;
+
+        // Setter for *pitchLimitMaxRad*
+        void setPitchLimitMaxDeg(float newPitchLimitMaxDeg) noexcept;
+
+        // Setter for *pitchLimitMinRad*
+        void setPitchLimitMinDeg(float newPitchLimitMinDeg) noexcept;
+
         // Resetter for both roll and pitch PIDs
         void resetControlLoopState() noexcept;
+
+        // Getter for PID objects
+        PID *getRollPID() noexcept;
+        PID *getPitchPID() noexcept;
 
         // Destructor
         ~FBWAMapping() noexcept override = default;
@@ -50,9 +64,8 @@ class FBWAMapping : public Flightmode {
         // Yaw rudder mixing constant
         float yawRudderMixingConst;
 
-        // Roll and Pitch Angle Ranges (in radians)
-        static constexpr float ROLL_MIN_ANGLE_RAD = -0.785f;  // -45 degrees
-        static constexpr float ROLL_MAX_ANGLE_RAD = 0.785f;   // +45 degrees
-        static constexpr float PITCH_MIN_ANGLE_RAD = -0.349f; // -20 degrees
-        static constexpr float PITCH_MAX_ANGLE_RAD = 0.349f;  // +20 degrees
+        // Values for roll/pitch limits
+        float rollLimitRad;
+        float pitchLimitMaxRad;
+        float pitchLimitMinRad;
 };
