@@ -45,10 +45,6 @@ class FBWAMapping : public Flightmode {
         static constexpr float PID_OUTPUT_MIN = -1.0f;
         static constexpr float PID_OUTPUT_MAX = +1.0f;
 
-        // Integral limits (to prevent windup)
-        static constexpr float PID_INTEGRAL_MIN = -0.5f;
-        static constexpr float PID_INTEGRAL_MAX = +0.5f;
-
         // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
         static constexpr float PID_OUTPUT_SCALE = 50.0f;
         static constexpr float PID_OUTPUT_SHIFT = 50.0f;
