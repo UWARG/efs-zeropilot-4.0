@@ -238,6 +238,7 @@ void CAN::sendCANTx() {
 }
 
 bool CAN::routineTasks() {
+
 	sendCANTx();
 
 	uint32_t tick = HAL_GetTick();
