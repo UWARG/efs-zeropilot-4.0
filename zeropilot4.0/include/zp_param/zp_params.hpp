@@ -45,6 +45,8 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     BATT_CAPACITY,
     BATT_LOW_TIMER,
     PARAM_COUNT
+
+    // TODO: Set new PID constants names for FBWB PID
 };
 
 namespace ZP_PARAM {

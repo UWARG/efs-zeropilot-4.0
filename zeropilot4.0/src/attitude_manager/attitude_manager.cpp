@@ -58,6 +58,7 @@ AttitudeManager::AttitudeManager(
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, this, AttitudeManager::updatePitchLimMinDeg);
+    // TODO: Bind callbacks for FBWB PID constants
 
     // Set PID constants, rddr mixing constant, and roll/pitch limits for FBWA control law
     fbwaCLAW.setRollPIDConstants(
@@ -78,6 +79,8 @@ AttitudeManager::AttitudeManager(
     fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
     fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
     fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
+
+    // TODO: Load in FBWB PID control constants here
 
     // Set PID constants for FBWB control law
     fbwbCLAW.setRollPIDConstants(
@@ -368,6 +371,9 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
 // STATIC FUNCTIONS ONLY FOR PARAM CHAINING
 // ==============================================================
+
+// TODO: Add updatePID constants for FBWB
+
 bool AttitudeManager::updatePIDRollKp(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;
 

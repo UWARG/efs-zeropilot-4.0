@@ -58,6 +58,8 @@ void init() {
     initParam(ZP_PARAM_ID::BATT_CRT_VOLT, "BATT_CRT_VOLT", 10.2f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::BATT_CAPACITY, "BATT_CAPACITY", 4000.0f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::BATT_LOW_TIMER, "BATT_LOW_TIMER", 5.0f, MAV_PARAM_TYPE_REAL32);
+
+    // TODO: Initialize parameters for FBWB PID
 }
 
 void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter) {
