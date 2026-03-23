@@ -26,6 +26,11 @@ CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 
 	nodeStatus = {0};
 
+	for (int i = 0; i <= CANARD_MAX_NODE_ID; i++) {
+		canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
+	}
+	canNodes[NODE_ID].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+
 	canard.node_id = NODE_ID;
 }
 
@@ -186,7 +191,7 @@ int8_t CAN::allocateNode() {
 	
 
 	nextAvailableID = currId + 1;
-
+	
 	return currId;
 }
 
