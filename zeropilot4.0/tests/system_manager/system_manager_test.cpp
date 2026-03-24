@@ -67,6 +67,61 @@ TEST_F(SystemManagerTest, SafetySwitchBlocksArmingAndSoundsBuzzer) {
     EXPECT_FALSE(forwardedArm);
 }
 
+TEST_F(SystemManagerTest, SafetySwitchAllowsArmingAndSilencesBuzzer) {
+    RCControl rcData{};
+    rcData.isDataNew = true;
+    rcData.roll = 50.0f;
+    rcData.pitch = 50.0f;
+    rcData.yaw = 50.0f;
+    rcData.throttle = 50.0f;
+    rcData.arm = 100.0f;
+
+    EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
+    EXPECT_CALL(mockAccessory, readSafetySwitch()).WillOnce(Return(true));
+    EXPECT_CALL(mockAccessory, buzzerOff()).Times(1);
+    EXPECT_CALL(mockAccessory, buzzerOn()).Times(0);
+
+    bool forwardedArm = false;
+    EXPECT_CALL(mockAMQueue, push(_))
+        .WillOnce(Invoke([&forwardedArm](RCMotorControlMessage_t *msg) {
+            forwardedArm = msg->arm;
+            return 0;
+        }));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockAccessory);
+
+    sm.smUpdate();
+
+    EXPECT_TRUE(forwardedArm);
+}
+
+TEST_F(SystemManagerTest, NoAccessoryPreservesLegacyArmingBehavior) {
+    RCControl rcData{};
+    rcData.isDataNew = true;
+    rcData.roll = 50.0f;
+    rcData.pitch = 50.0f;
+    rcData.yaw = 50.0f;
+    rcData.throttle = 50.0f;
+    rcData.arm = 100.0f;
+
+    EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
+
+    bool forwardedArm = false;
+    EXPECT_CALL(mockAMQueue, push(_))
+        .WillOnce(Invoke([&forwardedArm](RCMotorControlMessage_t *msg) {
+            forwardedArm = msg->arm;
+            return 0;
+        }));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+
+    sm.smUpdate();
+
+    EXPECT_TRUE(forwardedArm);
+}
+
 TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
     RCControl validRCData;
     validRCData.isDataNew = true;
