@@ -76,7 +76,6 @@ add_executable(${PROJECT_NAME}
 )
 target_include_directories(${PROJECT_NAME} 
     PRIVATE ${RELATIVE_ZP_INC} 
-    PRIVATE "${CMAKE_SOURCE_DIR}/test_support"
     PRIVATE "${CMAKE_SOURCE_DIR}/driver_mocks"
 )
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RELATIVE_EXTERNAL_INC})
