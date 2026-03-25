@@ -123,4 +123,13 @@ class AttitudeManager {
         static bool updateRollLimitDeg(AttitudeManager* context, float val);
         static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
         static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
+        static bool updateFBWBTEKp(AttitudeManager* context, float val);
+        static bool updateFBWBTEKi(AttitudeManager* context, float val);
+        static bool updateFBWBTEKd(AttitudeManager* context, float val);
+        static bool updateFBWBTETau(AttitudeManager* context, float val);
+        static bool updateFBWBEBKp(AttitudeManager* context, float val);
+        static bool updateFBWBEBKi(AttitudeManager* context, float val);
+        static bool updateFBWBEBKd(AttitudeManager* context, float val);
+        static bool updateFBWBEBTau(AttitudeManager* context, float val);
+
 };

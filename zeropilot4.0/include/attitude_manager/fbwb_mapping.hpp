@@ -16,6 +16,9 @@ class FBWBMapping : public FBWAMapping {
 
         void resetControlLoopState() noexcept;
 
+        PID* getTotalEnergyPID() { return &totalEnergyPID; }
+        PID* getEnergyBalancePID() { return &energyBalancePID; }
+
         ~FBWBMapping() noexcept override = default;
 
     private:
