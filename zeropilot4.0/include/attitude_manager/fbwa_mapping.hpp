@@ -40,6 +40,18 @@ class FBWAMapping : public Flightmode {
         // Destructor
         ~FBWAMapping() noexcept override = default;
 
+    protected:
+        // Output limits (for control effort)
+        static constexpr float PID_OUTPUT_MIN = -1.0f;
+        static constexpr float PID_OUTPUT_MAX = +1.0f;
+
+        // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
+        static constexpr float PID_OUTPUT_SCALE = 50.0f;
+        static constexpr float PID_OUTPUT_SHIFT = 50.0f;
+
+        // Assumed normalized range of RC Input to be [0, 100]
+        static constexpr float MAX_RC_INPUT_VAL = 100.0f;
+
     private:
         // Roll and Pitch PID class objects
         PID rollPID;
@@ -52,15 +64,4 @@ class FBWAMapping : public Flightmode {
         float rollLimitRad;
         float pitchLimitMaxRad;
         float pitchLimitMinRad;
-
-        // Output limits (for control effort)
-        static constexpr float OUTPUT_MIN = -1.0f;
-        static constexpr float OUTPUT_MAX = +1.0f;
-
-        // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
-        static constexpr float FBWA_PID_OUTPUT_SCALE = 50.0f;
-        static constexpr float FBWA_PID_OUTPUT_SHIFT = 50.0f;
-
-        // Assumed normalized range of RC Input to be [0, 100]
-        static constexpr float MAX_RC_INPUT_VAL = 100.0f;
 };

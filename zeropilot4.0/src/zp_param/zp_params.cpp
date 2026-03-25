@@ -47,7 +47,7 @@ void init() {
 
     initParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(PlaneFlightMode_e::FBWA),   MAV_PARAM_TYPE_UINT32);
-    initParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(PlaneFlightMode_e::FBWB),   MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE4, "FLTMODE4", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(PlaneFlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
@@ -58,6 +58,16 @@ void init() {
     initParam(ZP_PARAM_ID::BATT_CRT_VOLT, "BATT_CRT_VOLT", 10.2f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::BATT_CAPACITY, "BATT_CAPACITY", 4000.0f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::BATT_LOW_TIMER, "BATT_LOW_TIMER", 5.0f, MAV_PARAM_TYPE_REAL32);
+
+    initParam(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_P_GAIN, "FBWB_TE_P", 1.0f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_I_GAIN, "FBWB_TE_I", 0.1f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_D_GAIN, "FBWB_TE_D", 0.05f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_D_TAU, "FBWB_TE_TAU", 0.1f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_P_GAIN, "FBWB_EB_P", 1.0f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_I_GAIN, "FBWB_EB_I", 0.1f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_D_GAIN, "FBWB_EB_D", 0.05f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_D_TAU, "FBWB_EB_TAU", 0.1f, MAV_PARAM_TYPE_REAL32);
+
 }
 
 void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter) {
