@@ -71,9 +71,9 @@ class SystemManager {
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-            ISafetySwitch *safetySwitchDriver,
-            IBuzzer *buzzerDriver,
-            ILed *ledDriver
+            ISafetySwitch *safetySwitchDriver = nullptr,
+            IBuzzer *buzzerDriver = nullptr,
+            ILed *ledDriver = nullptr
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
