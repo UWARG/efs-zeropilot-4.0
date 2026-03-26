@@ -40,7 +40,9 @@ void initManagers()
         amRCQueueHandle,
         tmQueueHandle,
         smLoggerQueueHandle,
-        m10AccessoryHandle
+        safetySwitchHandle,
+        buzzerHandle,
+        ledHandle
     );
 
     // TM initialization

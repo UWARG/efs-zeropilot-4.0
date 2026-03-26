@@ -7,7 +7,9 @@
 #include "rc_iface.hpp"
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
-#include "m10_accessory_iface.hpp"
+#include "safety_switch_iface.hpp"
+#include "buzzer_iface.hpp"
+#include "led_iface.hpp"
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
@@ -69,7 +71,9 @@ class SystemManager {
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-            IM10Accessory *m10AccessoryDriver = nullptr
+            ISafetySwitch *safetySwitchDriver,
+            IBuzzer *buzzerDriver,
+            ILed *ledDriver
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
@@ -81,7 +85,9 @@ class SystemManager {
         ILogger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver; // Power module driver
-        IM10Accessory *m10AccessoryDriver; // M10 safety switch / buzzer driver
+        ISafetySwitch *safetySwitchDriver = nullptr; //Safety Switch Driver
+        IBuzzer *buzzerDriver = nullptr; // Buzzer Driver
+        ILed *ledDriver = nullptr; // LED Driver
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager

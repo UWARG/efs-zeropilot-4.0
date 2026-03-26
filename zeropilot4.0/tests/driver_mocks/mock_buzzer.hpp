@@ -1,11 +1,11 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "m10_accessory_iface.hpp"
+#include "buzzer_iface.hpp"
 
-class MockM10Accessory : public IM10Accessory {
+class MockBuzzer : public IBuzzer {
     public:
-        MOCK_METHOD(bool, readSafetySwitch, (), (override));
         MOCK_METHOD(void, buzzerOn, (), (override));
         MOCK_METHOD(void, buzzerOff, (), (override));
+        MOCK_METHOD(void, init, (), (override));
 };

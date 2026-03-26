@@ -10,13 +10,18 @@ SystemManager::SystemManager(
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    IM10Accessory *m10AccessoryDriver) :
+    ISafetySwitch *safetySwitchDriver,
+    IBuzzer *buzzerDriver,
+    ILed *ledDriver
+    ) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
-        m10AccessoryDriver(m10AccessoryDriver),
+        safetySwitchDriver(safetySwitchDriver),
+        buzzerDriver(buzzerDriver),
+        ledDriver(ledDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
@@ -31,18 +36,28 @@ void SystemManager::smUpdate() {
 
     // Get RC data from the RC receiver and passthrough to AM if new
     RCControl rcData = rcDriver->getRCData();
+
+    const bool safetySwitchPressed = (safetySwitchDriver == nullptr) || safetySwitchDriver->isPressed();
+
     const bool armRequested = rcData.arm > SM_RC_ARM_THRESHOLD;
-    const bool safetySwitchPressed =
-        (m10AccessoryDriver == nullptr) || m10AccessoryDriver->readSafetySwitch();
     const bool armed = armRequested && safetySwitchPressed;
 
-    if (m10AccessoryDriver != nullptr) {
+    if (buzzerDriver != nullptr){
         if (safetySwitchPressed) {
-            m10AccessoryDriver->buzzerOff();
+            buzzerDriver->buzzerOff();
         } else {
-            m10AccessoryDriver->buzzerOn();
+            buzzerDriver->buzzerOn();
         }
     }
+
+    if (ledDriver != nullptr){
+        if( safetySwitchPressed){
+            ledDriver->ledOn();
+        } else {
+            ledDriver->ledOff();
+        }
+    }
+
 
     if (rcData.isDataNew) {
         oldDataCount = 0;

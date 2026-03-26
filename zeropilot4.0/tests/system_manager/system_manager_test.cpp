@@ -4,7 +4,9 @@
 #include "mock_systemutils.hpp"
 #include "mock_iwdg.hpp"
 #include "mock_logger.hpp"
-#include "mock_m10_accessory.hpp"
+#include "mock_safety_switch.hpp"
+#include "mock_buzzer.hpp"
+#include "mock_led.hpp"
 #include "mock_rc.hpp"
 #include "mock_power_module.hpp"
 #include "mock_queue.hpp"
@@ -23,7 +25,9 @@ protected:
     NiceMock<MockLogger> mockLogger;
     NiceMock<MockRCReceiver> mockRC;
     NiceMock<MockPowerModule> mockPM;
-    NiceMock<MockM10Accessory> mockAccessory;
+    NiceMock<MockSafetySwitch> mockSafetySwitch;
+    NiceMock<MockBuzzer> mockBuzzer;
+    NiceMock<MockLed> mockLed;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
@@ -33,7 +37,8 @@ TEST_F(SystemManagerTest, WatchdogRefresh) {
     EXPECT_CALL(mockWatchdog, refreshWatchdog()).Times(1);
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
     
     sm.smUpdate();
 }
@@ -48,9 +53,11 @@ TEST_F(SystemManagerTest, SafetySwitchBlocksArmingAndSoundsBuzzer) {
     rcData.arm = 100.0f;
 
     EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
-    EXPECT_CALL(mockAccessory, readSafetySwitch()).WillOnce(Return(false));
-    EXPECT_CALL(mockAccessory, buzzerOn()).Times(1);
-    EXPECT_CALL(mockAccessory, buzzerOff()).Times(0);
+    EXPECT_CALL(mockSafetySwitch, isPressed()).WillOnce(Return(false));
+    EXPECT_CALL(mockBuzzer, buzzerOn()).Times(1);
+    EXPECT_CALL(mockBuzzer, buzzerOff()).Times(0);
+    EXPECT_CALL(mockLed, ledOn()).Times(0);
+    EXPECT_CALL(mockLed, ledOff()).Times(1);
 
     bool forwardedArm = true;
     EXPECT_CALL(mockAMQueue, push(_))
@@ -60,7 +67,8 @@ TEST_F(SystemManagerTest, SafetySwitchBlocksArmingAndSoundsBuzzer) {
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockAccessory);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
 
     sm.smUpdate();
 
@@ -77,9 +85,12 @@ TEST_F(SystemManagerTest, SafetySwitchAllowsArmingAndSilencesBuzzer) {
     rcData.arm = 100.0f;
 
     EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
-    EXPECT_CALL(mockAccessory, readSafetySwitch()).WillOnce(Return(true));
-    EXPECT_CALL(mockAccessory, buzzerOff()).Times(1);
-    EXPECT_CALL(mockAccessory, buzzerOn()).Times(0);
+    EXPECT_CALL(mockSafetySwitch, isPressed()).WillOnce(Return(true));
+    EXPECT_CALL(mockBuzzer, buzzerOff()).Times(1);
+    EXPECT_CALL(mockBuzzer, buzzerOn()).Times(0);
+    EXPECT_CALL(mockLed, ledOn()).Times(1);
+    EXPECT_CALL(mockLed, ledOff()).Times(0);
+
 
     bool forwardedArm = false;
     EXPECT_CALL(mockAMQueue, push(_))
@@ -89,7 +100,8 @@ TEST_F(SystemManagerTest, SafetySwitchAllowsArmingAndSilencesBuzzer) {
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockAccessory);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
 
     sm.smUpdate();
 
@@ -115,7 +127,9 @@ TEST_F(SystemManagerTest, NoAccessoryPreservesLegacyArmingBehavior) {
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 nullptr, nullptr, nullptr);
+
 
     sm.smUpdate();
 
@@ -141,7 +155,9 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
     EXPECT_CALL(mockAMQueue, push(_)).Times(1); 
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
 
     sm.smUpdate();
 
@@ -161,7 +177,10 @@ TEST_F(SystemManagerTest, HeartbeatSentToTelemetry) {
         }));
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
+
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
         sm.smUpdate();
@@ -188,7 +207,9 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
         }));
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
         sm.smUpdate();
@@ -210,7 +231,9 @@ TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
         }));
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
         sm.smUpdate();
@@ -245,9 +268,10 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
             return 0;
         }));
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger,
-                     &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
 
     const int loopsToLow =
         SM_BATTERY_LOW_TIME_MS / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to low state
@@ -289,9 +313,10 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
             return 0;
         }));
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger,
-                     &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
 
     const int loopsToCritical =
         SM_BATTERY_CRITICAL_TIME_MS / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to critical state
@@ -324,7 +349,9 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
     };
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
 
     for (const auto& test : testCases) {
         RCControl rcData;
