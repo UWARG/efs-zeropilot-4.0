@@ -10,21 +10,21 @@ class PID {
             float t) noexcept;
 
         // PID object's state var initialized (or reset)
-        void pidInitState() noexcept;
+        ZP_ERROR_e pidInitState() noexcept;
 
         // For the PID roll & pitch consts -> may choose these to be optimized real-time dep. on optimization alg. chosen
-        void setConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        ZP_ERROR_e setConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for individual constants to be passed to ZP_PARAM layer
-        void setKp(float newKp) noexcept;
-        void setKi(float newKi) noexcept;
-        void setKd(float newKd) noexcept;
-        void setTau(float newTau) noexcept;
-        void setIntegralMinLimPct(uint8_t pct) noexcept;
-        void setIntegralMaxLimPct(uint8_t pct) noexcept;
+        ZP_ERROR_e setKp(float newKp) noexcept;
+        ZP_ERROR_e setKi(float newKi) noexcept;
+        ZP_ERROR_e setKd(float newKd) noexcept;
+        ZP_ERROR_e setTau(float newTau) noexcept;
+        ZP_ERROR_e setIntegralMinLimPct(uint8_t pct) noexcept;
+        ZP_ERROR_e setIntegralMaxLimPct(uint8_t pct) noexcept;
 
         // Computes PID for a measurement with its desired setpoint passed in
-        float pidOutput(float setpoint, float measurement) noexcept;
+        ZP_ERROR_e pidOutput(float setpoint, float measurement, float *output) noexcept;
 
 
     private:

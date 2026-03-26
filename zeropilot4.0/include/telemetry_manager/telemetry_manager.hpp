@@ -28,23 +28,34 @@ class TelemetryManager {
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
     mavlink_status_t status;
     mavlink_message_t overflowBuf;
-    bool overflowMsgPending;
+    bool isInitialized = false;
+    bool overflowMsgPending = false;
 
     uint16_t currParamListTxIdx;
 
     uint8_t txBuffer[TM_MAX_TX_BYTES];
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
 
-    void processRxMsg(const mavlink_message_t &msg);
-    void processTXMsgQueue();
-    void transmit();
-    void receive();
-    void processParamTx();
-    void enqueueParamValueTx(uint16_t index);
+    ZP_ERROR_e processRxMsg(const mavlink_message_t &msg);
+    ZP_ERROR_e processTXMsgQueue();
+    ZP_ERROR_e transmit();
+    ZP_ERROR_e receive();
+    ZP_ERROR_e processParamTx();
+    ZP_ERROR_e enqueueParamValueTx(uint16_t index);
 
   public:
     TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();
+    
+    ZP_ERROR_e init() {
+      if (isInitialized) return ZP_ERROR_ALREADY_INITIALIZED;
+      if (!systemUtilsDriver || !rfdDriver || 
+          !tmQueueDriver || !amQueueDriver || !messageBuffer) {
+          return ZP_ERROR_NULLPTR;
+      }
+      isInitialized = true;
+      return ZP_ERROR_OK;
+    }
 
-    void tmUpdate();
+    ZP_ERROR_e tmUpdate();
 };

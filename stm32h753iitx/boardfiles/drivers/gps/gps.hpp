@@ -11,7 +11,7 @@ class GPS : public IGPS {
 public:
     UART_HandleTypeDef* getHUART();
 
-    GpsData_t readData() override;
+    ZP_ERROR_e readData(GpsData_t *data) override;
 
     GPS(UART_HandleTypeDef *huart);
 

@@ -27,7 +27,10 @@ int _write(int file, char *ptr, int len)
 
 void HAL_Delay(uint32_t Delay) {
   if (osKernelGetState() == osKernelRunning) {
-    osDelayUntil(osKernelGetTickCount() + timeToTicks(Delay));
+    uint32_t ticks = 0;
+    if (timeToTicks(&ticks, Delay) == ZP_ERROR_OK) {
+      osDelayUntil(osKernelGetTickCount() + ticks);
+    }
   } else {
     uint32_t tickstart = HAL_GetTick();
     uint32_t wait = Delay;

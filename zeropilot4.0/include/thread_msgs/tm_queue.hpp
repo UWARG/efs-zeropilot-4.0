@@ -107,9 +107,13 @@ typedef struct TMMessage{
     uint32_t timeBootMs = 0;
 } TMMessage_t;
 
-inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
+inline ZP_ERROR_e heartbeatPack(TMMessage_t *data, uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     const TMMessageData_t DATA = {.heartbeatData={base_mode, custom_mode, system_status }};
-    return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
 inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT], uint16_t id, uint8_t chunk_seq) {
@@ -196,20 +200,28 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
     return msg;
 }
 
-inline TMMessage_t rawImuDataPack(uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
+inline ZP_ERROR_e rawImuDataPack(TMMessage_t *data, uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     int16_t xmag = 0;
     int16_t ymag = 0;
     int16_t zmag = 0;
     uint8_t id = 0;
     int16_t temperature = 0;
     const TMMessageData_t DATA = {.rawImuData ={xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag, id, temperature }};
-    return TMMessage_t{TMMessage_t::RAW_IMU_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::RAW_IMU_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }
 
-inline TMMessage_t attitudeDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw) {
+inline ZP_ERROR_e attitudeDataPack(TMMessage_t *data, uint32_t time_boot_ms, float roll, float pitch, float yaw) {
+    if (data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
     float rollspeed = 0.0f;
     float pitchspeed = 0.0f;
     float yawspeed = 0.0f;
     const TMMessageData_t DATA = {.attitudeData ={roll, pitch, yaw, rollspeed, pitchspeed, yawspeed }};
-    return TMMessage_t{TMMessage_t::ATTITUDE_DATA, DATA, time_boot_ms};
+    *data = TMMessage_t{TMMessage_t::ATTITUDE_DATA, DATA, time_boot_ms};
+    return ZP_ERROR_OK;
 }

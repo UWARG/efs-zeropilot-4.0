@@ -12,6 +12,7 @@ static const osThreadAttr_t smMainLoopAttr = {
 
 void smMainLoopWrapper(void *arg)
 {
+  ZP_ERROR_e err;
   while(true)
   {
     smHandle->smUpdate();
@@ -19,7 +20,11 @@ void smMainLoopWrapper(void *arg)
   }
 }
 
-void smInitThreads()
+ZP_ERROR_e smInitThreads()
 {
     smMainHandle = osThreadNew(smMainLoopWrapper, NULL, &smMainLoopAttr);
+    if (smMainHandle == NULL) {
+        return ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }

@@ -1,6 +1,7 @@
 #include "drivers.hpp"
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
+#include "error.h"
 
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg;
@@ -92,7 +93,7 @@ MotorGroupInstance_t steeringMotors;
 // ----------------------------------------------------------------------------
 // Initialization (no heap allocations)
 // ----------------------------------------------------------------------------
-void initDrivers()
+ZP_ERROR_e initDrivers()
 {
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
@@ -160,4 +161,6 @@ void initDrivers()
     throttleMotors = {&throttleMotorInstance, 1};
     flapMotors = {flapMotorInstances, 2};
     steeringMotors = {&steeringMotorInstance, 1};
+
+    return ZP_ERROR_OK;
 }

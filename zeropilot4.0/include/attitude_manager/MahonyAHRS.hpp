@@ -26,23 +26,56 @@ private:
 	float integralFBx, integralFBy, integralFBz;  // integral error terms scaled by Ki
 	float invSampleFreq;
 	float roll, pitch, yaw;
-	static float invSqrt(float x);
+	static ZP_ERROR_e invSqrt(float x, float *output);
+	bool isInitialized = false;
 
 //-------------------------------------------------------------------------------------------
 // Function declarations
 
 public:
 	Mahony();
-	void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
-
-	void updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
-
-	Attitude_t getAttitude() {
-		return {roll * 57.29578f, pitch * 57.29578f, yaw * 57.29578f + 180.0f};
+	ZP_ERROR_e begin(float sampleFrequency) { 
+		if (sampleFrequency <= 0) {
+			return ZP_ERROR_INVALID_PARAM;
+		}
+		if (isInitialized) {
+			return ZP_ERROR_ALREADY_INITIALIZED;
+		}
+		invSampleFreq = 1.0f / sampleFrequency; 
+		isInitialized = true;
+		return ZP_ERROR_OK;
 	}
 
-	Attitude_t getAttitudeRadians() {
-		return {roll, pitch, yaw};
+	ZP_ERROR_e updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
+
+	ZP_ERROR_e getAttitude(Attitude_t *attitude) {
+		if (attitude == nullptr) {
+			return ZP_ERROR_NULLPTR;
+		}
+		if (!isInitialized) {
+			return ZP_ERROR_NOT_READY;
+		}
+		*attitude = Attitude_t{
+			roll * 57.29578f,
+			pitch * 57.29578f,
+			yaw * 57.29578f + 180.0f
+		};
+		return ZP_ERROR_OK;
+	}
+
+	ZP_ERROR_e getAttitudeRadians(Attitude_t *attitude) {
+		if (attitude == nullptr) {
+			return ZP_ERROR_NULLPTR;
+		}
+		if (!isInitialized) {
+			return ZP_ERROR_NOT_READY;
+		}
+		*attitude = Attitude_t{
+			roll,
+			pitch,
+			yaw
+		};
+		return ZP_ERROR_OK;
 	}
 };
 

@@ -43,14 +43,16 @@ SystemManager::SystemManager(
 
 void SystemManager::smUpdate() {
     // Kick the watchdog
-    iwdgDriver->refreshWatchdog();
+    ZP_RETURN_IF_ERROR(iwdgDriver->refreshWatchdog());
 
 
     // Get RC data from the RC receiver and passthrough to AM if new
-    RCControl rcData = rcDriver->getRCData();
+    RCControl rcData;
+    ZP_RETURN_IF_ERROR(rcDriver->getRCData(&rcData));
+
     if (rcData.isDataNew) {
         oldDataCount = 0;
-        sendRCDataToAttitudeManager(rcData);
+        ZP_RETURN_IF_ERROR(sendRCDataToAttitudeManager(rcData));
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
@@ -69,7 +71,7 @@ void SystemManager::smUpdate() {
 
     // Send RC data to TM
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_RC_DATA_RATE_HZ) == 0) {
-        sendRCDataToTelemetryManager(rcData);
+        ZP_RETURN_IF_ERROR(sendRCDataToTelemetryManager(rcData));
     }
 
     // Set armed status based on SM_RC_ARM_THRESHOLD
@@ -95,25 +97,30 @@ void SystemManager::smUpdate() {
 
     // Send Heartbeat data to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
-        sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
+        ZP_RETURN_IF_ERROR(sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus));
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
-    updateBatteryFSM();
+    ZP_RETURN_IF_ERROR(updateBatteryFSM());
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
-        sendBatteryDataToTelemetryManager(batteryData, 0);
+        ZP_RETURN_IF_ERROR(sendBatteryDataToTelemetryManager(batteryData, 0));
     }
 
     // Log if new messages
-    if (smLoggerQueue->count() > 0) {
-        sendMessagesToLogger();
+    int msgCount = 0;
+    ZP_RETURN_IF_ERROR(smLoggerQueue->count(&msgCount));
+
+    if (msgCount > 0) {
+        ZP_RETURN_IF_ERROR(sendMessagesToLogger());
     }
 
     // Increment scheduling counter
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
+
+    return ZP_ERROR_OK;
 }
 
-void SystemManager::updateBatteryFSM() {
+ZP_ERROR_e SystemManager::updateBatteryFSM() {
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
     if (pmDriver->readData(&batteryData.pmData)) {          
         currentBatteryState = batteryData.chargeState;
@@ -161,19 +168,30 @@ void SystemManager::updateBatteryFSM() {
             }
         }
     }
+
+    return ZP_ERROR_OK;
 }
 
-void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
+ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
-    tmQueue->push(&rcDataMsg);
+    ZP_RETURN_IF_ERROR(tmQueue->push(&rcDataMsg));
+
+    return ZP_ERROR_OK;
 }
 
-void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
-    TMMessage_t hbDataMsg = heartbeatPack(systemUtilsDriver->getCurrentTimestampMs(), baseMode, customMode, systemStatus);
-    tmQueue->push(&hbDataMsg);
+ZP_ERROR_e SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
+    uint32_t timestamp;
+
+    ZP_RETURN_IF_ERROR(systemUtilsDriver->getCurrentTimestampMs(&timestamp));
+
+    TMMessage_t hbDataMsg = heartbeatPack(timestamp, baseMode, customMode, systemStatus);
+
+    ZP_RETURN_IF_ERROR(tmQueue->push(&hbDataMsg));
+
+    return ZP_ERROR_OK;
 }
 
-void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
+ZP_ERROR_e SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     RCMotorControlMessage_t rcDataMessage;
 
     rcDataMessage.roll = rcData.roll;
@@ -187,7 +205,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
+ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
 
@@ -220,7 +238,7 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
         timeRemainingSec,
         batteryData.chargeState
     );
-    tmQueue->push(&batteryDataMsg);
+    ZP_RETURN_IF_ERROR(tmQueue->push(&batteryDataMsg));
 }
 
 void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
@@ -251,10 +269,15 @@ PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
 void SystemManager::sendMessagesToLogger() {
     static char messages[16][100];
     int msgCount = 0;
+    int queueCount = 0;
 
-    while (smLoggerQueue->count() > 0) {
-        smLoggerQueue->get(&messages[msgCount]);
+    ZP_RETURN_IF_ERROR(smLoggerQueue->count(&queueCount));
+
+    while (queueCount > 0) {
+        ZP_RETURN_IF_ERROR(smLoggerQueue->get(&messages[msgCount]));
         msgCount++;
+
+        ZP_RETURN_IF_ERROR(smLoggerQueue->count(&queueCount));
     }
 
     // loggerDriver->log(messages, msgCount); (TODO: Uncomment after rearchitecture)

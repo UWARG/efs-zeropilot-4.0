@@ -90,33 +90,37 @@ void AttitudeManager::amUpdate() {
     }
 
     // Send IMU raw data to telemetry manager
-    RawImu_t imuData = imuDriver->readRawData();
-    ScaledImu_t scaledImuData = imuDriver->scaleIMUData(imuData);
-    mahonyFilter.updateIMU(
-        scaledImuData.xgyro,
-        scaledImuData.ygyro,
-        scaledImuData.zgyro,
-        scaledImuData.xacc,
-        scaledImuData.yacc,
-        scaledImuData.zacc
-    );
-    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
+    RawImu_t imuData;
+    ScaledImu_t scaledImuData;
+    Attitude_t attitude;
+
+    ZP_RETURN_IF_ERROR(imuDriver->readRawData(&imuData));
+    ZP_RETURN_IF_ERROR(imuDriver->scaleIMUData(imuData, &scaledImuData));
+    ZP_RETURN_IF_ERROR(mahonyFilter.updateIMU(
+        scaledImuData->xgyro,
+        scaledImuData->ygyro,
+        scaledImuData->zgyro,
+        scaledImuData->xacc,
+        scaledImuData->yacc,
+        scaledImuData->zacc
+    ));
+    ZP_RETURN_IF_ERROR(mahonyFilter.getAttitudeRadians(&attitude));
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        sendRawIMUDataToTelemetryManager(imuData);
+        ZP_RETURN_IF_ERROR(sendRawIMUDataToTelemetryManager(imuData));
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
-        sendAttitudeDataToTelemetryManager(attitude);
+        ZP_RETURN_IF_ERROR(sendAttitudeDataToTelemetryManager(attitude));
     }
 
     // Send GPS data to telemetry manager
     GpsData_t gpsData = gpsDriver->readData();
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData);
+        ZP_RETURN_IF_ERROR(sendGPSDataToTelemetryManager(gpsData));
     }
 
     // Get data from Queue and motor outputs
@@ -135,18 +139,19 @@ void AttitudeManager::amUpdate() {
 
             if (!failsafeTriggered) {
               char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
+              ZP_RETURN_IF_ERROR(smLoggerQueue->push(&errorMsg));
               failsafeTriggered = true;
             }
 
             return;
         }
+        return ZP_ERROR_OK;
     } else {
         noDataCount = 0;
 
         if (failsafeTriggered) {
           char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
+          ZP_RETURN_IF_ERROR(smLoggerQueue->push(&errorMsg));
           failsafeTriggered = false;
         }
     }
@@ -155,7 +160,7 @@ void AttitudeManager::amUpdate() {
     if (controlMsg.arm != armedFlag) {
         armedFlag = controlMsg.arm;
         if (armedFlag) {
-            activeCLAW->activateFlightMode();
+            ZP_RETURN_IF_ERROR(activeCLAW->activateFlightMode());
         }
     }
 
@@ -195,11 +200,12 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
         return false;
     }
 
-    amQueue->get(pControlMsg);
-    return true;
+    ZP_RETURN_IF_ERROR(amQueue->get(pControlMsg));
+
+    return ZP_ERROR_OK;
 }
 
-void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
+ZP_ERROR_e AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
     MotorGroupInstance_t *motorGroup = nullptr;
 
     switch (axis) {
@@ -222,7 +228,7 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
             motorGroup = steeringMotors;
             break;
         default:
-            return;
+            return ZP_ERROR_INVALID_PARAM;
     }
 
     for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
@@ -284,11 +290,14 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
         gpsData.numSatellites
     );
 
-    tmQueue->push(&gpsDataMsg);
+    ZP_RETURN_IF_ERROR(tmQueue->push(&gpsDataMsg));
+    return ZP_ERROR_OK;
 }
 
-void AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {
-    TMMessage_t imuDataMsg = rawImuDataPack(
+ZP_ERROR_e AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {
+    TMMessage_t imuDataMsg;
+    ZP_RETURN_IF_ERROR(rawImuDataPack(
+        &imuDataMsg,
         systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
         imuData.xacc,
         imuData.yacc,
@@ -296,18 +305,52 @@ void AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) 
         imuData.xgyro,
         imuData.ygyro,
         imuData.zgyro
-    );
+    ));
 
-    tmQueue->push(&imuDataMsg);
+    ZP_RETURN_IF_ERROR(tmQueue->push(&imuDataMsg));
+    return ZP_ERROR_OK;
 }
 
-void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attitude) {
-    TMMessage_t attitudeDataMsg = attitudeDataPack(
+ZP_ERROR_e AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attitude) {
+    TMMessage_t attitudeDataMsg;
+    ZP_RETURN_IF_ERROR(attitudeDataPack(
+        &attitudeDataMsg,
         systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
         attitude.roll,
         attitude.pitch,
         attitude.yaw
-    );
+    ));
+
+    ZP_RETURN_IF_ERROR(tmQueue->push(&attitudeDataMsg));
+    return ZP_ERROR_OK;
+}
+
+ZP_ERROR_e AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {
+    TMMessage_t imuDataMsg;
+    ZP_RETURN_IF_ERROR(rawImuDataPack(
+        &imuDataMsg,
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        imuData.xacc,
+        imuData.yacc,
+        imuData.zacc,
+        imuData.xgyro,
+        imuData.ygyro,
+        imuData.zgyro
+    ));
+
+    ZP_RETURN_IF_ERROR(tmQueue->push(&imuDataMsg));
+    return ZP_ERROR_OK;
+}
+
+ZP_ERROR_e AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attitude) {
+    TMMessage_t attitudeDataMsg;
+    ZP_RETURN_IF_ERROR(attitudeDataPack(
+        &attitudeDataMsg,
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        attitude.roll,
+        attitude.pitch,
+        attitude.yaw
+    ));
 
     tmQueue->push(&attitudeDataMsg);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "error.h"
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "fbwa_mapping.hpp"
@@ -47,7 +48,7 @@ class AttitudeManager {
             MotorGroupInstance_t *steeringMotors
         );
 
-        void amUpdate();
+        ZP_ERROR_e runControlLoopIteration();
 
     private:
         ISystemUtils *systemUtilsDriver;
@@ -84,9 +85,13 @@ class AttitudeManager {
         int noDataCount;
         bool failsafeTriggered;
 
-        bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-        void outputToMotor(ControlAxis_t axis, uint8_t percent);
+        int noDataCount;
+        bool failsafeTriggered;
+
+        ZP_ERROR_e getControlInputs(RCMotorControlMessage_t *pControlMsg);
+
+        ZP_ERROR_e outputToMotor(ControlAxis_t axis, uint8_t percent);
 
         void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);

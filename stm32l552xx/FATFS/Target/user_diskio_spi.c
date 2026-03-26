@@ -71,11 +71,16 @@
   static BYTE xchg_spi (BYTE dat) {
       BYTE rxDat;
       if (osKernelGetState() == osKernelRunning) {
-          HAL_SPI_TransmitReceive(&hspi1, &dat, &rxDat, 1, timeToTicks(SD_TIMEOUT));
+          uint32_t ticks;
+          if (timeToTicks(&ticks, SD_TIMEOUT) == ZP_ERROR_OK) {
+              HAL_SPI_TransmitReceive(&hspi1, &dat, &rxDat, 1, ticks);
+          } else {
+              HAL_SPI_TransmitReceive(&hspi1, &dat, &rxDat, 1, SD_TIMEOUT);
+          }
       } else {
           HAL_SPI_TransmitReceive(&hspi1, &dat, &rxDat, 1, SD_TIMEOUT);
       }
-  
+
       return rxDat;
   }
   

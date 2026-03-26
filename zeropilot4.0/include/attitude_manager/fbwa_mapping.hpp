@@ -8,34 +8,35 @@ class FBWAMapping : public Flightmode {
     public:
         FBWAMapping(float control_iter_period_s) noexcept;
 
+
         void activateFlightMode() override;
 
-        RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
-
+        ZP_ERROR_e runControl(RCMotorControlMessage_t *controlOutput, const RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
+        
         // Setter *roll* for PID consts
-        void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        ZP_ERROR_e setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for *pitch* PID consts
-        void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        ZP_ERROR_e setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
         // Setter for *yaw* rudder mixing const
-        void setYawRudderMixingConstant(float newMixingConst) noexcept;
+        ZP_ERROR_e setYawRudderMixingConstant(float newMixingConst) noexcept;
 
         // Setter for *rollLimitRad*
-        void setRollLimitDeg(float newRollLimitDeg) noexcept;
+        ZP_ERROR_e setRollLimitDeg(float newRollLimitDeg) noexcept;
 
         // Setter for *pitchLimitMaxRad*
-        void setPitchLimitMaxDeg(float newPitchLimitMaxDeg) noexcept;
+        ZP_ERROR_e setPitchLimitMaxDeg(float newPitchLimitMaxDeg) noexcept;
 
         // Setter for *pitchLimitMinRad*
-        void setPitchLimitMinDeg(float newPitchLimitMinDeg) noexcept;
+        ZP_ERROR_e setPitchLimitMinDeg(float newPitchLimitMinDeg) noexcept;
 
         // Resetter for both roll and pitch PIDs
-        void resetControlLoopState() noexcept;
+        ZP_ERROR_e resetControlLoopState() noexcept;
 
         // Getter for PID objects
-        PID *getRollPID() noexcept;
-        PID *getPitchPID() noexcept;
+        ZP_ERROR_e *getRollPID(PID *rollpid) noexcept;
+        ZP_ERROR_e *getPitchPID(PID *pitchPID) noexcept;
 
         // Destructor
         ~FBWAMapping() noexcept override = default;

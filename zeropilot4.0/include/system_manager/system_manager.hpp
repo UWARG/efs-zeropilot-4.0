@@ -1,6 +1,7 @@
 #pragma once
 
-#include "iwdg_iface.hpp"
+#include <cstdint>
+#include "error.h"
 #include "systemutils_iface.hpp"
 #include "mavlink.h"
 #include "logger_iface.hpp"
@@ -51,7 +52,7 @@ class SystemManager {
             IMessageQueue<char[100]> *smLoggerQueue
         );
 
-        void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
+        ZP_ERROR_e smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
 
     private:
         ISystemUtils *systemUtilsDriver; // System utilities instance
@@ -75,17 +76,17 @@ class SystemManager {
         BatteryData_t batteryData;
         void updateBatteryFSM();
 
-        void sendRCDataToAttitudeManager(const RCControl &rcData);
-        void sendRCDataToTelemetryManager(const RCControl &rcData);
-        void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
-        void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
+        ZP_ERROR_e sendRCDataToAttitudeManager(const RCControl &rcData);
+        ZP_ERROR_e sendRCDataToTelemetryManager(const RCControl &rcData);
+        ZP_ERROR_e sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
+        ZP_ERROR_e sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
+        ZP_ERROR_e sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 
-        PlaneFlightMode_e decodeRawFlightMode(float flightModeRawValue);
+        ZP_ERROR_e decodeRawFlightMode(PlaneFlightMode_e *decodedOutput, float flightModeRawValue);
 
-        void sendMessagesToLogger();
+        ZP_ERROR_e sendMessagesToLogger();
 
         // ZP_PARAM callbacks
         template <uint8_t Idx>
-        static bool updateFltMode(SystemManager* context, float val);
+        static ZP_ERROR_e updateFltMode(bool *mode, SystemManager* context, float val);
 };

@@ -1,5 +1,7 @@
 #include "fbwa_mapping.hpp"
 #include "unit_conversions.hpp"
+#include "error.h"
+
 
 FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
@@ -28,13 +30,14 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
 }
 
 // Resetter for both roll and pitch PIDs
-void FBWAMapping::resetControlLoopState() noexcept {
-    rollPID.pidInitState();
-    pitchPID.pidInitState();
+ZP_ERROR_e FBWAMapping::resetControlLoopState() noexcept {
+    ZP_RETURN_IF_ERROR(rollPID.pidInitState());
+    ZP_RETURN_IF_ERROR(pitchPID.pidInitState());
+    return ZP_ERROR_OK;
 }
 
 // Setter for *yaw* rudder mixing const
-void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
+ZP_ERROR_e FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
     yawRudderMixingConst = newMixingConst;
 }
 
@@ -82,6 +85,7 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
     controlInputs.roll = (rollOutput * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired roll angle, adding 50 to shift to [0,100] range
     controlInputs.pitch = (pitchOutput * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired pitch angle, adding 50 to shift to [0,100] range
 
+
     // Yaw control via rudder mixing
     float aileronSignalCentered = controlInputs.roll - (MAX_RC_INPUT_VAL / 2.0f); // Centering aileron signal around 0 for mixing calculation
     controlInputs.yaw += (yawRudderMixingConst * aileronSignalCentered); // Yaw adjustment based on roll PID output and mixing constant
@@ -91,5 +95,7 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
         controlInputs.yaw = MAX_RC_INPUT_VAL; // Ensuring yaw does not exceed max RC input value
     }
 
-    return controlInputs;
+    *(controlOutput) = controlInputs;
+
+    return ZP_ERROR_OK;
 }

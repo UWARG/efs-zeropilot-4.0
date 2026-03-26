@@ -19,7 +19,11 @@ void tmMainLoopWrapper(void *arg)
   }
 }
 
-void tmInitThreads()
+ZP_ERROR_e tmInitThreads()
 {
     tmMainHandle = osThreadNew(tmMainLoopWrapper, NULL, &tmMainLoopAttr);
+    if (tmMainHandle == NULL) {
+        return ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }

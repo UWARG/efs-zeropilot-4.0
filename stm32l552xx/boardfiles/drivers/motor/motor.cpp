@@ -9,17 +9,35 @@ MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint
     // blank
 }
 
-void MotorControl::set(uint32_t percent) {
+ZP_ERROR_e MotorControl::set(uint32_t percent) {
+    if (timer == NULL) {
+        return ZP_ERROR_NULLPTR;
+    }
+
     percent = percent > 100 ? 100 : percent;
     uint32_t ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
     __HAL_TIM_SET_COMPARE(timer, timerChannel, ticks);
+    
+    return ZP_ERROR_OK;
 }
 
-uint8_t MotorControl::getServoIdx() const {
-    return servoIdx;
+ZP_ERROR_e MotorControl::getServoIdx(uint8_t *idx) const {
+    if (idx == nullptr) return ZP_ERROR_NULLPTR;
+    
+    *idx = servoIdx;
+    return ZP_ERROR_OK;
 }
 
-void MotorControl::init() {
+ZP_ERROR_e MotorControl::init() {
+    if (timer == NULL) {
+        return ZP_ERROR_NULLPTR;
+    }
+
     __HAL_TIM_SET_COMPARE(timer, timerChannel, minCCR);
-    HAL_TIM_PWM_Start(timer, timerChannel);
+    HAL_StatusTypeDef status = HAL_TIM_PWM_Start(timer, timerChannel);
+    if (status != HAL_OK) {
+        return ZP_ERROR_FAIL;
+    }
+
+    return ZP_ERROR_OK;
 }
