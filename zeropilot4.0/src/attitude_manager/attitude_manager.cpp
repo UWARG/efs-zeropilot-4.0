@@ -114,13 +114,13 @@ void AttitudeManager::amUpdate() {
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
-        sendAttitudeDataToTelemetryManager(attitude);
+        ZP_RETURN_IF_ERROR(sendAttitudeDataToTelemetryManager(attitude));
     }
 
     // Send GPS data to telemetry manager
     GpsData_t gpsData = gpsDriver->readData();
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData);
+        ZP_RETURN_IF_ERROR(sendGPSDataToTelemetryManager(gpsData));
     }
 
     // Get data from Queue and motor outputs
