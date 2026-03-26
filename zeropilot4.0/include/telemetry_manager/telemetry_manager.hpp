@@ -4,7 +4,6 @@
 #define TM_UPDATE_LOOP_DELAY_MS (1000 / TM_SCHEDULING_RATE_HZ)
 
 #define MAVLINK_MSG_MAX_SIZE 280
-#define MAVLINK_MAX_IDENTIFIER_LEN 17
 #define RX_BUFFER_LEN 8192
 
 #define TM_LINK_BAUDRATE 57600
@@ -28,10 +27,11 @@ class TelemetryManager {
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;   // Driver that currently is only used to set arm/disarm
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
     mavlink_status_t status;
-    mavlink_message_t message;
     mavlink_message_t overflowBuf;
     bool isInitialized = false;
     bool overflowMsgPending = false;
+
+    uint16_t currParamListTxIdx;
 
     uint8_t txBuffer[TM_MAX_TX_BYTES];
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
@@ -40,6 +40,8 @@ class TelemetryManager {
     ZP_ERROR_e processTXMsgQueue();
     ZP_ERROR_e transmit();
     ZP_ERROR_e receive();
+    ZP_ERROR_e processParamTx();
+    ZP_ERROR_e enqueueParamValueTx(uint16_t index);
 
   public:
     TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);

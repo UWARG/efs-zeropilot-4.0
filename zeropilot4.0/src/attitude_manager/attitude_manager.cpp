@@ -1,5 +1,6 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
+#include "zp_params.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -33,25 +34,47 @@ AttitudeManager::AttitudeManager(
     throttleMotors(throttleMotors),
     flapMotors(flapMotors),
     steeringMotors(steeringMotors),
+    armedFlag(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false) {
 
-    // Set PID constants and rudder mixing constant for FBWA control law
+    // Bind all ZP Param setters relevant to AM
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P, this, AttitudeManager::updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I, this, AttitudeManager::updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D, this, AttitudeManager::updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU, this, AttitudeManager::updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX, this, AttitudeManager::updatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P, this, AttitudeManager::updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I, this, AttitudeManager::updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D, this, AttitudeManager::updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU, this, AttitudeManager::updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX, this, AttitudeManager::updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, this, AttitudeManager::updatePitchLimMinDeg);
+
+    // Set PID constants, rddr mixing constant, and roll/pitch limits for FBWA control law
     fbwaCLAW.setRollPIDConstants(
-        AM_FBWA_ROLL_P_GAIN,
-        AM_FBWA_ROLL_I_GAIN,
-        AM_FBWA_ROLL_D_GAIN,
-        AM_FBWA_ROLL_D_TAU
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_IMAX)
     );
     fbwaCLAW.setPitchPIDConstants(
-        AM_FBWA_PITCH_P_GAIN,
-        AM_FBWA_PITCH_I_GAIN,
-        AM_FBWA_PITCH_D_GAIN,
-        AM_FBWA_PITCH_D_TAU
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
     );
-    fbwaCLAW.setYawRudderMixingConstant(AM_FBWA_RUDDER_MIXING);
+    fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
+    fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
+    fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
+    fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
@@ -106,7 +129,7 @@ void AttitudeManager::amUpdate() {
     if (controlRes != true) {
         ++noDataCount;
 
-        if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > AM_FAILSAFE_TIMEOUT_MS) {
+        if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
             outputToMotor(YAW, 50);
             outputToMotor(PITCH, 50);
             outputToMotor(ROLL, 50);
@@ -119,6 +142,8 @@ void AttitudeManager::amUpdate() {
               ZP_RETURN_IF_ERROR(smLoggerQueue->push(&errorMsg));
               failsafeTriggered = true;
             }
+
+            return;
         }
         return ZP_ERROR_OK;
     } else {
@@ -131,33 +156,15 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Disarm
-    if (controlMsg.arm == 0) {
-        controlMsg.throttle = 0;
-    }
-
-    if (controlMsg.flightMode != currentFlightMode) {
-        switch (controlMsg.flightMode) {
-            case PlaneFlightMode_e::MANUAL:
-                activeCLAW = &manualCLAW;
-                break;
-            case PlaneFlightMode_e::FBWA:
-                activeCLAW = &fbwaCLAW;
-                break;
+    // Update armedFlag and activateFlightMode() on rising edge
+    if (controlMsg.arm != armedFlag) {
+        armedFlag = controlMsg.arm;
+        if (armedFlag) {
+            ZP_RETURN_IF_ERROR(activeCLAW->activateFlightMode());
         }
-        ZP_RETURN_IF_ERROR(activeCLAW->activateFlightMode());
-        currentFlightMode = controlMsg.flightMode;
     }
 
-    RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
-
-    ZP_RETURN_IF_ERROR(outputToMotor(YAW, motorOutputs.yaw));
-    ZP_RETURN_IF_ERROR(outputToMotor(PITCH, motorOutputs.pitch));
-    ZP_RETURN_IF_ERROR( outputToMotor(ROLL, motorOutputs.roll));
-    ZP_RETURN_IF_ERROR(outputToMotor(THROTTLE, motorOutputs.throttle));
-    ZP_RETURN_IF_ERROR(outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle));
-    ZP_RETURN_IF_ERROR(outputToMotor(STEERING, motorOutputs.yaw));
-
+    // Update current flightmode if changed
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
             case PlaneFlightMode_e::MANUAL:
@@ -171,8 +178,15 @@ void AttitudeManager::amUpdate() {
         currentFlightMode = controlMsg.flightMode;
     }
 
+    // Run the active control law
     RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
 
+    // Disarm logic
+    if (!armedFlag) {
+        motorOutputs.throttle = 0;
+    }
+
+    // Output to motors
     outputToMotor(YAW, motorOutputs.yaw);
     outputToMotor(PITCH, motorOutputs.pitch);
     outputToMotor(ROLL, motorOutputs.roll);
@@ -350,3 +364,106 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
     tmQueue->push(&servoOutputMsg);
 }
+
+// STATIC FUNCTIONS ONLY FOR PARAM CHAINING
+// ==============================================================
+bool AttitudeManager::updatePIDRollKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setKp(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setKi(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setKd(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setTau(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollIMax(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    context->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setKp(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setKi(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setKd(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setTau(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchIMax(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    context->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+
+bool AttitudeManager::updateKffRddrmix(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 1.0f) return false;
+
+    context->fbwaCLAW.setYawRudderMixingConstant(val);
+    return true;
+}
+
+bool AttitudeManager::updateRollLimitDeg(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+
+    context->fbwaCLAW.setRollLimitDeg(val);
+    return true;
+}
+
+bool AttitudeManager::updatePitchLimMaxDeg(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+    
+    context->fbwaCLAW.setPitchLimitMaxDeg(val);
+    return true;
+}
+
+bool AttitudeManager::updatePitchLimMinDeg(AttitudeManager* context, float val) {
+    if (val < -90.0f || val > 0.0f) return false;
+    
+    context->fbwaCLAW.setPitchLimitMinDeg(val);
+    return true;
+}
+// ==============================================================

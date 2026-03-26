@@ -7,12 +7,22 @@ enum class PlaneFlightMode_e : uint32_t {
     FBWA    = 5
 };
 
+inline bool isValidPlaneFlightMode(uint32_t val) {
+    switch (static_cast<PlaneFlightMode_e>(val)) {
+        case PlaneFlightMode_e::MANUAL:
+        case PlaneFlightMode_e::FBWA:
+            return true;
+        default:
+            return false;
+    }
+}
+
 typedef struct {
     float roll;
     float pitch;
     float yaw;
     float throttle;
-    float arm;
+    bool arm;
     float flapAngle;
     PlaneFlightMode_e flightMode;
 } RCMotorControlMessage_t;

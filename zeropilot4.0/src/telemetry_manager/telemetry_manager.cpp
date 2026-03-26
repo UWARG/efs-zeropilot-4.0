@@ -1,4 +1,5 @@
 #include "telemetry_manager.hpp"
+#include "zp_params.hpp"
 
 #define SYSTEM_ID 1             // Suggested System ID by Mavlink
 #define COMPONENT_ID 1          // Suggested Component ID by MAVLINK
@@ -15,20 +16,28 @@ TelemetryManager::TelemetryManager(
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
-    overflowMsgPending(false) {}
+    overflowMsgPending(false),
+    currParamListTxIdx(ZP_PARAM::getCount()) {}
 
 TelemetryManager::~TelemetryManager() = default;
 
 ZP_ERROR_e TelemetryManager::tmUpdate() {
 	receive();
-    ZP_RETURN_IF_ERROR(processTXMsgQueue());
-    ZP_RETURN_IF_ERROR(transmit());
+    processParamTx();
+    processTXMsgQueue();
+    transmit();
 }
 
-ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
-    int countVal = 0;
-    ZP_RETURN_IF_ERROR(tmTXQueueDriver->count(&countVal));
-    uint16_t count = countVal;
+void TelemetryManager::processParamTx() {
+    if (currParamListTxIdx < ZP_PARAM::getCount()) {
+        // Use the helper to pack and push the current index
+        enqueueParamValueTx(currParamListTxIdx);
+        ++currParamListTxIdx;
+    }
+}
+
+void TelemetryManager::processTXMsgQueue() {
+    uint16_t count = tmTXQueueDriver->count();
     TMMessage rcMsg = {};
     bool rc = false;
 	
@@ -171,26 +180,47 @@ ZP_ERROR_e TelemetryManager::receive() {
 
 ZP_ERROR_e TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
     switch (msg.msgid) {
-        case MAVLINK_MSG_ID_PARAM_SET: {
-            float valueToSet;
-            char paramToSet[MAVLINK_MAX_IDENTIFIER_LEN] = {};
-            uint8_t valueType;
-            ZP_RETURN_IF_ERROR(mavlink_msg_param_set_get_param_value(&msg, &valueToSet));
-            ZP_RETURN_IF_ERROR(mavlink_msg_param_set_get_param_type(&msg, &valueType));
+        case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
+            currParamListTxIdx = 0;
+            break;
+        }
 
-            if(paramToSet[0] == 'A'){ // Would prefer to do this using an ENUM LUT but if this is the only param being set its whatever
-                RCMotorControlMessage_t armDisarmMsg{};
-                armDisarmMsg.arm = valueToSet;
-                ZP_RETURN_IF_ERROR(amQueueDriver->push(&armDisarmMsg));
+        case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
+            int16_t paramIndex = mavlink_msg_param_request_read_get_param_index(&msg);
+            if (paramIndex == -1) {
+                char paramId[PARAM_MAX_IDENTIFIER_LEN];
+                mavlink_msg_param_request_read_get_param_id(&msg, paramId);
+                paramIndex = ZP_PARAM::getIndexById(paramId);
             }
-            mavlink_message_t response = {};
-            mavlink_msg_param_value_pack(SYSTEM_ID, COMPONENT_ID, &response, paramToSet, valueToSet, valueType, 1, 0);
-            ZP_RETURN_IF_ERROR(packedMsgBuffer->push(&response));
+
+            enqueueParamValueTx(paramIndex);
             break;
         }
 
-        default: {
+        case MAVLINK_MSG_ID_PARAM_SET: {
+            mavlink_param_set_t setMsg;
+            mavlink_msg_param_set_decode(&msg, &setMsg);
+
+            if (ZP_PARAM::setParamById(setMsg.param_id, setMsg.param_value)) {
+                enqueueParamValueTx(ZP_PARAM::getIndexById(setMsg.param_id));
+            }
             break;
         }
+
+        default:
+            break;
     }
+}
+
+void TelemetryManager::enqueueParamValueTx(uint16_t index) {
+    Param_t* p = ZP_PARAM::getParamByIndex(index);
+    if (!p) return;
+
+    mavlink_message_t response = {0};
+    mavlink_msg_param_value_pack(
+        SYSTEM_ID, COMPONENT_ID, &response,
+        p->paramId, p->paramValue, p->paramType,
+        ZP_PARAM::getCount(), index
+    );
+    packedMsgBuffer->push(&response);
 }

@@ -1,4 +1,5 @@
 #include "system_manager.hpp"
+#include "zp_params.hpp"
 #include "flightmode.hpp"
 
 SystemManager::SystemManager(
@@ -19,11 +20,28 @@ SystemManager::SystemManager(
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
+        flightModes{},
         oldDataCount(0),
         rcConnected(false),
-        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}) {}
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0})
+{
+    static constexpr ZP_PARAM_ID FLTMODE_PARAMS[SM_FLIGHTMODE_COUNT] = {
+        ZP_PARAM_ID::FLTMODE1, ZP_PARAM_ID::FLTMODE2, ZP_PARAM_ID::FLTMODE3,
+        ZP_PARAM_ID::FLTMODE4, ZP_PARAM_ID::FLTMODE5, ZP_PARAM_ID::FLTMODE6
+    };
+    for (uint8_t i = 0; i < SM_FLIGHTMODE_COUNT; i++) {
+        flightModes[i] = static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(FLTMODE_PARAMS[i])));
+    }
 
-ZP_ERROR_e SystemManager::smUpdate() {
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE1, this, SystemManager::updateFltMode<0>);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE2, this, SystemManager::updateFltMode<1>);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE3, this, SystemManager::updateFltMode<2>);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE4, this, SystemManager::updateFltMode<3>);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE5, this, SystemManager::updateFltMode<4>);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE6, this, SystemManager::updateFltMode<5>);
+}
+
+void SystemManager::smUpdate() {
     // Kick the watchdog
     ZP_RETURN_IF_ERROR(iwdgDriver->refreshWatchdog());
 
@@ -37,16 +55,16 @@ ZP_ERROR_e SystemManager::smUpdate() {
         ZP_RETURN_IF_ERROR(sendRCDataToAttitudeManager(rcData));
 
         if (!rcConnected) {
-            ZP_RETURN_IF_ERROR(sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected"));
-            ZP_RETURN_IF_ERROR(loggerDriver->log("RC Connected"));
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
+            // loggerDriver->log("RC Connected"); (TODO: Uncomment after rearchitecture)
             rcConnected = true;
         }
     } else {
         oldDataCount += 1;
 
-        if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
-            ZP_RETURN_IF_ERROR(sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected"));
-            ZP_RETURN_IF_ERROR(loggerDriver->log("RC Disconnected"));
+        if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > (ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000)) && rcConnected) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
+            // loggerDriver->log("RC Disconnected"); (TODO: Uncomment after rearchitecture)
             rcConnected = false;
         }
     }
@@ -56,9 +74,12 @@ ZP_ERROR_e SystemManager::smUpdate() {
         ZP_RETURN_IF_ERROR(sendRCDataToTelemetryManager(rcData));
     }
 
+    // Set armed status based on SM_RC_ARM_THRESHOLD
+    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
+
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    if (rcData.arm) {
+    if (armed) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -66,7 +87,7 @@ ZP_ERROR_e SystemManager::smUpdate() {
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (!rcConnected) {
         systemStatus = MAV_STATE_CRITICAL;
-    } else if (!rcData.arm) {
+    } else if (!armed) {
         systemStatus = MAV_STATE_STANDBY;
     }
 
@@ -104,41 +125,43 @@ ZP_ERROR_e SystemManager::updateBatteryFSM() {
     if (pmDriver->readData(&batteryData.pmData)) {          
         currentBatteryState = batteryData.chargeState;
 
-        if (batteryData.pmData.busVoltage >= BATTERY_LOW_VOLTAGE) {
+        if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT)) {
             // Normal battery
             batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK;
             batteryData.batteryLowCounterMs = 0;
             batteryData.batteryCritcounterMs = 0;
-        } else if (batteryData.pmData.busVoltage >= BATTERY_CRITICAL_VOLTAGE) {
+        } else if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) {
             // Low battery detection
             batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryCritcounterMs = 0;
-            if (batteryData.batteryLowCounterMs >= SM_BATTERY_LOW_TIME_MS) {
+            uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
+            if (battLowTimeMs > 0 && batteryData.batteryLowCounterMs >= battLowTimeMs) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
             }
         } else {
             // Critical battery detection
             batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
             batteryData.batteryLowCounterMs = 0;
-            if (batteryData.batteryCritcounterMs >= SM_BATTERY_CRITICAL_TIME_MS) {
+            uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
+            if (battLowTimeMs > 0 && batteryData.batteryCritcounterMs >= battLowTimeMs) {
                 batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
             }
-        } 
+        }
 
         // Logging --> once per transition, checks if the state has yet to be logged and does so 
         if (currentBatteryState != batteryData.chargeState) {
             switch (batteryData.chargeState) {
                 case MAV_BATTERY_CHARGE_STATE_OK:
-                    ZP_RETURN_IF_ERROR(sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK"));
-                    ZP_RETURN_IF_ERROR(loggerDriver->log("Battery State: OK"));
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
+                    // loggerDriver->log("Battery State: OK"); (TODO: Uncomment after rearchitecture)
                     break;
                 case MAV_BATTERY_CHARGE_STATE_LOW:
-                    ZP_RETURN_IF_ERROR(sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW"));
-                    ZP_RETURN_IF_ERROR(loggerDriver->log("Battery State: LOW"));
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
+                    // loggerDriver->log("Battery State: LOW"); (TODO: Uncomment after rearchitecture)
                     break;
                 case MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                    ZP_RETURN_IF_ERROR(sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL"));
-                    ZP_RETURN_IF_ERROR(loggerDriver->log("Battery State: CRITICAL"));
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
+                    // loggerDriver->log("Battery State: CRITICAL"); (TODO: Uncomment after rearchitecture)
                     break;
                 default:
                     break;
@@ -175,24 +198,25 @@ ZP_ERROR_e SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = rcData.pitch;
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
-    rcDataMessage.arm = rcData.arm;
+    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
-    ZP_RETURN_IF_ERROR(amRCQueue->push(&rcDataMessage));
-
-    return ZP_ERROR_OK;
+    amRCQueue->push(&rcDataMessage);
 }
 
 ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
 
+    // Get battery capacity from ZP_PARAM
+    float battCapacityMah = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY);
+
     // SOC estimation (0-100 %) based on capacity
     float consumedColoumbs = batteryData.pmData.charge;
-    float remainingColoumbs = (BATTERY_CAPACITY_MAH * 3.6f) - consumedColoumbs;
+    float remainingColoumbs = (battCapacityMah * 3.6f) - consumedColoumbs;
     remainingColoumbs = remainingColoumbs < 0 ? 0 : remainingColoumbs; // Floor at 0
-    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (BATTERY_CAPACITY_MAH * 3.6f)) * 100.0f);
+    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (battCapacityMah * 3.6f)) * 100.0f);
 
     // Simple time remaining estimation based on current consumption
     int32_t timeRemainingSec = 0; // Default to unknown if current is too low to estimate
@@ -224,95 +248,25 @@ void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, cons
 
 PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
-        // Button 1
-        return SM_FLIGHTMODE1;
+        return flightModes[0];
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE2_MAX) {
-        // Button 2
-        return SM_FLIGHTMODE2;
+        return flightModes[1];
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE3_MAX) {
-        // Button 3
-        return SM_FLIGHTMODE3;
+        return flightModes[2];
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE4_MAX) {
-        // Button 4 
-        return SM_FLIGHTMODE4;
+        return flightModes[3];
     }
     else if (flightModeRawValue <= SM_FLIGHTMODE5_MAX) {
-        // Button 5
-        return SM_FLIGHTMODE5;
+        return flightModes[4];
     } else {
-        // Button 6
-        return SM_FLIGHTMODE6;
+        return flightModes[5];
     }
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
-    static constexpr uint8_t VOLTAGE_LEN = 1;
-    float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
-
-    // SOC estimation (0-100 %) based on capacity
-    float consumedColoumbs = batteryData.pmData.charge;
-    float remainingColoumbs = (BATTERY_CAPACITY_MAH * 3.6f) - consumedColoumbs;
-    remainingColoumbs = remainingColoumbs < 0 ? 0 : remainingColoumbs; // Floor at 0
-    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (BATTERY_CAPACITY_MAH * 3.6f)) * 100.0f);
-
-    // Simple time remaining estimation based on current consumption
-    int32_t timeRemainingSec = 0; // Default to unknown if current is too low to estimate
-    if (batteryData.pmData.current > 0.5f) {
-        timeRemainingSec = static_cast<int32_t>(remainingColoumbs / batteryData.pmData.current);
-    }
-
-    // Pack battery data into telemetry message and send to TM
-    TMMessage_t batteryDataMsg = batteryDataPack(
-        systemUtilsDriver->getCurrentTimestampMs(),
-        BATTERY_ID,
-        INT16_MAX,
-        voltages,
-        VOLTAGE_LEN,
-        batteryData.pmData.current,
-        batteryData.pmData.charge,
-        batteryData.pmData.energy,
-        socPercentage,
-        timeRemainingSec,
-        batteryData.chargeState
-    );
-    tmQueue->push(&batteryDataMsg);
-}
-
-void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
-    TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
-    tmQueue->push(&statusTextMsg);
-}
-
-PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
-    if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
-        // Button 1
-        return SM_FLIGHTMODE1;
-    }
-    else if (flightModeRawValue <= SM_FLIGHTMODE2_MAX) {
-        // Button 2
-        return SM_FLIGHTMODE2;
-    }
-    else if (flightModeRawValue <= SM_FLIGHTMODE3_MAX) {
-        // Button 3
-        return SM_FLIGHTMODE3;
-    }
-    else if (flightModeRawValue <= SM_FLIGHTMODE4_MAX) {
-        // Button 4 
-        return SM_FLIGHTMODE4;
-    }
-    else if (flightModeRawValue <= SM_FLIGHTMODE5_MAX) {
-        // Button 5
-        return SM_FLIGHTMODE5;
-    } else {
-        // Button 6
-        return SM_FLIGHTMODE6;
-    }
-}
-
-ZP_ERROR_e SystemManager::sendMessagesToLogger() {
+void SystemManager::sendMessagesToLogger() {
     static char messages[16][100];
     int msgCount = 0;
     int queueCount = 0;
@@ -326,7 +280,24 @@ ZP_ERROR_e SystemManager::sendMessagesToLogger() {
         ZP_RETURN_IF_ERROR(smLoggerQueue->count(&queueCount));
     }
 
-    ZP_RETURN_IF_ERROR(loggerDriver->log(messages, msgCount));
-
-    return ZP_ERROR_OK;
+    // loggerDriver->log(messages, msgCount); (TODO: Uncomment after rearchitecture)
 }
+
+// Flight mode param callback (template instantiated per slot)
+template <uint8_t Idx>
+bool SystemManager::updateFltMode(SystemManager* context, float val) {
+    uint32_t mode = static_cast<uint32_t>(val);
+    if (!isValidPlaneFlightMode(mode)) return false;
+    context->flightModes[Idx] = static_cast<PlaneFlightMode_e>(mode);
+    return true;
+}
+
+// STATIC FUNCTIONS ONLY FOR PARAM CHAINING
+// ==============================================================
+template bool SystemManager::updateFltMode<0>(SystemManager*, float);
+template bool SystemManager::updateFltMode<1>(SystemManager*, float);
+template bool SystemManager::updateFltMode<2>(SystemManager*, float);
+template bool SystemManager::updateFltMode<3>(SystemManager*, float);
+template bool SystemManager::updateFltMode<4>(SystemManager*, float);
+template bool SystemManager::updateFltMode<5>(SystemManager*, float);
+// ==============================================================
