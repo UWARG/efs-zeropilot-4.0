@@ -10,9 +10,9 @@ typedef struct {
     int bitshift;
 } DataChunk_t;
 
-class RCReceiver : public IRCReceiver {
+class SBUSReceiver : public IRCReceiver {
     public:
-        RCReceiver(UART_HandleTypeDef *uart);
+        SBUSReceiver(UART_HandleTypeDef *uart);
 
         RCControl getRCData() override;
 

@@ -1,10 +1,11 @@
 #include "motor.hpp"
 
-MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint32_t minDutyCycle, uint32_t maxDutyCycle) : 
+MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint32_t minDutyCycle, uint32_t maxDutyCycle, uint8_t servoIdx) : 
     timer(timer), 
     timerChannel(timerChannel), 
     minCCR(minDutyCycle / 100.0 * timer->Init.Period), 
-    maxCCR(maxDutyCycle / 100.0 * timer->Init.Period) {
+    maxCCR(maxDutyCycle / 100.0 * timer->Init.Period),
+    servoIdx(servoIdx) {
     // blank
 }
 
@@ -16,7 +17,14 @@ ZP_ERROR_e MotorControl::set(uint32_t percent) {
     percent = percent > 100 ? 100 : percent;
     uint32_t ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
     __HAL_TIM_SET_COMPARE(timer, timerChannel, ticks);
+    
+    return ZP_ERROR_OK;
+}
 
+ZP_ERROR_e MotorControl::getServoIdx(uint8_t *idx) const {
+    if (idx == nullptr) return ZP_ERROR_NULLPTR;
+    
+    *idx = servoIdx;
     return ZP_ERROR_OK;
 }
 

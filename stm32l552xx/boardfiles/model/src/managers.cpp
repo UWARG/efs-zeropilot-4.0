@@ -28,10 +28,11 @@ ZP_ERROR_e initManagers()
     }
 
     // TM initialization
-    tmHandle = new TelemetryManager(systemUtilsHandle, rfdHandle, tmQueueHandle, amRCQueueHandle, messageBufferHandle);
-    if (tmHandle == nullptr) {
-      return ZP_ERROR_OUT_OF_MEMORY;
-    }
-
-    return ZP_ERROR_OK;
+    tmHandle = new (&tmHandleStorage) TelemetryManager(
+        systemUtilsHandle,
+        telemLinkHandle,
+        tmQueueHandle,
+        amRCQueueHandle,
+        messageBufferHandle
+    );
 }

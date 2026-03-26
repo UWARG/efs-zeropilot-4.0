@@ -15,10 +15,7 @@ void tmMainLoopWrapper(void *arg)
   while(true)
   {
     tmHandle->tmUpdate();
-    uint32_t ticks = 0;
-    if (timeToTicks(&ticks, 50) == ZP_ERROR_OK) {
-      osDelay(ticks);
-    }
+    osDelay(timeToTicks(TM_UPDATE_LOOP_DELAY_MS));
   }
 }
 

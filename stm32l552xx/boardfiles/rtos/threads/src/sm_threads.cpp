@@ -15,13 +15,8 @@ void smMainLoopWrapper(void *arg)
   ZP_ERROR_e err;
   while(true)
   {
-    err = smHandle->smUpdate();
-    // TODO: Handle error appropriately (e.g., log, enter safe mode, etc.)
-    (void)err; // Suppress unused variable warning for now
-    uint32_t ticks = 0;
-    if (timeToTicks(&ticks, 50) == ZP_ERROR_OK) {
-      osDelay(ticks);
-    }
+    smHandle->smUpdate();
+    osDelay(timeToTicks(SM_UPDATE_LOOP_DELAY_MS));
   }
 }
 

@@ -2,6 +2,7 @@
 
 #include "rc_motor_control.hpp"
 #include "drone_state.hpp"
+#include <cstdint>
 #include "error.h"
 
 class Flightmode {
@@ -11,5 +12,6 @@ class Flightmode {
     public:
         virtual ~Flightmode() = default;
 
+        virtual ZP_ERROR_e activateFlightMode() = 0;
         virtual ZP_ERROR_e runControl(RCMotorControlMessage_t *motorOutputs, RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
 };

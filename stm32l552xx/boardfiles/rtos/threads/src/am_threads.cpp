@@ -14,11 +14,8 @@ void amMainLoopWrapper(void *arg)
 {
   while(true)
   {
-    amHandle->runControlLoopIteration();
-    uint32_t ticks = 0;
-    if (timeToTicks(&ticks, 50) == ZP_ERROR_OK) {
-      osDelay(ticks);
-    }
+    amHandle->amUpdate();
+    osDelay(timeToTicks(AM_UPDATE_LOOP_DELAY_MS));
   }
 }
 

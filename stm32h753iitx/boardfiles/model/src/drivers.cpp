@@ -34,7 +34,7 @@ alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
-alignas(RFD) static uint8_t rfdStorage[sizeof(RFD)];
+alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
@@ -61,7 +61,7 @@ MotorControl *steeringMotorHandle = nullptr;
 
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
-RFD *rfdHandle = nullptr;
+RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -103,19 +103,19 @@ void initDrivers()
     loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
 
     // Motors
-    leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10);
-    rightAileronMotorHandle = new (&rightAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10);
-    elevatorMotorHandle = new (&elevatorMotorStorage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10);
-    rudderMotorHandle = new (&rudderMotorStorage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10);
-    throttleMotorHandle = new (&throttleMotorStorage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10);
-    leftFlapMotorHandle = new (&leftFlapMotorStorage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10);
-    rightFlapMotorHandle = new (&rightFlapMotorStorage) MotorControl(&htim2, TIM_CHANNEL_3, 5, 10);
-    steeringMotorHandle = new (&steeringMotorStorage) MotorControl(&htim2, TIM_CHANNEL_4, 5, 10);
+    leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 1);
+    rightAileronMotorHandle = new (&rightAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 5);
+    elevatorMotorHandle = new (&elevatorMotorStorage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 2);
+    rudderMotorHandle = new (&rudderMotorStorage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10, 4);
+    throttleMotorHandle = new (&throttleMotorStorage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10, 3);
+    leftFlapMotorHandle = new (&leftFlapMotorStorage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10, 6);
+    rightFlapMotorHandle = new (&rightFlapMotorStorage) MotorControl(&htim2, TIM_CHANNEL_3, 5, 10, 7);
+    steeringMotorHandle = new (&steeringMotorStorage) MotorControl(&htim2, TIM_CHANNEL_4, 5, 10, 8);
 
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&rcStorage) CRSFReceiver(&huart4);
-    rfdHandle = new (&rfdStorage) RFD(&huart1);
+    telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
     imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_5);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
@@ -140,16 +140,17 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    telemLinkHandle->init();
 
     // Motor instance bindings
-    leftAileronMotorInstance = {leftAileronMotorHandle, true};
-    rightAileronMotorInstance = {rightAileronMotorHandle, true};
-    elevatorMotorInstance = {elevatorMotorHandle, false};
-    rudderMotorInstance = {rudderMotorHandle, false};
-    throttleMotorInstance = {throttleMotorHandle, false};
-    leftFlapMotorInstance = {leftFlapMotorHandle, false};
-    rightFlapMotorInstance = {rightFlapMotorHandle, true};
-    steeringMotorInstance = {steeringMotorHandle, true};
+    leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
+    rightAileronMotorInstance = {rightAileronMotorHandle, true, 0};
+    elevatorMotorInstance = {elevatorMotorHandle, false, 0};
+    rudderMotorInstance = {rudderMotorHandle, false, 0};
+    throttleMotorInstance = {throttleMotorHandle, false, 0};
+    leftFlapMotorInstance = {leftFlapMotorHandle, false, 0};
+    rightFlapMotorInstance = {rightFlapMotorHandle, true, 0};
+    steeringMotorInstance = {steeringMotorHandle, true, 0};
 
     aileronMotorInstances[0] = leftAileronMotorInstance;
     aileronMotorInstances[1] = rightAileronMotorInstance;

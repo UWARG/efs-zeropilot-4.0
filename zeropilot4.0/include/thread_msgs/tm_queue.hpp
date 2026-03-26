@@ -1,5 +1,10 @@
 #pragma once
 #include <cstdint>
+#include <string.h>
+
+static constexpr uint8_t TM_QUEUE_STATUSTEXT_CHAR_COUNT = 50;
+static constexpr uint8_t TM_QUEUE_RC_CHANNELS_COUNT = 18;
+static constexpr uint8_t TM_QUEUE_BATTERY_VOLTAGES_COUNT = 10;
 
 typedef union TMMessageData_u {
   struct{
@@ -8,33 +13,62 @@ typedef union TMMessageData_u {
       uint8_t systemStatus;
   } heartbeatData;
   struct{
-      int32_t alt;
+      uint8_t severity;
+      char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT];
+      uint16_t id;
+      uint8_t chunkSeq;
+  } statusTextData;
+  struct{
+      uint8_t fixType;
       int32_t lat;
       int32_t lon;
-      int32_t relativeAlt;
-      int16_t vx;
-      int16_t vy;
-      int16_t vz;
-      uint16_t hdg;
-  } gposData;
-  struct{
-      uint16_t roll;
-      uint16_t pitch;
+      int32_t alt;
+      uint16_t eph;
+      uint16_t epv;
+      uint16_t vel;
+      uint16_t cog;
+      uint8_t satellitesVisible;
+      int32_t altEllipsoid;
+      uint32_t hAcc;
+      uint32_t vAcc;
+      uint32_t velAcc;
+      uint32_t hdgAcc;
       uint16_t yaw;
-      uint16_t throttle;
-      uint16_t flapAngle;
-      uint16_t arm;
+  } gpsRawData;
+  struct {
+      uint8_t port;
+      uint16_t servo1Raw;
+      uint16_t servo2Raw;
+      uint16_t servo3Raw;
+      uint16_t servo4Raw;
+      uint16_t servo5Raw;
+      uint16_t servo6Raw;
+      uint16_t servo7Raw;
+      uint16_t servo8Raw;
+      uint16_t servo9Raw;
+      uint16_t servo10Raw;
+      uint16_t servo11Raw;
+      uint16_t servo12Raw;
+      uint16_t servo13Raw;
+      uint16_t servo14Raw;
+      uint16_t servo15Raw;
+      uint16_t servo16Raw;
+  } servoOutputRawData;
+  struct{
+      uint8_t channelCount;
+      uint16_t channels[TM_QUEUE_RC_CHANNELS_COUNT];
   } rcData;
   struct{
+      uint8_t batteryId;
       int16_t temperature;
-      uint16_t* voltages;
+      uint16_t voltages[TM_QUEUE_BATTERY_VOLTAGES_COUNT];
       int16_t currentBattery;
       int32_t currentConsumed;
       int32_t energyConsumed;
       int8_t batteryRemaining;
       int32_t timeRemaining;
-      uint8_t chargeState; // 1 = Normal, 2 = Low, 3 = Critical
-  } bmData;
+      uint8_t chargeState; // MAV_BATTERY_CHARGE_STATE
+  } batteryData;
   struct{
       int16_t xacc;
       int16_t yacc;
@@ -61,9 +95,11 @@ typedef union TMMessageData_u {
 typedef struct TMMessage{
     enum{
         HEARTBEAT_DATA,
-        GPOS_DATA,
+        STATUSTEXT_DATA,
+        GPS_RAW_DATA,
+        SERVO_OUTPUT_RAW,
         RC_DATA,
-        BM_DATA,
+        BATTERY_DATA,
         RAW_IMU_DATA,
         ATTITUDE_DATA
     } dataType;
@@ -80,59 +116,88 @@ inline ZP_ERROR_e heartbeatPack(TMMessage_t *data, uint32_t time_boot_ms, uint8_
     return ZP_ERROR_OK;
 }
 
-inline ZP_ERROR_e gposDataPack(TMMessage_t *data, uint32_t time_boot_ms, int32_t alt, int32_t lat, int32_t lon, int32_t relative_alt, int16_t vx, int16_t vy, int16_t vz,uint16_t hdg) {
-    if (data == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-    const TMMessageData_t DATA = {.gposData={alt, lat, lon, relative_alt, vx, vy, vz, hdg }};
-    *data = TMMessage_t{TMMessage_t::GPOS_DATA, DATA, time_boot_ms};
-    return ZP_ERROR_OK;
+inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT], uint16_t id, uint8_t chunk_seq) {
+    TMMessageData_t data = {.statusTextData = {severity, "", id, chunk_seq }};
+
+    constexpr size_t MAX_LEN = sizeof(data.statusTextData.text) - 1; // Reserve space for null terminator
+
+    // Get length in a firmware safe way without using strlen which may read out of bounds if text is not null terminated
+    size_t len = 0;
+    while (len < MAX_LEN && text[len] != '\0') ++len;
+
+    memcpy(data.statusTextData.text, text, len); // Copy text without null terminator
+    data.statusTextData.text[len] = '\0'; // Ensure null termination
+
+    return TMMessage_t{TMMessage_t::STATUSTEXT_DATA, data, time_boot_ms};
 }
 
-inline ZP_ERROR_e rcDataPack(TMMessage_t *data, uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
-    if (data == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-    if (roll < 0.0f || roll > 100.0f)       return ZP_ERROR_INVALID_PARAM;
-    if (pitch < 0.0f || pitch > 100.0f)     return ZP_ERROR_INVALID_PARAM;
-    if (yaw < 0.0f || yaw > 100.0f)         return ZP_ERROR_INVALID_PARAM;
-    if (throttle < 0.0f || throttle > 100.0f) return ZP_ERROR_INVALID_PARAM;
-    if (flap_angle < 0.0f || flap_angle > 100.0f) return ZP_ERROR_INVALID_PARAM;
-    if (arm < 0.0f || arm > 100.0f)         return ZP_ERROR_INVALID_PARAM;
-
-    auto rollPPM = static_cast<uint16_t>(1000 + roll * 10);
-    auto pitchPPM = static_cast<uint16_t>(1000 + pitch * 10);
-    auto yawPPM = static_cast<uint16_t>(1000 + yaw * 10);
-    auto throttlePPM = static_cast<uint16_t>(1000 + throttle * 10);
-    auto flapAnglePPM = static_cast<uint16_t>(1000 + flap_angle * 10);
-    auto armPPM = static_cast<uint16_t>(1000 + arm * 10);
-    const TMMessageData_t DATA = {.rcData ={rollPPM, pitchPPM, yawPPM, throttlePPM, flapAnglePPM, armPPM }};
-    *data = TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
-    return ZP_ERROR_OK;
+inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32_t lat, int32_t lon, int32_t alt, 
+                                 uint16_t eph, uint16_t epv, uint16_t vel, uint16_t cog, uint8_t satellites,
+                                 int32_t alt_el = 0, uint32_t h_acc = 0, uint32_t v_acc = 0, 
+                                 uint32_t vel_acc = 0, uint32_t hdg_acc = 0, uint16_t yaw = 0) {
+    const TMMessageData_t DATA = {
+        .gpsRawData = {
+            fix_type, lat, lon, alt, eph, epv, vel, cog, satellites,
+            alt_el, h_acc, v_acc, vel_acc, hdg_acc, yaw
+        }
+    };
+    return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
 }
 
-inline ZP_ERROR_e bmDataPack(TMMessage_t *data, uint32_t time_boot_ms, int16_t temperature, float *voltages, uint8_t voltage_len, int16_t current_battery, int32_t current_consumed,
-    int32_t energy_consumed, int8_t battery_remaining, int32_t time_remaining, uint8_t charge_state) {
-    if (data == nullptr) {
-        return ZP_ERROR_NULLPTR;
+inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const uint16_t servo_values[16]) {
+    const TMMessageData_t DATA = {
+        .servoOutputRawData = {
+            port,
+            servo_values[0], servo_values[1], servo_values[2], servo_values[3],
+            servo_values[4], servo_values[5], servo_values[6], servo_values[7],
+            servo_values[8], servo_values[9], servo_values[10], servo_values[11],
+            servo_values[12], servo_values[13], servo_values[14], servo_values[15]
+        }
+    };
+    return TMMessage_t{TMMessage_t::SERVO_OUTPUT_RAW, DATA, time_boot_ms};
+}
+
+inline TMMessage_t rcDataPack(uint32_t time_boot_ms, const float* controlSignals, uint8_t size) {
+    TMMessageData_t data;
+    data.rcData.channelCount = size;
+    for (int i = 0; i < TM_QUEUE_RC_CHANNELS_COUNT; i++) {
+        data.rcData.channels[i] = (i < size) ? static_cast<uint16_t>(1000 + controlSignals[i] * 10) : UINT16_MAX;
     }
-    if (voltages == nullptr) {
-        return ZP_ERROR_NULLPTR;
+    return TMMessage_t{TMMessage_t::RC_DATA, data, time_boot_ms};
+}
+
+inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, int16_t temperature, 
+                                    float *voltages, uint8_t voltage_len, int16_t current_instantaneous,
+                                    int32_t charge_accumulated, int32_t energy_consumed, int8_t battery_remaining, 
+                                    int32_t time_remaining, uint8_t charge_state) {
+    
+    int16_t scaledCurrentBattery = current_instantaneous * 100; // A -> cA
+    int32_t scaledCurrentConsumed = (charge_accumulated * 1000) / 3600; // C -> mAh
+    int32_t scaledEnergyConsumed = energy_consumed / 100; // J -> hJ
+
+    TMMessage_t msg;
+    msg.dataType = TMMessage_t::BATTERY_DATA;
+    msg.timeBootMs = time_boot_ms;
+
+    auto& battData = msg.tmMessageData.batteryData;
+    battData.batteryId = battery_id;
+    battData.temperature = temperature;
+    battData.currentBattery = scaledCurrentBattery;
+    battData.currentConsumed = scaledCurrentConsumed;
+    battData.energyConsumed = scaledEnergyConsumed;
+    battData.batteryRemaining = battery_remaining;
+    battData.timeRemaining = time_remaining;
+    battData.chargeState = charge_state;
+
+    for (int i = 0; i < TM_QUEUE_BATTERY_VOLTAGES_COUNT; i++) {
+        battData.voltages[i] = UINT16_MAX;
     }
-    if (voltage_len > 16) {
-        return ZP_ERROR_MEMORY_OVERFLOW;
+
+    for (int i = 0; i < voltage_len && i < TM_QUEUE_BATTERY_VOLTAGES_COUNT; i++) {
+        battData.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
     }
-    uint16_t mavlinkVoltageArray[16] = {UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX};
-    for (int i = 0; i < voltage_len; i++) {
-    	mavlinkVoltageArray[i] = static_cast<uint16_t>(voltages[i]);
-    }
-    if (temperature == -1) {
-        temperature = INT16_MAX;
-    }
-    const TMMessageData_t DATA = {.bmData ={temperature, mavlinkVoltageArray, current_battery,
-    current_consumed, energy_consumed, battery_remaining, time_remaining, charge_state}};
-    *data =  TMMessage_t{TMMessage_t::BM_DATA, DATA, time_boot_ms};
-    return ZP_ERROR_OK;
+
+    return msg;
 }
 
 inline ZP_ERROR_e rawImuDataPack(TMMessage_t *data, uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
