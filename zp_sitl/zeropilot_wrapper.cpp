@@ -62,25 +62,17 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
-    SITL_Motor* rollMotor;
+    SITL_Motor* leftRollMotor;
     SITL_Motor* pitchMotor;
-    SITL_Motor* yawMotor;
     SITL_Motor* throttleMotor;
-    SITL_Motor* flapMotor;
+    SITL_Motor* yawMotor;
+    SITL_Motor* rightRollMotor;
+    SITL_Motor* leftFlapMotor;
+    SITL_Motor* rightFlapMotor;
     SITL_Motor* steerMotor;
     
-    MotorInstance_t rollMotorInstance;
-    MotorInstance_t pitchMotorInstance;
-    MotorInstance_t yawMotorInstance;
-    MotorInstance_t throttleMotorInstance;
-    MotorInstance_t flapMotorInstance;
-    MotorInstance_t steerMotorInstance;
-    MotorGroupInstance_t rollGroup;
-    MotorGroupInstance_t pitchGroup;
-    MotorGroupInstance_t yawGroup;
-    MotorGroupInstance_t throttleGroup;
-    MotorGroupInstance_t flapGroup;
-    MotorGroupInstance_t steeringGroup;
+    MotorInstance_t motors[8];
+    MotorGroupInstance_t motorGroup;
     
     uint32_t sitlRateHz;
     uint32_t smCounter;
@@ -104,11 +96,13 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
-    delete self->rollMotor;
+    delete self->leftRollMotor;
     delete self->pitchMotor;
-    delete self->yawMotor;
     delete self->throttleMotor;
-    delete self->flapMotor;
+    delete self->yawMotor;
+    delete self->rightRollMotor;
+    delete self->leftFlapMotor;
+    delete self->rightFlapMotor;
     delete self->steerMotor;
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -141,26 +135,25 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
-        self->rollMotor = new SITL_Motor(1);
+        self->leftRollMotor = new SITL_Motor(1);
         self->pitchMotor = new SITL_Motor(2);
-        self->yawMotor = new SITL_Motor(4);
         self->throttleMotor = new SITL_Motor(3);
-        self->flapMotor = new SITL_Motor(5);
-        self->steerMotor = new SITL_Motor(6);
+        self->yawMotor = new SITL_Motor(4);
+        self->rightRollMotor = new SITL_Motor(5);
+        self->leftFlapMotor = new SITL_Motor(6);
+        self->rightFlapMotor = new SITL_Motor(7);
+        self->steerMotor = new SITL_Motor(8);
         
-        self->rollMotorInstance = {self->rollMotor, false};
-        self->pitchMotorInstance = {self->pitchMotor, false};
-        self->yawMotorInstance = {self->yawMotor, false};
-        self->throttleMotorInstance = {self->throttleMotor, false};
-        self->flapMotorInstance = {self->flapMotor, false};
-        self->steerMotorInstance = {self->steerMotor, false};
-        
-        self->rollGroup = {&self->rollMotorInstance, 1};
-        self->pitchGroup = {&self->pitchMotorInstance, 1};
-        self->yawGroup = {&self->yawMotorInstance, 1};
-        self->throttleGroup = {&self->throttleMotorInstance, 1};
-        self->flapGroup = {&self->flapMotorInstance, 1};
-        self->steeringGroup = {&self->steerMotorInstance, 1};
+        self->motors[0] = {self->leftRollMotor, false, 50, 0, 100, MotorFunction_e::AILERON};
+        self->motors[1] = {self->pitchMotor, false, 50, 0, 100, MotorFunction_e::ELEVATOR};
+        self->motors[2] = {self->throttleMotor, false, 50, 0, 100, MotorFunction_e::THROTTLE};
+        self->motors[3] = {self->yawMotor, false, 50, 0, 100, MotorFunction_e::RUDDER};
+        self->motors[4] = {self->rightRollMotor, true, 50, 0, 100, MotorFunction_e::AILERON};
+        self->motors[5] = {self->leftFlapMotor, false, 50, 0, 100, MotorFunction_e::FLAP};
+        self->motors[6] = {self->rightFlapMotor, false, 50, 0, 100, MotorFunction_e::FLAP};
+        self->motors[7] = {self->steerMotor, false, 50, 0, 100, MotorFunction_e::GROUND_STEERING};
+
+        self->motorGroup = {self->motors, 8};
         
         self->imu->init();
         
@@ -176,8 +169,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->am = new AttitudeManager(
             self->sysUtils, self->gps, self->imu,
             self->amQueue, self->tmQueue, self->logQueue,
-            &self->rollGroup, &self->pitchGroup, &self->yawGroup,
-            &self->throttleGroup, &self->flapGroup, &self->steeringGroup
+            &self->motorGroup
         );
         
         self->sitlRateHz = sitlRateHz;
@@ -250,11 +242,11 @@ static PyObject* ZP_update(ZPObject* self, PyObject* args) {
 }
 
 static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
-    uint32_t roll = self->rollMotor->get();
+    uint32_t roll = self->leftRollMotor->get();
     uint32_t pitch = self->pitchMotor->get();
     uint32_t yaw = self->yawMotor->get();
     uint32_t throttle = self->throttleMotor->get();
-    uint32_t flap = self->flapMotor->get();
+    uint32_t flap = self->leftFlapMotor->get();
     uint32_t steer = self->steerMotor->get();
     
     return Py_BuildValue("(iiiiii)", roll, pitch, yaw, throttle, flap, steer);
