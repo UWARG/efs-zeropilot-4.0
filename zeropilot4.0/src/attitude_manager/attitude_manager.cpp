@@ -347,12 +347,12 @@ void AttitudeManager::loadServoParams() {
 // e.g. Idx=0 is SERVO1_TRIM, Idx=1 is SERVO1_MIN, ..., Idx=5 is SERVO2_TRIM, etc.
 template <uint8_t Idx>
 bool AttitudeManager::updateServoParam(AttitudeManager* ctx, float val) {
-    constexpr uint8_t channel = Idx / SERVO_PARAMS_PER_CHANNEL;
-    constexpr uint8_t field   = Idx % SERVO_PARAMS_PER_CHANNEL;
-    if (channel >= ctx->mainMotorGroup->motorCount) return false;
+    constexpr uint8_t CHANNEL = Idx / SERVO_PARAMS_PER_CHANNEL;
+    constexpr uint8_t FIELD   = Idx % SERVO_PARAMS_PER_CHANNEL;
+    if (CHANNEL >= ctx->mainMotorGroup->motorCount) return false;
 
-    MotorInstance_t *m = &ctx->mainMotorGroup->motors[channel];
-    switch (field) {
+    MotorInstance_t *m = &ctx->mainMotorGroup->motors[CHANNEL];
+    switch (FIELD) {
         case 0: m->trim      = usToPercent(val); break;
         case 1: m->min       = usToPercent(val); break;
         case 2: m->max       = usToPercent(val); break;
