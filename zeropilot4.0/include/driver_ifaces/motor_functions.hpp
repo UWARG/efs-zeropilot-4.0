@@ -4,11 +4,11 @@
 
 enum class MotorFunction_e : int16_t {
     GPIO            = -1,
-    Disabled        = 0,
-    Flap            = 2,
-    Aileron         = 4,
-    Elevator        = 19,
-    Rudder          = 21,
-    GroundSteering  = 26,
-    Throttle        = 70,
+    DISABLED        = 0,
+    FLAP            = 2,
+    AILERON         = 4,
+    ELEVATOR        = 19,
+    RUDDER          = 21,
+    GROUND_STEERING = 26,
+    THROTTLE        = 70,
 };
