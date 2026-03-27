@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "fbwa_mapping.hpp"
@@ -74,6 +75,9 @@ class AttitudeManager {
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
 
+        void loadServoParams();
+        void bindServoParamCallbacks();
+
         // ZP_PARAM callback functions
         static bool updatePIDRollKp(AttitudeManager* context, float val);
         static bool updatePIDRollKi(AttitudeManager* context, float val);
@@ -89,4 +93,10 @@ class AttitudeManager {
         static bool updateRollLimitDeg(AttitudeManager* context, float val);
         static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
         static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
+
+        // Servo param callbacks — templated by motor index
+        template <uint8_t Idx> static bool updateServoParam(AttitudeManager* ctx, float val);
+
+        template <uint8_t... Is>
+        void bindServoParamCallbacksImpl(std::integer_sequence<uint8_t, Is...>);
 };

@@ -1,6 +1,15 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
+#include "motor_functions.hpp"
+
+// Number of servo param fields per servo channel
+static constexpr uint8_t SERVO_PARAMS_PER_CHANNEL = 5;
+
+// Convert PWM microseconds (1000-2000) to percent (0-100)
+static inline int usToPercent(float us) {
+    return static_cast<int>((us - 1000.0f) / 10.0f);
+}
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -68,6 +77,10 @@ AttitudeManager::AttitudeManager(
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
+
+    // Load servo parameters from ZP_PARAM into motor instances and bind callbacks
+    loadServoParams();
+    bindServoParamCallbacks();
 }
 
 void AttitudeManager::amUpdate() {
@@ -122,7 +135,6 @@ void AttitudeManager::amUpdate() {
             motorOutputs.yaw = 50;
             motorOutputs.throttle = 0;
             motorOutputs.flapAngle = 0;
-            motorOutputs.yaw = 50;
             outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
@@ -315,6 +327,56 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
     tmQueue->push(&servoOutputMsg);
 }
+
+// SERVO PARAM LOADING AND CALLBACKS
+// ==============================================================
+void AttitudeManager::loadServoParams() {
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        ZP_PARAM_ID base = static_cast<ZP_PARAM_ID>(
+            static_cast<uint16_t>(ZP_PARAM_ID::SERVO1_TRIM) + i * SERVO_PARAMS_PER_CHANNEL);
+        MotorInstance_t *m = &mainMotorGroup->motors[i];
+        m->trim      = usToPercent(ZP_PARAM::get(base));
+        m->min       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 1)));
+        m->max       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 2)));
+        m->isInverted = static_cast<int>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 3))) != 0;
+        m->function  = static_cast<MotorFunction_e>(static_cast<int16_t>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 4))));
+    }
+}
+
+// Single callback per param index — Idx is the flat param offset from SERVO1_TRIM
+// e.g. Idx=0 is SERVO1_TRIM, Idx=1 is SERVO1_MIN, ..., Idx=5 is SERVO2_TRIM, etc.
+template <uint8_t Idx>
+bool AttitudeManager::updateServoParam(AttitudeManager* ctx, float val) {
+    constexpr uint8_t channel = Idx / SERVO_PARAMS_PER_CHANNEL;
+    constexpr uint8_t field   = Idx % SERVO_PARAMS_PER_CHANNEL;
+    if (channel >= ctx->mainMotorGroup->motorCount) return false;
+
+    MotorInstance_t *m = &ctx->mainMotorGroup->motors[channel];
+    switch (field) {
+        case 0: m->trim      = usToPercent(val); break;
+        case 1: m->min       = usToPercent(val); break;
+        case 2: m->max       = usToPercent(val); break;
+        case 3: m->isInverted = static_cast<int>(val) != 0; break;
+        case 4: m->function  = static_cast<MotorFunction_e>(static_cast<int16_t>(val)); break;
+    }
+    return true;
+}
+
+template <uint8_t... Is>
+void AttitudeManager::bindServoParamCallbacksImpl(std::integer_sequence<uint8_t, Is...>) {
+    // C++14 pack expansion trick using dummy array
+    using expand = int[];
+    (void)expand{0, (ZP_PARAM::bindCallback(
+        static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(ZP_PARAM_ID::SERVO1_TRIM) + Is),
+        this, AttitudeManager::updateServoParam<Is>), 0)...};
+}
+
+static constexpr uint8_t TOTAL_SERVO_PARAMS = 12 * SERVO_PARAMS_PER_CHANNEL;
+
+void AttitudeManager::bindServoParamCallbacks() {
+    bindServoParamCallbacksImpl(std::make_integer_sequence<uint8_t, TOTAL_SERVO_PARAMS>{});
+}
+// ==============================================================
 
 // STATIC FUNCTIONS ONLY FOR PARAM CHAINING
 // ==============================================================
