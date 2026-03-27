@@ -34,19 +34,16 @@ protected:
     NiceMock<MockMotorControl> mockFlapMotor;
     NiceMock<MockMotorControl> mockSteeringMotor;
     
-    MotorInstance_t rollMotorInst{&mockRollMotor, false, 0};
-    MotorInstance_t pitchMotorInst{&mockPitchMotor, false, 0};
-    MotorInstance_t yawMotorInst{&mockYawMotor, false, 0};
-    MotorInstance_t throttleMotorInst{&mockThrottleMotor, false, 0};
-    MotorInstance_t flapMotorInst{&mockFlapMotor, false, 0};
-    MotorInstance_t steeringMotorInst{&mockSteeringMotor, false, 0};
+    MotorInstance_t motorInstances[6] = {
+        {&mockRollMotor, false, 50, 0, 100, MotorFunction_e::AILERON},
+        {&mockPitchMotor, false, 50, 0, 100, MotorFunction_e::ELEVATOR},
+        {&mockYawMotor, false, 50, 0, 100, MotorFunction_e::RUDDER},
+        {&mockThrottleMotor, false, 50, 0, 100, MotorFunction_e::THROTTLE},
+        {&mockFlapMotor, false, 50, 0, 100, MotorFunction_e::FLAP},
+        {&mockSteeringMotor, false, 50, 0, 100, MotorFunction_e::GROUND_STEERING}
+    };
     
-    MotorGroupInstance_t rollGroup{&rollMotorInst, 1};
-    MotorGroupInstance_t pitchGroup{&pitchMotorInst, 1};
-    MotorGroupInstance_t yawGroup{&yawMotorInst, 1};
-    MotorGroupInstance_t throttleGroup{&throttleMotorInst, 1};
-    MotorGroupInstance_t flapGroup{&flapMotorInst, 1};
-    MotorGroupInstance_t steeringGroup{&steeringMotorInst, 1};
+    MotorGroupInstance_t motorGroup{motorInstances, 6};
     
     void SetUp() override {
         ZP_PARAM::init();
@@ -90,8 +87,7 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
     EXPECT_CALL(mockFlapMotor, set(_)).Times(AtLeast(1));
     EXPECT_CALL(mockSteeringMotor, set(_)).Times(AtLeast(1));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     am.amUpdate();
 }
@@ -111,8 +107,7 @@ TEST_F(AttitudeManagerTest, DisarmThrottleZero) {
     
     EXPECT_CALL(mockThrottleMotor, set(0));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     am.amUpdate();
 }
@@ -128,8 +123,7 @@ TEST_F(AttitudeManagerTest, FailsafeTriggered) {
     EXPECT_CALL(mockFlapMotor, set(0)).Times(AtLeast(1));
     EXPECT_CALL(mockSteeringMotor, set(50)).Times(AtLeast(1));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -160,8 +154,7 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery) {
     
     EXPECT_CALL(mockLogQueue, push(_)).Times(2);
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -171,8 +164,7 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery) {
 }
 
 TEST_F(AttitudeManagerTest, MotorTrimApplied) {
-    MotorInstance_t rollMotorWithTrim{&mockRollMotor, false, 5};
-    MotorGroupInstance_t rollGroupWithTrim{&rollMotorWithTrim, 1};
+    motorInstances[0].trim = 55;
     
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 50.0f;
@@ -189,17 +181,17 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     uint8_t rollValue = 0;
     EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint8_t val) { rollValue = val; }));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroupWithTrim, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     am.amUpdate();
     
     EXPECT_GT(rollValue, 50);
+
+    motorInstances[0].trim = 50;
 }
 
 TEST_F(AttitudeManagerTest, MotorInverted) {
-    MotorInstance_t rollMotorInverted{&mockRollMotor, true, 0};
-    MotorGroupInstance_t rollGroupInverted{&rollMotorInverted, 1};
+    motorInstances[0].isInverted = true;
     
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 30.0f;
@@ -216,12 +208,13 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
     uint8_t rollValue = 0;
     EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint8_t val) { rollValue = val; }));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroupInverted, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     am.amUpdate();
     
     EXPECT_GT(rollValue, 50);
+
+    motorInstances[0].isInverted = false;
 }
 
 TEST_F(AttitudeManagerTest, MotorClampingUpper) {
@@ -239,8 +232,7 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper) {
     
     EXPECT_CALL(mockRollMotor, set(100));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     am.amUpdate();
 }
@@ -265,8 +257,7 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
             return 0;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -295,8 +286,7 @@ TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
             return 0;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -330,8 +320,7 @@ TEST_F(AttitudeManagerTest, RawGPSTelemetrySent) {
             return 0;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -350,8 +339,7 @@ TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent) {
             return 0;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue,
-                       &rollGroup, &pitchGroup, &yawGroup, &throttleGroup, &flapGroup, &steeringGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
