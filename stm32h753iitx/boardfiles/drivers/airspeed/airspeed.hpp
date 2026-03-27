@@ -2,26 +2,9 @@
 
 #include "stm32h7xx_hal.h"
 #include "airspeed_iface.hpp"
-#include "airspeed_iface.hpp"
 #include <cmath>
 
-enum class Status : uint8_t {
-    Normal  = 0b00,
-    Command = 0b01,
-    Stale   = 0b10,
-    Fault   = 0b11
-};
-
-struct airspeedData {
-    double raw_press_ = 0;
-    double raw_temp_ = 0;
-    double processed_temp_ = 0;
-    double processed_press_ = 0;
-    double airspeed_ = 0;
-};
-
-class Airspeed : public AirspeedIFace
-{
+class Airspeed : public IAirspeed {
 private:
 	static constexpr int arraySize = 4;
     uint8_t dmaRXBuffer[arraySize];
@@ -32,31 +15,29 @@ private:
 
     double pressZero = 0.0;
 
-    bool callibrate(int samples, int discard);
+    bool calibrate(int samples, int discard);
     bool calibrated_ = false;
     bool initSuccess_ = false;
 
     Status status_ = Status::Fault;
 
-    airspeedData airspeedData_;
-
 public:
     Airspeed(I2C_HandleTypeDef* i2c, uint8_t addr = 0x28) : hi2c(i2c), devAddress(addr << 1) {}
     ~Airspeed() = default;
 
-    // init
-    bool airspeedInit();
+    bool init();
 
     //helper function to calculate airspeed
-    bool calculateAirspeed(double* data_out);
-    void I2C_Master_Receive_DMA();
+    bool calculateAirspeed(AirspeedData_t* airspeedData_);
+    void receiveCallback();
 
     // public getters
-    bool getAirspeedData(double* data_out) override;
-    I2C_HandleTypeDef* getI2C() { return hi2c; }
+    bool getAirspeedData(AirspeedData_t* data) override;
+    
+    I2C_HandleTypeDef* getHI2C() { return hi2c; }
     uint8_t* getDMARXBuffer() { return dmaRXBuffer; }
     uint8_t* getProcessRXBuffer() { return processRXBuffer; }
     uint8_t getDevAddress() { return devAddress; }
     uint8_t getArraySize() { return arraySize; }
-    airspeedData getAirspeedDataStruct() { return airspeedData_; }
+//    AirspeedData_t getAirspeedDataStruct() { return airspeedData_; }
 };

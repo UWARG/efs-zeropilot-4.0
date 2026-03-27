@@ -145,9 +145,9 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    asHandle->init();
     telemLinkHandle->init();
     //rfdHandle->startReceive(); //<- possibly needed not sure
-    asHandle->airspeedInit();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
