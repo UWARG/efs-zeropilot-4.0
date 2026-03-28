@@ -164,9 +164,14 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO6_MAX", 2000);
         ZP_PARAM::setParamById("SERVO6_REVERSED", 0);
         ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::GROUND_STEERING));
-        
-        self->imu->init();
-        
+
+        ZP_PARAM::setParamById("SERVO7_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        ZP_PARAM::setParamById("SERVO8_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        ZP_PARAM::setParamById("SERVO9_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        ZP_PARAM::setParamById("SERVO10_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        ZP_PARAM::setParamById("SERVO11_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+
         self->sm = new SystemManager(
             self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
             self->amQueue, self->tmQueue, self->logQueue
