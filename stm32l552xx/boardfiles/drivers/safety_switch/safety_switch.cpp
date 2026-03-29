@@ -9,5 +9,5 @@ M10SafetySwitch::M10SafetySwitch(
 }
 
 bool M10SafetySwitch::isPressed() {
-    return HAL_GPIO_ReadPin(safetySwitchPort, safetySwitchPin) == GPIO_PIN_SET;
+    return HAL_GPIO_ReadPin(safetySwitchPort, safetySwitchPin) == GPIO_PIN_RESET;
 }

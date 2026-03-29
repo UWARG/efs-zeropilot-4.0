@@ -949,6 +949,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPS_BUZZER_GPIO_Port, GPS_BUZZER_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SAFETY_SW_LED_GPIO_Port, SAFETY_SW_LED_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : SPI1_CS_Pin LED_RED_Pin */
   GPIO_InitStruct.Pin = SPI1_CS_Pin|LED_RED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -984,10 +987,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPS_BUZZER_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : SAFETY_SW_LED_Pin */
+  GPIO_InitStruct.Pin = SAFETY_SW_LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SAFETY_SW_LED_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : GPS_SAFETY_SW_Pin */
   GPIO_InitStruct.Pin = GPS_SAFETY_SW_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPS_SAFETY_SW_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
