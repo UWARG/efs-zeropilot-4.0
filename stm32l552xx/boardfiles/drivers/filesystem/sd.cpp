@@ -69,7 +69,7 @@ FileStatus SDFileSystem::read(File* fp, void* buff, uint32_t btr, uint32_t* br) 
     return fresultToStatus(res);
 }
 
-FileStatus SDFileSystem::write(File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options) {
+FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options) {
     if (!fp || !buff) return FILE_STATUS_ERROR;
     
 #ifdef SWO_LOGGING
@@ -87,6 +87,7 @@ FileStatus SDFileSystem::write(File* fp, const void* buff, uint32_t btw, uint32_
         return fresultToStatus(res);
     } else {
         FatFsReqMsg req;
+        req.id = id;
         req.type = ReqType::WRITE;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
         req.total_size = btw;
@@ -105,14 +106,16 @@ FileStatus SDFileSystem::write(File* fp, const void* buff, uint32_t btw, uint32_
     }
 }
 
-FileStatus SDFileSystem::seek_and_write(File* fp, const void* buff, uint32_t btw, uint32_t* bw, uint64_t ofs) {
-    if (!fp || !buff) return FILE_STATUS_ERROR;
+FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions options) {
+    if (!fp || !buff || options == ReqOptions::SYNC) return FILE_STATUS_ERROR;
     
     FatFsReqMsg req;
+    req.id = id;
     req.type = ReqType::WRITE_SEEK;
     req.fp = reinterpret_cast<FIL*>(fp->_storage);
     req.total_size = btw;
     req.offset = ofs;
+    req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
     FatFSReqBuff writeBuffMsg;
     std::memcpy(writeBuffMsg.buff, buff, (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE);
@@ -126,13 +129,15 @@ FileStatus SDFileSystem::seek_and_write(File* fp, const void* buff, uint32_t btw
     return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
 }
 
-FileStatus SDFileSystem::write_and_sync(File* fp, const void* buff, uint32_t btw, uint32_t* bw) {
-    if (!fp || !buff) return FILE_STATUS_ERROR;
+FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options) {
+    if (!fp || !buff || options == ReqOptions::SYNC) return FILE_STATUS_ERROR;
     
     FatFsReqMsg req;
+    req.id = id;
     req.type = ReqType::WRITE_SYNC;
     req.fp = reinterpret_cast<FIL*>(fp->_storage);
     req.total_size = btw;
+    req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
     FatFSReqBuff writeBuffMsg;
     std::memcpy(writeBuffMsg.buff, buff, (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE);
@@ -146,7 +151,7 @@ FileStatus SDFileSystem::write_and_sync(File* fp, const void* buff, uint32_t btw
     return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
 }
 
-FileStatus SDFileSystem::lseek(File* fp, uint64_t ofs, ReqOptions options) {
+FileStatus SDFileSystem::lseek(ManId id, File* fp, uint64_t ofs, ReqOptions options) {
     if (!fp) return FILE_STATUS_ERROR;
     
     if (options == ReqOptions::SYNC) {
@@ -154,6 +159,7 @@ FileStatus SDFileSystem::lseek(File* fp, uint64_t ofs, ReqOptions options) {
         return fresultToStatus(res);
     } else {
         FatFSReqMsg req;
+        req.id = id;
         req.type = ReqType::LSEEK;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
         req.offset = ofs;
@@ -165,7 +171,7 @@ FileStatus SDFileSystem::lseek(File* fp, uint64_t ofs, ReqOptions options) {
     }
 }
 
-FileStatus SDFileSystem::tell(File* fp, uint64_t* position, ReqOptions options) {
+FileStatus SDFileSystem::tell(ManId id, File* fp, uint64_t* position, ReqOptions options) {
     if (!fp) return FILE_STATUS_ERROR; // we dont need position because this operation is async for SD
     
     if (options == ReqOptions::SYNC) {
@@ -182,6 +188,7 @@ FileStatus SDFileSystem::tell(File* fp, uint64_t* position, ReqOptions options) 
             return FILE_STATUS_ERROR; // TELL operation requires a response to return the position, so ASYNC_NO_RESP is not valid here
         }
         FatFSReqMsg req;
+        req.id = id;
         req.type = ReqType::TELL;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
 
@@ -192,7 +199,7 @@ FileStatus SDFileSystem::tell(File* fp, uint64_t* position, ReqOptions options) 
     }
 }
 
-FileStatus SDFileSystem::sync(File* fp, ReqOptions options) {
+FileStatus SDFileSystem::sync(ManId id, File* fp, ReqOptions options) {
     if (!fp) return FILE_STATUS_ERROR;
 
     if (options == ReqOptions::SYNC) {
@@ -200,6 +207,7 @@ FileStatus SDFileSystem::sync(File* fp, ReqOptions options) {
         return fresultToStatus(res);
     } else {
         FatFsReqMsg req;
+        req.id = id;
         req.type = ReqType::SYNC;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
         req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
@@ -235,15 +243,32 @@ FileStatus SDFileSystem::stat(const char* path, FileInfo* fno) {
     return fresultToStatus(res);
 }
 
-int SDFileSystem::printf(File* fp, const char* str, ...) {
+int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str, ...) {
     if (!fp) return EOF;
     
-    FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
-    va_list args;
-    va_start(args, str);
-    int res = f_printf(fil, str, args);
-    va_end(args);
-    return res;
+    if (options == ReqOptions::SYNC) {
+        FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
+        va_list args;
+        va_start(args, str);
+        int res = f_printf(fil, str, args);
+        va_end(args);
+        return res;
+    } else {
+        char printBuff[MAX_RW_BUFFER_SIZE];
+        va_list args;
+        va_start(args, str);
+        int len = std::vsnprintf(printBuff, MAX_RW_BUFFER_SIZE, str, args);
+        va_end(args);
+
+        if (len < 0) {
+            return EOF; // Encoding error
+        }
+
+        uint32_t bytesToWrite = (len < MAX_RW_BUFFER_SIZE) ? static_cast<uint32_t>(len) : (MAX_RW_BUFFER_SIZE - 1);
+        printBuff[bytesToWrite] = '\0'; // Ensure null termination
+
+        return write(id, fp, printBuff, bytesToWrite, nullptr, options) == FILE_STATUS_REQUEST_MADE ? bytesToWrite : EOF;
+    }
 }
 
 FileStatus SDFileSystem::init() {

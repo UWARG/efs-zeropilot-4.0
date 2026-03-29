@@ -28,18 +28,18 @@ class SDFileSystem : public IFileSystem {
         FileStatus init();
         
         // IFileSystem implementation
-        FileStatus open (ManId id, File* fp, const char* path, const char* mode) override;
-        FileStatus close (ManId id, File* fp) override;
-        FileStatus read (ManId id, File* fp, void* buff, uint32_t btr, uint32_t* br) override;
+        FileStatus open (File* fp, const char* path, const char* mode) override;
+        FileStatus close (File* fp) override;
+        FileStatus read (File* fp, void* buff, uint32_t btr, uint32_t* br) override;
         FileStatus write (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus seek_and_write (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, uint64_t ofs) override;
-        FileStatus write_and_sync (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw) override;
+        FileStatus seek_and_write (ManId id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
+        FileStatus write_and_sync (ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus lseek (ManId id, File* fp, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus tell(ManId id, File* fp, uint64_t* position, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus sync (ManId id, File* fp, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus mkdir (ManId id, const char* path, bool forceSync = false) override;
-        FileStatus stat (ManId id, const char* path, FileInfo* fno, bool forceSync = false) override;					        
-        int printf (ManId id, File* fp, const char* str, ...) override;
+        FileStatus mkdir (const char* path, bool forceSync = false) override;
+        FileStatus stat (const char* path, FileInfo* fno, bool forceSync = false) override;					        
+        int printf (ManId id, File* fp, ReqOptions options, const char* str, ...) override;
         PollResult poll(ManId id, ReqType reqType) override;		
         bool available();									       
 };

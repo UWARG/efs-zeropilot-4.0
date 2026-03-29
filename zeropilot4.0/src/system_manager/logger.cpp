@@ -14,10 +14,7 @@ namespace Logger {
         if (!fileSystem) return;
         if (!fileSystem->available()) return;
         
-        fileSystem->mkdir(ManId::SYSTEM, "logs");
-        while (fileSystem->poll(ManId::SYSTEM) == FILE_STATUS_NOT_DONE) {
-            systemUtils->delayMs(10);
-        }
+        fileSystem->mkdir("logs");
         logFile = {};
         
         // Find first available log file (0-255), default to 0 if all taken
@@ -26,19 +23,19 @@ namespace Logger {
         uint32_t fileNum = 0;
         for (uint32_t i = 0; i < 255; i++) {
             snprintf(filename, sizeof(filename), "logs/system%u.log", i);
-            if (fileSystem->stat(ManId::SYSTEM, filename, &fno) != FILE_STATUS_OK) {
+            if (fileSystem->stat(filename, &fno) != FILE_STATUS_OK) {
                 fileNum = i;
                 break;
             }
         }
         
         snprintf(filename, sizeof(filename), "logs/system%u.log", fileNum);
-        fileSystem->open(ManId::SYSTEM, &logFile, filename, "a");
+        fileSystem->open(&logFile, filename, "a");
     }
 
     void Logger::shutdown() {
         if (fileSystem) {
-            fileSystem->close(ManId::SYSTEM, &logFile);
+            fileSystem->close(&logFile);
         }
         fileSystem = nullptr;
         systemUtils = nullptr;
@@ -78,9 +75,9 @@ namespace Logger {
         
         if (fileSystem->available()) {
             if (level == LogLevel::CRITICAL || lastSync >= 10) { // Sync every 10 writes automatically, or immediately for critical logs
-                fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr);
+                fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
             } else {
-                fileSystem->write(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr);
+                fileSystem->write(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions::ASYNC_NO_RESP);
                 lastSync++;
             }
         }
@@ -88,7 +85,7 @@ namespace Logger {
 
     void Logger::sync() {
         if (fileSystem) {
-            fileSystem->sync(ManId::SYSTEM, &logFile);
+            fileSystem->sync(ManId::SYSTEM, &logFile, ReqOptions::ASYNC_NO_RESP);
         }
     }
 } // namespace Logger
