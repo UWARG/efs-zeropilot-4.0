@@ -13,7 +13,11 @@
     <div id="startup-modal" class="startup-modal">
         <div class="startup-form">
             <h2>Initial Configuration</h2>
+            <hr style="border-color:#555;margin:10px 0 20px;">
             <form id="startup-config">
+                <div style="display:flex;gap:30px;">
+                <div style="flex:1;">
+                <h3 style="margin-top:0;">Aircraft</h3>
                 <div class="form-group"><label>Altitude (ft)</label><input type="number" id="init-altitude" value="5000" step="100"></div>
                 <div class="form-group"><label>Airspeed (kts)</label><input type="number" id="init-speed" value="90" step="5"></div>
                 <div class="form-group"><label>Roll (deg)</label><input type="number" id="init-roll" value="0" step="1"></div>
@@ -23,6 +27,25 @@
                 <div class="form-group">
                     <label class="checkbox-label"><input type="checkbox" id="init-engine" checked> Start Armed</label>
                 </div>
+                </div>
+                <div style="flex:1;border-left:1px solid #555;padding-left:30px;">
+                <h3 style="margin-top:0;">Environment</h3>
+                <div class="form-group"><label>Wind North (kts)</label><input type="number" id="init-wind-north" value="0" step="1"></div>
+                <div class="form-group"><label>Wind East (kts)</label><input type="number" id="init-wind-east" value="0" step="1"></div>
+                <div class="form-group"><label>Wind Down (kts)</label><input type="number" id="init-wind-down" value="0" step="1"></div>
+                <div class="form-group">
+                    <label>Turbulence Type</label>
+                    <select id="init-turb-type" style="width:100%;padding:8px;background:#3d3d3d;border:1px solid #555;color:#fff;border-radius:4px;box-sizing:border-box;">
+                        <option value="0">None</option>
+                        <option value="2">Milspec</option>
+                        <option value="3">Tustin</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Turbulence Severity: <span id="init-turb-severity-val">0</span></label><input type="range" id="init-turb-severity" min="0" max="7" value="0" step="1"></div>
+                <div class="form-group"><label>Turb. Windspeed @ 20ft AGL (kts)</label><input type="number" id="init-turb-windspeed" value="0" min="0" step="1"></div>
+                </div>
+                </div>
+                <hr style="border-color:#555;margin:20px 0;">
                 <button type="submit" class="start-btn">START SIMULATION</button>
             </form>
         </div>
@@ -31,14 +54,17 @@
     <div class="container hidden" id="sim-container">
         <h1>ZeroPilot SITL - JSBSim</h1>
         
-        <div class="panel">
+        <div class="panel state-panel">
+            <button id="env-btn" class="env-btn">&#9881; Environment</button>
             <h2>Aircraft State</h2>
             <div class="state">
                 <div class="state-item"><div>Roll</div><div class="value" id="roll">0&deg;</div></div>
                 <div class="state-item"><div>Pitch</div><div class="value" id="pitch">0&deg;</div></div>
                 <div class="state-item"><div>Yaw</div><div class="value" id="yaw">0&deg;</div></div>
+                <div class="state-item"><div>Track</div><div class="value" id="track">0&deg;</div></div>
                 <div class="state-item"><div>Altitude</div><div class="value" id="altitude">0 ft</div></div>
                 <div class="state-item"><div>Airspeed</div><div class="value" id="airspeed">0 kts</div></div>
+                <div class="state-item"><div>Groundspeed</div><div class="value" id="groundspeed">0 kts</div></div>
                 <div class="state-item"><div>RPM</div><div class="value" id="rpm">0</div></div>
             </div>
         </div>
@@ -68,6 +94,36 @@
                     <input type="range" id="throttle-ctrl" min="0" max="100" value="0">
                     <div style="font-size: 12px; color: #888;">Motor: <span id="throttle-out">0</span></div>
                 </div>
+                <div class="control-group">
+                    <label>Flaps: <span id="flap-val">0%</span></label>
+                    <div class="switch-container">
+                        <div class="switch-track">
+                            <div class="switch-thumb" id="flap-thumb"></div>
+                        </div>
+                        <div class="switch-labels">
+                            <span>0%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; color: #888;">Motor: <span id="flap-out">0</span></div>
+                </div>
+                <div class="control-group">
+                    <label>Flight Mode: <span id="fltmode-val">1</span></label>
+                    <div class="switch-container">
+                        <div class="switch-track-6">
+                            <div class="switch-thumb-6" id="fltmode-thumb"></div>
+                        </div>
+                        <div class="switch-labels-6">
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                            <span>6</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -88,6 +144,29 @@
             <div style="display: flex; gap: 20px;">
                 <div style="flex: 1;"><h3>Transmitted</h3><div id="telem-tx" class="telem-box"></div></div>
                 <div style="flex: 1;"><h3>Received</h3><div id="telem-rx" class="telem-box"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="env-modal" class="env-modal hidden">
+        <div class="env-modal-content">
+            <h2>Environment Settings</h2>
+            <div class="form-group"><label>Wind North (kts)</label><input type="number" id="env-wind-north" value="0" step="1"></div>
+            <div class="form-group"><label>Wind East (kts)</label><input type="number" id="env-wind-east" value="0" step="1"></div>
+            <div class="form-group"><label>Wind Down (kts)</label><input type="number" id="env-wind-down" value="0" step="1"></div>
+            <div class="form-group">
+                <label>Turbulence Type</label>
+                <select id="env-turb-type">
+                    <option value="0">None</option>
+                    <option value="2">Milspec</option>
+                    <option value="3">Tustin</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Turbulence Severity: <span id="env-turb-severity-val">0</span></label><input type="range" id="env-turb-severity" min="0" max="7" value="0" step="1"></div>
+            <div class="form-group"><label>Turb. Windspeed @ 20ft AGL (kts)</label><input type="number" id="env-turb-windspeed" value="0" min="0" step="1"></div>
+            <div style="display:flex;gap:10px;margin-top:15px;">
+                <button id="env-apply" class="env-modal-btn apply">Apply</button>
+                <button id="env-close" class="env-modal-btn close">Close</button>
             </div>
         </div>
     </div>

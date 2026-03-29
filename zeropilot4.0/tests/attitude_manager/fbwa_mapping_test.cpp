@@ -8,14 +8,15 @@ protected:
 
 TEST_F(FBWAMappingTest, RollPIDControl) {
     FBWAMapping mapper(CONTROL_PERIOD);
-    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f, 50);
+    mapper.setRollLimitDeg(45.0f);
     
     RCMotorControlMessage_t input;
     input.roll = 100.0f;
     input.pitch = 50.0f;
     input.yaw = 50.0f;
     input.throttle = 50.0f;
-    input.arm = 0.0f;
+    input.arm = true;
     input.flapAngle = 0.0f;
 
     DroneState_t state = DRONE_STATE_DEFAULT;
@@ -27,14 +28,16 @@ TEST_F(FBWAMappingTest, RollPIDControl) {
 
 TEST_F(FBWAMappingTest, PitchPIDControl) {
     FBWAMapping mapper(CONTROL_PERIOD);
-    mapper.setPitchPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setPitchPIDConstants(1.0f, 0.0f, 0.0f, 0.02f, 50);
+    mapper.setPitchLimitMaxDeg(20.0f);
+    mapper.setPitchLimitMinDeg(-20.0f);
     
     RCMotorControlMessage_t input;
     input.roll = 50.0f;
     input.pitch = 100.0f;
     input.yaw = 50.0f;
     input.throttle = 50.0f;
-    input.arm = 0.0f;
+    input.arm = true;
     input.flapAngle = 0.0f;
 
     DroneState_t state = DRONE_STATE_DEFAULT;
@@ -46,7 +49,8 @@ TEST_F(FBWAMappingTest, PitchPIDControl) {
 
 TEST_F(FBWAMappingTest, YawRudderMixing) {
     FBWAMapping mapper(CONTROL_PERIOD);
-    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f, 50);
+    mapper.setRollLimitDeg(45.0f);
     mapper.setYawRudderMixingConstant(0.5f);
     
     RCMotorControlMessage_t input;
@@ -54,7 +58,7 @@ TEST_F(FBWAMappingTest, YawRudderMixing) {
     input.pitch = 50.0f;
     input.yaw = 50.0f;
     input.throttle = 50.0f;
-    input.arm = 0.0f;
+    input.arm = true;
     input.flapAngle = 0.0f;
 
     DroneState_t state = DRONE_STATE_DEFAULT;
@@ -66,7 +70,8 @@ TEST_F(FBWAMappingTest, YawRudderMixing) {
 
 TEST_F(FBWAMappingTest, YawClamping) {
     FBWAMapping mapper(CONTROL_PERIOD);
-    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f);
+    mapper.setRollPIDConstants(1.0f, 0.0f, 0.0f, 0.02f, 50);
+    mapper.setRollLimitDeg(45.0f);
     mapper.setYawRudderMixingConstant(0.5f);
 
     DroneState_t state = DRONE_STATE_DEFAULT;
@@ -77,13 +82,13 @@ TEST_F(FBWAMappingTest, YawClamping) {
     inputLower.pitch = 50.0f;
     inputLower.yaw = 0.0f;
     inputLower.throttle = 50.0f;
-    inputLower.arm = 0.0f;
+    inputLower.arm = true;
     inputLower.flapAngle = 0.0f;
     RCMotorControlMessage_t outputLower = mapper.runControl(inputLower, state);
     EXPECT_GE(outputLower.yaw, 0.0f);
 
     // Resetting the state for the second case to avoid any influence from the first case's control loop state
-    mapper.resetControlLoopState();
+    mapper.activateFlightMode();
 
     // Case 2: Upper Clamping
     RCMotorControlMessage_t inputUpper;
@@ -91,7 +96,7 @@ TEST_F(FBWAMappingTest, YawClamping) {
     inputUpper.pitch = 50.0f;
     inputUpper.yaw = 100.0f;
     inputUpper.throttle = 50.0f;
-    inputUpper.arm = 0.0f;
+    inputUpper.arm = true;
     inputUpper.flapAngle = 0.0f;
     RCMotorControlMessage_t outputUpper = mapper.runControl(inputUpper, state);
     EXPECT_LE(outputUpper.yaw, 100.0f);

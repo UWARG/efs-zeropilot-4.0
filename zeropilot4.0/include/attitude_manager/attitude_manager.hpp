@@ -17,10 +17,10 @@
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
+#define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
-#define AM_FAILSAFE_TIMEOUT_MS 1000
 
 typedef enum {
     YAW = 0,
@@ -64,10 +64,13 @@ class AttitudeManager {
         IMessageQueue<TMMessage_t> *tmQueue;
         IMessageQueue<char[100]> *smLoggerQueue;
 
-        DirectMapping controlAlgorithm;
+        Flightmode *activeCLAW;     // Pointer to current active Control Law
+        DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
+        FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         RCMotorControlMessage_t controlMsg;
         AirspeedData_t airspeedData;
         DroneState_t droneState;
+        PlaneFlightMode_e currentFlightMode;
 
         MotorGroupInstance_t *rollMotors;
         MotorGroupInstance_t *pitchMotors;
@@ -75,6 +78,10 @@ class AttitudeManager {
         MotorGroupInstance_t *throttleMotors;
         MotorGroupInstance_t *flapMotors;
         MotorGroupInstance_t *steeringMotors;
+
+        bool armedFlag;
+
+        uint16_t lastServoOutputs[16];
 
         uint8_t amSchedulingCounter;
 
@@ -86,8 +93,23 @@ class AttitudeManager {
         void outputToMotor(ControlAxis_t axis, uint8_t percent);
 
         void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
-
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+        void sendServoOutputRawToTelemetryManager();
+
+        // ZP_PARAM callback functions
+        static bool updatePIDRollKp(AttitudeManager* context, float val);
+        static bool updatePIDRollKi(AttitudeManager* context, float val);
+        static bool updatePIDRollKd(AttitudeManager* context, float val);
+        static bool updatePIDRollTau(AttitudeManager* context, float val);
+        static bool updatePIDRollIMax(AttitudeManager* context, float val);
+        static bool updatePIDPitchKp(AttitudeManager* context, float val);
+        static bool updatePIDPitchKi(AttitudeManager* context, float val);
+        static bool updatePIDPitchKd(AttitudeManager* context, float val);
+        static bool updatePIDPitchTau(AttitudeManager* context, float val);
+        static bool updatePIDPitchIMax(AttitudeManager* context, float val);
+        static bool updateKffRddrmix(AttitudeManager* context, float val);
+        static bool updateRollLimitDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
 };

@@ -1,5 +1,10 @@
 #pragma once
 #include <cstdint>
+#include <string.h>
+
+static constexpr uint8_t TM_QUEUE_STATUSTEXT_CHAR_COUNT = 50;
+static constexpr uint8_t TM_QUEUE_RC_CHANNELS_COUNT = 18;
+static constexpr uint8_t TM_QUEUE_BATTERY_VOLTAGES_COUNT = 10;
 
 typedef union TMMessageData_u {
   struct{
@@ -7,6 +12,12 @@ typedef union TMMessageData_u {
       uint32_t customMode;
       uint8_t systemStatus;
   } heartbeatData;
+  struct{
+      uint8_t severity;
+      char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT];
+      uint16_t id;
+      uint8_t chunkSeq;
+  } statusTextData;
   struct{
       uint8_t fixType;
       int32_t lat;
@@ -24,18 +35,33 @@ typedef union TMMessageData_u {
       uint32_t hdgAcc;
       uint16_t yaw;
   } gpsRawData;
+  struct {
+      uint8_t port;
+      uint16_t servo1Raw;
+      uint16_t servo2Raw;
+      uint16_t servo3Raw;
+      uint16_t servo4Raw;
+      uint16_t servo5Raw;
+      uint16_t servo6Raw;
+      uint16_t servo7Raw;
+      uint16_t servo8Raw;
+      uint16_t servo9Raw;
+      uint16_t servo10Raw;
+      uint16_t servo11Raw;
+      uint16_t servo12Raw;
+      uint16_t servo13Raw;
+      uint16_t servo14Raw;
+      uint16_t servo15Raw;
+      uint16_t servo16Raw;
+  } servoOutputRawData;
   struct{
-      uint16_t roll;
-      uint16_t pitch;
-      uint16_t yaw;
-      uint16_t throttle;
-      uint16_t flapAngle;
-      uint16_t arm;
+      uint8_t channelCount;
+      uint16_t channels[TM_QUEUE_RC_CHANNELS_COUNT];
   } rcData;
   struct{
       uint8_t batteryId;
       int16_t temperature;
-      uint16_t voltages[10];
+      uint16_t voltages[TM_QUEUE_BATTERY_VOLTAGES_COUNT];
       int16_t currentBattery;
       int32_t currentConsumed;
       int32_t energyConsumed;
@@ -69,7 +95,9 @@ typedef union TMMessageData_u {
 typedef struct TMMessage{
     enum{
         HEARTBEAT_DATA,
+        STATUSTEXT_DATA,
         GPS_RAW_DATA,
+        SERVO_OUTPUT_RAW,
         RC_DATA,
         BATTERY_DATA,
         RAW_IMU_DATA,
@@ -82,6 +110,21 @@ typedef struct TMMessage{
 inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
     const TMMessageData_t DATA = {.heartbeatData={base_mode, custom_mode, system_status }};
     return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT], uint16_t id, uint8_t chunk_seq) {
+    TMMessageData_t data = {.statusTextData = {severity, "", id, chunk_seq }};
+
+    constexpr size_t MAX_LEN = sizeof(data.statusTextData.text) - 1; // Reserve space for null terminator
+
+    // Get length in a firmware safe way without using strlen which may read out of bounds if text is not null terminated
+    size_t len = 0;
+    while (len < MAX_LEN && text[len] != '\0') ++len;
+
+    memcpy(data.statusTextData.text, text, len); // Copy text without null terminator
+    data.statusTextData.text[len] = '\0'; // Ensure null termination
+
+    return TMMessage_t{TMMessage_t::STATUSTEXT_DATA, data, time_boot_ms};
 }
 
 inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32_t lat, int32_t lon, int32_t alt, 
@@ -97,15 +140,26 @@ inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32
     return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t rcDataPack(uint32_t time_boot_ms, float roll, float pitch, float yaw, float throttle, float flap_angle, float arm) {
-    auto rollPPM = static_cast<uint16_t>(1000 + roll * 10);
-    auto pitchPPM = static_cast<uint16_t>(1000 + pitch * 10);
-    auto yawPPM = static_cast<uint16_t>(1000 + yaw * 10);
-    auto throttlePPM = static_cast<uint16_t>(1000 + throttle * 10);
-    auto flapAnglePPM = static_cast<uint16_t>(1000 + flap_angle * 10);
-    auto armPPM = static_cast<uint16_t>(1000 + arm * 10);
-    const TMMessageData_t DATA = {.rcData ={rollPPM, pitchPPM, yawPPM, throttlePPM, flapAnglePPM, armPPM }};
-    return TMMessage_t{TMMessage_t::RC_DATA, DATA, time_boot_ms};
+inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const uint16_t servo_values[16]) {
+    const TMMessageData_t DATA = {
+        .servoOutputRawData = {
+            port,
+            servo_values[0], servo_values[1], servo_values[2], servo_values[3],
+            servo_values[4], servo_values[5], servo_values[6], servo_values[7],
+            servo_values[8], servo_values[9], servo_values[10], servo_values[11],
+            servo_values[12], servo_values[13], servo_values[14], servo_values[15]
+        }
+    };
+    return TMMessage_t{TMMessage_t::SERVO_OUTPUT_RAW, DATA, time_boot_ms};
+}
+
+inline TMMessage_t rcDataPack(uint32_t time_boot_ms, const float* controlSignals, uint8_t size) {
+    TMMessageData_t data;
+    data.rcData.channelCount = size;
+    for (int i = 0; i < TM_QUEUE_RC_CHANNELS_COUNT; i++) {
+        data.rcData.channels[i] = (i < size) ? static_cast<uint16_t>(1000 + controlSignals[i] * 10) : UINT16_MAX;
+    }
+    return TMMessage_t{TMMessage_t::RC_DATA, data, time_boot_ms};
 }
 
 inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, int16_t temperature, 
@@ -122,6 +176,7 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
     msg.timeBootMs = time_boot_ms;
 
     auto& battData = msg.tmMessageData.batteryData;
+    battData.batteryId = battery_id;
     battData.temperature = temperature;
     battData.currentBattery = scaledCurrentBattery;
     battData.currentConsumed = scaledCurrentConsumed;
@@ -130,11 +185,11 @@ inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, in
     battData.timeRemaining = time_remaining;
     battData.chargeState = charge_state;
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < TM_QUEUE_BATTERY_VOLTAGES_COUNT; i++) {
         battData.voltages[i] = UINT16_MAX;
     }
 
-    for (int i = 0; i < voltage_len && i < 10; i++) {
+    for (int i = 0; i < voltage_len && i < TM_QUEUE_BATTERY_VOLTAGES_COUNT; i++) {
         battData.voltages[i] = static_cast<uint16_t>(voltages[i] * 1000.0); // V -> mV
     }
 

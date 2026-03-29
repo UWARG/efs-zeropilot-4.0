@@ -6,10 +6,12 @@ import os
 import tempfile
 import pygame
 import sys
-import zeropilot
+import zeropilot # type: ignore
 
 # Suppress pygame and JSBSim chatter
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
+SITL_RATE_HZ = 1000
 
 class ZP_FGFS_SITL:
     def __init__(self, fg_host="127.0.0.1", fg_port=5550):
@@ -25,14 +27,18 @@ class ZP_FGFS_SITL:
         self.fg_out_file = self._create_fg_directive(fg_host, fg_port)
         self.fdm.load_model('c172p')
         self.fdm.set_output_directive(self.fg_out_file)
-        self.fdm.set_dt(0.001)
+        self.fdm.set_dt(1.0 / SITL_RATE_HZ)
 
         # 3. State Setup
-        self.zp = zeropilot.ZeroPilot()
+        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ)
         self.running = True
         self.armed = False
         self.paused = True 
         self.commands = {'roll': 50, 'pitch': 50, 'yaw': 50, 'throttle': 0}
+        self.flap_setpoints = [0, 50, 100]
+        self.flap_index = 0
+        self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
+        self.fltmode_index = 0
 
     def _create_fg_directive(self, host, port):
         xml = f"""<?xml version="1.0"?>
@@ -103,8 +109,18 @@ class ZP_FGFS_SITL:
                 if self.joy.get_button(7): self.reset_to_air()
                 
                 for event in pygame.event.get():
-                    if event.type == pygame.JOYBUTTONDOWN and event.button == 6:
-                        self.paused = not self.paused
+                    if event.type == pygame.JOYBUTTONDOWN:
+                        if event.button == 6:
+                            self.paused = not self.paused
+                        elif event.button == 9:  # L button
+                            self.flap_index = max(0, self.flap_index - 1)
+                        elif event.button == 10:  # R button
+                            self.flap_index = min(len(self.flap_setpoints) - 1, self.flap_index + 1)
+                    elif event.type == pygame.JOYAXISMOTION:
+                        if event.axis == 4 and event.value > 0.5:  # ZL button
+                            self.fltmode_index = max(0, self.fltmode_index - 1)
+                        elif event.axis == 5 and event.value > 0.5:  # ZR button
+                            self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
             time.sleep(0.01)
 
     def step(self):
@@ -118,17 +134,20 @@ class ZP_FGFS_SITL:
             self.fdm['propulsion/total-fuel-lbs'], self.fdm['propulsion/engine/propeller-rpm']
         )
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
-                       self.commands['throttle'], 100 if self.armed else 0)
+                       self.commands['throttle'], 100 if self.armed else 0, self.flap_setpoints[self.flap_index], 
+                       self.fltmode_setpoints[self.fltmode_index])
         self.zp.update()
 
         if not self.paused:
-            r_out, p_out, y_out, t_out = self.zp.get_motor_outputs()
+            r_out, p_out, y_out, t_out, f_out, s_out = self.zp.get_motor_outputs()
             
             # Surface mapping
             self.fdm['fcs/aileron-cmd-norm'] = (r_out - 50) / 50.0
             self.fdm['fcs/elevator-cmd-norm'] = -((p_out - 50) / 50.0)
             self.fdm['fcs/rudder-cmd-norm'] = -((y_out - 50) / 50.0)
             self.fdm['fcs/throttle-cmd-norm'] = t_out / 100.0
+            self.fdm['fcs/flap-cmd-norm'] = f_out / 100.0
+            self.fdm['fcs/steer-cmd-norm'] = (s_out - 50) / 50.0
             
             # Maintain engine running state
             self.fdm['fcs/mixture-cmd-norm'] = 1.0             
@@ -145,11 +164,13 @@ class ZP_FGFS_SITL:
             "==============================================",
             f" Roll: {self.commands['roll']:>5.1f}% | Pitch: {self.commands['pitch']:>5.1f}%",
             f" Yaw:  {self.commands['yaw']:>5.1f}% | Thr:   {self.commands['throttle']:>5.1f}%",
+            f" Flap: {self.flap_setpoints[self.flap_index]:>5.0f}% | FltMode: {self.fltmode_index + 1}",
             "----------------------------------------------",
             f" Alt:  {self.fdm['position/h-sl-ft']:>6.0f} ft | Spd: {self.fdm['velocities/vc-kts']:>5.1f} kt",
             f" Fuel: {self.fdm['propulsion/total-fuel-lbs']:>6.1f} lbs | RPM: {self.fdm['propulsion/engine/propeller-rpm']:>5.0f}",
             "==============================================",
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
+            " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
             "\033[K"
         ]
         sys.stdout.write("\n".join(dash) + "\n")
@@ -162,7 +183,7 @@ if __name__ == '__main__':
     os.system('cls' if os.name == 'nt' else 'clear')
     threading.Thread(target=sitl.update_joystick, daemon=True).start()
 
-    target_dt, next_step, last_print = 0.001, time.perf_counter(), 0
+    target_dt, next_step, last_print = (1.0 / SITL_RATE_HZ), time.perf_counter(), 0
     try:
         while True:
             while time.perf_counter() < next_step: pass

@@ -14,22 +14,22 @@
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
+#define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
-#define SM_RC_TIMEOUT_MS 500
 
-#define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
-#define SM_BATTERY_LOW_TIME_MS 10000
-#define SM_BATTERY_CRITICAL_TIME_MS 3000
+// RC Arm threshold
+static constexpr float SM_RC_ARM_THRESHOLD = 50.0f;
 
-static constexpr float BATTERY_LOW_VOLTAGE = 10.5f;
-static constexpr float BATTERY_CRITICAL_VOLTAGE = 10.2f;
-static constexpr float BATTERY_CAPACITY_MAH = 4000.0f;
+// Flightmode Count
+static constexpr uint8_t SM_FLIGHTMODE_COUNT = 6;
 
-static_assert(
-    BATTERY_LOW_VOLTAGE > BATTERY_CRITICAL_VOLTAGE,
-    "BATTERY_LOW_VOLTAGE must be greater than BATTERY_CRITICAL_VOLTAGE"
-);
+// Calculated using 1165, 1295, 1425, 1555, 1685, and 1815 us as nominal values
+static constexpr float SM_FLIGHTMODE1_MAX = 23.0f; // (1165 + 1295) / 2 = 1230 -> scaled/offset to 23.0
+static constexpr float SM_FLIGHTMODE2_MAX = 36.0f; // (1295 + 1425) / 2 = 1360 -> scaled/offset to 36.0
+static constexpr float SM_FLIGHTMODE3_MAX = 49.0f; // (1425 + 1555) / 2 = 1490 -> scaled/offset to 49.0
+static constexpr float SM_FLIGHTMODE4_MAX = 62.0f; // (1555 + 1685) / 2 = 1620 -> scaled/offset to 62.0
+static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -> scaled/offset to 75.0
 
 typedef struct{
     PMData_t pmData;
@@ -67,6 +67,8 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
+        PlaneFlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
+
         int oldDataCount;
         bool rcConnected;
         
@@ -77,5 +79,13 @@ class SystemManager {
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
         void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
+        void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
+
+        PlaneFlightMode_e decodeRawFlightMode(float flightModeRawValue);
+
         void sendMessagesToLogger();
+
+        // ZP_PARAM callbacks
+        template <uint8_t Idx>
+        static bool updateFltMode(SystemManager* context, float val);
 };

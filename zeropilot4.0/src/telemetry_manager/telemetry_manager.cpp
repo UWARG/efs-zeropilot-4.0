@@ -1,4 +1,5 @@
 #include "telemetry_manager.hpp"
+#include "zp_params.hpp"
 
 #define SYSTEM_ID 1             // Suggested System ID by Mavlink
 #define COMPONENT_ID 1          // Suggested Component ID by MAVLINK
@@ -15,14 +16,24 @@ TelemetryManager::TelemetryManager(
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
-    overflowMsgPending(false) {}
+    overflowMsgPending(false),
+    currParamListTxIdx(ZP_PARAM::getCount()) {}
 
 TelemetryManager::~TelemetryManager() = default;
 
 void TelemetryManager::tmUpdate() {
 	receive();
+    processParamTx();
     processTXMsgQueue();
     transmit();
+}
+
+void TelemetryManager::processParamTx() {
+    if (currParamListTxIdx < ZP_PARAM::getCount()) {
+        // Use the helper to pack and push the current index
+        enqueueParamValueTx(currParamListTxIdx);
+        ++currParamListTxIdx;
+    }
 }
 
 void TelemetryManager::processTXMsgQueue() {
@@ -43,11 +54,25 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::STATUSTEXT_DATA: {
+                auto& statusTextData = tmqMessage.tmMessageData.statusTextData;
+                mavlink_msg_statustext_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, statusTextData.severity, statusTextData.text, statusTextData.id, statusTextData.chunkSeq);
+                break;
+            }
+
             case TMMessage_t::GPS_RAW_DATA: {
                 auto& g = tmqMessage.tmMessageData.gpsRawData;
                 mavlink_msg_gps_raw_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
                     g.fixType, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellitesVisible, g.altEllipsoid, 
                     g.hAcc, g.vAcc, g.velAcc, g.hdgAcc, g.yaw);
+                break;
+            }
+
+            case TMMessage_t::SERVO_OUTPUT_RAW: {
+                auto& s = tmqMessage.tmMessageData.servoOutputRawData;
+                mavlink_msg_servo_output_raw_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, s.port,
+                    s.servo1Raw, s.servo2Raw, s.servo3Raw, s.servo4Raw, s.servo5Raw, s.servo6Raw, s.servo7Raw, s.servo8Raw,
+                    s.servo9Raw, s.servo10Raw, s.servo11Raw, s.servo12Raw, s.servo13Raw, s.servo14Raw, s.servo15Raw, s.servo16Raw);
                 break;
             }
 
@@ -60,7 +85,7 @@ void TelemetryManager::processTXMsgQueue() {
             case TMMessage_t::BATTERY_DATA: {
                 auto batteryData = tmqMessage.tmMessageData.batteryData;
                 uint32_t faultBitmask =  (batteryData.chargeState == MAV_BATTERY_CHARGE_STATE_CRITICAL) ? MAV_BATTERY_FAULT_DEEP_DISCHARGE : 0;
-                mavlink_msg_battery_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, batteryData.batteryId, MAV_BATTERY_FUNCTION_UNKNOWN, MAV_BATTERY_TYPE_LIPO,
+                mavlink_msg_battery_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, batteryData.batteryId, MAV_BATTERY_FUNCTION_ALL, MAV_BATTERY_TYPE_LIPO,
                 	batteryData.temperature, batteryData.voltages, batteryData.currentBattery, batteryData.currentConsumed, batteryData.energyConsumed, 
                     batteryData.batteryRemaining, batteryData.timeRemaining, batteryData.chargeState, {}, 0, faultBitmask);
                 break;
@@ -87,11 +112,14 @@ void TelemetryManager::processTXMsgQueue() {
     }
 
 	if (rc) {
-		auto rcData = rcMsg.tmMessageData.rcData;
+		auto& rcData = rcMsg.tmMessageData.rcData;
 		mavlink_message_t mavlinkMessage = {0};
-		mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, 6,
-			rcData.roll, rcData.pitch, rcData.throttle, rcData.yaw, rcData.arm, rcData.flapAngle,  // Channel arrangement from system manager
-			UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX, UINT16_MAX,  UINT16_MAX,  UINT16_MAX, UINT16_MAX, UINT8_MAX);
+		mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, rcData.channelCount,
+			rcData.channels[0], rcData.channels[1], rcData.channels[2], rcData.channels[3], 
+			rcData.channels[4], rcData.channels[5], rcData.channels[6], rcData.channels[7], 
+			rcData.channels[8], rcData.channels[9], rcData.channels[10], rcData.channels[11], 
+			rcData.channels[12], rcData.channels[13], rcData.channels[14], rcData.channels[15], 
+			rcData.channels[16], rcData.channels[17], UINT8_MAX);
 		if (mavlinkMessage.len == 0) {
 			return;
 		}
@@ -148,26 +176,47 @@ void TelemetryManager::receive() {
 
 void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
     switch (msg.msgid) {
-        case MAVLINK_MSG_ID_PARAM_SET: {
-            float valueToSet;
-            char paramToSet[MAVLINK_MAX_IDENTIFIER_LEN] = {};
-            uint8_t valueType;
-            valueToSet = mavlink_msg_param_set_get_param_value(&msg);
-            valueType = mavlink_msg_param_set_get_param_type(&msg);
+        case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
+            currParamListTxIdx = 0;
+            break;
+        }
 
-            if(paramToSet[0] == 'A'){ // Would prefer to do this using an ENUM LUT but if this is the only param being set its whatever
-                RCMotorControlMessage_t armDisarmMsg{};
-                armDisarmMsg.arm = valueToSet;
-                amQueueDriver->push(&armDisarmMsg);
+        case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
+            int16_t paramIndex = mavlink_msg_param_request_read_get_param_index(&msg);
+            if (paramIndex == -1) {
+                char paramId[PARAM_MAX_IDENTIFIER_LEN];
+                mavlink_msg_param_request_read_get_param_id(&msg, paramId);
+                paramIndex = ZP_PARAM::getIndexById(paramId);
             }
-            mavlink_message_t response = {};
-            mavlink_msg_param_value_pack(SYSTEM_ID, COMPONENT_ID, &response, paramToSet, valueToSet, valueType, 1, 0);
-            packedMsgBuffer->push(&response);
+
+            enqueueParamValueTx(paramIndex);
             break;
         }
 
-        default: {
+        case MAVLINK_MSG_ID_PARAM_SET: {
+            mavlink_param_set_t setMsg;
+            mavlink_msg_param_set_decode(&msg, &setMsg);
+
+            if (ZP_PARAM::setParamById(setMsg.param_id, setMsg.param_value)) {
+                enqueueParamValueTx(ZP_PARAM::getIndexById(setMsg.param_id));
+            }
             break;
         }
+
+        default:
+            break;
     }
+}
+
+void TelemetryManager::enqueueParamValueTx(uint16_t index) {
+    Param_t* p = ZP_PARAM::getParamByIndex(index);
+    if (!p) return;
+
+    mavlink_message_t response = {0};
+    mavlink_msg_param_value_pack(
+        SYSTEM_ID, COMPONENT_ID, &response,
+        p->paramId, p->paramValue, p->paramType,
+        ZP_PARAM::getCount(), index
+    );
+    packedMsgBuffer->push(&response);
 }
