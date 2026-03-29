@@ -125,8 +125,10 @@ void initDrivers()
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
     safetySwitchHandle = new (&safetySwitchStorage) M10SafetySwitch(GPS_SAFETY_SW_GPIO_Port,GPS_SAFETY_SW_Pin);
-    buzzerHandle = new (&buzzerStorage) M10Buzzer (GPS_BUZZER_GPIO_Port,GPS_BUZZER_Pin);
-    ledHandle = new (&ledStorage) M10Led(SAFETY_SW_LED_GPIO_Port, SAFETY_SW_LED_Pin);
+    auto *buzzer = new (&buzzerStorage) M10Buzzer(GPS_BUZZER_GPIO_Port, GPS_BUZZER_Pin);
+    auto *led = new (&ledStorage) M10Led(SAFETY_SW_LED_GPIO_Port, SAFETY_SW_LED_Pin);
+    buzzerHandle = buzzer;
+    ledHandle = led;
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
     // Queues
@@ -148,8 +150,8 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
-    buzzerHandle->init();
-    ledHandle->init();
+    buzzer->init();
+    led->init();
     pmHandle->init();
     telemLinkHandle->init();
 
