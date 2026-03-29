@@ -82,7 +82,7 @@ void AttitudeManager::amUpdate() {
             outputToMotor(STEERING, 50);
 
             if (!failsafeTriggered) {
-              Logger::log("Failsafe triggered");
+              Logger::log("Failsafe triggered", LogLevel::WARN);
               failsafeTriggered = true;
             }
         }
@@ -92,7 +92,7 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          Logger::log("Motor control restored");
+          Logger::log("Motor control restored", LogLevel::INFO);
           failsafeTriggered = false;
         }
     }

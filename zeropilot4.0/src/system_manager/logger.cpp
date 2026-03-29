@@ -8,7 +8,7 @@ namespace Logger {
     static File logFile = {};
     static int lastSync = 0;
 
-    void Logger::init(IFileSystem* fs, ISystemUtils* sysUtils) {
+    void init(IFileSystem* fs, ISystemUtils* sysUtils) {
         fileSystem = fs;
         systemUtils = sysUtils;
         if (!fileSystem) return;
@@ -33,7 +33,7 @@ namespace Logger {
         fileSystem->open(&logFile, filename, "a");
     }
 
-    void Logger::shutdown() {
+    void shutdown() {
         if (fileSystem) {
             fileSystem->close(&logFile);
         }
@@ -41,7 +41,7 @@ namespace Logger {
         systemUtils = nullptr;
     }
 
-    void Logger::log(const char* format, LogLevel level, ...) {
+    void log(const char* format, LogLevel level, ...) {
         if (!fileSystem || !systemUtils) return;
         
         char buffer[BUFFER_SIZE];
@@ -83,7 +83,7 @@ namespace Logger {
         }
     }
 
-    void Logger::sync() {
+    void sync() {
         if (fileSystem) {
             fileSystem->sync(ManId::SYSTEM, &logFile, ReqOptions::ASYNC_NO_RESP);
         }

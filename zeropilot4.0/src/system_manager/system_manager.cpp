@@ -24,7 +24,7 @@ SystemManager::SystemManager(
         }
 
 void SystemManager::smUpdate() {
-    Logger::log("SM Loop Test");
+    Logger::log("SM Loop Test", LogLevel::DEBUG);
 
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
@@ -36,14 +36,14 @@ void SystemManager::smUpdate() {
         sendRCDataToAttitudeManager(rcData);
 
         if (!rcConnected) {
-            Logger::log("RC Connected");
+            Logger::log("RC Connected", LogLevel::INFO);
             rcConnected = true;
         }
     } else {
         oldDataCount += 1;
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > SM_RC_TIMEOUT_MS) && rcConnected) {
-            Logger::log("RC Disconnected");
+            Logger::log("RC Disconnected", LogLevel::INFO);
             rcConnected = false;
         }
     }

@@ -40,6 +40,10 @@ extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
+extern MessageQueue<FatFSReqMsg> *sdRequestQueueHandle;
+extern MessageQueue<FatFSReqBuff> *sdBufferQueueHandle;
+extern MessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)];
+
 extern MotorGroupInstance_t rollMotors;
 extern MotorGroupInstance_t pitchMotors;
 extern MotorGroupInstance_t yawMotors;

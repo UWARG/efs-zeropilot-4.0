@@ -1,6 +1,7 @@
 #include "fatfs_manager.hpp"
+#include "sd.hpp"
 
-FatFSManager::FatFSManager(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<FatFSRespMsg> *respQueues[ManId::COUNT]) 
+FatFSManager::FatFSManager(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]) 
     : requestQueue(reqQueue), bufferQueue(buffQueue), responseQueues(respQueues) {}
 
 void FatFSManager::run() {
@@ -12,16 +13,16 @@ void FatFSManager::run() {
 
             // CURRENTLY NOT ALL POSSIBLE REQUEST TYPES ARE IMPLEMENTED, ONLY SOME FOR MVP
             switch (reqMsg.type) {
-                case ReqType::WRITE:
+                case ReqType::WRITE: {
                     FatFSReqBuff writeBuffMsg;
-                    int totalSize = reqMsg.data.total_size;
+                    int totalSize = reqMsg.total_size;
                     while (totalSize > 0) {
                         if (bufferQueue->get(&writeBuffMsg) == osOK) {
                             uint32_t bytesToWrite = writeBuffMsg.size;
                             uint32_t bytesWritten;
-                            FRESULT res = f_write(reqMsg.fp, writeBuffMsg.buff, bytesToWrite, &bytesWritten);
+                            FRESULT res = f_write(reqMsg.fp, writeBuffMsg.buff, bytesToWrite, reinterpret_cast<UINT*>(&bytesWritten));
                             if (res != FR_OK) {
-                                respMsg.status = fresultToStatus(res);
+                                respMsg.status = SDFileSystem::fresultToStatus(res);
                                 break;
                             }
                             totalSize -= bytesWritten;
@@ -31,28 +32,31 @@ void FatFSManager::run() {
                         }
                     }
                     respMsg.status = (totalSize == 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
-                    respMsg.data.bytes_transferred = reqMsg.data.total_size - totalSize;
+                    respMsg.data.bytes_transferred = reqMsg.total_size - totalSize;
                     break;
-                case ReqType::LSEEK:
-                    res = f_lseek(reqMsg.fp, static_cast<FSIZE_t>(reqMsg.data.offset));
-                    respMsg.status = fresultToStatus(res);
+                }
+                case ReqType::LSEEK: {
+                    FRESULT res = f_lseek(reqMsg.fp, static_cast<FSIZE_t>(reqMsg.offset));
+                    respMsg.status = SDFileSystem::fresultToStatus(res);
                     break;
-                case ReqType::TELL:
+                }
+                case ReqType::TELL: {
                     respMsg.data.position = f_tell(reqMsg.fp);
                     respMsg.status = FILE_STATUS_OK; // f_tell doesn't return a result code
                     break;
-                case ReqType::WRITE_SEEK:
-                    res = f_lseek((FIL*)reqMsg.fp->_storage, static_cast<FSIZE_t>(reqMsg.data.offset));
-                    int totalSize = reqMsg.data.total_size;
+                }
+                case ReqType::WRITE_SEEK: {
+                    FRESULT res = f_lseek(reqMsg.fp, static_cast<FSIZE_t>(reqMsg.offset));
+                    int totalSize = reqMsg.total_size;
                     if (res == FR_OK) {
                         FatFSReqBuff writeBuffMsg;
                         while (totalSize > 0) {
                             if (bufferQueue->get(&writeBuffMsg) == osOK) {
                                 uint32_t bytesToWrite = writeBuffMsg.size;
                                 uint32_t bytesWritten;
-                                FRESULT res = f_write(reqMsg.fp, writeBuffMsg.buff, bytesToWrite, &bytesWritten);
+                                FRESULT res = f_write(reqMsg.fp, writeBuffMsg.buff, bytesToWrite, reinterpret_cast<UINT*>(&bytesWritten));
                                 if (res != FR_OK) {
-                                    respMsg.status = fresultToStatus(res);
+                                    respMsg.status = SDFileSystem::fresultToStatus(res);
                                     break;
                                 }
                                 totalSize -= bytesWritten;
@@ -62,9 +66,9 @@ void FatFSManager::run() {
                             }
                         }
                         respMsg.status = (totalSize == 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
-                        respMsg.data.bytes_transferred = reqMsg.data.total_size - totalSize;
+                        respMsg.data.bytes_transferred = reqMsg.total_size - totalSize;
                     } else {
-                        respMsg.status = fresultToStatus(res);
+                        respMsg.status = SDFileSystem::fresultToStatus(res);
                         while (totalSize > 0) {
                             FatFSReqBuff dummyBuff;
                             if (bufferQueue->get(&dummyBuff) != osOK) {
@@ -74,36 +78,38 @@ void FatFSManager::run() {
                         }
                     }
                     break;
-                case ReqType::WRITE_SYNC:
+                }
+                case ReqType::WRITE_SYNC: {
                     FatFSReqBuff writeBuffMsg;
-                    int totalSize = reqMsg.data.total_size;
+                    int totalSize = reqMsg.total_size;
                     while (totalSize > 0) {
                         if (bufferQueue->get(&writeBuffMsg) == osOK && writeBuffMsg.id == reqMsg.id && writeBuffMsg.type == reqMsg.type) {
                             uint32_t bytesToWrite = writeBuffMsg.size;
                             uint32_t bytesWritten;
-                            FRESULT res = f_write(reqMsg.fp, writeBuffMsg.buff, bytesToWrite, &bytesWritten);
+                            FRESULT res = f_write(reqMsg.fp, writeBuffMsg.buff, bytesToWrite, reinterpret_cast<UINT*>(&bytesWritten));
                             if (res != FR_OK) {
-                                respMsg.status = fresultToStatus(res);
+                                respMsg.status = SDFileSystem::fresultToStatus(res);
                                 break;
                             }
                             totalSize -= bytesWritten;
                         } else {
-                            respMsg.status = FILE_STATUS_ERROR; // Failed to get buffer for write operation
                             break;
                         }
                     }
                     respMsg.status = (totalSize == 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
-                    respMsg.data.bytes_transferred = reqMsg.data.total_size - totalSize;
+                    respMsg.data.bytes_transferred = reqMsg.total_size - totalSize;
                     if (respMsg.status == FILE_STATUS_OK) {
-                        respMsg.status = fresultToStatus(f_sync(reqMsg.fp));
+                        respMsg.status = SDFileSystem::fresultToStatus(f_sync(reqMsg.fp));
                     }
                     break;
-                default:
+                }
+                default: {
                     respMsg.status = FILE_STATUS_UNKNOWN; // Unknown request type
                     break;
+                }
             }
 
-            responseQueues[reqMsg.id]->push(&respMsg);
+            responseQueues[static_cast<size_t>(reqMsg.id)]->push(&respMsg);
         }
     }
 }

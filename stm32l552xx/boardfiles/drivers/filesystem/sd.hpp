@@ -10,22 +10,21 @@ class SDFileSystem : public IFileSystem {
         FATFS fsObj;
         bool mounted;
         
-        
-        // Helper to convert FatFs result to FileStatus
-        FileStatus fresultToStatus(FRESULT res);
-        
         // Helper to convert mode string to FatFs mode flags
         BYTE modeStringToFatfsFlags(const char* mode);
 
         MessageQueue<FatFSReqMsg> *requestQueue;
         MessageQueue<FatFSReqBuff> *bufferQueue;
-        MessageQueue<FatFSRespMsg> **responseQueues; // Array of response queues for each manager ID
+        MessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
 
     public:
-        SDFileSystem(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<FatFSRespMsg> *respQueues[ManId::COUNT]);
+        SDFileSystem(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]);
         ~SDFileSystem() override;
         
         FileStatus init();
+
+        // Helper to convert FatFs result to FileStatus
+        static FileStatus fresultToStatus(FRESULT res);
         
         // IFileSystem implementation
         FileStatus open (File* fp, const char* path, const char* mode) override;
@@ -37,8 +36,8 @@ class SDFileSystem : public IFileSystem {
         FileStatus lseek (ManId id, File* fp, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus tell(ManId id, File* fp, uint64_t* position, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus sync (ManId id, File* fp, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus mkdir (const char* path, bool forceSync = false) override;
-        FileStatus stat (const char* path, FileInfo* fno, bool forceSync = false) override;					        
+        FileStatus mkdir (const char* path) override;
+        FileStatus stat (const char* path, FileInfo* fno) override;					        
         int printf (ManId id, File* fp, ReqOptions options, const char* str, ...) override;
         PollResult poll(ManId id, ReqType reqType) override;		
         bool available();									       

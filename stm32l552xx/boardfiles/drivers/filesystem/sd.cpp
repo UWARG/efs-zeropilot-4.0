@@ -3,8 +3,8 @@
 #include <cstdio>
 #include <cstdarg>
 
-SDFileSystem::SDFileSystem(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<FatFSRespMsg> *respQueues[ManId::COUNT]) 
-    : requestQueue(reqQueue), bufferQueue(buffQueue), responseQueues(respQueues), mounted(false) {
+SDFileSystem::SDFileSystem(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]) 
+    : mounted(false), requestQueue(reqQueue), bufferQueue(buffQueue), responseQueues(respQueues) {
     std::memset(&fsObj, 0, sizeof(FATFS));
 }
 
@@ -54,7 +54,7 @@ FileStatus SDFileSystem::open(File* fp, const char* path, const char* mode) {
     return fresultToStatus(res);
 }
 
-FileStatus SDFileSystem::close(File* fp, bool forceSync) {
+FileStatus SDFileSystem::close(File* fp) {
     if (!fp) return FILE_STATUS_ERROR;
     
     FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
@@ -77,14 +77,14 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
 #endif
 
     if (options == ReqOptions::SYNC) {
+        uint32_t dummy_bw = 0;
         if (bw == nullptr) {
-            uint32_t dummy_bw;
             bw = &dummy_bw; // Use a dummy variable if caller doesn't care about bytes written
         }
         FRESULT res = f_write(reinterpret_cast<FIL*>(fp->_storage), buff, btw, reinterpret_cast<UINT*>(bw));
         return fresultToStatus(res);
     } else {
-        FatFsReqMsg req;
+        FatFSReqMsg req;
         req.id = id;
         req.type = ReqType::WRITE;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
@@ -96,7 +96,7 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
         writeBuffMsg.size = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
         (btw < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[btw] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-        if (requestQueue->put(&req) != osOK || bufferQueue->put(&writeBuffMsg) != osOK) {
+        if (requestQueue->push(&req) != osOK || bufferQueue->push(&writeBuffMsg) != osOK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         
@@ -111,7 +111,7 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
     ::printf("%.*s", ofs, btw, (const char*)buff);
 #endif
     
-    FatFsReqMsg req;
+    FatFSReqMsg req;
     req.id = id;
     req.type = ReqType::WRITE_SEEK;
     req.fp = reinterpret_cast<FIL*>(fp->_storage);
@@ -124,7 +124,7 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
     writeBuffMsg.size = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
     (btw < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[btw] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-    if (requestQueue->put(&req) != osOK || bufferQueue->put(&writeBuffMsg) != osOK) {
+    if (requestQueue->push(&req) != osOK || bufferQueue->push(&writeBuffMsg) != osOK) {
         return FILE_STATUS_ERROR; // Failed to send request
     }
     
@@ -138,8 +138,7 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
     ::printf("%.*s", btw, (const char*)buff);
 #endif
     
-    
-    FatFsReqMsg req;
+    FatFSReqMsg req;
     req.id = id;
     req.type = ReqType::WRITE_SYNC;
     req.fp = reinterpret_cast<FIL*>(fp->_storage);
@@ -151,7 +150,7 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
     writeBuffMsg.size = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
     (btw < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[btw] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-    if (requestQueue->put(&req) != osOK || bufferQueue->put(&writeBuffMsg) != osOK) {
+    if (requestQueue->push(&req) != osOK || bufferQueue->push(&writeBuffMsg) != osOK) {
         return FILE_STATUS_ERROR; // Failed to send request
     }
     
@@ -171,7 +170,7 @@ FileStatus SDFileSystem::lseek(ManId id, File* fp, uint64_t ofs, ReqOptions opti
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
         req.offset = ofs;
 
-        if (requestQueue->put(&req) != osOK) {
+        if (requestQueue->push(&req) != osOK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
@@ -199,7 +198,7 @@ FileStatus SDFileSystem::tell(ManId id, File* fp, uint64_t* position, ReqOptions
         req.type = ReqType::TELL;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
 
-        if (requestQueue->put(&req) != osOK) {
+        if (requestQueue->push(&req) != osOK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
@@ -213,13 +212,13 @@ FileStatus SDFileSystem::sync(ManId id, File* fp, ReqOptions options) {
         FRESULT res = f_sync(reinterpret_cast<FIL*>(fp->_storage));
         return fresultToStatus(res);
     } else {
-        FatFsReqMsg req;
+        FatFSReqMsg req;
         req.id = id;
         req.type = ReqType::SYNC;
         req.fp = reinterpret_cast<FIL*>(fp->_storage);
         req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
-        if (requestQueue->put(&req) != osOK) {
+        if (requestQueue->push(&req) != osOK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
@@ -233,7 +232,7 @@ FileStatus SDFileSystem::mkdir(const char* path) {
 }
 
 FileStatus SDFileSystem::stat(const char* path, FileInfo* fno) {
-    if (!fno && forceSync) return FILE_STATUS_ERROR; // fno is needed to return stat info when forceSync is true
+    if (!fno) return FILE_STATUS_ERROR;
     
     FILINFO fatfs_fno;
     FRESULT res = f_stat(path, &fatfs_fno);
@@ -288,6 +287,19 @@ FileStatus SDFileSystem::init() {
     FRESULT res = f_mount(&fsObj, "", 1);
     mounted = (res == FR_OK);
     return fresultToStatus(res);
+}
+
+PollResult SDFileSystem::poll(ManId id, ReqType reqType) {
+    PollResult result;
+    result.type = reqType;
+    result.status = FILE_STATUS_NOT_DONE; // Default to not done
+
+    if (responseQueues[static_cast<size_t>(id)]->get(&result) == osOK) {
+        return result;
+    } else {
+        result.status = FILE_STATUS_ERROR;
+        return result;
+    }
 }
 
 bool SDFileSystem::available() {

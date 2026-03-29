@@ -7,7 +7,7 @@ struct FatFSReqMsg {
     ManId id;
     ReqType type;
     FIL* fp = nullptr;
-    uint32_t total_size; // For read/write operations
+    uint32_t total_size; // For write operations
     uint64_t offset;     // For lseek operation
     BYTE mode_flags = 0;
     bool sendResp = true;

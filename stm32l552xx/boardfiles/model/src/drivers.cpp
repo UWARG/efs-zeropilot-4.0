@@ -38,6 +38,9 @@ alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
 alignas(MessageQueue<TMMessage_t>) static uint8_t tmQueueStorage[sizeof(MessageQueue<TMMessage_t>)];
 alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[sizeof(MessageQueue<mavlink_message_t>)];
+alignas(MessageQueue<FatFSReqMsg>) static uint8_t sdRequestQueueStorage[sizeof(MessageQueue<FatFSReqMsg>)];
+alignas(MessageQueue<FatFSReqBuff>) static uint8_t sdBufferQueueStorage[sizeof(MessageQueue<FatFSReqBuff>)];
+alignas(MessageQueue<PollResult>) static uint8_t sdResponseQueuesStorage[static_cast<size_t>(ManId::COUNT)][sizeof(MessageQueue<PollResult>)];
 
 // ----------------------------------------------------------------------------
 // Global handles
@@ -64,6 +67,10 @@ PowerModule *pmHandle = nullptr;
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
+
+MessageQueue<FatFSReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<FatFSReqBuff> *sdBufferQueueHandle = nullptr;
+MessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & groups
@@ -95,7 +102,7 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem();
+    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
@@ -118,6 +125,11 @@ void initDrivers()
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
     tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
+    sdRequestQueueHandle = new (&sdRequestQueueStorage) MessageQueue<FatFSReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new (&sdBufferQueueStorage) MessageQueue<FatFSReqBuff>(&sdBufferQueueId);
+    for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
+        sdResponseQueuesHandle[i] = new (&sdResponseQueuesStorage[i]) MessageQueue<PollResult>(&sdResponseQueueId[i]);
+    }
 
     // Initialize hardware components
     leftAileronMotorHandle->init();
