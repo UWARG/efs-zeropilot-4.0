@@ -73,9 +73,7 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
     if (!fp || !buff) return FILE_STATUS_ERROR;
     
 #ifdef SWO_LOGGING
-    if (res == FR_OK && bw && *bw > 0) {
-        ::printf("%.*s", *bw, (const char*)buff);
-    }
+    ::printf("%.*s", btw, (const char*)buff);
 #endif
 
     if (options == ReqOptions::SYNC) {
@@ -108,6 +106,10 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
 
 FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions options) {
     if (!fp || !buff || options == ReqOptions::SYNC) return FILE_STATUS_ERROR;
+
+#ifdef SWO_LOGGING
+    ::printf("%.*s", ofs, btw, (const char*)buff);
+#endif
     
     FatFsReqMsg req;
     req.id = id;
@@ -131,6 +133,11 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
 
 FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options) {
     if (!fp || !buff || options == ReqOptions::SYNC) return FILE_STATUS_ERROR;
+
+#ifdef SWO_LOGGING
+    ::printf("%.*s", btw, (const char*)buff);
+#endif
+    
     
     FatFsReqMsg req;
     req.id = id;
@@ -245,6 +252,20 @@ FileStatus SDFileSystem::stat(const char* path, FileInfo* fno) {
 
 int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str, ...) {
     if (!fp) return EOF;
+
+    char printBuff[MAX_RW_BUFFER_SIZE];
+    va_list args;
+    va_start(args, str);
+    int len = std::vsnprintf(printBuff, MAX_RW_BUFFER_SIZE, str, args);
+    va_end(args);
+
+    if (len < 0) {
+        return EOF; // Encoding error
+    }
+
+#ifdef SWO_LOGGING
+    ::printf("%.*s", len, printBuff);
+#endif
     
     if (options == ReqOptions::SYNC) {
         FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
@@ -254,16 +275,6 @@ int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str
         va_end(args);
         return res;
     } else {
-        char printBuff[MAX_RW_BUFFER_SIZE];
-        va_list args;
-        va_start(args, str);
-        int len = std::vsnprintf(printBuff, MAX_RW_BUFFER_SIZE, str, args);
-        va_end(args);
-
-        if (len < 0) {
-            return EOF; // Encoding error
-        }
-
         uint32_t bytesToWrite = (len < MAX_RW_BUFFER_SIZE) ? static_cast<uint32_t>(len) : (MAX_RW_BUFFER_SIZE - 1);
         printBuff[bytesToWrite] = '\0'; // Ensure null termination
 
