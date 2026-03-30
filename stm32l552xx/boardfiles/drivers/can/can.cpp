@@ -28,9 +28,12 @@ CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	nodeStatus = {0};
 
 	for (int i = 0; i <= CANARD_MAX_NODE_ID; i++) {
+		canNodes[i].lastSeenTick = 0;
 		canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
 	}
 	canNodes[NODE_ID].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+	const uint32_t startup_tick = HAL_GetTick();
+	canNodes[NODE_ID].lastSeenTick = startup_tick;
 
 	canard.node_id = NODE_ID;
 }
@@ -399,7 +402,7 @@ void CAN::process1HzTasks() {
 	for (int i = CANARD_MIN_NODE_ID; i <= CANARD_MAX_NODE_ID; i++) {
 		// Make copy of status in case it changes
 
-		if (timestamp_msec-canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
+		if (i != NODE_ID && timestamp_msec-canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
 			canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
 		}
 	}
