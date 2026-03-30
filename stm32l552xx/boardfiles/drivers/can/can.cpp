@@ -180,26 +180,56 @@ void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 	}
 }
 
+int8_t CAN::lookupAllocation(const uint8_t unique_id[16]) const {
+	for (uint8_t i = 0; i < allocationCount_; i++) {
+		if (memcmp(allocationTable_[i].unique_id, unique_id, 16) == 0) {
+			return allocationTable_[i].node_id;
+		}
+	}
+	return -1;
+}
+
 int8_t CAN::allocateNode() {
 	// dronecan reserves 126 and 127
 	static constexpr uint8_t MAX_DYNAMIC_NODE_ID = 125;
 
-	// try preffered if first
+	// Check if previously assigned
+	int8_t existingId = lookupAllocation(dnaCurrentUniqueId);
+	if (existingId > 0) {
+		return existingId;
+	}
+
+	// try preferred id
+	int8_t assignedId = 0;
 	if (dnaPreferredNodeId != UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID &&
 		dnaPreferredNodeId >= CANARD_MIN_NODE_ID &&
 		dnaPreferredNodeId <= MAX_DYNAMIC_NODE_ID &&
 		canNodes[dnaPreferredNodeId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE) {
-		return dnaPreferredNodeId;
+		assignedId = dnaPreferredNodeId;
 	}
 
-	for (int currId = nextAvailableID; currId <= MAX_DYNAMIC_NODE_ID; currId++) {
-		if (canNodes[currId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE) {
-			nextAvailableID = currId + 1;
-			return currId;
+	// scan for free ID
+	if (assignedId == 0) {
+		for (int currId = nextAvailableID; currId <= MAX_DYNAMIC_NODE_ID && assignedId == 0; currId++) {
+			if (canNodes[currId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE) {
+				nextAvailableID = currId + 1;
+				assignedId = currId;
+			}
 		}
 	}
 
-	return -1; // no IDs available
+	if (assignedId == 0) {
+		return -1;
+	}
+
+	// push to allocation table
+	if (allocationCount_ < MAX_ALLOCATION_ENTRIES) {
+		memcpy(allocationTable_[allocationCount_].unique_id, dnaCurrentUniqueId, 16);
+		allocationTable_[allocationCount_].node_id = assignedId;
+		allocationCount_++;
+	}
+
+	return assignedId;
 }
 
 DnaStage CAN::detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_Allocation& msg) const {

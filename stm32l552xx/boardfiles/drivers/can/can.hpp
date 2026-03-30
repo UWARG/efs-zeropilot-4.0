@@ -20,6 +20,10 @@ class CAN : public ICAN {
 private:
 	canNode canNodes[CANARD_MAX_NODE_ID + 1];
 	uint8_t nextAvailableID = CANARD_MIN_NODE_ID + 1;
+
+	static constexpr uint8_t MAX_ALLOCATION_ENTRIES = 125;
+	DnaAllocationEntry allocationTable_[MAX_ALLOCATION_ENTRIES];
+	uint8_t allocationCount_ = 0;
 	FDCAN_HandleTypeDef *hfdcan;
 
 	CanardInstance canard;
@@ -34,6 +38,7 @@ private:
 	uint8_t dlcToLength(uint32_t dlc); // data length, may delete.
 
 	int8_t allocateNode();
+	int8_t lookupAllocation(const uint8_t unique_id[16]) const;
 
     // Called once every second
 	void process1HzTasks();
@@ -46,8 +51,8 @@ private:
 
 	//stuff needed for dynamic node allocation
 	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;
-	uint8_t  dnaCurrentUniqueId[UAVCAN_UNIQUE_ID_LENGTH] = {0}; // accumulate uid
-	uint8_t  dnaCurrentUniqueIdLen = 0; // how many bytes accumulated so far
+	uint8_t  dnaCurrentUniqueId[UAVCAN_UNIQUE_ID_LENGTH] = {0}; // accumulates uid
+	uint8_t  dnaCurrentUniqueIdLen = 0; 
 	uint8_t  dnaPreferredNodeId = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID; // the id the requester wants
 	uint32_t dnaLastAcceptedTick = 0;
 

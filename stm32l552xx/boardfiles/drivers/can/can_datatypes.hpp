@@ -6,6 +6,11 @@ struct canNode {
     uavcan_protocol_NodeStatus status;
 };
 
+struct DnaAllocationEntry {
+    uint8_t unique_id[16];
+    uint8_t node_id;
+};
+
 enum class DnaStage : int8_t {
     INVALID = 0,
     STAGE_1 = 1,
