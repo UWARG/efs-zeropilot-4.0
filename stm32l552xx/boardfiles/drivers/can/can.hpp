@@ -47,7 +47,8 @@ private:
 
 	uint32_t last1HzTick = 0;
 	uint32_t node_id = NODE_ID;
-	static uint8_t transfer_id;
+	static uint8_t node_status_transfer_id;
+	static uint8_t dna_allocation_transfer_id;
 
 	//stuff needed for dynamic node allocation
 	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;

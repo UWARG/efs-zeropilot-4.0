@@ -1,7 +1,8 @@
 
 #include "can.hpp"
 
-uint8_t CAN::transfer_id = 0;
+uint8_t CAN::node_status_transfer_id = 0;
+uint8_t CAN::dna_allocation_transfer_id = 0;
 
 static void StaticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
     CAN* self = static_cast<CAN*>(ins->user_reference);
@@ -295,7 +296,7 @@ int16_t CAN::publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique
 		CanardTransferTypeBroadcast,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
-		&transfer_id,
+		&dna_allocation_transfer_id,
 		CANARD_TRANSFER_PRIORITY_LOW,
 		buffer,
 		len
@@ -382,7 +383,7 @@ void CAN::sendNodeStatus() {
     broadcast(CanardTransferTypeBroadcast,
 			UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
 			UAVCAN_PROTOCOL_NODESTATUS_ID,
-			&transfer_id,
+			&node_status_transfer_id,
 			CANARD_TRANSFER_PRIORITY_LOW,
 			buffer,
 			len
