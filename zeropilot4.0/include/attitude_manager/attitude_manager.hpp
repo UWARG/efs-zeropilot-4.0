@@ -94,9 +94,15 @@ class AttitudeManager {
         static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
         static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
 
-        // Servo param callbacks — templated by motor index
+        // Servo param callbacks: one unique function is generated at compile time for each
+        // servo parameter index (Idx). The compiler stamps out updateServoParam<0>,
+        // updateServoParam<1>, ... so each ZP_PARAM slot gets its own callback with the
+        // channel and field baked in as compile-time constants.
         template <uint8_t Idx> static bool updateServoParam(AttitudeManager* ctx, float val);
 
+        // Registers all servo-param callbacks in one shot using C++ parameter pack expansion.
+        // std::integer_sequence<uint8_t, Is...> carries the compile-time list {0, 1, 2, ...}
+        // and the "..." expands a bindCallback() call for every index in that list.
         template <uint8_t... Is>
         void bindServoParamCallbacksImpl(std::integer_sequence<uint8_t, Is...>);
 };
