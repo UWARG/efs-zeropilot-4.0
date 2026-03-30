@@ -7,5 +7,5 @@ class ISafetySwitch {
     public:
     virtual ~ISafetySwitch() = default;
 
-    virtual bool isPressed() = 0; 
+    virtual bool isOn() = 0;
 };

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <vector>
 #include "system_manager.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_iwdg.hpp"
@@ -12,6 +13,7 @@
 #include "mock_queue.hpp"
 
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::Return;
 using ::testing::Invoke;
 using ::testing::NiceMock;
@@ -53,7 +55,7 @@ TEST_F(SystemManagerTest, SafetySwitchBlocksArmingAndSoundsBuzzer) {
     rcData.arm = 100.0f;
 
     EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
-    EXPECT_CALL(mockSafetySwitch, isPressed()).WillOnce(Return(false));
+    EXPECT_CALL(mockSafetySwitch, isOn()).WillOnce(Return(false));
     EXPECT_CALL(mockBuzzer, buzzerOn()).Times(1);
     EXPECT_CALL(mockBuzzer, buzzerOff()).Times(0);
     EXPECT_CALL(mockLed, ledOn()).Times(0);
@@ -85,7 +87,7 @@ TEST_F(SystemManagerTest, SafetySwitchAllowsArmingAndSilencesBuzzer) {
     rcData.arm = 100.0f;
 
     EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
-    EXPECT_CALL(mockSafetySwitch, isPressed()).WillOnce(Return(true));
+    EXPECT_CALL(mockSafetySwitch, isOn()).WillOnce(Return(true));
     EXPECT_CALL(mockBuzzer, buzzerOff()).Times(1);
     EXPECT_CALL(mockBuzzer, buzzerOn()).Times(0);
     EXPECT_CALL(mockLed, ledOn()).Times(1);
@@ -106,6 +108,85 @@ TEST_F(SystemManagerTest, SafetySwitchAllowsArmingAndSilencesBuzzer) {
     sm.smUpdate();
 
     EXPECT_TRUE(forwardedArm);
+}
+
+TEST_F(SystemManagerTest, SafetySwitchReleaseKeepsArmingLatched) {
+    RCControl rcData{};
+    rcData.isDataNew = true;
+    rcData.roll = 50.0f;
+    rcData.pitch = 50.0f;
+    rcData.yaw = 50.0f;
+    rcData.throttle = 50.0f;
+    rcData.arm = 100.0f;
+
+    EXPECT_CALL(mockRC, getRCData())
+        .WillOnce(Return(rcData))
+        .WillOnce(Return(rcData));
+    EXPECT_CALL(mockSafetySwitch, isOn())
+        .WillOnce(Return(true))
+        .WillOnce(Return(true));
+    EXPECT_CALL(mockBuzzer, buzzerOff()).Times(2);
+    EXPECT_CALL(mockBuzzer, buzzerOn()).Times(0);
+    EXPECT_CALL(mockLed, ledOn()).Times(2);
+    EXPECT_CALL(mockLed, ledOff()).Times(0);
+
+    std::vector<bool> forwardedArmStates;
+    EXPECT_CALL(mockAMQueue, push(_))
+        .Times(2)
+        .WillRepeatedly(Invoke([&forwardedArmStates](RCMotorControlMessage_t *msg) {
+            forwardedArmStates.push_back(msg->arm);
+            return 0;
+        }));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
+    sm.smUpdate();
+    sm.smUpdate();
+
+    EXPECT_THAT(forwardedArmStates, ElementsAre(true, true));
+}
+
+TEST_F(SystemManagerTest, SafetySwitchSecondPressDisarmsSystem) {
+    RCControl rcData{};
+    rcData.isDataNew = true;
+    rcData.roll = 50.0f;
+    rcData.pitch = 50.0f;
+    rcData.yaw = 50.0f;
+    rcData.throttle = 50.0f;
+    rcData.arm = 100.0f;
+
+    EXPECT_CALL(mockRC, getRCData())
+        .WillOnce(Return(rcData))
+        .WillOnce(Return(rcData))
+        .WillOnce(Return(rcData));
+    EXPECT_CALL(mockSafetySwitch, isOn())
+        .WillOnce(Return(true))
+        .WillOnce(Return(true))
+        .WillOnce(Return(false));
+    EXPECT_CALL(mockBuzzer, buzzerOff()).Times(2);
+    EXPECT_CALL(mockBuzzer, buzzerOn()).Times(1);
+    EXPECT_CALL(mockLed, ledOn()).Times(2);
+    EXPECT_CALL(mockLed, ledOff()).Times(1);
+
+    std::vector<bool> forwardedArmStates;
+    EXPECT_CALL(mockAMQueue, push(_))
+        .Times(3)
+        .WillRepeatedly(Invoke([&forwardedArmStates](RCMotorControlMessage_t *msg) {
+            forwardedArmStates.push_back(msg->arm);
+            return 0;
+        }));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+                 &mockAMQueue, &mockTMQueue, &mockLogQueue,
+                 &mockSafetySwitch, &mockBuzzer, &mockLed);
+
+    sm.smUpdate();
+    sm.smUpdate();
+    sm.smUpdate();
+
+    EXPECT_THAT(forwardedArmStates, ElementsAre(true, true, false));
 }
 
 TEST_F(SystemManagerTest, NoAccessoryPreservesLegacyArmingBehavior) {

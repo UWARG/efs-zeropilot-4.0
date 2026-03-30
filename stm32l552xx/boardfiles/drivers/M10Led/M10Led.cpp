@@ -13,9 +13,9 @@ void M10Led::init() {
 }
 
 void M10Led::ledOn() {
-	HAL_GPIO_WritePin(ledPort, ledPin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ledPort, ledPin, GPIO_PIN_RESET);
 }
 
 void M10Led::ledOff() {
-	HAL_GPIO_WritePin(ledPort, ledPin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(ledPort, ledPin, GPIO_PIN_SET);
 }

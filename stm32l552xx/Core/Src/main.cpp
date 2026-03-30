@@ -27,6 +27,7 @@
 #include "model.hpp"
 #include "unified_threads.hpp"
 #include "utils.h"
+#include "buzzer.hpp"
 #include "drivers.hpp"
 /* USER CODE END Includes */
 
@@ -950,7 +951,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPS_BUZZER_GPIO_Port, GPS_BUZZER_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SAFETY_SW_LED_GPIO_Port, SAFETY_SW_LED_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SAFETY_SW_LED_GPIO_Port, SAFETY_SW_LED_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : SPI1_CS_Pin LED_RED_Pin */
   GPIO_InitStruct.Pin = SPI1_CS_Pin|LED_RED_Pin;
@@ -1034,6 +1035,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM6)
   {
     HAL_IncTick();
+    // Service the passive piezo pattern generator from the 1 kHz timebase.
+    serviceM10BuzzerTick();
   }
   /* USER CODE BEGIN Callback 1 */
 

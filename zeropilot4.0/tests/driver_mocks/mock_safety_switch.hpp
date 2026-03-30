@@ -5,5 +5,5 @@
 
 class MockSafetySwitch : public ISafetySwitch {
     public:
-        MOCK_METHOD(bool, isPressed, (), (override));
+        MOCK_METHOD(bool, isOn, (), (override));
 };

@@ -37,13 +37,13 @@ void SystemManager::smUpdate() {
     // Get RC data from the RC receiver and passthrough to AM if new
     RCControl rcData = rcDriver->getRCData();
 
-    const bool safetySwitchPressed = (safetySwitchDriver == nullptr) || safetySwitchDriver->isPressed();
+    const bool safetySwitchOn = (safetySwitchDriver == nullptr) || safetySwitchDriver->isOn();
 
     const bool armRequested = rcData.arm > SM_RC_ARM_THRESHOLD;
-    const bool armed = armRequested && safetySwitchPressed;
+    const bool armed = armRequested && safetySwitchOn;
 
     if (buzzerDriver != nullptr){
-        if (safetySwitchPressed) {
+        if (safetySwitchOn) {
             buzzerDriver->buzzerOff();
         } else {
             buzzerDriver->buzzerOn();
@@ -51,7 +51,7 @@ void SystemManager::smUpdate() {
     }
 
     if (ledDriver != nullptr){
-        if( safetySwitchPressed){
+        if (safetySwitchOn) {
             ledDriver->ledOn();
         } else {
             ledDriver->ledOff();

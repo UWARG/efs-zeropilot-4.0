@@ -9,6 +9,4 @@ public:
 
     virtual void buzzerOn() = 0;
     virtual void buzzerOff() = 0;
-
-    virtual void init() = 0;
 };
