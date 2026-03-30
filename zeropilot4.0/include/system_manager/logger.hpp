@@ -6,10 +6,10 @@
 #include <cstdio>
 
 enum class LogLevel : uint8_t {
-    DEBUG = 0,
-    INFO,
-    WARN,
-    CRITICAL
+    LOG_DEBUG = 0,
+    LOG_INFO,
+    LOG_WARN,
+    LOG_CRITICAL
 };
 
 namespace Logger {

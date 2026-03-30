@@ -53,10 +53,10 @@ namespace Logger {
         // Add log level
         const char* levelStr = "";
         switch (level) {
-            case LogLevel::DEBUG: levelStr = "DEBUG"; break;
-            case LogLevel::INFO: levelStr = "INFO"; break;
-            case LogLevel::WARN: levelStr = "WARN"; break;
-            case LogLevel::CRITICAL: levelStr = "CRITICAL"; break;
+            case LogLevel::LOG_DEBUG: levelStr = "DEBUG"; break;
+            case LogLevel::LOG_INFO: levelStr = "INFO"; break;
+            case LogLevel::LOG_WARN: levelStr = "WARN"; break;
+            case LogLevel::LOG_CRITICAL: levelStr = "CRITICAL"; break;
         }
         int levelLen = snprintf(buffer + tsLen, BUFFER_SIZE - tsLen - 1, "[%s] ", levelStr);
         
@@ -73,13 +73,12 @@ namespace Logger {
         buffer[totalLen] = '\n';
         buffer[totalLen + 1] = '\0';
         
-        if (fileSystem->available()) {
-            if (level == LogLevel::CRITICAL || lastSync >= 10) { // Sync every 10 writes automatically, or immediately for critical logs
-                fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
-            } else {
-                fileSystem->write(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions::ASYNC_NO_RESP);
-                lastSync++;
-            }
+        if (level == LogLevel::LOG_CRITICAL || lastSync >= 10) { // Sync every 10 writes automatically, or immediately for critical logs
+            fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
+            lastSync = 0;
+        } else {
+            fileSystem->write(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions::ASYNC_NO_RESP);
+            lastSync++;
         }
     }
 

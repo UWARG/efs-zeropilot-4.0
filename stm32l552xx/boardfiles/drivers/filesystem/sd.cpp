@@ -76,6 +76,8 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
     ::printf("%.*s", btw, (const char*)buff);
 #endif
 
+    if (!mounted) return FILE_STATUS_ERROR;
+
     if (options == ReqOptions::SYNC) {
         uint32_t dummy_bw = 0;
         if (bw == nullptr) {
@@ -110,6 +112,8 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
 #ifdef SWO_LOGGING
     ::printf("%.*s", ofs, btw, (const char*)buff);
 #endif
+
+    if (!mounted) return FILE_STATUS_ERROR;
     
     FatFSReqMsg req;
     req.id = id;
@@ -137,6 +141,8 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
 #ifdef SWO_LOGGING
     ::printf("%.*s", btw, (const char*)buff);
 #endif
+
+    if (!mounted) return FILE_STATUS_ERROR;
     
     FatFSReqMsg req;
     req.id = id;
@@ -250,8 +256,6 @@ FileStatus SDFileSystem::stat(const char* path, FileInfo* fno) {
 }
 
 int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str, ...) {
-    if (!fp) return EOF;
-
     char printBuff[MAX_RW_BUFFER_SIZE];
     va_list args;
     va_start(args, str);
@@ -261,10 +265,11 @@ int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str
     if (len < 0) {
         return EOF; // Encoding error
     }
-
 #ifdef SWO_LOGGING
     ::printf("%.*s", len, printBuff);
 #endif
+
+    if (!fp || !mounted) return EOF;
     
     if (options == ReqOptions::SYNC) {
         FIL* fil = reinterpret_cast<FIL*>(fp->_storage);
@@ -283,8 +288,15 @@ int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str
 
 FileStatus SDFileSystem::init() {
     // TODO: Ari's version had a HAL_DELAY for 1 second here, that might be needed?
+    HAL_Delay(1000); // Wait for SD card to be ready after power up
 
+    int retryCount = 3;
     FRESULT res = f_mount(&fsObj, "", 1);
+    while (res != FR_OK && retryCount > 0) {
+        HAL_Delay(500); // Wait before retrying
+        res = f_mount(&fsObj, "", 1);
+        retryCount--;
+    }
     mounted = (res == FR_OK);
     return fresultToStatus(res);
 }
