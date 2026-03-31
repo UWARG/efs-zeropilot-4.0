@@ -86,7 +86,7 @@ bool GPS::parseUBX() {
     // find sync
     while (!(processBuffer[idx] == 0xB5 && processBuffer[idx+1] == 0x62)) {
         idx++;
-        if (idx >= MAX_NMEA_DATA_LENGTH-1) return false;  // not found
+        if (idx >= MAX_NMEA_DATA_LENGTH - 1) return false;  // not found
     }
     // check class
     if (processBuffer[idx+2] != 0x01 || processBuffer[idx+3] != 0x11) {
