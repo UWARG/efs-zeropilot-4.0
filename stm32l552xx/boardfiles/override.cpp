@@ -40,10 +40,6 @@ void HAL_Delay(uint32_t Delay) {
   }
 }
 
-#ifdef __cplusplus
-}
-#endif
-
 /* interrupt callback functions */
 
 
@@ -106,3 +102,7 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
       pmHandle->I2C_ErrorCallback();
     }
 }
+
+#ifdef __cplusplus
+}
+#endif
