@@ -27,11 +27,11 @@ std::mutex telemMutex;
 
 static void telemLogCallback(const std::string& message, uint8_t direction) {
     std::lock_guard<std::mutex> lock(telemMutex);
-if (direction == 1) {
-    telemTxMessages.push(message);
-    if (telemTxMessages.size() > 100) {
-        telemTxMessages.pop(); // Limit the queue size to 100 messages
-}
+    if (direction == 1) {
+        telemTxMessages.push(message);
+        if (telemTxMessages.size() > 100) {
+            telemTxMessages.pop(); // Limit the queue size to 100 messages
+        }
     } else if (direction == 0) {
         telemRxMessages.push(message);
         if (telemRxMessages.size() > 100) {
