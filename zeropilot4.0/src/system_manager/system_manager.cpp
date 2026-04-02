@@ -44,6 +44,7 @@ SystemManager::SystemManager(
 void SystemManager::smUpdate() {
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
+    loggerDriver->log("Test Logger");
 
 
     // Get RC data from the RC receiver and passthrough to AM if new

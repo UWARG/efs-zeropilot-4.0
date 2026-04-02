@@ -137,6 +137,7 @@ void initDrivers()
     imuHandle->init();
     pmHandle->init();
     telemLinkHandle->init();
+    loggerHandle->init();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};

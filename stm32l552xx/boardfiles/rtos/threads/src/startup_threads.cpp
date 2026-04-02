@@ -14,7 +14,6 @@ static const osThreadAttr_t startUpAttr = {
 
 void startUpMain(void *arg)
 {
-  loggerHandle->init();
   vTaskDelete(NULL);
 }
 
