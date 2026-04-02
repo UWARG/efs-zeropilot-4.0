@@ -19,9 +19,7 @@
 #include <queue>
 #include <mutex>
 
-#define SM_SCHEDULING_RATE_HZ 20
-#define TM_SCHEDULING_RATE_HZ 20
-#define AM_SCHEDULING_RATE_HZ 100
+static constexpr int SITL_NUM_MOTORS = 6;
 
 std::queue<std::string> telemTxMessages;
 std::queue<std::string> telemRxMessages;
@@ -62,9 +60,9 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
-    SITL_Motor* sitlMotors[6];
+    SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
-    MotorInstance_t motors[6];
+    MotorInstance_t motors[SITL_NUM_MOTORS];
     MotorGroupInstance_t motorGroup;
     
     uint32_t sitlRateHz;
@@ -89,7 +87,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
-    for (int i = 0; i < 6; i++) delete self->sitlMotors[i];
+    for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -121,12 +119,12 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
         }
 
-        self->motorGroup = {self->motors, 6};
+        self->motorGroup = {self->motors, SITL_NUM_MOTORS};
 
         // Set servo params — loadServoParams() in AM constructor reads these
         ZP_PARAM::setParamById("SERVO1_TRIM", 1500);
