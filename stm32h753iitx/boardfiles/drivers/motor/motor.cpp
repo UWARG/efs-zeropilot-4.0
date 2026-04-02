@@ -15,10 +15,6 @@ void MotorControl::set(uint32_t percent) {
     __HAL_TIM_SET_COMPARE(timer, timerChannel, ticks);
 }
 
-uint8_t MotorControl::getServoIdx() const {
-    return servoIdx;
-}
-
 void MotorControl::init() {
     __HAL_TIM_SET_COMPARE(timer, timerChannel, minCCR);
     HAL_TIM_PWM_Start(timer, timerChannel);

@@ -14,12 +14,6 @@ class MotorControl : public IMotorControl {
         void set(uint32_t percent) override;
 
         /**
-         * @brief gets servo index
-         * @param 
-         */
-        uint8_t getServoIdx() const override;
-
-        /**
          * @brief starts PWM output
          */
         void init();

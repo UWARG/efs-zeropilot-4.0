@@ -1,6 +1,15 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
+#include "motor_functions.hpp"
+
+// Number of servo param fields per servo channel
+static constexpr uint8_t SERVO_PARAMS_PER_CHANNEL = 5;
+
+// Convert PWM microseconds (1000-2000) to percent (0-100)
+static inline int usToPercent(float us) {
+    return static_cast<int>((us - 1000.0f) / 10.0f);
+}
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -9,12 +18,7 @@ AttitudeManager::AttitudeManager(
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    MotorGroupInstance_t *rollMotors,
-    MotorGroupInstance_t *pitchMotors,
-    MotorGroupInstance_t *yawMotors,
-    MotorGroupInstance_t *throttleMotors,
-    MotorGroupInstance_t *flapMotors,
-    MotorGroupInstance_t *steeringMotors
+    MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
@@ -28,12 +32,7 @@ AttitudeManager::AttitudeManager(
     controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
     currentFlightMode(PlaneFlightMode_e::MANUAL),
-    rollMotors(rollMotors),
-    pitchMotors(pitchMotors),
-    yawMotors(yawMotors),
-    throttleMotors(throttleMotors),
-    flapMotors(flapMotors),
-    steeringMotors(steeringMotors),
+    mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
@@ -78,6 +77,10 @@ AttitudeManager::AttitudeManager(
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
+
+    // Load servo parameters from ZP_PARAM into motor instances and bind callbacks
+    loadServoParams();
+    bindServoParamCallbacks();
 }
 
 void AttitudeManager::amUpdate() {
@@ -126,12 +129,13 @@ void AttitudeManager::amUpdate() {
         ++noDataCount;
 
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
-            outputToMotor(YAW, 50);
-            outputToMotor(PITCH, 50);
-            outputToMotor(ROLL, 50);
-            outputToMotor(THROTTLE, 0);
-            outputToMotor(FLAP_ANGLE, 0);
-            outputToMotor(STEERING, 50);
+            RCMotorControlMessage_t motorOutputs{0};
+            motorOutputs.roll = 50;
+            motorOutputs.pitch = 50;
+            motorOutputs.yaw = 50;
+            motorOutputs.throttle = 0;
+            motorOutputs.flapAngle = 0;
+            outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
               char errorMsg[100] = "Failsafe triggered";
@@ -182,12 +186,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Output to motors
-    outputToMotor(YAW, motorOutputs.yaw);
-    outputToMotor(PITCH, motorOutputs.pitch);
-    outputToMotor(ROLL, motorOutputs.roll);
-    outputToMotor(THROTTLE, motorOutputs.throttle);
-    outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle);
-    outputToMotor(STEERING, motorOutputs.yaw);
+    outputToMotors(motorOutputs);
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
@@ -199,36 +198,45 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
-    MotorGroupInstance_t *motorGroup = nullptr;
+void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        // Get current motor
+        MotorInstance_t *motor = (mainMotorGroup->motors + i);
 
-    switch (axis) {
-        case ROLL:
-            motorGroup = rollMotors;
-            break;
-        case PITCH:
-            motorGroup = pitchMotors;
-            break;
-        case YAW:
-            motorGroup = yawMotors;
-            break;
-        case THROTTLE:
-            motorGroup = throttleMotors;
-            break;
-        case FLAP_ANGLE:
-            motorGroup = flapMotors;
-            break;
-        case STEERING:
-            motorGroup = steeringMotors;
-            break;
-        default:
-            return;
-    }
+        // Extract percentage based on function
+        float percent = 0.0f;
+        switch (motor->function) {
+            case MotorFunction_e::AILERON:
+                percent = outputControlMsg.roll;
+                break;
+            case MotorFunction_e::ELEVATOR:
+                percent = outputControlMsg.pitch;
+                break;
+            case MotorFunction_e::RUDDER:
+                percent = outputControlMsg.yaw;
+                break;
+            case MotorFunction_e::THROTTLE:
+                percent = outputControlMsg.throttle;
+                break;
+            case MotorFunction_e::FLAP:
+                percent = outputControlMsg.flapAngle;
+                break;
+            case MotorFunction_e::GROUND_STEERING:
+                percent = outputControlMsg.yaw;
+                break;
+            default:
+                continue;
+        }
 
-    for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
-        MotorInstance_t *motor = (motorGroup->motors + i);
-
-        int32_t cmd = (int32_t)percent + motor->trim;
+        // Set cmd based on percent and trim, min, max
+        uint32_t cmd = 0;
+        if (percent <= 50.0f) {
+            // Scale [0, 50] to [min, trim]
+            cmd = motor->min + (percent / 50.0f) * (motor->trim - motor->min);
+        } else {
+            // Scale [50, 100] to [trim, max]
+            cmd = motor->trim + ((percent - 50.0f) / 50.0f) * (motor->max - motor->trim);
+        }
 
         // Clamp cmd to [0, 100]
         if (cmd > 100) {
@@ -243,9 +251,7 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
         }
 
         // Store for telemetry output
-        uint8_t servoIdx = motor->motorInstance->getServoIdx();
-        if (servoIdx < 16)
-            lastServoOutputs[servoIdx - 1] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
+        lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
         // Send command to motor
         motor->motorInstance->set(cmd);
@@ -321,6 +327,107 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
     tmQueue->push(&servoOutputMsg);
 }
+
+// SERVO PARAM LOADING AND CALLBACKS
+// ==============================================================
+// ---------------------------------------------------------------------------
+// loadServoParams: reads servo config from ZP_PARAM into motor instances
+//
+// The ZP_PARAM_ID enum lays out servo params in groups of 5 (SERVO_PARAMS_PER_CHANNEL):
+//   SERVO1_TRIM, SERVO1_MIN, SERVO1_MAX, SERVO1_REVERSED, SERVO1_FUNCTION,
+//   SERVO2_TRIM, SERVO2_MIN, ...
+// So for channel i, the base param ID is SERVO1_TRIM + i*5, and offsets +0..+4
+// give TRIM, MIN, MAX, REVERSED, FUNCTION respectively.
+// ---------------------------------------------------------------------------
+void AttitudeManager::loadServoParams() {
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        ZP_PARAM_ID base = static_cast<ZP_PARAM_ID>(
+            static_cast<uint16_t>(ZP_PARAM_ID::SERVO1_TRIM) + i * SERVO_PARAMS_PER_CHANNEL);
+        MotorInstance_t *m = &mainMotorGroup->motors[i];
+        m->trim      = usToPercent(ZP_PARAM::get(base));                                                                    // base + 0
+        m->min       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 1)));               // base + 1
+        m->max       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 2)));               // base + 2
+        m->isInverted = static_cast<int>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 3))) != 0;    // base + 3
+        m->function  = static_cast<MotorFunction_e>(static_cast<int16_t>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 4))));  // base + 4
+    }
+}
+
+// ---------------------------------------------------------------------------
+// updateServoParam<Idx>: compile-time generated callback for each servo param
+//
+// The template parameter Idx is a flat index into the servo parameter table:
+//   Idx 0 = SERVO1_TRIM, 1 = SERVO1_MIN, 2 = SERVO1_MAX, 3 = SERVO1_REVERSED,
+//   4 = SERVO1_FUNCTION, 5 = SERVO2_TRIM, 6 = SERVO2_MIN, ... and so on.
+//
+// At compile time, Idx is divided by SERVO_PARAMS_PER_CHANNEL (5) to get the
+// servo channel number, and the remainder gives the field within that channel.
+// Because Idx is a compile-time constant (template parameter), the compiler
+// optimizes each instantiation into a direct write to the correct motor/field
+// with no runtime lookup overhead.
+//
+// The compiler generates one distinct function for every Idx value (0..59 for
+// 12 channels × 5 params), each of which is registered as the ZP_PARAM callback
+// for the corresponding parameter ID.
+// ---------------------------------------------------------------------------
+template <uint8_t Idx>
+bool AttitudeManager::updateServoParam(AttitudeManager* ctx, float val) {
+    constexpr uint8_t CHANNEL = Idx / SERVO_PARAMS_PER_CHANNEL;
+    constexpr uint8_t FIELD   = Idx % SERVO_PARAMS_PER_CHANNEL;
+    if (CHANNEL >= ctx->mainMotorGroup->motorCount) return false;
+
+    MotorInstance_t *m = &ctx->mainMotorGroup->motors[CHANNEL];
+    switch (FIELD) {
+        case 0: m->trim      = usToPercent(val); break;
+        case 1: m->min       = usToPercent(val); break;
+        case 2: m->max       = usToPercent(val); break;
+        case 3: m->isInverted = static_cast<int>(val) != 0; break;
+        case 4: m->function  = static_cast<MotorFunction_e>(static_cast<int16_t>(val)); break;
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// bindServoParamCallbacksImpl: registers all servo param callbacks at once
+//
+// Uses C++14 std::integer_sequence + parameter pack expansion to avoid writing
+// 60 individual bindCallback() calls by hand.
+//
+// How it works step by step:
+//   1. The caller passes std::make_integer_sequence<uint8_t, 60>{}, which is a
+//      type that carries the compile-time list <0, 1, 2, ... 59>.
+//   2. The template parameter pack "Is..." captures that list.
+//   3. The "expand" trick creates a dummy int array whose initializer list
+//      contains one bindCallback() call per value in Is...:
+//        {0, (bindCallback(..., updateServoParam<0>), 0),
+//             (bindCallback(..., updateServoParam<1>), 0),
+//             ...
+//             (bindCallback(..., updateServoParam<59>), 0)}
+//      The comma operator (expr, 0) discards bindCallback's return value and
+//      yields 0 for each array element. The leading 0 handles the empty-pack
+//      edge case (zero-length arrays are illegal in C++).
+//   4. (void) suppresses the unused-variable warning on the dummy array.
+//
+// Net effect: one line of template code expands to 60 bindCallback() calls
+// at compile time, one for each servo parameter.
+// ---------------------------------------------------------------------------
+template <uint8_t... Is>
+void AttitudeManager::bindServoParamCallbacksImpl(std::integer_sequence<uint8_t, Is...>) {
+    using expand = int[];
+    (void)expand{0, (ZP_PARAM::bindCallback(
+        static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(ZP_PARAM_ID::SERVO1_TRIM) + Is),
+        this, AttitudeManager::updateServoParam<Is>), 0)...};
+}
+
+// Total number of servo parameters: 12 channels × 5 params each = 60
+static constexpr uint8_t TOTAL_SERVO_PARAMS = 12 * SERVO_PARAMS_PER_CHANNEL;
+
+void AttitudeManager::bindServoParamCallbacks() {
+    // std::make_integer_sequence<uint8_t, 60> generates the type
+    // std::integer_sequence<uint8_t, 0, 1, 2, ..., 59> which is passed to
+    // bindServoParamCallbacksImpl to expand into 60 bindCallback() calls.
+    bindServoParamCallbacksImpl(std::make_integer_sequence<uint8_t, TOTAL_SERVO_PARAMS>{});
+}
+// ==============================================================
 
 // STATIC FUNCTIONS ONLY FOR PARAM CHAINING
 // ==============================================================
