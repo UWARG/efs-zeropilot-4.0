@@ -21,7 +21,7 @@ public:
     GPS(UART_HandleTypeDef *huart);
 
     bool init();
-    void rxCallback();
+    void rxCallback(uint16_t size);
 
 private:
     GpsData_t validData;
@@ -29,30 +29,32 @@ private:
 
     uint8_t rxBuffer[MAX_NMEA_DATA_LENGTH];
     uint8_t processBuffer[MAX_NMEA_DATA_LENGTH];
+    uint8_t *processBufferEnd = processBuffer;
     UART_HandleTypeDef *huart;
 
     HAL_StatusTypeDef enableMessage(uint8_t msgClass, uint8_t msgId);
     bool sendUBX(uint8_t *msg, uint16_t len);
     void calcChecksum(uint8_t *msg, uint16_t len);
+    bool incrementProcessBufferIndex(uint16_t &idx, uint16_t increment);
 
     bool parseRMC();
     bool parseGGA();
     bool parseUBX();
 
     // UBX helper functions
-    bool getVx(int &idx);
-    bool getVy(int &idx);
-    bool getVz(int &idx);
+    bool getVx(uint16_t &idx);
+    bool getVy(uint16_t &idx);
+    bool getVz(uint16_t &idx);
 
     // RMC helper functions
-    bool getTimeRMC(int &idx);
-    bool getLatitudeRMC(int &idx);
-    bool getLongitudeRMC(int &idx);
-    bool getSpeedRMC(int &idx);
-    bool getTrackAngleRMC(int &idx);
-    bool getDateRMC(int &idx);
+    bool getTimeRMC(uint16_t &idx);
+    bool getLatitudeRMC(uint16_t &idx);
+    bool getLongitudeRMC(uint16_t &idx);
+    bool getSpeedRMC(uint16_t &idx);
+    bool getTrackAngleRMC(uint16_t &idx);
+    bool getDateRMC(uint16_t &idx);
 
     // GGA helper functions
-    bool getNumSatellitesGGA(int &idx);
-    bool getAltitudeGGA(int &idx);
+    bool getNumSatellitesGGA(uint16_t &idx);
+    bool getAltitudeGGA(uint16_t &idx);
 };
