@@ -330,21 +330,45 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
 // SERVO PARAM LOADING AND CALLBACKS
 // ==============================================================
+// ---------------------------------------------------------------------------
+// loadServoParams: reads servo config from ZP_PARAM into motor instances
+//
+// The ZP_PARAM_ID enum lays out servo params in groups of 5 (SERVO_PARAMS_PER_CHANNEL):
+//   SERVO1_TRIM, SERVO1_MIN, SERVO1_MAX, SERVO1_REVERSED, SERVO1_FUNCTION,
+//   SERVO2_TRIM, SERVO2_MIN, ...
+// So for channel i, the base param ID is SERVO1_TRIM + i*5, and offsets +0..+4
+// give TRIM, MIN, MAX, REVERSED, FUNCTION respectively.
+// ---------------------------------------------------------------------------
 void AttitudeManager::loadServoParams() {
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         ZP_PARAM_ID base = static_cast<ZP_PARAM_ID>(
             static_cast<uint16_t>(ZP_PARAM_ID::SERVO1_TRIM) + i * SERVO_PARAMS_PER_CHANNEL);
         MotorInstance_t *m = &mainMotorGroup->motors[i];
-        m->trim      = usToPercent(ZP_PARAM::get(base));
-        m->min       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 1)));
-        m->max       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 2)));
-        m->isInverted = static_cast<int>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 3))) != 0;
-        m->function  = static_cast<MotorFunction_e>(static_cast<int16_t>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 4))));
+        m->trim      = usToPercent(ZP_PARAM::get(base));                                                                    // base + 0
+        m->min       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 1)));               // base + 1
+        m->max       = usToPercent(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 2)));               // base + 2
+        m->isInverted = static_cast<int>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 3))) != 0;    // base + 3
+        m->function  = static_cast<MotorFunction_e>(static_cast<int16_t>(ZP_PARAM::get(static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(base) + 4))));  // base + 4
     }
 }
 
-// Single callback per param index — Idx is the flat param offset from SERVO1_TRIM
-// e.g. Idx=0 is SERVO1_TRIM, Idx=1 is SERVO1_MIN, ..., Idx=5 is SERVO2_TRIM, etc.
+// ---------------------------------------------------------------------------
+// updateServoParam<Idx>: compile-time generated callback for each servo param
+//
+// The template parameter Idx is a flat index into the servo parameter table:
+//   Idx 0 = SERVO1_TRIM, 1 = SERVO1_MIN, 2 = SERVO1_MAX, 3 = SERVO1_REVERSED,
+//   4 = SERVO1_FUNCTION, 5 = SERVO2_TRIM, 6 = SERVO2_MIN, ... and so on.
+//
+// At compile time, Idx is divided by SERVO_PARAMS_PER_CHANNEL (5) to get the
+// servo channel number, and the remainder gives the field within that channel.
+// Because Idx is a compile-time constant (template parameter), the compiler
+// optimizes each instantiation into a direct write to the correct motor/field
+// with no runtime lookup overhead.
+//
+// The compiler generates one distinct function for every Idx value (0..59 for
+// 12 channels × 5 params), each of which is registered as the ZP_PARAM callback
+// for the corresponding parameter ID.
+// ---------------------------------------------------------------------------
 template <uint8_t Idx>
 bool AttitudeManager::updateServoParam(AttitudeManager* ctx, float val) {
     constexpr uint8_t CHANNEL = Idx / SERVO_PARAMS_PER_CHANNEL;
@@ -362,18 +386,45 @@ bool AttitudeManager::updateServoParam(AttitudeManager* ctx, float val) {
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// bindServoParamCallbacksImpl: registers all servo param callbacks at once
+//
+// Uses C++14 std::integer_sequence + parameter pack expansion to avoid writing
+// 60 individual bindCallback() calls by hand.
+//
+// How it works step by step:
+//   1. The caller passes std::make_integer_sequence<uint8_t, 60>{}, which is a
+//      type that carries the compile-time list <0, 1, 2, ... 59>.
+//   2. The template parameter pack "Is..." captures that list.
+//   3. The "expand" trick creates a dummy int array whose initializer list
+//      contains one bindCallback() call per value in Is...:
+//        {0, (bindCallback(..., updateServoParam<0>), 0),
+//             (bindCallback(..., updateServoParam<1>), 0),
+//             ...
+//             (bindCallback(..., updateServoParam<59>), 0)}
+//      The comma operator (expr, 0) discards bindCallback's return value and
+//      yields 0 for each array element. The leading 0 handles the empty-pack
+//      edge case (zero-length arrays are illegal in C++).
+//   4. (void) suppresses the unused-variable warning on the dummy array.
+//
+// Net effect: one line of template code expands to 60 bindCallback() calls
+// at compile time, one for each servo parameter.
+// ---------------------------------------------------------------------------
 template <uint8_t... Is>
 void AttitudeManager::bindServoParamCallbacksImpl(std::integer_sequence<uint8_t, Is...>) {
-    // C++14 pack expansion trick using dummy array
     using expand = int[];
     (void)expand{0, (ZP_PARAM::bindCallback(
         static_cast<ZP_PARAM_ID>(static_cast<uint16_t>(ZP_PARAM_ID::SERVO1_TRIM) + Is),
         this, AttitudeManager::updateServoParam<Is>), 0)...};
 }
 
+// Total number of servo parameters: 12 channels × 5 params each = 60
 static constexpr uint8_t TOTAL_SERVO_PARAMS = 12 * SERVO_PARAMS_PER_CHANNEL;
 
 void AttitudeManager::bindServoParamCallbacks() {
+    // std::make_integer_sequence<uint8_t, 60> generates the type
+    // std::integer_sequence<uint8_t, 0, 1, 2, ..., 59> which is passed to
+    // bindServoParamCallbacksImpl to expand into 60 bindCallback() calls.
     bindServoParamCallbacksImpl(std::make_integer_sequence<uint8_t, TOTAL_SERVO_PARAMS>{});
 }
 // ==============================================================
