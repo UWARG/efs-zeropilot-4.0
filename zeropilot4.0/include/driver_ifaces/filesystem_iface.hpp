@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#define MAX_RW_BUFFER_SIZE 128  // Maximum buffer size for read/write operations, can be adjusted as needed
+#define MAX_RW_BUFFER_SIZE 256  // Maximum buffer size for read/write operations, can be adjusted as needed
 
 enum class ManId : uint8_t {
     SYSTEM = 0,

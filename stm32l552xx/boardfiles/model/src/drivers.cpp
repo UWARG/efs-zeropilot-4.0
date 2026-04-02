@@ -102,7 +102,6 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10);
@@ -130,6 +129,9 @@ void initDrivers()
     for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
         sdResponseQueuesHandle[i] = new (&sdResponseQueuesStorage[i]) MessageQueue<PollResult>(&sdResponseQueueId[i]);
     }
+
+    // File system
+    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // Initialize hardware components
     leftAileronMotorHandle->init();

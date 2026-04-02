@@ -94,11 +94,21 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
         req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
         FatFSReqBuff writeBuffMsg;
-        std::memcpy(writeBuffMsg.buff, buff, (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE);
-        writeBuffMsg.size = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
-        (btw < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[btw] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
+        while (btw > 0) {
+            uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
+            std::memcpy(writeBuffMsg.buff, buff, chunkSize);
+            writeBuffMsg.size = chunkSize;
+            (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-        if (requestQueue->push(&req) != osOK || bufferQueue->push(&writeBuffMsg) != osOK) {
+            if (bufferQueue->push(&writeBuffMsg) != osOK) {
+                return FILE_STATUS_ERROR; // Failed to send data
+            }
+        
+            buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
+            btw -= chunkSize; // Decrease remaining byte count
+        }
+
+        if (requestQueue->push(&req) != osOK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         
@@ -124,11 +134,21 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
     req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
     FatFSReqBuff writeBuffMsg;
-    std::memcpy(writeBuffMsg.buff, buff, (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE);
-    writeBuffMsg.size = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
-    (btw < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[btw] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
+    while (btw > 0) {
+        uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
+        std::memcpy(writeBuffMsg.buff, buff, chunkSize);
+        writeBuffMsg.size = chunkSize;
+        (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-    if (requestQueue->push(&req) != osOK || bufferQueue->push(&writeBuffMsg) != osOK) {
+        if (bufferQueue->push(&writeBuffMsg) != osOK) {
+            return FILE_STATUS_ERROR; // Failed to send data
+        }
+        
+        buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
+        btw -= chunkSize; // Decrease remaining byte count
+    }
+
+    if (requestQueue->push(&req) != osOK) {
         return FILE_STATUS_ERROR; // Failed to send request
     }
     
@@ -152,11 +172,21 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
     req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
     FatFSReqBuff writeBuffMsg;
-    std::memcpy(writeBuffMsg.buff, buff, (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE);
-    writeBuffMsg.size = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
-    (btw < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[btw] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
+    while (btw > 0) {
+        uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
+        std::memcpy(writeBuffMsg.buff, buff, chunkSize);
+        writeBuffMsg.size = chunkSize;
+        (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-    if (requestQueue->push(&req) != osOK || bufferQueue->push(&writeBuffMsg) != osOK) {
+        if (bufferQueue->push(&writeBuffMsg) != osOK) {
+            return FILE_STATUS_ERROR; // Failed to send data
+        }
+        
+        buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
+        btw -= chunkSize; // Decrease remaining byte count
+    }
+
+    if (requestQueue->push(&req) != osOK) {
         return FILE_STATUS_ERROR; // Failed to send request
     }
     

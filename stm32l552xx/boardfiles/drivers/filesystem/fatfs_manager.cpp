@@ -11,7 +11,6 @@ void FatFSManager::run() {
             PollResult respMsg;
             respMsg.type = reqMsg.type;
 
-            // CURRENTLY NOT ALL POSSIBLE REQUEST TYPES ARE IMPLEMENTED, ONLY SOME FOR MVP
             switch (reqMsg.type) {
                 case ReqType::WRITE: {
                     FatFSReqBuff writeBuffMsg;
@@ -109,7 +108,9 @@ void FatFSManager::run() {
                 }
             }
 
-            responseQueues[static_cast<size_t>(reqMsg.id)]->push(&respMsg);
+            if (reqMsg.sendResp) {
+                responseQueues[static_cast<size_t>(reqMsg.id)]->push(&respMsg);
+            }
         }
     }
 }
