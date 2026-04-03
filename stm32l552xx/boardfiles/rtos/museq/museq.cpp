@@ -45,8 +45,8 @@ void initQueues()
   amQueueId = osMessageQueueNew(16, sizeof(RCMotorControlMessage_t), NULL);
   tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
   messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);
-  sdRequestQueueId = osMessageQueueNew(16, sizeof(FatFSReqMsg), NULL);
-  sdBufferQueueId = osMessageQueueNew(16, sizeof(FatFSReqBuff), NULL);
+  sdRequestQueueId = osMessageQueueNew(32, sizeof(FatFSReqMsg), NULL);
+  sdBufferQueueId = osMessageQueueNew(32, sizeof(FatFSReqBuff), NULL);
   for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
       sdResponseQueueId[i] = osMessageQueueNew(16, sizeof(PollResult), NULL);
   }

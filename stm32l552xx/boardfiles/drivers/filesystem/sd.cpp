@@ -84,6 +84,7 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
             bw = &dummy_bw; // Use a dummy variable if caller doesn't care about bytes written
         }
         FRESULT res = f_write(reinterpret_cast<FIL*>(fp->_storage), buff, btw, reinterpret_cast<UINT*>(bw));
+        res = (res == FR_OK) ? f_sync(reinterpret_cast<FIL*>(fp->_storage)) : res; // Sync only if write was successful
         return fresultToStatus(res);
     } else {
         FatFSReqMsg req;
@@ -95,6 +96,8 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
 
         FatFSReqBuff writeBuffMsg;
         while (btw > 0) {
+            writeBuffMsg.id = id;
+            writeBuffMsg.type = ReqType::WRITE;
             uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
             std::memcpy(writeBuffMsg.buff, buff, chunkSize);
             writeBuffMsg.size = chunkSize;
@@ -135,6 +138,8 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
 
     FatFSReqBuff writeBuffMsg;
     while (btw > 0) {
+        writeBuffMsg.id = id;
+        writeBuffMsg.type = ReqType::WRITE_SEEK;
         uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
         std::memcpy(writeBuffMsg.buff, buff, chunkSize);
         writeBuffMsg.size = chunkSize;
@@ -173,6 +178,8 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
 
     FatFSReqBuff writeBuffMsg;
     while (btw > 0) {
+        writeBuffMsg.id = id;
+        writeBuffMsg.type = ReqType::WRITE_SYNC;
         uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
         std::memcpy(writeBuffMsg.buff, buff, chunkSize);
         writeBuffMsg.size = chunkSize;

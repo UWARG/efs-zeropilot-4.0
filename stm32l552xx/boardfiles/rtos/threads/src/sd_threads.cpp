@@ -6,7 +6,7 @@ osThreadId_t sdMainHandle;
 
 static const osThreadAttr_t sdMainLoopAttr = {
     .name = "sdMain",
-    .stack_size = 1024,
+    .stack_size = 2048,
     .priority = (osPriority_t) osPriorityBelowNormal
 };
 
