@@ -17,7 +17,12 @@ TelemetryManager::TelemetryManager(
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
     overflowMsgPending(false),
-    currParamListTxIdx(ZP_PARAM::getCount()) {}
+    currParamListTxIdx(ZP_PARAM::getCount()),
+    paramSetup(this) {
+
+    paramSetup.loadAllParams();
+    paramSetup.bindAllParamCallbacks();
+}
 
 TelemetryManager::~TelemetryManager() = default;
 

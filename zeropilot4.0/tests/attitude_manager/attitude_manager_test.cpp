@@ -41,7 +41,7 @@ protected:
         {&mockThrottleMotor},
         {&mockFlapMotor},
         {&mockSteeringMotor}
-    }; // Remaining fields overwritten by loadServoParams() from ZP_PARAM
+    }; // Remaining fields overwritten by AMParamSetup::loadAllParams() from ZP_PARAM
     
     MotorGroupInstance_t motorGroup{motorInstances, 6};
     

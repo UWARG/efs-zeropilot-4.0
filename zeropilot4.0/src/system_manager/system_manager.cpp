@@ -23,22 +23,11 @@ SystemManager::SystemManager(
         flightModes{},
         oldDataCount(0),
         rcConnected(false),
-        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0})
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
+        paramSetup(this)
 {
-    static constexpr ZP_PARAM_ID FLTMODE_PARAMS[SM_FLIGHTMODE_COUNT] = {
-        ZP_PARAM_ID::FLTMODE1, ZP_PARAM_ID::FLTMODE2, ZP_PARAM_ID::FLTMODE3,
-        ZP_PARAM_ID::FLTMODE4, ZP_PARAM_ID::FLTMODE5, ZP_PARAM_ID::FLTMODE6
-    };
-    for (uint8_t i = 0; i < SM_FLIGHTMODE_COUNT; i++) {
-        flightModes[i] = static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(FLTMODE_PARAMS[i])));
-    }
-
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE1, this, SystemManager::updateFltMode<0>);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE2, this, SystemManager::updateFltMode<1>);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE3, this, SystemManager::updateFltMode<2>);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE4, this, SystemManager::updateFltMode<3>);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE5, this, SystemManager::updateFltMode<4>);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE6, this, SystemManager::updateFltMode<5>);
+    paramSetup.loadAllParams();
+    paramSetup.bindAllParamCallbacks();
 }
 
 void SystemManager::smUpdate() {
@@ -259,22 +248,3 @@ void SystemManager::sendMessagesToLogger() {
 
     // loggerDriver->log(messages, msgCount); (TODO: Uncomment after rearchitecture)
 }
-
-// Flight mode param callback (template instantiated per slot)
-template <uint8_t Idx>
-bool SystemManager::updateFltMode(SystemManager* context, float val) {
-    uint32_t mode = static_cast<uint32_t>(val);
-    if (!isValidPlaneFlightMode(mode)) return false;
-    context->flightModes[Idx] = static_cast<PlaneFlightMode_e>(mode);
-    return true;
-}
-
-// STATIC FUNCTIONS ONLY FOR PARAM CHAINING
-// ==============================================================
-template bool SystemManager::updateFltMode<0>(SystemManager*, float);
-template bool SystemManager::updateFltMode<1>(SystemManager*, float);
-template bool SystemManager::updateFltMode<2>(SystemManager*, float);
-template bool SystemManager::updateFltMode<3>(SystemManager*, float);
-template bool SystemManager::updateFltMode<4>(SystemManager*, float);
-template bool SystemManager::updateFltMode<5>(SystemManager*, float);
-// ==============================================================
