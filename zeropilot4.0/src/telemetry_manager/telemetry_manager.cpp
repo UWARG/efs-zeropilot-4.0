@@ -7,12 +7,14 @@
 TelemetryManager::TelemetryManager(
     ISystemUtils *systemUtilsDriver,
     ITelemLink *telemLinkDriver,
+    IRCReceiver *rcDriver, 
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
+    rcDriver(rcDriver),
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
@@ -196,6 +198,37 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
 
             enqueueParamValueTx(paramIndex);
             break;
+        }
+        case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {
+            const uint8_t NUMBER_OF_CHANNELS = 16;
+
+            uint16_t channels[NUMBER_OF_CHANNELS] = {
+                mavlink_msg_rc_channels_override_get_chan1_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan2_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan3_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan4_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan5_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan6_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan7_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan8_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan9_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan10_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan11_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan12_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan13_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan14_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan15_raw(&msg),
+                mavlink_msg_rc_channels_override_get_chan16_raw(&msg),
+            };
+
+            RCControl rcData;
+            rcData.isDataNew = true;
+
+            for(uint8_t i = 0; i < NUMBER_OF_CHANNELS; i++){
+                rcData.controlSignals[i] = channels[i];
+            }
+            rcDriver->forcePushMAVLinkRC(rcData);
+
         }
 
         case MAVLINK_MSG_ID_PARAM_SET: {
