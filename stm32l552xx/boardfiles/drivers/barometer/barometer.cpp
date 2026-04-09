@@ -330,3 +330,60 @@ bool ICP20100::initiateBarometer()
 
 	return true;
 }
+
+bool ICP20100::firWarmupPoll()
+{
+	uint8_t mode_select = (uint8_t)(0x28); // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
+	uint8_t fifo_fill = 0;
+	uint8_t stop_mode = 0x00;
+	uint8_t flush_fifo = 0x80;
+	uint32_t timeoutMs = 200U;
+	
+	// Step 1: Configure mode to be in mode 1 and continuous  and start a measuerment
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_select, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	// Step 2: Poll for filling up of FIFO fill
+	while (timeoutMs-- > 0U) {
+		if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &fifo_fill, 1, 10) != HAL_OK) {
+			return false;
+		}
+
+		fifo_fill &= 0x1F;
+		if (fifo_fill >= 14U) {
+			break;
+		}
+
+		HAL_Delay(1);
+	}
+
+	if (timeoutMs == 0U) {
+		return false;
+	}
+
+	// Step 3: Stop measuring data 
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &stop_mode, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	HAL_Delay(1);
+
+	// Step 4: Flush FIFO filter
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &flush_fifo, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	// Step 5: Start measurement 
+
+	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &mode_select, 1, 10) != HAL_OK) {
+		return false;
+	}
+
+	// Step 6: Pass data reading to ReadPressureDMA
+
+	return true;
+}
