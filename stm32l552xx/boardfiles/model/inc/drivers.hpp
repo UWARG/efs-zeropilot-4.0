@@ -5,7 +5,7 @@
 #include "logger.hpp"
 #include "motor.hpp"
 #include "motor_datatype.hpp"
-#include "rc.hpp"
+#include "rc_sbus.hpp"
 #include "rc_crsf.hpp"
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
@@ -21,18 +21,18 @@ extern SystemUtils *systemUtilsHandle;
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
 
-extern MotorControl *leftAileronMotorHandle;
-extern MotorControl *rightAileronMotorHandle;
-extern MotorControl *elevatorMotorHandle;
-extern MotorControl *rudderMotorHandle;
-extern MotorControl *throttleMotorHandle;
-extern MotorControl *leftFlapMotorHandle;
-extern MotorControl *rightFlapMotorHandle;
-extern MotorControl *steeringMotorHandle;
+extern MotorControl *motor1Handle;
+extern MotorControl *motor2Handle;
+extern MotorControl *motor3Handle;
+extern MotorControl *motor4Handle;
+extern MotorControl *motor5Handle;
+extern MotorControl *motor6Handle;
+extern MotorControl *motor7Handle;
+extern MotorControl *motor8Handle;
 
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
-extern RFD *rfdHandle;
+extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
 
@@ -41,11 +41,6 @@ extern MessageQueue<char[100]> *smLoggerQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
-extern MotorGroupInstance_t rollMotors;
-extern MotorGroupInstance_t pitchMotors;
-extern MotorGroupInstance_t yawMotors;
-extern MotorGroupInstance_t throttleMotors;
-extern MotorGroupInstance_t flapMotors;
-extern MotorGroupInstance_t steeringMotors;
+extern MotorGroupInstance_t mainMotorGroup;
 
 void initDrivers();

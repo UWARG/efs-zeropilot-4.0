@@ -1,10 +1,11 @@
 #include "motor.hpp"
 
-MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint32_t minDutyCycle, uint32_t maxDutyCycle) : 
+MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint32_t minDutyCycle, uint32_t maxDutyCycle, uint8_t servoIdx) : 
     timer(timer), 
     timerChannel(timerChannel), 
     minCCR(minDutyCycle / 100.0 * timer->Init.Period), 
-    maxCCR(maxDutyCycle / 100.0 * timer->Init.Period) {
+    maxCCR(maxDutyCycle / 100.0 * timer->Init.Period),
+    servoIdx(servoIdx) {
     // blank
 }
 

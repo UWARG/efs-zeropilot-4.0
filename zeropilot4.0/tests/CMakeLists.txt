@@ -2,20 +2,30 @@ cmake_minimum_required(VERSION 3.18)
 project(gtestzeropilot4.0)
 
 # ========== test files begin ==========
+
 # attitude manager test files
 set(AM_TSRC
-
+    attitude_manager/attitude_manager_test.cpp
+    attitude_manager/pid_test.cpp
+    attitude_manager/direct_mapping_test.cpp
+    attitude_manager/fbwa_mapping_test.cpp
 )
 
 # system manager test files
 set(SM_TSRC
+    system_manager/system_manager_test.cpp
+)
 
+# telemetry manager test files
+set(TM_TSRC
+    telemetry_manager/telemetry_manager_test.cpp
 )
 
 # all test files
 set(ALL_TSRC
     ${AM_TSRC}
     ${SM_TSRC}
+    ${TM_TSRC}
 )
 # ========== test files end ==========
 

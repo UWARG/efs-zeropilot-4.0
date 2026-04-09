@@ -23,18 +23,18 @@ alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
 alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
 alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
 
-alignas(MotorControl) static uint8_t leftAileronMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t rightAileronMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t elevatorMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t rudderMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t throttleMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t leftFlapMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t rightFlapMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor3Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor4Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
-alignas(RFD) static uint8_t rfdStorage[sizeof(RFD)];
+alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
@@ -50,18 +50,18 @@ SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
 
-MotorControl *leftAileronMotorHandle = nullptr;
-MotorControl *rightAileronMotorHandle = nullptr;
-MotorControl *elevatorMotorHandle = nullptr;
-MotorControl *rudderMotorHandle = nullptr;
-MotorControl *throttleMotorHandle = nullptr;
-MotorControl *leftFlapMotorHandle = nullptr;
-MotorControl *rightFlapMotorHandle = nullptr;
-MotorControl *steeringMotorHandle = nullptr;
+MotorControl *motor1Handle = nullptr;
+MotorControl *motor2Handle = nullptr;
+MotorControl *motor3Handle = nullptr;
+MotorControl *motor4Handle = nullptr;
+MotorControl *motor5Handle = nullptr;
+MotorControl *motor6Handle = nullptr;
+MotorControl *motor7Handle = nullptr;
+MotorControl *motor8Handle = nullptr;
 
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
-RFD *rfdHandle = nullptr;
+RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -71,26 +71,10 @@ MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
 // ----------------------------------------------------------------------------
-// Motor instances & groups
+// Motor instances & group
 // ----------------------------------------------------------------------------
-MotorInstance_t leftAileronMotorInstance;
-MotorInstance_t rightAileronMotorInstance;
-MotorInstance_t elevatorMotorInstance;
-MotorInstance_t rudderMotorInstance;
-MotorInstance_t throttleMotorInstance;
-MotorInstance_t leftFlapMotorInstance;
-MotorInstance_t rightFlapMotorInstance;
-MotorInstance_t steeringMotorInstance;
-
-MotorInstance_t aileronMotorInstances[2];
-MotorInstance_t flapMotorInstances[2];
-
-MotorGroupInstance_t rollMotors;
-MotorGroupInstance_t pitchMotors;
-MotorGroupInstance_t yawMotors;
-MotorGroupInstance_t throttleMotors;
-MotorGroupInstance_t flapMotors;
-MotorGroupInstance_t steeringMotors;
+MotorInstance_t motorInstances[8];
+MotorGroupInstance_t mainMotorGroup;
 
 // ----------------------------------------------------------------------------
 // Initialization (no heap allocations)
@@ -102,20 +86,20 @@ void initDrivers()
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg1);
     loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
 
-    // Motors
-    leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10);
-    rightAileronMotorHandle = new (&rightAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10);
-    elevatorMotorHandle = new (&elevatorMotorStorage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10);
-    rudderMotorHandle = new (&rudderMotorStorage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10);
-    throttleMotorHandle = new (&throttleMotorStorage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10);
-    leftFlapMotorHandle = new (&leftFlapMotorStorage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10);
-    rightFlapMotorHandle = new (&rightFlapMotorStorage) MotorControl(&htim2, TIM_CHANNEL_3, 5, 10);
-    steeringMotorHandle = new (&steeringMotorStorage) MotorControl(&htim2, TIM_CHANNEL_4, 5, 10);
+    // Motors (servo index matches SERVOx param)
+    motor1Handle = new (&motor1Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 1);
+    motor2Handle = new (&motor2Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 2);
+    motor3Handle = new (&motor3Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 3);
+    motor4Handle = new (&motor4Storage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10, 4);
+    motor5Handle = new (&motor5Storage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10, 5);
+    motor6Handle = new (&motor6Storage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10, 6);
+    motor7Handle = new (&motor7Storage) MotorControl(&htim2, TIM_CHANNEL_3, 5, 10, 7);
+    motor8Handle = new (&motor8Storage) MotorControl(&htim2, TIM_CHANNEL_4, 5, 10, 8);
 
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&rcStorage) CRSFReceiver(&huart4);
-    rfdHandle = new (&rfdStorage) RFD(&huart1);
+    telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
     imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_5);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
@@ -126,41 +110,31 @@ void initDrivers()
     messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
-    leftAileronMotorHandle->init();
-    rightAileronMotorHandle->init();
-    elevatorMotorHandle->init();
-    rudderMotorHandle->init();
-    throttleMotorHandle->init();
-    leftFlapMotorHandle->init();
-    rightFlapMotorHandle->init();
-    steeringMotorHandle->init();
+    motor1Handle->init();
+    motor2Handle->init();
+    motor3Handle->init();
+    motor4Handle->init();
+    motor5Handle->init();
+    motor6Handle->init();
+    motor7Handle->init();
+    motor8Handle->init();
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
 
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    telemLinkHandle->init();
 
-    // Motor instance bindings
-    leftAileronMotorInstance = {leftAileronMotorHandle, true};
-    rightAileronMotorInstance = {rightAileronMotorHandle, true};
-    elevatorMotorInstance = {elevatorMotorHandle, false};
-    rudderMotorInstance = {rudderMotorHandle, false};
-    throttleMotorInstance = {throttleMotorHandle, false};
-    leftFlapMotorInstance = {leftFlapMotorHandle, false};
-    rightFlapMotorInstance = {rightFlapMotorHandle, true};
-    steeringMotorInstance = {steeringMotorHandle, true};
+    // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
+    motorInstances[0] = {motor1Handle};
+    motorInstances[1] = {motor2Handle};
+    motorInstances[2] = {motor3Handle};
+    motorInstances[3] = {motor4Handle};
+    motorInstances[4] = {motor5Handle};
+    motorInstances[5] = {motor6Handle};
+    motorInstances[6] = {motor7Handle};
+    motorInstances[7] = {motor8Handle};
 
-    aileronMotorInstances[0] = leftAileronMotorInstance;
-    aileronMotorInstances[1] = rightAileronMotorInstance;
-
-    flapMotorInstances[0] = leftFlapMotorInstance;
-    flapMotorInstances[1] = rightFlapMotorInstance;
-
-    rollMotors = {aileronMotorInstances, 2};
-    pitchMotors = {&elevatorMotorInstance, 1};
-    yawMotors = {&rudderMotorInstance, 1};
-    throttleMotors = {&throttleMotorInstance, 1};
-    flapMotors = {flapMotorInstances, 2};
-    steeringMotors = {&steeringMotorInstance, 1};
+    mainMotorGroup = {motorInstances, 8};
 }

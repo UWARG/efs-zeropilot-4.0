@@ -1,0 +1,318 @@
+let airspeedIndicator, attitude, altimeter, turnCoordinator, headingIndicator, vsi;
+let ws;
+
+$(document).ready(function() {
+    // UI Event Listeners
+    document.getElementById('startup-config').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const config = {
+            altitude: parseFloat(document.getElementById('init-altitude').value),
+            speed: parseFloat(document.getElementById('init-speed').value),
+            roll: parseFloat(document.getElementById('init-roll').value),
+            pitch: parseFloat(document.getElementById('init-pitch').value),
+            heading: parseFloat(document.getElementById('init-heading').value),
+            throttle: parseFloat(document.getElementById('init-throttle').value),
+            engine: document.getElementById('init-engine').checked,
+            wind_north: parseFloat(document.getElementById('init-wind-north').value),
+            wind_east: parseFloat(document.getElementById('init-wind-east').value),
+            wind_down: parseFloat(document.getElementById('init-wind-down').value),
+            turb_type: parseInt(document.getElementById('init-turb-type').value),
+            turb_severity: parseInt(document.getElementById('init-turb-severity').value),
+            turb_windspeed: parseFloat(document.getElementById('init-turb-windspeed').value)
+        };
+        
+        document.getElementById('startup-modal').classList.add('hidden');
+        document.getElementById('sim-container').classList.remove('hidden');
+        
+        initSimulation(config);
+    });
+
+    startTelemViewer();
+
+    document.getElementById('init-turb-severity').addEventListener('input', (e) => {
+        document.getElementById('init-turb-severity-val').textContent = e.target.value;
+    });
+});
+
+function initSimulation(config) {
+    const imgDir = 'https://cdn.jsdelivr.net/gh/sebmatton/jQuery-Flight-Indicators@master/img/';
+    const size = 200;
+
+    // Initialize Flight Indicators
+    attitude = $.flightIndicator('#attitude', 'attitude', { size, img_directory: imgDir });
+    airspeedIndicator = $.flightIndicator('#airspeed-indicator', 'airspeed', { size, img_directory: imgDir });
+    altimeter = $.flightIndicator('#altimeter', 'altimeter', { size, img_directory: imgDir });
+    vsi = $.flightIndicator('#vsi', 'variometer', { size, img_directory: imgDir });
+    turnCoordinator = $.flightIndicator('#turn-coordinator', 'turn_coordinator', { size, img_directory: imgDir });
+    headingIndicator = $.flightIndicator('#heading-indicator', 'heading', { size, img_directory: imgDir });
+
+    ws = new WebSocket('ws://localhost:8080/ws');
+    
+    ws.onopen = () => ws.send(JSON.stringify({type: 'init', config: config}));
+    ws.onerror = (e) => console.error('WebSocket error:', e);
+    
+    const controls = {
+        roll: document.getElementById('roll-ctrl'),
+        pitch: document.getElementById('pitch-ctrl'),
+        yaw: document.getElementById('yaw-ctrl'),
+        throttle: document.getElementById('throttle-ctrl')
+    };
+
+    controls.throttle.value = config.throttle;
+    document.getElementById('throttle-val').textContent = config.throttle;
+
+    // Flap switch
+    let flapPosition = 0;
+    const flapValues = [0, 50, 100];
+    const flapThumb = document.getElementById('flap-thumb');
+    const flapTrack = document.querySelector('.switch-track');
+    
+    flapTrack.addEventListener('click', (e) => {
+        const rect = flapTrack.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percent = clickX / rect.width;
+        
+        if (percent < 0.33) flapPosition = 0;
+        else if (percent < 0.67) flapPosition = 1;
+        else flapPosition = 2;
+        
+        flapThumb.style.left = `${flapPosition * 33.33}%`;
+        document.getElementById('flap-val').textContent = `${flapValues[flapPosition]}%`;
+        
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'control',
+                roll: parseInt(controls.roll.value),
+                pitch: parseInt(controls.pitch.value),
+                yaw: parseInt(controls.yaw.value),
+                throttle: parseInt(controls.throttle.value),
+                flap: flapValues[flapPosition],
+                fltmode: fltmodeValues[fltmodePosition]
+            }));
+        }
+    });
+
+    // Flight mode switch
+    let fltmodePosition = 0;
+    const fltmodeValues = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5];
+    const fltmodeThumb = document.getElementById('fltmode-thumb');
+    const fltmodeTrack = document.querySelector('.switch-track-6');
+    
+    fltmodeTrack.addEventListener('click', (e) => {
+        const rect = fltmodeTrack.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percent = clickX / rect.width;
+        
+        fltmodePosition = Math.min(5, Math.floor(percent * 6));
+        
+        fltmodeThumb.style.left = `${fltmodePosition * 16.67}%`;
+        document.getElementById('fltmode-val').textContent = `${fltmodePosition + 1}`;
+        
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'control',
+                roll: parseInt(controls.roll.value),
+                pitch: parseInt(controls.pitch.value),
+                yaw: parseInt(controls.yaw.value),
+                throttle: parseInt(controls.throttle.value),
+                flap: flapValues[flapPosition],
+                fltmode: fltmodeValues[fltmodePosition]
+            }));
+        }
+    });
+
+    handleJoystick(ws, controls);
+
+    document.getElementById('arm-btn').addEventListener('click', () => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type: 'arm'}));
+    });
+
+    // Manual Slider Input
+    Object.entries(controls).forEach(([name, elem]) => {
+        elem.addEventListener('input', () => {
+            document.getElementById(`${name}-val`).textContent = elem.value;
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'control',
+                    roll: parseInt(controls.roll.value),
+                    pitch: parseInt(controls.pitch.value),
+                    yaw: parseInt(controls.yaw.value),
+                    throttle: parseInt(controls.throttle.value),
+                    flap: flapValues[flapPosition],
+                    fltmode: fltmodeValues[fltmodePosition]
+                }));
+            }
+        });
+    });
+
+    // Environment settings modal — sync initial values
+    document.getElementById('env-wind-north').value = config.wind_north;
+    document.getElementById('env-wind-east').value = config.wind_east;
+    document.getElementById('env-wind-down').value = config.wind_down;
+    document.getElementById('env-turb-type').value = config.turb_type;
+    document.getElementById('env-turb-severity').value = config.turb_severity;
+    document.getElementById('env-turb-severity-val').textContent = config.turb_severity;
+    document.getElementById('env-turb-windspeed').value = config.turb_windspeed;
+
+    document.getElementById('env-btn').addEventListener('click', () => {
+        document.getElementById('env-modal').classList.remove('hidden');
+    });
+    document.getElementById('env-turb-severity').addEventListener('input', (e) => {
+        document.getElementById('env-turb-severity-val').textContent = e.target.value;
+    });
+    document.getElementById('env-close').addEventListener('click', () => {
+        document.getElementById('env-modal').classList.add('hidden');
+    });
+    document.getElementById('env-apply').addEventListener('click', () => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: 'environment',
+                wind_north: parseFloat(document.getElementById('env-wind-north').value),
+                wind_east: parseFloat(document.getElementById('env-wind-east').value),
+                wind_down: parseFloat(document.getElementById('env-wind-down').value),
+                turb_type: parseInt(document.getElementById('env-turb-type').value),
+                turb_severity: parseInt(document.getElementById('env-turb-severity').value),
+                turb_windspeed: parseFloat(document.getElementById('env-turb-windspeed').value)
+            }));
+        }
+        document.getElementById('env-modal').classList.add('hidden');
+    });
+
+    // Request State Updates
+    setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({type: 'state'}));
+    }, 100);
+
+    ws.onmessage = (event) => {
+        const state = JSON.parse(event.data);
+        updateUI(state);
+    };
+}
+
+function updateUI(state) {
+    document.getElementById('roll').textContent = state.roll.toFixed(1) + '\u00B0';
+    document.getElementById('pitch').textContent = state.pitch.toFixed(1) + '\u00B0';
+    document.getElementById('yaw').textContent = state.yaw.toFixed(1) + '\u00B0';
+    document.getElementById('altitude').textContent = state.altitude.toFixed(0) + ' ft';
+    document.getElementById('airspeed').textContent = state.airspeed.toFixed(1) + ' kts';
+    document.getElementById('groundspeed').textContent = state.groundspeed.toFixed(1) + ' kts';
+    document.getElementById('track').textContent = state.track.toFixed(1) + '\u00B0';
+    document.getElementById('rpm').textContent = state.rpm.toFixed(0);
+    
+    document.getElementById('roll-out').textContent = state.roll_output.toFixed(1);
+    document.getElementById('pitch-out').textContent = state.pitch_output.toFixed(1);
+    document.getElementById('yaw-out').textContent = state.yaw_output.toFixed(1);
+    document.getElementById('throttle-out').textContent = state.throttle_output.toFixed(1);
+    document.getElementById('flap-out').textContent = state.flap_output.toFixed(1);
+    
+    const armBtn = document.getElementById('arm-btn');
+    armBtn.textContent = state.armed ? 'DISARM' : 'ARM';
+    armBtn.className = state.armed ? 'arm-btn armed' : 'arm-btn disarmed';
+    
+    airspeedIndicator.setAirSpeed(state.airspeed);
+    attitude.setRoll(-state.roll);
+    attitude.setPitch(state.pitch);
+    altimeter.setAltitude(state.altitude);
+    turnCoordinator.setTurn(state.turn_rate);
+    headingIndicator.setHeading(state.yaw);
+    vsi.setVario(state.climb_rate / 1000);
+}
+
+function handleJoystick(ws, controls) {
+    let joystickConnected = false;
+    let flapPosition = 0;
+    const flapValues = [0, 50, 100];
+    let fltmodePosition = 0;
+    const fltmodeValues = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5];
+    
+    window.addEventListener("gamepadconnected", (e) => {
+        joystickConnected = true;
+        document.getElementById('joy-note').textContent = "Joystick Connected: " + e.gamepad.id;
+        pollJoystick();
+    });
+
+    let lastL = false, lastR = false, lastZL = false, lastZR = false;
+
+    function pollJoystick() {
+        if (!joystickConnected) return;
+        const gp = navigator.getGamepads()[0];
+        if (!gp) return;
+
+        const applyDeadzone = (val) => (Math.abs(val) < 0.05 ? 0 : val);
+        const norm = (val) => Math.round((val + 1) * 50);
+
+        // L/R bumpers (buttons 4 and 5)
+        const L = gp.buttons[4]?.pressed;
+        const R = gp.buttons[5]?.pressed;
+        
+        if (L && !lastL) {
+            flapPosition = Math.max(0, flapPosition - 1);
+            document.getElementById('flap-thumb').style.left = `${flapPosition * 33.33}%`;
+            document.getElementById('flap-val').textContent = `${flapValues[flapPosition]}%`;
+        }
+        if (R && !lastR) {
+            flapPosition = Math.min(2, flapPosition + 1);
+            document.getElementById('flap-thumb').style.left = `${flapPosition * 33.33}%`;
+            document.getElementById('flap-val').textContent = `${flapValues[flapPosition]}%`;
+        }
+        lastL = L;
+        lastR = R;
+
+        // ZL/ZR triggers (buttons 6 and 7)
+        const ZL = gp.buttons[6]?.pressed;
+        const ZR = gp.buttons[7]?.pressed;
+        
+        if (ZL && !lastZL) {
+            fltmodePosition = Math.max(0, fltmodePosition - 1);
+            document.getElementById('fltmode-thumb').style.left = `${fltmodePosition * 16.67}%`;
+            document.getElementById('fltmode-val').textContent = `${fltmodePosition + 1}`;
+        }
+        if (ZR && !lastZR) {
+            fltmodePosition = Math.min(5, fltmodePosition + 1);
+            document.getElementById('fltmode-thumb').style.left = `${fltmodePosition * 16.67}%`;
+            document.getElementById('fltmode-val').textContent = `${fltmodePosition + 1}`;
+        }
+        lastZL = ZL;
+        lastZR = ZR;
+
+        const joyData = {
+            roll: norm(applyDeadzone(gp.axes[2])),
+            pitch: norm(applyDeadzone(gp.axes[3])),
+            yaw: norm(applyDeadzone(gp.axes[0])),
+            throttle: norm(applyDeadzone(-gp.axes[1])),
+            flap: flapValues[flapPosition],
+            fltmode: fltmodeValues[fltmodePosition]
+        };
+
+        Object.entries(joyData).forEach(([key, val]) => {
+            if (key === 'flap' || key === 'fltmode') return;
+            controls[key].value = val;
+            document.getElementById(`${key}-val`).textContent = val;
+        });
+
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'control', ...joyData }));
+        requestAnimationFrame(pollJoystick);
+    }
+}
+
+function startTelemViewer() {
+    const MAX_MESSAGES = 1000;
+
+    const telemWs = new WebSocket('ws://localhost:8080/telem');
+    const txDiv = document.getElementById('telem-tx');
+    const rxDiv = document.getElementById('telem-rx');
+    
+    telemWs.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const div = data.direction === 1 ? txDiv : rxDiv;
+        const msgElem = document.createElement('div');
+        msgElem.className = 'telemetry-message'; // Styles defined in CSS
+        
+        msgElem.innerHTML = data.decoded 
+            ? `<strong>${data.type}</strong><br/><pre style="font-size: 11px; color: #aaa;">${data.decoded}</pre>` 
+            : data.raw;
+        
+        div.insertBefore(msgElem, div.firstChild);
+        if (div.children.length > MAX_MESSAGES) div.removeChild(div.lastChild);
+    };
+}
