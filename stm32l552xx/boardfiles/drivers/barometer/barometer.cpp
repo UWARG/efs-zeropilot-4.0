@@ -4,9 +4,9 @@ extern volatile uint32_t g_memrx_start_fail;
 extern volatile uint32_t g_i2c_err;
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
-	hi2c(hi2c), callBackCount(0), FIFO_REGISTER(0) {}
+	hi2c(hi2c), callbackCount(0), FIFO_REGISTER(0) {}
 
-bool ICP20100::initiateBarometer()
+bool Barometer::initiateBarometer()
 {
 	uint32_t err;
 
@@ -32,7 +32,7 @@ bool ICP20100::initiateBarometer()
 	}
 
 	if(version == 0xB2){ // Initialization done if version B
-		return false;
+		return true;
 	}
 
 	// Step 4: Check boot up status from OTP_Status2 register. Check specifically bit 0.
@@ -46,7 +46,7 @@ bool ICP20100::initiateBarometer()
 	boot_status &= (0x01);
 
 	if(boot_status == 1){ // Initialization done, barometer did not go through power cycle.
-		return false;
+		return true;
 	}
 
 	// Step 5: Bring ASIC into power mode to get access to main registers
@@ -331,7 +331,7 @@ bool ICP20100::initiateBarometer()
 	return true;
 }
 
-bool ICP20100::firWarmupPoll()
+bool Barometer::firWarmupPoll()
 {
 	uint8_t mode_select = (uint8_t)(0x28); // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
 	uint8_t fifo_fill = 0;
@@ -386,4 +386,120 @@ bool ICP20100::firWarmupPoll()
 	// Step 6: Pass data reading to ReadPressureDMA
 
 	return true;
+}
+
+bool Barometer::readRegister(
+    uint16_t memAddress,
+    uint8_t * pData,
+    uint16_t size,
+    I2C_HandleTypeDef *hi2c) {
+	if (HAL_I2C_Mem_Read_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) != HAL_OK) {
+		g_memrx_start_fail++;
+		uint32_t err = HAL_I2C_GetError(hi2c);
+		return false;
+	}
+
+	return true;
+}
+
+bool Barometer::writeRegister(
+    uint16_t memAddress,
+    uint8_t * pData,
+    uint16_t size,
+    I2C_HandleTypeDef *hi2c) {
+
+    return HAL_I2C_Mem_Write_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
+}
+
+void Barometer::I2C_MemRxCallback() {
+	switch(callbackCount) {
+		case 0: // Step 1: Start FIFO fill register read via DMA
+			dataFilled = 0;
+			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1, hi2c)) {
+				callbackCount = 1;
+			} else {
+				callbackCount = 0;
+				initiatedRead = false;
+			}
+			break;
+
+		case 1: // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
+			FIFO_REGISTER &= 0x1F;
+			if (FIFO_REGISTER > 0) {
+				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6, hi2c)) { 
+					callbackCount = 2;
+				} else {
+					callbackCount = 0;
+					initiatedRead = false;
+				}
+			} else {
+				// Keep polling FIFO until at least one sample is ready.
+				callbackCount = 0;
+				initiatedRead = false;
+			}
+			break;
+
+		case 2: { // Step 3: Burst read complete. Signal data ready.
+			dataFilled = 1;
+			callbackCount = 0;
+			initiatedRead = false;
+			break;
+		}
+
+		default:
+			callbackCount = 0;
+			initiatedRead = false;
+			break;
+	}
+}
+
+bool Barometer::readData(BaroData_t *data)
+{
+    if(data == nullptr){
+        return false;
+    }
+	if (dataFilled) {
+		uint32_t press_raw = ((Press_Temp_Data[2] & 0x0F) << 16) | (Press_Temp_Data[1] << 8) | Press_Temp_Data[0];
+		uint32_t temp_raw  = ((Press_Temp_Data[5] & 0x0F) << 16) | (Press_Temp_Data[4] << 8) | Press_Temp_Data[3];
+
+		int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);
+		if (press_signed & 0x80000) {
+			press_signed |= 0xFFF00000;
+		}
+
+		int32_t temp_signed = (int32_t)(temp_raw & 0xFFFFF);
+		if (temp_signed & 0x80000) {
+			temp_signed |= 0xFFF00000;
+		}
+
+		data->temperature_data = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
+		data->pressure_data = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		dataFilled = 0;
+		return true;
+	}
+
+	if (callbackCount != 0) {
+		return false;
+	}
+
+	if (HAL_I2C_GetState(hi2c) != HAL_I2C_STATE_READY) {
+		return false;
+	}
+
+	// Kick off DMA state machine. FIFO polling starts in callback step 1.
+	if(!initiatedRead){
+		initiatedRead = true;
+		I2C_MemRxCallback();
+	}
+
+	// Non-blocking: no data ready yet.
+	return false;
+}
+
+void Barometer::computeAltitude(BaroData_t *data)
+{
+    if(data != nullptr){
+        data->altitude = ((data->temperature_data + 273.15f) / 0.0065f) *
+	       (1.0f - powf(data->pressure_data / 101.325f, 0.190284f));
+    }
 }

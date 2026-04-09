@@ -1,7 +1,7 @@
 #pragma once 
 
 #include "stm32l5xx_hal.h"
-#include "power_module_iface.hpp"
+#include "barometer_iface.hpp"
 #include <cmath>
 #include <cstdint>
 
@@ -46,17 +46,21 @@
 
 class Barometer : public IBarometer {
     public:
-        ICP20100(I2C_HandleTypeDef *hi2c);
-        bool readData(Barodata_t *data);
+        Barometer(I2C_HandleTypeDef *hi2c);
+        bool readData(BaroData_t *data);
         bool initiateBarometer(); 
         void I2C_MemRxCallback();
         bool firWarmupPoll();
+        void computeAltitude(BaroData_t *data);
     private:
         I2C_HandleTypeDef *hi2c;
-        Barodata_t processedData;
         volatile bool dataFilled = 0;
-		volatile uint8_t callbackCount; // Used to keep track for state machine
-        bool initiatedRead = false;
+		volatile uint8_t callbackCount; 
+        volatile bool initiatedRead = false;
+        uint8_t Press_Temp_Data[6];
+        uint8_t FIFO_REGISTER;
+        float latestTemperatureC = 0.0f;
+        float latestPressurekPa = 0.0f;
         bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
 		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
-}
+};

@@ -4,8 +4,9 @@
 
 typedef struct {
     // Press and Temp data
-    uint8_t Press_Temp_Data[6];
-    uint8_t FIFO_REGISTER; 
+    float pressure_data;
+    float temperature_data;
+    float altitude;
 } BaroData_t;
 
 class IBarometer {
@@ -14,5 +15,5 @@ class IBarometer {
     public:
         virtual ~IBarometer() = default;
         
-        virtual bool readData(BaroData_ *data) = 0;
+        virtual bool readData(BaroData_t *data) = 0;
 }
