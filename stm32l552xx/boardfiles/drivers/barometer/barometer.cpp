@@ -5,7 +5,9 @@ Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
 
 bool Barometer::init()
 {
+
 	//Step 1: Power on ASIC
+	HAL_Delay(5);
 
 	//Step 2: Write to lock register twice to get access to main registers and initiate communication w/ I2C
 	uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
