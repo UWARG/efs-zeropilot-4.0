@@ -15,7 +15,7 @@
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
-#include "baromter.hpp"
+#include "barometer.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 

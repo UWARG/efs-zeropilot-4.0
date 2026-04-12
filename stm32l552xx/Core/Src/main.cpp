@@ -80,14 +80,8 @@ DMA_HandleTypeDef hdma_usart3_tx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .attr_bits = 0U,
-  .cb_mem = nullptr,
-  .cb_size = 0U,
-  .stack_mem = nullptr,
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
-  .tz_module = 0U,
-  .reserved = 0U
 };
 /* USER CODE BEGIN PV */
 
