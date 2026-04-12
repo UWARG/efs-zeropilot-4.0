@@ -447,8 +447,8 @@ bool Barometer::readData(BaroData_t *data)
 			temp_signed |= 0xFFF00000;
 		}
 
-		data->temperature_data = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
-		data->pressure_data = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		data->temperatureData = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
+		data->pressureData = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
 		dataFilled = 0;
 		return true;
 	}
@@ -474,7 +474,7 @@ bool Barometer::readData(BaroData_t *data)
 void Barometer::computeAltitude(BaroData_t *data)
 {
     if(data != nullptr){
-        data->altitude = ((data->temperature_data + 273.15f) / 0.0065f) *
-	       (1.0f - powf(data->pressure_data / 101.325f, 0.190284f));
+        data->altitude = ((data->temperatureData + 273.15f) / 0.0065f) *
+	       (1.0f - powf(data->pressureData / 101.325f, 0.190284f));
     }
 }
