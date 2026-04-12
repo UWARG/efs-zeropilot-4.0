@@ -86,9 +86,9 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if(hi2c->Instance == hi2c1){
+    if(hi2c->Instance == I2C1){
       pmHandle->I2C_MemRxCpltCallback();
-    } else if(hi2c->Instance == hi2c2){
+    } else if(hi2c->Instance == I2C2){
       barometerHandle->I2C_MemRxCpltCallback();
     }
 }
