@@ -16,4 +16,4 @@ class IBarometer {
         virtual ~IBarometer() = default;
         
         virtual bool readData(BaroData_t *data) = 0;
-}
+};

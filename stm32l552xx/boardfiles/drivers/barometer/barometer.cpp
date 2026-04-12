@@ -1,12 +1,9 @@
 #include "barometer.hpp"
 
-extern volatile uint32_t g_memrx_start_fail;
-extern volatile uint32_t g_i2c_err;
-
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
 	hi2c(hi2c), callbackCount(0), FIFO_REGISTER(0) {}
 
-bool Barometer::initiateBarometer()
+bool Barometer::init()
 {
 	uint32_t err;
 
@@ -394,7 +391,6 @@ bool Barometer::readRegister(
     uint16_t size,
     I2C_HandleTypeDef *hi2c) {
 	if (HAL_I2C_Mem_Read_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) != HAL_OK) {
-		g_memrx_start_fail++;
 		uint32_t err = HAL_I2C_GetError(hi2c);
 		return false;
 	}
@@ -411,7 +407,7 @@ bool Barometer::writeRegister(
     return HAL_I2C_Mem_Write_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
 }
 
-void Barometer::I2C_MemRxCallback() {
+void Barometer::I2C_MemRxCpltCallback() {
 	switch(callbackCount) {
 		case 0: // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
@@ -489,7 +485,7 @@ bool Barometer::readData(BaroData_t *data)
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
 	if(!initiatedRead){
 		initiatedRead = true;
-		I2C_MemRxCallback();
+		I2C_MemRxCpltCallback();
 	}
 
 	// Non-blocking: no data ready yet.

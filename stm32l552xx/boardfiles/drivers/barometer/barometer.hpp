@@ -48,8 +48,8 @@ class Barometer : public IBarometer {
     public:
         Barometer(I2C_HandleTypeDef *hi2c);
         bool readData(BaroData_t *data);
-        bool initiateBarometer(); 
-        void I2C_MemRxCallback();
+        bool init(); 
+        void I2C_MemRxCpltCallback();
         bool firWarmupPoll();
         void computeAltitude(BaroData_t *data);
     private:
