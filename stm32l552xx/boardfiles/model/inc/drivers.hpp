@@ -36,7 +36,8 @@ extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
-extern Barometer *barometerHandle;
+
+
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
