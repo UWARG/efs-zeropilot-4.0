@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 
 #define MAX_RW_BUFFER_SIZE 256  // Maximum buffer size for read/write operations, can be adjusted as needed
 
@@ -52,8 +53,8 @@ struct PollResult {
     } data;
 };
 
-struct alignas(4) File {
-    char _storage[256];  // Safe margin: FIL (~200 bytes) + FILE (~150 bytes) + padding
+struct File {
+    alignas(4) char _storage[256];  // Safe margin: FIL (~200 bytes) + FILE (~150 bytes) + padding
 };
 
 // this assumes we're using UTF-8, never UTF-16
