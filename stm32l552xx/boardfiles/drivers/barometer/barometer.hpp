@@ -8,7 +8,7 @@
 struct RegInfoBarometer {
     uint8_t address;
     uint8_t byte_size;
-}
+};
 
 // Datasheet Values
 

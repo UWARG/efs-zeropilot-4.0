@@ -36,7 +36,7 @@ bool Barometer::init()
 	}
 
 	// Mask boot status register to only read the 0th bit
-	boot_status &= (kBootStatusEnabledValued << kBootStatusBitPos); // <-- macro and stuff, have something to call enable bit positon, and then enable value
+	boot_status &= (kBootStatusEnabledValue << kBootStatusBitPos); // <-- macro and stuff, have something to call enable bit positon, and then enable value
 	// bit position macro, value macro
 	// WHATS CALLED:::::::: static constexpr, macros are text, static constexpr can be typed
 
