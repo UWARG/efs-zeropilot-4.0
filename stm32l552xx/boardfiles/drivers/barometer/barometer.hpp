@@ -5,7 +5,7 @@
 #include <cmath>
 #include <cstdint>
 
-struct RegInfo {
+struct RegInfoBarometer {
     uint8_t address;
     uint8_t byte_size;
 }
@@ -13,7 +13,7 @@ struct RegInfo {
 // Datasheet Values
 
 static constexpr uint8_t VERSION_2 = 0xB2;
-static constexpr uint8_t BOOT_FINISHED
+static constexpr uint8_t BOOT_FINISHED = 1U;
 
 // Bit Shift Values
 static constexpr uint8_t kBootStatusBitPos = 0U;
