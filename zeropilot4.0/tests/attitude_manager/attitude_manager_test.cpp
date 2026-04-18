@@ -382,3 +382,4 @@ TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent) {
     
     EXPECT_EQ(servoOutputCount, AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ);
 }
+

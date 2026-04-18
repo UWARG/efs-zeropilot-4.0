@@ -5,6 +5,20 @@
 #include <cmath>
 #include <cstdint>
 
+struct RegInfo {
+    uint8_t address;
+    uint8_t byte_size;
+}
+
+// Datasheet Values
+
+static constexpr uint8_t VERSION_2 = 0xB2;
+static constexpr uint8_t BOOT_FINISHED
+
+// Bit Shift Values
+static constexpr uint8_t kBootStatusBitPos = 0U;
+static constexpr uint8_t kBootStatusEnabledValue = 1U;
+
 // Register Definitions for Mikroe ICP-20100
 
 #define ICP20100_I2C_ADDR (0x64 << 1) // i2c is 7 bit address, left shit by 1 to make 1 byte.
@@ -38,7 +52,6 @@
 #define ICP20100_FIFO_FILL 0xC4
 #define ICP20100_DEVICE_STATUS 0xCD
 #define ICP20100_MODE_SYNC_STATUS_BIT 0x01
-
 
 #define ICP20100_POWER_MODE (1 << 2)
 #define ICP20100_FORCED_MES_TRIGGER (1 << 4)

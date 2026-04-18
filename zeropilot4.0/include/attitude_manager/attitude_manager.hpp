@@ -64,6 +64,8 @@ class AttitudeManager {
 
         uint16_t lastServoOutputs[16];
 
+        BaroData_t lastBaroData;
+
         uint8_t amSchedulingCounter;
 
         int noDataCount;

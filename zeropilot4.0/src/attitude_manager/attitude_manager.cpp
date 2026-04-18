@@ -37,6 +37,7 @@ AttitudeManager::AttitudeManager(
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     lastServoOutputs{0},
+    lastBaroData{0.0f, 0.0f, 0.0f},
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false) {
@@ -93,6 +94,8 @@ void AttitudeManager::amUpdate() {
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         sendServoOutputRawToTelemetryManager();
     }
+
+    barometerDriver->readData(&lastBaroData);
 
     // Send IMU raw data to telemetry manager
     RawImu_t imuData = imuDriver->readRawData();

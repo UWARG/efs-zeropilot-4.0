@@ -77,12 +77,13 @@ DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* Definitions for defaultTask */
+/*
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
-};
+  .stack_size = 128 * 4
+};*/
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -96,7 +97,6 @@ static void MX_RTC_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM4_Init(void);
-static void MX_IWDG_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
@@ -104,6 +104,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
+static void MX_IWDG_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -153,7 +154,6 @@ int main(void)
   MX_TIM3_Init();
   MX_UART4_Init();
   MX_TIM4_Init();
-  MX_IWDG_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
@@ -161,6 +161,7 @@ int main(void)
   MX_SPI2_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -189,7 +190,7 @@ int main(void)
   //defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  initModel();// <-- br
+  initModel(); 
   initThreads();
   /* USER CODE END RTOS_THREADS */
 
@@ -416,9 +417,9 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
   hiwdg.Init.Window = 4095;
-  hiwdg.Init.Reload = 2500;
+  hiwdg.Init.Reload = 4095;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();

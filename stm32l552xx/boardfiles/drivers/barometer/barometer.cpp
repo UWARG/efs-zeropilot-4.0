@@ -7,7 +7,7 @@ bool Barometer::init()
 {
 
 	//Step 1: Power on ASIC
-	HAL_Delay(5);
+	HAL_Delay(5); // Wait 5 microseconds for barometer to boot up
 
 	//Step 2: Write to lock register twice to get access to main registers and initiate communication w/ I2C
 	uint8_t unlock = ICP20100_MASTER_UNLOCK_KEY;
@@ -15,7 +15,7 @@ bool Barometer::init()
 		return false;
 	}
 
-	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_MASTER_LOCK, I2C_MEMADD_SIZE_8BIT, &unlock,1, HAL_MAX_DELAY) != HAL_OK){
+	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_MASTER_LOCK, I2C_MEMADD_SIZE_8BIT, &unlock, 1, HAL_MAX_DELAY) != HAL_OK){
 		return false;
 	}
 
@@ -25,7 +25,7 @@ bool Barometer::init()
 		return false;
 	}
 
-	if(version == 0xB2){ // Initialization done if version B
+	if(version == VERSION_2){ // Initialization done if version B <-- macro
 		return true;
 	}
 
@@ -36,9 +36,11 @@ bool Barometer::init()
 	}
 
 	// Mask boot status register to only read the 0th bit
-	boot_status &= (0x01);
+	boot_status &= (kBootStatusEnabledValued << kBootStatusBitPos); // <-- macro and stuff, have something to call enable bit positon, and then enable value
+	// bit position macro, value macro
+	// WHATS CALLED:::::::: static constexpr, macros are text, static constexpr can be typed
 
-	if(boot_status == 1){ // Initialization done, barometer did not go through power cycle.
+	if(boot_status == BOOT_FINISHED){ // Initialization done, barometer did not go through power cycle.
 		return true;
 	}
 
@@ -173,8 +175,8 @@ bool Barometer::init()
 
 	// STEP 14: Wait for OTP read to finish
 
-	status = 1;
-	timeout = 1000;
+	status = 1; // find a value in timed units, need to figure out clock frequency, can check IOC, clock configuration
+	timeout = 1000; // add a reason why this timeout time is important hard deadline limits, convert timeout to actual time, using global clock OR don't have a timeout
 	while((status & 0x01) && timeout--)
 		{
 		    if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR,
@@ -307,6 +309,9 @@ bool Barometer::init()
 
 	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_STATUS2, I2C_MEMADD_SIZE_8BIT, &boot_config, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
+	// STEP 26: Call firWarmupPoll
+	firWarmupPoll();
+
 	return true;
 }
 
@@ -389,9 +394,11 @@ bool Barometer::writeRegister(
 }
 
 void Barometer::I2C_MemRxCpltCallback() {
+
 	switch(callbackCount) {
 		case 0: // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
+
 			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1, hi2c)) {
 				callbackCount = 1;
 			} else {
@@ -402,7 +409,9 @@ void Barometer::I2C_MemRxCpltCallback() {
 
 		case 1: // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
 			FIFO_REGISTER &= 0x1F;
+
 			if (FIFO_REGISTER > 0) {
+
 				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6, hi2c)) { 
 					callbackCount = 2;
 				} else {
@@ -423,7 +432,7 @@ void Barometer::I2C_MemRxCpltCallback() {
 			break;
 		}
 
-		default:
+		default: // PUT ENUMS, instead of numbers, have a state variable instead of callback count
 			callbackCount = 0;
 			initiatedRead = false;
 			break;
@@ -432,6 +441,7 @@ void Barometer::I2C_MemRxCpltCallback() {
 
 bool Barometer::readData(BaroData_t *data)
 {
+
     if(data == nullptr){
         return false;
     }
@@ -473,7 +483,7 @@ bool Barometer::readData(BaroData_t *data)
 	return false;
 }
 
-void Barometer::computeAltitude(BaroData_t *data)
+void Barometer::computeAltitude(BaroData_t *data) // should live in zp4.0, in manager, delete this
 {
     if(data != nullptr){
         data->altitude = ((data->temperatureData + 273.15f) / 0.0065f) *

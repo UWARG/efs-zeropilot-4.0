@@ -81,6 +81,7 @@ MotorGroupInstance_t mainMotorGroup;
 // ----------------------------------------------------------------------------
 void initDrivers()
 {
+    
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
@@ -138,4 +139,5 @@ void initDrivers()
     motorInstances[7] = {motor8Handle};
 
     mainMotorGroup = {motorInstances, 8};
+    
 }
