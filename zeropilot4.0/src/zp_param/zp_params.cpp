@@ -143,7 +143,7 @@ void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter)
 
 float get(ZP_PARAM_ID id) {
     uint16_t index = static_cast<uint16_t>(id);
-    if (index < static_cast<uint16_t>(ZP_PARAM_ID::PARAM_COUNT)) {
+    if (index < getCount()) {
         return params[index].paramValue;
     }
     return 0.0f; // Should never run
