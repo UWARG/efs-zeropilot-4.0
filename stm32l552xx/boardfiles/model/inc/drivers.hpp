@@ -15,6 +15,9 @@
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
+#include "safety_switch_iface.hpp"
+#include "buzzer_iface.hpp"
+#include "led_iface.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -34,6 +37,9 @@ extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
+extern ISafetySwitch *safetySwitchHandle;
+extern IBuzzer *buzzerHandle;
+extern ILed *ledHandle;
 extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;

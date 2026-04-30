@@ -63,6 +63,12 @@ void Error_Handler(void);
 #define USER_BUTTON_GPIO_Port GPIOC
 #define SPI1_CS_Pin GPIO_PIN_4
 #define SPI1_CS_GPIO_Port GPIOA
+#define GPS_BUZZER_Pin GPIO_PIN_13
+#define GPS_BUZZER_GPIO_Port GPIOF
+#define GPS_SAFETY_SW_Pin GPIO_PIN_14
+#define GPS_SAFETY_SW_GPIO_Port GPIOF
+#define SAFETY_SW_LED_Pin GPIO_PIN_15
+#define SAFETY_SW_LED_GPIO_Port GPIOF
 #define LED_GREEN_Pin GPIO_PIN_7
 #define LED_GREEN_GPIO_Port GPIOC
 #define LED_RED_Pin GPIO_PIN_9

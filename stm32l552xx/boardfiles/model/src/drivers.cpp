@@ -1,6 +1,10 @@
 #include "drivers.hpp"
+#include "main.h"
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
+#include "safety_switch.hpp"
+#include "buzzer.hpp"
+#include "M10Led.hpp"
 
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg;
@@ -33,6 +37,9 @@ alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
+alignas(M10SafetySwitch) static uint8_t safetySwitchStorage[sizeof(M10SafetySwitch)];
+alignas(M10Buzzer) static uint8_t buzzerStorage[sizeof(M10Buzzer)];
+alignas(M10Led) static uint8_t ledStorage[sizeof(M10Led)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
@@ -60,6 +67,9 @@ GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
+ISafetySwitch *safetySwitchHandle = nullptr;
+IBuzzer *buzzerHandle = nullptr;
+ILed *ledHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -98,6 +108,11 @@ void initDrivers()
     rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
+    safetySwitchHandle = new (&safetySwitchStorage) M10SafetySwitch(GPS_SAFETY_SW_GPIO_Port,GPS_SAFETY_SW_Pin);
+    auto *buzzer = new (&buzzerStorage) M10Buzzer(GPS_BUZZER_GPIO_Port, GPS_BUZZER_Pin);
+    auto *led = new (&ledStorage) M10Led(SAFETY_SW_LED_GPIO_Port, SAFETY_SW_LED_Pin);
+    buzzerHandle = buzzer;
+    ledHandle = led;
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
     // Queues
@@ -119,6 +134,8 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    buzzer->init();
+    led->init();
     pmHandle->init();
     telemLinkHandle->init();
 
