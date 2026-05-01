@@ -15,6 +15,7 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 
 // ----------------------------------------------------------------------------
 // Static storage for each driver (aligned for correct type)
@@ -37,6 +38,8 @@ alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
+alignas(Airspeed) static uint8_t asStorage[sizeof(Airspeed)];
+
 
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
 alignas(MessageQueue<char[100]>) static uint8_t smLoggerQueueStorage[sizeof(MessageQueue<char[100]>)];
@@ -64,6 +67,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Airspeed *asHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -102,6 +106,7 @@ void initDrivers()
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
     imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_5);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
+    asHandle = new (&asStorage) Airspeed(&hi2c2);
 
     // Queues
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -124,7 +129,9 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    asHandle->init();
     telemLinkHandle->init();
+    //rfdHandle->startReceive(); //<- possibly needed not sure
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     motorInstances[0] = {motor1Handle};

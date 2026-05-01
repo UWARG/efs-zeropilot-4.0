@@ -4,6 +4,7 @@
 #include "rfd.hpp"
 #include "drivers.hpp"
 #include "utils.h"
+#include "airspeed.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,5 +90,9 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 }
 #endif
 
-
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == asHandle->getHI2C()) {
+    asHandle->receiveCallback();
+  }
+}
 

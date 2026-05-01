@@ -5,6 +5,7 @@
 #include "drivers.hpp"
 #include "utils.h"
 #include "imu.hpp"
+#include "airspeed.hpp"
 #include "user_diskio_spi.h"
 
 #ifdef __cplusplus
@@ -45,7 +46,6 @@ void HAL_Delay(uint32_t Delay) {
 #endif
 
 /* interrupt callback functions */
-
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart == rcHandle->getHUART()){
@@ -97,4 +97,10 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 		pmHandle->I2C_MemRxCpltCallback();
+}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == asHandle->getHI2C()) {
+    asHandle->receiveCallback();
+  }
 }

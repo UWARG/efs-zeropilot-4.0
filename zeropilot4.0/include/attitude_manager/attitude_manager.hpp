@@ -6,6 +6,7 @@
 #include "fbwa_mapping.hpp"
 #include "motor_datatype.hpp"
 #include "gps_iface.hpp"
+#include "airspeed_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
 #include "MahonyAHRS.hpp"
@@ -30,6 +31,7 @@ class AttitudeManager {
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
+			IAirspeed *asDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
@@ -43,6 +45,7 @@ class AttitudeManager {
 
         IGPS *gpsDriver;
         IIMU *imuDriver;
+        IAirspeed *asDriver;
 
         Mahony mahonyFilter;
 
@@ -54,6 +57,7 @@ class AttitudeManager {
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         RCMotorControlMessage_t controlMsg;
+        AirspeedData_t airspeedData;
         DroneState_t droneState;
         PlaneFlightMode_e currentFlightMode;
 
