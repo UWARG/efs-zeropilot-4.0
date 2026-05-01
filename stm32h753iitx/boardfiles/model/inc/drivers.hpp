@@ -15,6 +15,7 @@
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
+#include "barometer.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -35,6 +36,7 @@ extern GPS *gpsHandle;
 extern IMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
+extern Barometer *barometerHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

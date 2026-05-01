@@ -7,6 +7,7 @@ AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
+    IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -15,6 +16,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    barometerDriver(barometerDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -27,6 +29,7 @@ AttitudeManager::AttitudeManager(
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     lastServoOutputs{0},
+    lastBaroData{0.0f, 0.0f, 0.0f},
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
@@ -47,6 +50,8 @@ void AttitudeManager::amUpdate() {
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         sendServoOutputRawToTelemetryManager();
     }
+
+    barometerDriver->readData(&lastBaroData);
 
     // Send IMU raw data to telemetry manager
     RawImu_t imuData = imuDriver->readRawData();
