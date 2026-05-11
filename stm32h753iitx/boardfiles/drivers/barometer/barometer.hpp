@@ -7,7 +7,7 @@
 
 // Register Definitions for Mikroe ICP-20100
 
-#define ICP20100_I2C_ADDR (0x64 << 1) // i2c is 7 bit address, left shit by 1 to make 1 byte.
+#define ICP20100_I2C_ADDR (0x64 << 1) // Shift by 1 for HAL
 #define ICP20100_REG_MODE_SELECT 	0xC0
 #define ICP20100_DEVICE_ID 			0x0C
 #define ICP20100_MASTER_LOCK 		0xBE
@@ -32,6 +32,7 @@
 #define ICP20100_INTERRUPT_MASK 	0xC2
 #define ICP20100_REG_MODE_SELECT_KEY 0x04
 #define ICP20100_MASTER_UNLOCK_KEY 0x1F
+#define ICP20100_MASTER_LOCK_KEY 0x00
 #define ICP20100_OTP_ENABLE_BOTH 0x03
 #define ICP20100_OTP_STATUS2_BOOTUP 0x01
 #define ICP20100_PRESS_DATA_0 0xFA
@@ -49,13 +50,14 @@ class Barometer : public IBarometer {
         Barometer(I2C_HandleTypeDef *hi2c);
         bool readData(BaroData_t *data);
         bool init(); 
-        void I2C_MemRxCpltCallback();
+        void rxCallback();
         bool firWarmupPoll();
         void computeAltitude(BaroData_t *data);
+       
     private:
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;
-		volatile uint8_t callbackCount; 
+		volatile uint8_t callbackCount = 0; 
         volatile bool initiatedRead = false;
         uint8_t Press_Temp_Data[6];
         uint8_t FIFO_REGISTER;

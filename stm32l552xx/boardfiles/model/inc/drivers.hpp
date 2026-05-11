@@ -15,7 +15,7 @@
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
-#include "barometer.hpp"
+#include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 

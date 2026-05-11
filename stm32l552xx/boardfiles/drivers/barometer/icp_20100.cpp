@@ -1,4 +1,42 @@
-#include "barometer.hpp"
+#include "icp_20100.hpp"
+
+// Register Definitions for Mikroe ICP-20100
+
+#define ICP20100_I2C_ADDR (0x64 << 1) // Address is shifted for HAL
+#define ICP20100_REG_MODE_SELECT 	0xC0
+#define ICP20100_DEVICE_ID 			0x0C
+#define ICP20100_MASTER_LOCK 		0xBE
+#define ICP20100_OTP_CONFIG_1 		0xAC
+#define ICP20100_OTP_STATUS			0xB9
+#define ICP20100_OTP_STATUS2 		0xBF
+#define ICP20100_VERSION_REG 		0xD3 
+#define ICP20100_OTP_DBG2 			0xBC
+#define ICP20100_OTP_MRA_LSB 		0xAF
+#define ICP20100_OTP_MRA_MSB		0xB0
+#define ICP20100_OTP_MRB_LSB 		0xB1
+#define ICP20100_OTP_MRB_MSB		0xB2
+#define ICP20100_OTP_MR_LSB 		0xAD
+#define ICP20100_OTP_MR_MSB			0xAE
+#define ICP20100_OTP_ADDRESS		0xB5
+#define ICP20100_OTP_COMMAND		0xB6
+#define ICP20100_OTP_RDATA 			0xB8
+#define ICP20100_TRIM1_MSB 			0x05
+#define ICP20100_TRIM2_LSB			0x06
+#define ICP20100_TRIM2_MSB 			0x07
+#define ICP20100_FIFO_CONFIG 		0xC3
+#define ICP20100_INTERRUPT_MASK 	0xC2
+#define ICP20100_REG_MODE_SELECT_KEY 0x04
+#define ICP20100_MASTER_UNLOCK_KEY 0x1F
+#define ICP20100_OTP_ENABLE_BOTH 0x03
+#define ICP20100_OTP_STATUS2_BOOTUP 0x01
+#define ICP20100_PRESS_DATA_0 0xFA
+#define ICP20100_FIFO_FILL 0xC4
+#define ICP20100_DEVICE_STATUS 0xCD
+#define ICP20100_MODE_SYNC_STATUS_BIT 0x01
+
+#define ICP20100_POWER_MODE (1 << 2)
+#define ICP20100_FORCED_MES_TRIGGER (1 << 4)
+#define ICP20100_TRIGGER_COMMAND_MEAS (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER)
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
 	hi2c(hi2c), callbackCount(0), FIFO_REGISTER(0) {}
@@ -315,6 +353,10 @@ bool Barometer::init()
 	return true;
 }
 
+I2C_HandleTypeDef* Barometer::getI2C(){
+	return hi2c;
+}
+
 bool Barometer::firWarmupPoll()
 {
 	uint8_t mode_select = (uint8_t)(0x28); // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
@@ -375,9 +417,8 @@ bool Barometer::firWarmupPoll()
 bool Barometer::readRegister(
     uint16_t memAddress,
     uint8_t * pData,
-    uint16_t size,
-    I2C_HandleTypeDef *hi2c) {
-	if (HAL_I2C_Mem_Read_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) != HAL_OK) {
+    uint16_t size) {
+	if (HAL_I2C_Mem_Read_DMA(this->hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) != HAL_OK) {
 		return false;
 	}
 
@@ -387,19 +428,18 @@ bool Barometer::readRegister(
 bool Barometer::writeRegister(
     uint16_t memAddress,
     uint8_t * pData,
-    uint16_t size,
-    I2C_HandleTypeDef *hi2c) {
+    uint16_t size) {
 
-    return HAL_I2C_Mem_Write_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
+    return HAL_I2C_Mem_Write_DMA(this->hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
 }
 
-void Barometer::I2C_MemRxCpltCallback() {
+void Barometer::rxCallback() {
 
 	switch(callbackCount) {
 		case 0: // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
 
-			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1, hi2c)) {
+			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1)) {
 				callbackCount = 1;
 			} else {
 				callbackCount = 0;
@@ -412,7 +452,7 @@ void Barometer::I2C_MemRxCpltCallback() {
 
 			if (FIFO_REGISTER > 0) {
 
-				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6, hi2c)) { 
+				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6)) { 
 					callbackCount = 2;
 				} else {
 					callbackCount = 0;
@@ -476,7 +516,7 @@ bool Barometer::readData(BaroData_t *data)
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
 	if(!initiatedRead){
 		initiatedRead = true;
-		I2C_MemRxCpltCallback();
+		rxCallback();
 	}
 
 	// Non-blocking: no data ready yet.
