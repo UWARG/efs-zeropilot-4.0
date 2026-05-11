@@ -466,7 +466,7 @@ bool Barometer::readData(BaroData_t *data)
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
 	if(!initiatedRead){
 		initiatedRead = true;
-		I2C_MemRxCpltCallback();
+		rxCallback();
 	}
 
 	// Non-blocking: no data ready yet.
