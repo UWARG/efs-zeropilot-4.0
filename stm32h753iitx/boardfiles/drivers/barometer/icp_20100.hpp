@@ -7,43 +7,43 @@
 
 // Register Definitions for Mikroe ICP-20100
 
-#define ICP20100_I2C_ADDR (0x64 << 1) // Shift by 1 for HAL
-#define ICP20100_REG_MODE_SELECT 	0xC0
-#define ICP20100_DEVICE_ID 			0x0C
-#define ICP20100_MASTER_LOCK 		0xBE
-#define ICP20100_OTP_CONFIG_1 		0xAC
-#define ICP20100_OTP_STATUS			0xB9
-#define ICP20100_OTP_STATUS2 		0xBF
-#define ICP20100_VERSION_REG 		0xD3 
-#define ICP20100_OTP_DBG2 			0xBC
-#define ICP20100_OTP_MRA_LSB 		0xAF
-#define ICP20100_OTP_MRA_MSB		0xB0
-#define ICP20100_OTP_MRB_LSB 		0xB1
-#define ICP20100_OTP_MRB_MSB		0xB2
-#define ICP20100_OTP_MR_LSB 		0xAD
-#define ICP20100_OTP_MR_MSB			0xAE
-#define ICP20100_OTP_ADDRESS		0xB5
-#define ICP20100_OTP_COMMAND		0xB6
-#define ICP20100_OTP_RDATA 			0xB8
-#define ICP20100_TRIM1_MSB 			0x05
-#define ICP20100_TRIM2_LSB			0x06
-#define ICP20100_TRIM2_MSB 			0x07
-#define ICP20100_FIFO_CONFIG 		0xC3
-#define ICP20100_INTERRUPT_MASK 	0xC2
-#define ICP20100_REG_MODE_SELECT_KEY 0x04
-#define ICP20100_MASTER_UNLOCK_KEY 0x1F
-#define ICP20100_MASTER_LOCK_KEY 0x00
-#define ICP20100_OTP_ENABLE_BOTH 0x03
-#define ICP20100_OTP_STATUS2_BOOTUP 0x01
-#define ICP20100_PRESS_DATA_0 0xFA
-#define ICP20100_FIFO_FILL 0xC4
-#define ICP20100_DEVICE_STATUS 0xCD
-#define ICP20100_MODE_SYNC_STATUS_BIT 0x01
+static constexpr uint16_t ICP20100_I2C_ADDR = (0x64U << 1); // Shift by 1 for HAL
+static constexpr uint8_t ICP20100_REG_MODE_SELECT = 0xC0U;
+static constexpr uint8_t ICP20100_DEVICE_ID = 0x0CU;
+static constexpr uint8_t ICP20100_MASTER_LOCK = 0xBEU;
+static constexpr uint8_t ICP20100_OTP_CONFIG_1 = 0xACU;
+static constexpr uint8_t ICP20100_OTP_STATUS = 0xB9U;
+static constexpr uint8_t ICP20100_OTP_STATUS2 = 0xBFU;
+static constexpr uint8_t ICP20100_VERSION_REG = 0xD3U;
+static constexpr uint8_t ICP20100_OTP_DBG2 = 0xBCU;
+static constexpr uint8_t ICP20100_OTP_MRA_LSB = 0xAFU;
+static constexpr uint8_t ICP20100_OTP_MRA_MSB = 0xB0U;
+static constexpr uint8_t ICP20100_OTP_MRB_LSB = 0xB1U;
+static constexpr uint8_t ICP20100_OTP_MRB_MSB = 0xB2U;
+static constexpr uint8_t ICP20100_OTP_MR_LSB = 0xADU;
+static constexpr uint8_t ICP20100_OTP_MR_MSB = 0xAEU;
+static constexpr uint8_t ICP20100_OTP_ADDRESS = 0xB5U;
+static constexpr uint8_t ICP20100_OTP_COMMAND = 0xB6U;
+static constexpr uint8_t ICP20100_OTP_RDATA = 0xB8U;
+static constexpr uint8_t ICP20100_TRIM1_MSB = 0x05U;
+static constexpr uint8_t ICP20100_TRIM2_LSB = 0x06U;
+static constexpr uint8_t ICP20100_TRIM2_MSB = 0x07U;
+static constexpr uint8_t ICP20100_FIFO_CONFIG = 0xC3U;
+static constexpr uint8_t ICP20100_INTERRUPT_MASK = 0xC2U;
+static constexpr uint8_t ICP20100_REG_MODE_SELECT_KEY = 0x04U;
+static constexpr uint8_t ICP20100_MASTER_UNLOCK_KEY = 0x1FU;
+static constexpr uint8_t ICP20100_MASTER_LOCK_KEY = 0x00U;
+static constexpr uint8_t ICP20100_OTP_ENABLE_BOTH = 0x03U;
+static constexpr uint8_t ICP20100_OTP_STATUS2_BOOTUP = 0x01U;
+static constexpr uint8_t ICP20100_PRESS_DATA_0 = 0xFAU;
+static constexpr uint8_t ICP20100_FIFO_FILL = 0xC4U;
+static constexpr uint8_t ICP20100_DEVICE_STATUS = 0xCDU;
+static constexpr uint8_t ICP20100_MODE_SYNC_STATUS_BIT = 0x01U;
 
 
-#define ICP20100_POWER_MODE (1 << 2)
-#define ICP20100_FORCED_MES_TRIGGER (1 << 4)
-#define ICP20100_TRIGGER_COMMAND_MEAS (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER)
+static constexpr uint8_t ICP20100_POWER_MODE = (1U << 2);
+static constexpr uint8_t ICP20100_FORCED_MES_TRIGGER = (1U << 4);
+static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER);
 
 class Barometer : public IBarometer {
     public:
