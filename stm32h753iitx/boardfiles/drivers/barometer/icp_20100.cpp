@@ -1,4 +1,4 @@
-#include "barometer.hpp"
+#include "icp_20100.hpp"
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
 	hi2c(hi2c), callbackCount(0), FIFO_REGISTER(0) {}
