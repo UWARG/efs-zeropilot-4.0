@@ -95,7 +95,7 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
-    barometerDriver->readData(&lastBaroData);
+    barometerDriver->readData(lastBaroData);
 
     // Send IMU raw data to telemetry manager
     RawImu_t imuData = imuDriver->readRawData();

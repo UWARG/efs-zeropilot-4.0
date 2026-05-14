@@ -1,104 +1,89 @@
-#include "icp_20100.hpp"
+#include "barometer.hpp"
+#include "utils.h"
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
-	hi2c(hi2c), callbackCount(0), FIFO_REGISTER(0) {}
+    hi2c(hi2c), callbackCount(0), fifoRegister(0) {}
 
-
-namespace {
-constexpr uint8_t UNLOCK_VALUE = ICP20100_MASTER_UNLOCK_KEY;
-constexpr uint8_t LOCK_VALUE   = ICP20100_MASTER_LOCK_KEY; // write 0x00 to lock
-constexpr uint32_t OTP_STATUS_POLL_TIMEOUT_MS = 1000U;
-constexpr uint32_t OTP_STATUS_POLL_INTERVAL_MS = 1U;
+static constexpr uint8_t UNLOCK_VALUE = ICP20100_MASTER_UNLOCK_KEY;
+static constexpr uint8_t LOCK_VALUE   = ICP20100_MASTER_LOCK_KEY; // write 0x00 to lock
+static constexpr uint32_t OTP_STATUS_POLL_TIMEOUT_MS = 1000U;
+static constexpr uint32_t OTP_STATUS_POLL_INTERVAL_MS = 1U;
 
 // OTP_STATUS2 boot status bit definitions
-constexpr uint8_t OTP_STATUS2_BOOT_STATUS_BM = 0x01U;     // Bit mask for boot status (bit 0)
-constexpr uint8_t OTP_STATUS2_BOOT_STATUS_VALID = 0x01U;  // Boot is complete
+static constexpr uint8_t OTP_STATUS2_BOOT_STATUS_BM = 0x01U;     // Bit mask for boot status (bit 0)
+static constexpr uint8_t OTP_STATUS2_BOOT_STATUS_VALID = 0x01U;  // Boot is complete
+static constexpr uint8_t VERSION_B = 0xB2U;
 
-inline bool unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock)
-{
-	uint8_t value = doLock ? LOCK_VALUE : UNLOCK_VALUE;
-	return HAL_I2C_Mem_Write(
-		hi2c,
-		ICP20100_I2C_ADDR,
-		ICP20100_MASTER_LOCK,
-		I2C_MEMADD_SIZE_8BIT,
-		&value,
-		1,
-		HAL_MAX_DELAY) == HAL_OK;
-}
+// TRIM2_MSB register: Gain field occupies bits 4,5,6
+static constexpr uint8_t ICP20100_TRIM2_MSB_GAIN_FIELD_MASK = 0x70U;  // Bits 4,5,6
+static constexpr uint8_t ICP20100_TRIM2_MSB_GAIN_SHIFT = 4U;
+static constexpr uint8_t ICP20100_GAIN_VALUE_MASK = 0x07U;  // 3-bit gain value from OTP
 
-// Small helper for blocking reads of registers
-inline bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t *pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY)
-{
-	return HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size, timeout) == HAL_OK;
-}
+// OTP_COMMAND register field definitions
+static constexpr uint8_t ICP20100_OTP_COMMAND_FIELD_MASK = 0x7FU;  // Bits 0-6
+static constexpr uint8_t ICP20100_OTP_COMMAND_READ_REQUEST = 0x10U;  // Bit 4 set to request OTP read
 
-inline bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t &out, uint32_t timeout = HAL_MAX_DELAY)
-{
-	return HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, &out, 1, timeout) == HAL_OK;
-}
+// Register Definitions for Mikroe ICP-20100
 
-// Convenience helper for single-byte blocking writes
-inline bool writeRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY)
-{
-	return HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, &value, 1, timeout) == HAL_OK;
-}
+static constexpr uint16_t ICP20100_I2C_ADDR = (0x64U << 1); // Shift by 1 for HAL
+static constexpr uint8_t ICP20100_REG_MODE_SELECT = 0xC0U;
+static constexpr uint8_t ICP20100_DEVICE_ID = 0x0CU;
+static constexpr uint8_t ICP20100_MASTER_LOCK = 0xBEU;
+static constexpr uint8_t ICP20100_OTP_CONFIG_1 = 0xACU;
+static constexpr uint8_t ICP20100_OTP_STATUS = 0xB9U;
+static constexpr uint8_t ICP20100_OTP_STATUS2 = 0xBFU;
+static constexpr uint8_t ICP20100_VERSION_REG = 0xD3U;
+static constexpr uint8_t ICP20100_OTP_DBG2 = 0xBCU;
+static constexpr uint8_t ICP20100_OTP_MRA_LSB = 0xAFU;
+static constexpr uint8_t ICP20100_OTP_MRA_MSB = 0xB0U;
+static constexpr uint8_t ICP20100_OTP_MRB_LSB = 0xB1U;
+static constexpr uint8_t ICP20100_OTP_MRB_MSB = 0xB2U;
+static constexpr uint8_t ICP20100_OTP_MR_LSB = 0xADU;
+static constexpr uint8_t ICP20100_OTP_MR_MSB = 0xAEU;
+static constexpr uint8_t ICP20100_OTP_ADDRESS = 0xB5U;
+static constexpr uint8_t ICP20100_OTP_COMMAND = 0xB6U;
+static constexpr uint8_t ICP20100_OTP_RDATA = 0xB8U;
+static constexpr uint8_t ICP20100_TRIM1_MSB = 0x05U;
+static constexpr uint8_t ICP20100_TRIM2_LSB = 0x06U;
+static constexpr uint8_t ICP20100_TRIM2_MSB = 0x07U;
+static constexpr uint8_t ICP20100_FIFO_CONFIG = 0xC3U;
+static constexpr uint8_t ICP20100_INTERRUPT_MASK = 0xC2U;
+static constexpr uint8_t ICP20100_REG_MODE_SELECT_KEY = 0x04U;
+static constexpr uint8_t ICP20100_MASTER_UNLOCK_KEY = 0x1FU;
+static constexpr uint8_t ICP20100_MASTER_LOCK_KEY = 0x00U;
+static constexpr uint8_t ICP20100_OTP_ENABLE_BOTH = 0x03U;
+static constexpr uint8_t ICP20100_OTP_STATUS2_BOOTUP = 0x01U;
+static constexpr uint8_t ICP20100_PRESS_DATA_0 = 0xFAU;
+static constexpr uint8_t ICP20100_FIFO_FILL = 0xC4U;
+static constexpr uint8_t ICP20100_DEVICE_STATUS = 0xCDU;
+static constexpr uint8_t ICP20100_MODE_SYNC_STATUS_BIT = 0x01U;
 
-inline bool waitForOtpStatusClear(I2C_HandleTypeDef *hi2c)
-{
-	uint8_t status = 0x01;
-	const uint32_t startTick = HAL_GetTick();
+// Forward declarations of static helper functions
+static bool unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock);
+static bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t *pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+static bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t &out, uint32_t timeout = HAL_MAX_DELAY);
+static bool writeRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);
+static bool waitForOtpStatusClear(I2C_HandleTypeDef *hi2c);
+static bool writeRegisterWithVerify(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);
 
-	do {
-		if (!readRegisterBlocking(hi2c, ICP20100_OTP_STATUS, status)) {
-			return false;
-		}
 
-		if ((status & 0x01U) == 0U) {
-			return true;
-		}
+bool Barometer::init() {
+    // Step 1: Power on ASIC
 
-		HAL_Delay(OTP_STATUS_POLL_INTERVAL_MS);
-	} while ((HAL_GetTick() - startTick) < OTP_STATUS_POLL_TIMEOUT_MS);
-
-	return false;
-}
-
-// Write register and verify by reading back the written value
-inline bool writeRegisterWithVerify(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY)
-{
-	if (!writeRegisterBlocking(hi2c, memAddress, value, timeout)) {
-		return false;
-	}
-
-	uint8_t readBack = 0;
-	if (!readRegisterBlocking(hi2c, memAddress, readBack, timeout)) {
-		return false;
-	}
-
-	// Verify the written value matches the read-back
-	return (readBack == value);
-}
-} 
-
-bool Barometer::init()
-{
-	//Step 1: Power on ASIC
-
-	//Step 2: Write to lock register twice to get access to main registers and initiate communication w/ I2C
+    // Step 2: Write to lock register twice to get access to main registers and initiate communication w/ I2C
     
-	if (!unlockOrLock(hi2c, false)) return false;
-	if (!unlockOrLock(hi2c, false)) return false;
+    if (!unlockOrLock(hi2c, false)) return false;
+    if (!unlockOrLock(hi2c, false)) return false;
 
-	// Step 3: Read from the version register,
-	uint8_t version = 0x00;
-	if (!readRegisterBlocking(hi2c, ICP20100_VERSION_REG, version)) {
-		return false;
-	}
+    // Step 3: Read from the version register,
+    uint8_t version = 0x00;
+    if (!readRegisterBlocking(hi2c, ICP20100_VERSION_REG, version)) {
+        return false;
+    }
 
-	if(version == 0xB2){ // Initialization done if version B
-		return true;
-	}
+    if (version == VERSION_B) { 
+        return true;
+    }
 
 	// Step 4: Check boot up status from OTP_Status2 register. Check specifically bit 0.
 	uint8_t boot_status = 0x00;
@@ -138,7 +123,7 @@ bool Barometer::init()
 		return false;
 	}
 
-	otp_config |= (0x03); // Sets bits 011
+	otp_config |= (ICP20100_OTP_ENABLE_BOTH); // Sets bits 011
 
 	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_CONFIG_1, otp_config)){
 		return false;
@@ -178,15 +163,15 @@ bool Barometer::init()
 	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_MR_MSB, 0x80)) return false;
 
 	// STEP 10: Write address content and read command
-	uint8_t command_address = 0x00;
-	command_address = 0xF8;
+	uint8_t command_address = 0xF8;
+	// Sets the OTP address to 0xF8 for address to read from
 	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, command_address)){ return false; }
 
 	command_address = 0x00; //X0010000
 	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &command_address, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
-	command_address &= ~(0x7F);
-	command_address |= (0x10);
+	command_address &= ~ICP20100_OTP_COMMAND_FIELD_MASK;
+	command_address |= ICP20100_OTP_COMMAND_READ_REQUEST;
 
 	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, command_address)){ return false; }
 
@@ -207,8 +192,8 @@ bool Barometer::init()
 	command_address = 0x00;
 	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &command_address, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
-	command_address &= ~(0x7F);
-	command_address |= (0x10);
+	command_address &= ~ICP20100_OTP_COMMAND_FIELD_MASK;
+	command_address |= ICP20100_OTP_COMMAND_READ_REQUEST;
 
 	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, command_address)){ return false; }
 
@@ -229,8 +214,8 @@ bool Barometer::init()
 	command_address = 0x00; //X0010000
 	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &command_address, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
-	command_address &= ~(0x7F);
-	command_address |= (0x10);
+	command_address &= ~ICP20100_OTP_COMMAND_FIELD_MASK;
+	command_address |= ICP20100_OTP_COMMAND_READ_REQUEST;
 
 	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, command_address)){ return false; }
 
@@ -272,9 +257,9 @@ bool Barometer::init()
 	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM2_MSB,
 				 I2C_MEMADD_SIZE_8BIT, &Rdata, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
-	Rdata &= ~(0b01110000);
-	gain &= (0x07);
-	Rdata |= (gain << 4);
+	Rdata &= ~ICP20100_TRIM2_MSB_GAIN_FIELD_MASK;  // Clear bits 4,5,6
+	gain &= ICP20100_GAIN_VALUE_MASK;  // Mask bits 1,2,3, to extract gain value required, as per datasheet
+	Rdata |= (gain << ICP20100_TRIM2_MSB_GAIN_SHIFT);  // Set bits 4,5,6 to bits 1,2,3 from gain value
 
 	if(!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, Rdata)){ return false; }
 
@@ -390,41 +375,41 @@ bool Barometer::writeRegister(
 
 void Barometer::rxCallback() {
 	switch(callbackCount) {
-		case 0: // Step 1: Start FIFO fill register read via DMA
+		case NotStarted: // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
-			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1, hi2c)) {
-				callbackCount = 1;
+			if (readRegister(ICP20100_FIFO_FILL, &fifoRegister, 1, hi2c)) {
+				callbackCount = FifoStarted;
 			} else {
-				callbackCount = 0;
+				callbackCount = NotStarted;
 				initiatedRead = false;
 			}
 			break;
 
-		case 1: // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
-			FIFO_REGISTER &= 0x1F;
-			if (FIFO_REGISTER > 0) {
-				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6, hi2c)) { 
-					callbackCount = 2;
+		case FifoStarted: // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
+			fifoRegister &= 0x1F;
+			if (fifoRegister > 0) {
+				if (readRegister(ICP20100_PRESS_DATA_0, pressTempData, 6, hi2c)) { 
+					callbackCount = DataRead;
 				} else {
-					callbackCount = 0;
+					callbackCount = NotStarted;
 					initiatedRead = false;
 				}
 			} else {
 				// Keep polling FIFO until at least one sample is ready.
-				callbackCount = 0;
+				callbackCount = NotStarted;
 				initiatedRead = false;
 			}
 			break;
 
-		case 2: { // Step 3: Burst read complete. Signal data ready.
+		case DataRead: { // Step 3: Burst read complete. Signal data ready.
 			dataFilled = 1;
-			callbackCount = 0;
+			callbackCount = NotStarted;
 			initiatedRead = false;
 			break;
 		}
 
 		default:
-			callbackCount = 0;
+			callbackCount = NotStarted;
 			initiatedRead = false;
 			break;
 	}
@@ -436,8 +421,8 @@ bool Barometer::readData(BaroData_t *data)
         return false;
     }
 	if (dataFilled) {
-		uint32_t press_raw = ((Press_Temp_Data[2] & 0x0F) << 16) | (Press_Temp_Data[1] << 8) | Press_Temp_Data[0];
-		uint32_t temp_raw  = ((Press_Temp_Data[5] & 0x0F) << 16) | (Press_Temp_Data[4] << 8) | Press_Temp_Data[3];
+		uint32_t press_raw = ((pressTempData[2] & 0x0F) << 16) | (pressTempData[1] << 8) | pressTempData[0];
+		uint32_t temp_raw  = ((pressTempData[5] & 0x0F) << 16) | (pressTempData[4] << 8) | pressTempData[3];
 
 		int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);
 		if (press_signed & 0x80000) {
@@ -475,8 +460,87 @@ bool Barometer::readData(BaroData_t *data)
 
 void Barometer::computeAltitude(BaroData_t *data)
 {
-    if(data != nullptr){
-        data->altitude = ((data->temperatureData + 273.15f) / 0.0065f) *
-	       (1.0f - powf(data->pressureData / 101.325f, 0.190284f));
+	if (data != nullptr) {
+		/*
+		 * Compute altitude from measured temperature and pressure using the
+		 * international barometric formula
+		 * Steps:
+		 *  - Convert temperature from degrees Celsius to Kelvin: T_k = T_C + 273.15
+		 *  - Divide by the standard temperature lapse rate (0.0065 K/m) to form
+		 *    the scale factor T_k / L (units: meters).
+		 *  - Compute the pressure ratio P / P0 where P0 = 101.325 kPa (sea-level standard).
+		 *  - Raise the ratio to the exponent ~0.190284 (≈ 1/5.25588), which is derived
+		 *    from constants in the barometric equation (R, g, and L).
+		 *  - Altitude (m) = (T_k / L) * (1 - (P / P0)^{exponent}).
+		 *
+		 * Assumptions/notes:
+		 *  - `temperatureData` is in °C and `pressureData` is in kPa.
+		 *  - This formula gives altitude in meters relative to sea level and is
+		 *    an approximation valid under standard-atmosphere conditions.
+		 */
+		data->altitude = ((data->temperatureData + 273.15f) / 0.0065f) *
+						 (1.0f - powf(data->pressureData / 101.325f, 0.190284f));
+	}
+}
+
+// ============================================================================
+// Static helper function implementations
+// ============================================================================
+
+static inline bool unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock) {
+    uint8_t value = doLock ? LOCK_VALUE : UNLOCK_VALUE;
+    return HAL_I2C_Mem_Write(
+        hi2c,
+        ICP20100_I2C_ADDR,
+        ICP20100_MASTER_LOCK,
+        I2C_MEMADD_SIZE_8BIT,
+        &value,
+        1,
+        HAL_MAX_DELAY) == HAL_OK;
+}
+
+static inline bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t *pData, uint16_t size, uint32_t timeout) {
+    return HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size, timeout) == HAL_OK;
+}
+
+static inline bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t &out, uint32_t timeout) {
+    return HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, &out, 1, timeout) == HAL_OK;
+}
+
+static inline bool writeRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout) {
+    return HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, &value, 1, timeout) == HAL_OK;
+}
+
+static inline bool waitForOtpStatusClear(I2C_HandleTypeDef *hi2c) {
+    uint8_t status = 0x01;
+    const uint32_t startTick = osKernelGetTickCount();
+    const uint32_t timeoutTicks = timeToTicks(OTP_STATUS_POLL_TIMEOUT_MS);
+    const uint32_t pollIntervalTicks = timeToTicks(OTP_STATUS_POLL_INTERVAL_MS);
+
+    do {
+        if (!readRegisterBlocking(hi2c, ICP20100_OTP_STATUS, status)) {
+            return false;
+        }
+
+        if ((status & 0x01U) == 0U) {
+            return true;
+        }
+
+        osDelay(pollIntervalTicks);
+    } while ((osKernelGetTickCount() - startTick) < timeoutTicks);
+
+    return false;
+}
+
+static inline bool writeRegisterWithVerify(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout) {
+    if (!writeRegisterBlocking(hi2c, memAddress, value, timeout)) {
+        return false;
     }
+
+    uint8_t readBack = 0;
+    if (!readRegisterBlocking(hi2c, memAddress, readBack, timeout)) {
+        return false;
+    }
+
+    return (readBack == value);
 }

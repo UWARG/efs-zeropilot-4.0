@@ -38,8 +38,13 @@
 #define ICP20100_FORCED_MES_TRIGGER (1 << 4)
 #define ICP20100_TRIGGER_COMMAND_MEAS (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER)
 
+// TRIM2_MSB register: Gain field occupies bits 4,5,6
+#define ICP20100_TRIM2_MSB_GAIN_FIELD_MASK (0x70)  // Bits 4,5,6
+#define ICP20100_TRIM2_MSB_GAIN_SHIFT (4)
+#define ICP20100_GAIN_VALUE_MASK (0x07)  // 3-bit gain value from OTP
+
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
-	hi2c(hi2c), callbackCount(0), FIFO_REGISTER(0) {}
+	hi2c(hi2c), callbackCount(0), fifoRegister(0) {}
 
 bool Barometer::init()
 {
@@ -300,14 +305,14 @@ bool Barometer::init()
 	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM1_MSB,
 	                  I2C_MEMADD_SIZE_8BIT, &trim_reg, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
-	// STEP 21: Write gain to main registers
-	uint8_t Rdata = 0x00;
+	// STEP 21: Write gain to main registers w/o touching BG_PTAT_TRIM
+	uint8_t Rdata = 0x00; // We are writing to the RData register
 	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM2_MSB,
 				 I2C_MEMADD_SIZE_8BIT, &Rdata, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
-	Rdata &= ~(0b01110000);
-	gain &= (0x07);
-	Rdata |= (gain << 4);
+	Rdata &= ~ICP20100_TRIM2_MSB_GAIN_FIELD_MASK;  // Clear bits 4,5,6
+	gain &= ICP20100_GAIN_VALUE_MASK;  // Mask bits 1,2,3, to extract gain value required, as per datasheet
+	Rdata |= (gain << ICP20100_TRIM2_MSB_GAIN_SHIFT);  // Set bits 4,5,6 to bits 1,2,3 from gain value
 
 	if(HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM2_MSB,
 		                  I2C_MEMADD_SIZE_8BIT, &Rdata, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
@@ -439,7 +444,7 @@ void Barometer::rxCallback() {
 		case 0: // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
 
-			if (readRegister(ICP20100_FIFO_FILL, &FIFO_REGISTER, 1)) {
+			if (readRegister(ICP20100_FIFO_FILL, &fifoRegister, 1)) {
 				callbackCount = 1;
 			} else {
 				callbackCount = 0;
@@ -479,15 +484,11 @@ void Barometer::rxCallback() {
 	}
 }
 
-bool Barometer::readData(BaroData_t *data)
+bool Barometer::readData(BaroData_t &data)
 {
-
-    if(data == nullptr){
-        return false;
-    }
 	if (dataFilled) {
-		uint32_t press_raw = ((Press_Temp_Data[2] & 0x0F) << 16) | (Press_Temp_Data[1] << 8) | Press_Temp_Data[0];
-		uint32_t temp_raw  = ((Press_Temp_Data[5] & 0x0F) << 16) | (Press_Temp_Data[4] << 8) | Press_Temp_Data[3];
+		uint32_t press_raw = ((pressTempData[2] & 0x0F) << 16) | (pressTempData[1] << 8) | pressTempData[0];
+		uint32_t temp_raw  = ((pressTempData[5] & 0x0F) << 16) | (pressTempData[4] << 8) | pressTempData[3];
 
 		int32_t press_signed = (int32_t)(press_raw & 0xFFFFF);
 		if (press_signed & 0x80000) {
