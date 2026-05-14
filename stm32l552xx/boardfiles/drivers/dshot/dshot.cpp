@@ -7,11 +7,10 @@ static constexpr uint16_t DSHOT_0_CCR =	275;    // CCR for dshot150 logic 0
 static constexpr uint16_t MAX_THROTTLE = 2047;  // 11 bit max val
 static constexpr uint16_t MIN_THROTTLE = 48;    // 0-47 reserved for special commands
 
-DshotMotorControl::DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, bool tel_req, uint8_t motorIdx):
+DshotMotorControl::DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, bool tel_req):
     timer(timer), 
     timerChannel(timerChannel), 
-    tel_req(tel_req),
-    motorIdx(motorIdx){
+    tel_req(tel_req){
         // blank
 }
 
