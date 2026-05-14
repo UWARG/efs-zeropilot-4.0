@@ -19,6 +19,7 @@ void initManagers()
         systemUtilsHandle, 
         gpsHandle,
         imuHandle,
+        barometerHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 

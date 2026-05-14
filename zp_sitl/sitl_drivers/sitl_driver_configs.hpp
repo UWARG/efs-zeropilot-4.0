@@ -31,6 +31,10 @@ namespace SITL_Driver_Configs {
         static constexpr float CURRENT_DRAW_PER_RPM = 0.012f; // Simulated current draw per RPM in Amps
     };
 
+    struct SITL_Barometer_Config {
+        
+    };
+
     struct SITL_TELEM_Config {
         static constexpr uint32_t RX_BUF_SZ_BYTES = 1048576; // 1 MB receive buffer
     };

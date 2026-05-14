@@ -9,6 +9,7 @@
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
 #include "MahonyAHRS.hpp"
+#include "barometer_iface.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
@@ -30,6 +31,7 @@ class AttitudeManager {
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
+            IBarometer *barometerDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
@@ -43,6 +45,7 @@ class AttitudeManager {
 
         IGPS *gpsDriver;
         IIMU *imuDriver;
+        IBarometer *barometerDriver;
 
         Mahony mahonyFilter;
 
@@ -62,6 +65,8 @@ class AttitudeManager {
         bool armedFlag;
 
         uint16_t lastServoOutputs[16];
+
+        BaroData_t lastBaroData;
 
         uint8_t amSchedulingCounter;
 

@@ -8,6 +8,7 @@
 #include "sitl_drivers/sitl_logger.hpp"
 #include "sitl_drivers/sitl_rc.hpp"
 #include "sitl_drivers/sitl_powermodule.hpp"
+#include "sitl_drivers/sitl_barometer.hpp"
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
@@ -60,6 +61,7 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
+    SITL_Barometer* barometer;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
     MotorInstance_t motors[SITL_NUM_MOTORS];
@@ -84,6 +86,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->logger;
     delete self->rc;
     delete self->pm;
+    delete self->barometer;
     delete self->telem;
     delete self->imu;
     delete self->gps;
@@ -116,6 +119,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->logger = new SITL_Logger();
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
+        self->barometer = new SITL_Barometer();
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
@@ -180,7 +184,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->gps, self->imu,
+            self->sysUtils, self->gps, self->imu, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
