@@ -34,8 +34,8 @@ class Barometer : public IBarometer {
         volatile bool dataFilled = 0;
 		volatile uint8_t callbackCount; 
         volatile bool initiatedRead = false;
-        uint8_t Press_Temp_Data[6];
-        uint8_t FIFO_REGISTER;
+        uint8_t pressTempData[6];
+        uint8_t fifoRegister;
         float latestTemperatureC = 0.0f;
         float latestPressurekPa = 0.0f;
         bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);

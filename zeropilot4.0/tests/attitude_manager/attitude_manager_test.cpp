@@ -96,11 +96,7 @@ protected:
         ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImu_t{0, 0, 0, 0, 0, 0}));
         ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImu_t{0, 0, 0, 0, 0, 0}));
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
-        ON_CALL(mockBarometer, readData(_))
-        .WillByDefault(DoAll(
-            SetArgPointee<0>(BaroData_t{0.0f, 0.0f, 0.0f}),
-            Return(true)
-        ));
+        ON_CALL(mockBarometer, readData(_)).WillByDefault(Return(true));
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
     }

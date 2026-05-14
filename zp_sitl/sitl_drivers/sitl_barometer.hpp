@@ -11,8 +11,7 @@ class SITL_Barometer : public IBarometer {
         float maxCapacity = 1.0f;
     public:
         bool readData(BaroData_t &data) override {
-            if (!data) return false;
-            *data = baroData;
+            data = baroData;
             return true;
         }
 };
