@@ -415,11 +415,8 @@ void Barometer::rxCallback() {
 	}
 }
 
-bool Barometer::readData(BaroData_t *data)
+bool Barometer::readData(BaroData_t &data)
 {
-    if(data == nullptr){
-        return false;
-    }
 	if (dataFilled) {
 		uint32_t press_raw = ((pressTempData[2] & 0x0F) << 16) | (pressTempData[1] << 8) | pressTempData[0];
 		uint32_t temp_raw  = ((pressTempData[5] & 0x0F) << 16) | (pressTempData[4] << 8) | pressTempData[3];

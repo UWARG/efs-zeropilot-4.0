@@ -5,5 +5,5 @@
 
 class MockBarometer : public IBarometer {
     public:
-        MOCK_METHOD(bool, readData, (BaroData_t *data), (override));
+        MOCK_METHOD(bool, readData, (BaroData_t &data), (override));
 };

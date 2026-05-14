@@ -18,7 +18,7 @@ class Barometer : public IBarometer {
 
     public:
         Barometer(I2C_HandleTypeDef *hi2c);
-        bool readData(BaroData_t *data);
+        bool readData(BaroData_t &data);
         bool init(); 
         void rxCallback();
         bool firWarmupPoll();
