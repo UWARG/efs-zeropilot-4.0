@@ -1,4 +1,4 @@
-#include "icp20100.hpp"
+#include "icp_20100.hpp"
 #include "utils.h"
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
