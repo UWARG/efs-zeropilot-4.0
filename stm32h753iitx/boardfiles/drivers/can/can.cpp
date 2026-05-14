@@ -1,7 +1,8 @@
 
 #include "can.hpp"
 
-uint8_t CAN::transfer_id = 0;
+uint8_t CAN::node_status_transfer_id = 0;
+uint8_t CAN::dna_allocation_transfer_id = 0;
 
 static void StaticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
     CAN* self = static_cast<CAN*>(ins->user_reference);
@@ -25,6 +26,14 @@ CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	);
 
 	nodeStatus = {0};
+
+	for (int i = 0; i <= CANARD_MAX_NODE_ID; i++) {
+		canNodes[i].lastSeenTick = 0;
+		canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
+	}
+	canNodes[NODE_ID].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+	const uint32_t startup_tick = HAL_GetTick();
+	canNodes[NODE_ID].lastSeenTick = startup_tick;
 
 	canard.node_id = NODE_ID;
 }
@@ -132,62 +141,180 @@ void CAN::handleNodeStatus(CanardRxTransfer *transfer) {
 
 void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 
-	uint8_t first_half_unique_id[8];
+	//only process anonymous requests
+	if (transfer->source_node_id != 0) return;
 
- 	if (transfer->source_node_id != 0) // the source node is not 0, it is not anonymous
-	{
-		return;
+	uavcan_protocol_dynamic_node_id_Allocation msg;
+
+	if (uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg)) return;
+
+	const uint32_t tick = HAL_GetTick();
+
+	// if timeout reset stage
+	if (tick > dnaLastAcceptedTick + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
+		resetDnaInProgress();
 	}
 
-    struct uavcan_protocol_dynamic_node_id_Allocation msg = {};
-	uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg);
-
-	if (msg.node_id != 0) // the node id is not 0, it is not anonymous
-	{
+	const DnaStage incoming = detectDnaRequestStage(msg);
+	if (incoming == DnaStage::INVALID)
 		return;
+	if (incoming != getExpectedDnaStage())
+		return;
+	// append the new chunk
+	memcpy(dnaCurrentUniqueId + dnaCurrentUniqueIdLen, msg.unique_id.data, msg.unique_id.len);
+	dnaCurrentUniqueIdLen += msg.unique_id.len;
+
+
+	if (incoming == DnaStage::STAGE_1) {
+		dnaPreferredNodeId = msg.node_id;
 	}
 
-	memcpy(first_half_unique_id, msg.unique_id.data, 6);
-	msg.unique_id.len = 6;
-
-	// Generate the node id and allocate it
-	int8_t allocated = allocateNode();
-	if (allocated == -1) {
-		return;
+	if (dnaCurrentUniqueIdLen == UAVCAN_UNIQUE_ID_LENGTH) {
+		const int8_t new_node_id = allocateNode();
+		if (new_node_id >= 0) {
+			(void)publishDnaAllocationResponse(new_node_id, dnaCurrentUniqueId, dnaCurrentUniqueIdLen);
+		}
+		resetDnaInProgress();
+	} else {
+		if (publishDnaAllocationResponse(0, dnaCurrentUniqueId, dnaCurrentUniqueIdLen) < 0) {
+			resetDnaInProgress();
+			return;
+		}
+		dnaLastAcceptedTick = tick;
 	}
-	msg.node_id = allocated;
+}
 
-	// Send message back
-	uint8_t decode_buffer[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_SIZE];
-	uint32_t encoded_size = uavcan_protocol_dynamic_node_id_Allocation_encode(&msg, decode_buffer);
+int8_t CAN::lookupAllocation(const uint8_t unique_id[16]) const {
+	for (uint8_t i = 0; i < allocationCount_; i++) {
+		if (memcmp(allocationTable_[i].unique_id, unique_id, 16) == 0) {
+			return allocationTable_[i].node_id;
+		}
+	}
+	return -1;
+}
 
-	broadcast(
-		CanardTransferTypeBroadcast,
-		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
-		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
-		&transfer_id,
-		CANARD_TRANSFER_PRIORITY_LOW,
-		decode_buffer,
-		encoded_size
-	);
-
+bool CAN::isNodeIdAllocated(uint8_t node_id) const {
+	for (uint8_t i = 0; i < allocationCount_; i++) {
+		if (allocationTable_[i].node_id == node_id) {
+			return true;
+		}
+	}
+	return false;
 }
 
 int8_t CAN::allocateNode() {
-	// check if the node id is already allocated
-	int currId = nextAvailableID;
+	// dronecan reserves 126 and 127
+	static constexpr uint8_t MAX_DYNAMIC_NODE_ID = 125;
 
-	while (canNodes[currId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL) {
-		currId++;
-		if (currId > CANARD_MAX_NODE_ID) {
-			return -1; // no more node ids available
+	// Check if previously assigned
+	int8_t existingId = lookupAllocation(dnaCurrentUniqueId);
+	if (existingId > 0) {
+		return existingId;
+	}
+
+	// try preferred id
+	int8_t assignedId = 0;
+	if (dnaPreferredNodeId != UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID &&
+		dnaPreferredNodeId >= CANARD_MIN_NODE_ID &&
+		dnaPreferredNodeId <= MAX_DYNAMIC_NODE_ID &&
+		canNodes[dnaPreferredNodeId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE &&
+		!isNodeIdAllocated(dnaPreferredNodeId)) {
+		assignedId = dnaPreferredNodeId;
+	}
+
+	// scan for free ID
+	if (assignedId == 0) {
+		for (int currId = nextAvailableID; currId <= MAX_DYNAMIC_NODE_ID && assignedId == 0; currId++) {
+			if (canNodes[currId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE
+				&& !isNodeIdAllocated(currId)) {
+				nextAvailableID = currId + 1;
+				assignedId = currId;
+			}
 		}
 	}
-	
 
-	nextAvailableID = currId + 1;
+	if (assignedId == 0) {
+		return -1;
+	}
 
-	return currId;
+	// push to allocation table
+	if (allocationCount_ < MAX_ALLOCATION_ENTRIES) {
+		memcpy(allocationTable_[allocationCount_].unique_id, dnaCurrentUniqueId, 16);
+		allocationTable_[allocationCount_].node_id = assignedId;
+		allocationCount_++;
+	}
+
+	return assignedId;
+}
+
+DnaStage CAN::detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_Allocation& msg) const {
+
+	constexpr uint8_t MAX_LEN = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_LENGTH_OF_UNIQUE_ID_IN_REQUEST;
+	constexpr uint8_t STAGE3_LEN = UAVCAN_UNIQUE_ID_LENGTH - MAX_LEN * 2U;
+
+	const uint8_t len = msg.unique_id.len;
+
+	// len should be 6 or 4
+	if (len != MAX_LEN && len != STAGE3_LEN) {
+		return DnaStage::INVALID;
+	}
+
+	if (msg.first_part_of_unique_id) {
+		return DnaStage::STAGE_1;
+	}
+
+	if (len == MAX_LEN) {
+		return DnaStage::STAGE_2;
+	}
+
+	if (len == STAGE3_LEN) {
+		return DnaStage::STAGE_3;
+	}
+
+	return DnaStage::INVALID;
+}
+
+DnaStage CAN::getExpectedDnaStage() const {
+	constexpr uint8_t MAX_LEN = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_LENGTH_OF_UNIQUE_ID_IN_REQUEST;
+
+	switch (dnaCurrentUniqueIdLen) {
+		case 0: 
+			return DnaStage::STAGE_1;
+		case MAX_LEN:
+			return DnaStage::STAGE_2;
+		case MAX_LEN * 2:
+			return DnaStage::STAGE_3;
+		default:
+			return DnaStage::INVALID;
+	}
+}
+
+
+void CAN::resetDnaInProgress() {
+	dnaCurrentUniqueIdLen = 0;
+	dnaPreferredNodeId = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID;
+	dnaLastAcceptedTick = 0;
+}
+
+int16_t CAN::publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique_id, uint8_t unique_id_len) {
+	uavcan_protocol_dynamic_node_id_Allocation msg {};
+	msg.node_id = node_id;
+	msg.first_part_of_unique_id = false;
+	msg.unique_id.len = unique_id_len;
+	memcpy(msg.unique_id.data, unique_id, unique_id_len);
+
+	uint8_t buffer[UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_SIZE];
+	uint32_t len = uavcan_protocol_dynamic_node_id_Allocation_encode(&msg, buffer);
+
+	return broadcast(
+		CanardTransferTypeBroadcast,
+		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
+		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
+		&dna_allocation_transfer_id,
+		CANARD_TRANSFER_PRIORITY_LOW,
+		buffer,
+		len
+	);
 }
 
 uint32_t getFDCANDLC(uint8_t len) {
@@ -216,14 +343,15 @@ void CAN::sendCANTx() {
 
 	if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
 		FDCAN_TxHeaderTypeDef txHeader;
-
-		txHeader.Identifier = frame->id;
+		txHeader.Identifier = frame->id & CANARD_CAN_EXT_ID_MASK;
 		txHeader.IdType = FDCAN_EXTENDED_ID;
 		txHeader.TxFrameType = FDCAN_DATA_FRAME;
 		txHeader.DataLength = getFDCANDLC(frame->data_len);
 		txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
 		txHeader.BitRateSwitch = FDCAN_BRS_OFF;
 		txHeader.FDFormat = FDCAN_CLASSIC_CAN;
+		txHeader.TxEventFifoControl = FDCAN_STORE_TX_EVENTS;
+		txHeader.MessageMarker = 3;
 
 		uint8_t txData[8];
 		memcpy(txData, frame->data, frame->data_len);
@@ -237,6 +365,7 @@ void CAN::sendCANTx() {
 }
 
 bool CAN::routineTasks() {
+
 	sendCANTx();
 
 	uint32_t tick = HAL_GetTick();
@@ -268,7 +397,7 @@ void CAN::sendNodeStatus() {
     broadcast(CanardTransferTypeBroadcast,
 			UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
 			UAVCAN_PROTOCOL_NODESTATUS_ID,
-			&transfer_id,
+			&node_status_transfer_id,
 			CANARD_TRANSFER_PRIORITY_LOW,
 			buffer,
 			len
@@ -284,7 +413,7 @@ void CAN::process1HzTasks() {
 	for (int i = CANARD_MIN_NODE_ID; i <= CANARD_MAX_NODE_ID; i++) {
 		// Make copy of status in case it changes
 
-		if (timestamp_msec-canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
+		if (i != NODE_ID && timestamp_msec-canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
 			canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
 		}
 	}
