@@ -2,10 +2,8 @@
 #include "utils.h"
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
-    hi2c(hi2c), callbackCount(0), fifoRegister(0) {}
+	hi2c(hi2c), callbackCount(NotStarted), fifoRegister(0) {}
 
-static constexpr uint8_t UNLOCK_VALUE = ICP20100_MASTER_UNLOCK_KEY;
-static constexpr uint8_t LOCK_VALUE   = ICP20100_MASTER_LOCK_KEY; // write 0x00 to lock
 static constexpr uint32_t OTP_STATUS_POLL_TIMEOUT_MS = 1000U;
 static constexpr uint32_t OTP_STATUS_POLL_INTERVAL_MS = 1U;
 
@@ -57,6 +55,8 @@ static constexpr uint8_t ICP20100_PRESS_DATA_0 = 0xFAU;
 static constexpr uint8_t ICP20100_FIFO_FILL = 0xC4U;
 static constexpr uint8_t ICP20100_DEVICE_STATUS = 0xCDU;
 static constexpr uint8_t ICP20100_MODE_SYNC_STATUS_BIT = 0x01U;
+static constexpr uint8_t UNLOCK_VALUE = ICP20100_MASTER_UNLOCK_KEY;
+static constexpr uint8_t LOCK_VALUE = ICP20100_MASTER_LOCK_KEY;
 
 // Forward declarations of static helper functions
 static bool unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock);
