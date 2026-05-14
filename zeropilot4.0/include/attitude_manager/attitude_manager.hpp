@@ -63,7 +63,7 @@ class AttitudeManager {
 
         uint16_t lastServoOutputs[16];
 
-        uint8_t amSchedulingCounter;
+        uint16_t amSchedulingCounter;
 
         int noDataCount;
         bool failsafeTriggered;
