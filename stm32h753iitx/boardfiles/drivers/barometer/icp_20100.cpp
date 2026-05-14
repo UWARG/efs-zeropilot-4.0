@@ -431,8 +431,8 @@ bool Barometer::readData(BaroData_t &data)
 			temp_signed |= 0xFFF00000;
 		}
 
-		data->temperatureData = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
-		data->pressureData = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		data.temperatureData = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
+		data.pressureData = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
 		dataFilled = 0;
 		return true;
 	}

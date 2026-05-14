@@ -453,11 +453,11 @@ void Barometer::rxCallback() {
 			break;
 
 		case 1: // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
-			FIFO_REGISTER &= 0x1F;
+			fifoRegister &= 0x1F;
 
-			if (FIFO_REGISTER > 0) {
+			if (fifoRegister > 0) {
 
-				if (readRegister(ICP20100_PRESS_DATA_0, Press_Temp_Data, 6)) { 
+				if (readRegister(ICP20100_PRESS_DATA_0, pressTempData, 6)) { 
 					callbackCount = 2;
 				} else {
 					callbackCount = 0;
@@ -500,8 +500,8 @@ bool Barometer::readData(BaroData_t &data)
 			temp_signed |= 0xFFF00000;
 		}
 
-		data->temperatureData = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
-		data->pressureData = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		data.temperatureData = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
+		data.pressureData = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
 		dataFilled = 0;
 		return true;
 	}
