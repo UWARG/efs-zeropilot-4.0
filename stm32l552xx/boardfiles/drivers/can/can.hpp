@@ -39,6 +39,7 @@ private:
 
 	int8_t allocateNode();
 	int8_t lookupAllocation(const uint8_t unique_id[16]) const;
+	bool isNodeIdAllocated(uint8_t node_id) const;
 
     // Called once every second
 	void process1HzTasks();
