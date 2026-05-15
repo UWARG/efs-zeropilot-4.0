@@ -89,7 +89,7 @@ void initDrivers()
     // Motors (servo index matches SERVOx param)
     motor1Handle = new (&motor1Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 1);
     motor2Handle = new (&motor2Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 2);
-    motor3Handle = new (&motor3Storage) DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
+    motor3Handle = new (&motor3Storage) DshotMotorControl(&htim1, TIM_CHANNEL_3, false);
     motor4Handle = new (&motor4Storage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10, 4);
     motor5Handle = new (&motor5Storage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10, 5);
     motor6Handle = new (&motor6Storage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10, 6);

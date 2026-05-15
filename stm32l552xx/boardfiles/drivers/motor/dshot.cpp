@@ -28,7 +28,7 @@ void DshotMotorControl::set(uint32_t percent) {
 
     // encode each bit to CRC val into temp buffer
 	for(int i = 0; i < DSHOT_FRAME_LEN; i++) {
-		uint8_t bit = (frame >> (15 - i)) & 1;
+		uint8_t bit = (frame >> (DSHOT_FRAME_LEN - 1 - i)) & 1;
         update_buffer[i] = (bit == 1) ? DSHOT_1_CCR : DSHOT_0_CCR;
 	}
 
