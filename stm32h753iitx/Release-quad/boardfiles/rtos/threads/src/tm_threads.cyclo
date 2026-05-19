@@ -1,0 +1,2 @@
+../boardfiles/rtos/threads/src/tm_threads.cpp:13:6:void tmMainLoopWrapper(void*)	1
+../boardfiles/rtos/threads/src/tm_threads.cpp:22:6:void tmInitThreads()	1

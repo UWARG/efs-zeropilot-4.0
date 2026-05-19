@@ -1,0 +1,2 @@
+../boardfiles/rtos/threads/src/startup_threads.cpp:15:6:void startUpMain(void*)	16	static
+../boardfiles/rtos/threads/src/startup_threads.cpp:21:6:void startUpInitThreads()	8	static

@@ -1,0 +1,7 @@
+../boardfiles/drivers/logger/logger.cpp:5:5:int Logger::init()	56	static
+../boardfiles/drivers/logger/logger.cpp:32:5:virtual int Logger::log(const char*)	152	static
+../boardfiles/drivers/logger/logger.cpp:57:5:virtual int Logger::log(const char (*)[100], int)	160	static
+../../zeropilot4.0/build/h753iit-quad/include/logger_iface.hpp:8:17:ILogger::~ILogger()	16	static
+../../zeropilot4.0/build/h753iit-quad/include/logger_iface.hpp:8:17:virtual ILogger::~ILogger()	16	static
+../boardfiles/drivers/logger/logger.hpp:7:7:Logger::~Logger()	16	static
+../boardfiles/drivers/logger/logger.hpp:7:7:virtual Logger::~Logger()	16	static

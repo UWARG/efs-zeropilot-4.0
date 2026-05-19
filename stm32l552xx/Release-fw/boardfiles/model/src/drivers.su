@@ -1,0 +1,25 @@
+../boardfiles/drivers/queue/queue.hpp:8:7:MessageQueue<__mavlink_message>::~MessageQueue()	0	static
+../boardfiles/drivers/queue/queue.hpp:8:7:MessageQueue<TMMessage>::~MessageQueue()	0	static
+../boardfiles/drivers/queue/queue.hpp:8:7:MessageQueue<char [100]>::~MessageQueue()	0	static
+../boardfiles/drivers/queue/queue.hpp:8:7:MessageQueue<RCMotorControlMessage_t>::~MessageQueue()	0	static
+../boardfiles/drivers/queue/queue.hpp:46:11:int MessageQueue<T>::remainingCapacity() [with T = RCMotorControlMessage_t]	0	static
+../boardfiles/drivers/queue/queue.hpp:46:11:int MessageQueue<T>::remainingCapacity() [with T = char [100]]	0	static
+../boardfiles/drivers/queue/queue.hpp:46:11:int MessageQueue<T>::remainingCapacity() [with T = TMMessage]	0	static
+../boardfiles/drivers/queue/queue.hpp:46:11:int MessageQueue<T>::remainingCapacity() [with T = __mavlink_message]	0	static
+../boardfiles/drivers/queue/queue.hpp:38:11:int MessageQueue<T>::count() [with T = RCMotorControlMessage_t]	0	static
+../boardfiles/drivers/queue/queue.hpp:38:11:int MessageQueue<T>::count() [with T = char [100]]	0	static
+../boardfiles/drivers/queue/queue.hpp:38:11:int MessageQueue<T>::count() [with T = TMMessage]	0	static
+../boardfiles/drivers/queue/queue.hpp:38:11:int MessageQueue<T>::count() [with T = __mavlink_message]	0	static
+../boardfiles/drivers/queue/queue.hpp:31:11:int MessageQueue<T>::push(T*) [with T = RCMotorControlMessage_t]	16	static
+../boardfiles/drivers/queue/queue.hpp:31:11:int MessageQueue<T>::push(T*) [with T = char [100]]	16	static
+../boardfiles/drivers/queue/queue.hpp:31:11:int MessageQueue<T>::push(T*) [with T = TMMessage]	16	static
+../boardfiles/drivers/queue/queue.hpp:31:11:int MessageQueue<T>::push(T*) [with T = __mavlink_message]	16	static
+../boardfiles/drivers/queue/queue.hpp:22:11:int MessageQueue<T>::get(T*) [with T = RCMotorControlMessage_t]	16	static
+../boardfiles/drivers/queue/queue.hpp:22:11:int MessageQueue<T>::get(T*) [with T = char [100]]	16	static
+../boardfiles/drivers/queue/queue.hpp:22:11:int MessageQueue<T>::get(T*) [with T = TMMessage]	16	static
+../boardfiles/drivers/queue/queue.hpp:22:11:int MessageQueue<T>::get(T*) [with T = __mavlink_message]	16	static
+../boardfiles/drivers/queue/queue.hpp:8:7:virtual MessageQueue<RCMotorControlMessage_t>::~MessageQueue()	8	static
+../boardfiles/drivers/queue/queue.hpp:8:7:virtual MessageQueue<char [100]>::~MessageQueue()	8	static
+../boardfiles/drivers/queue/queue.hpp:8:7:virtual MessageQueue<TMMessage>::~MessageQueue()	8	static
+../boardfiles/drivers/queue/queue.hpp:8:7:virtual MessageQueue<__mavlink_message>::~MessageQueue()	8	static
+../boardfiles/model/src/drivers.cpp:101:6:void initDrivers()	48	static

@@ -1,0 +1,9 @@
+../boardfiles/drivers/telemlink/rfd.cpp:11:1:RFD::~RFD()	0	static
+../boardfiles/drivers/telemlink/rfd.cpp:11:1:virtual RFD::~RFD()	8	static
+../boardfiles/drivers/telemlink/rfd.cpp:15:6:virtual void RFD::transmit(const uint8_t*, uint16_t)	0	static
+../boardfiles/drivers/telemlink/rfd.cpp:54:10:virtual uint16_t RFD::receive(uint8_t*, uint16_t)	16	static
+../boardfiles/drivers/telemlink/rfd.cpp:7:1:RFD::RFD(UART_HandleTypeDef*)	0	static
+../boardfiles/drivers/telemlink/rfd.cpp:21:10:uint16_t RFD::getRXTransferSize(uint16_t)	0	static
+../boardfiles/drivers/telemlink/rfd.cpp:29:6:void RFD::init()	0	static
+../boardfiles/drivers/telemlink/rfd.cpp:35:6:void RFD::receiveCallback(uint16_t)	16	static
+../boardfiles/drivers/telemlink/rfd.cpp:79:21:UART_HandleTypeDef* RFD::getHUART() const	0	static

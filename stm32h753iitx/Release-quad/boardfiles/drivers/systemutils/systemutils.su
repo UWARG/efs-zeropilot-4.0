@@ -1,0 +1,6 @@
+../boardfiles/drivers/systemutils/systemutils.cpp:5:6:virtual void SystemUtils::delayMs(uint32_t)	16	static
+../boardfiles/drivers/systemutils/systemutils.cpp:9:10:virtual uint32_t SystemUtils::getCurrentTimestampMs()	24	static
+../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp:10:17:ISystemUtils::~ISystemUtils()	16	static
+../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp:10:17:virtual ISystemUtils::~ISystemUtils()	16	static
+../boardfiles/drivers/systemutils/systemutils.hpp:5:7:SystemUtils::~SystemUtils()	16	static
+../boardfiles/drivers/systemutils/systemutils.hpp:5:7:virtual SystemUtils::~SystemUtils()	16	static

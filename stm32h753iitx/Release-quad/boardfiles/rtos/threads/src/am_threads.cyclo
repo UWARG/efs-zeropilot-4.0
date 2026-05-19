@@ -1,0 +1,2 @@
+../boardfiles/rtos/threads/src/am_threads.cpp:13:6:void amMainLoopWrapper(void*)	1
+../boardfiles/rtos/threads/src/am_threads.cpp:22:6:void amInitThreads()	1

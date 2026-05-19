@@ -1,0 +1,6 @@
+../boardfiles/drivers/systemutils/systemutils.cpp:5:6:virtual void SystemUtils::delayMs(uint32_t)	1
+../boardfiles/drivers/systemutils/systemutils.cpp:9:10:virtual uint32_t SystemUtils::getCurrentTimestampMs()	1
+../../zeropilot4.0/build/l552-fw/include/systemutils_iface.hpp:10:17:ISystemUtils::~ISystemUtils()	1
+../../zeropilot4.0/build/l552-fw/include/systemutils_iface.hpp:10:17:virtual ISystemUtils::~ISystemUtils()	1
+../boardfiles/drivers/systemutils/systemutils.hpp:5:7:SystemUtils::~SystemUtils()	1
+../boardfiles/drivers/systemutils/systemutils.hpp:5:7:virtual SystemUtils::~SystemUtils()	1

@@ -20,6 +20,16 @@ alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
 alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
 alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
 
+#if VEHICLE_TYPE == FIXED_WING
+alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor3Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor4Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
+alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
+#elif VEHICLE_TYPE == QUADCOPTER
 alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
 alignas(DshotMotorControl) static uint8_t motor3Storage[sizeof(DshotMotorControl)];
@@ -28,6 +38,7 @@ alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
+#endif
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
@@ -47,6 +58,16 @@ SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
 
+#if VEHICLE_TYPE == FIXED_WING
+MotorControl *motor1Handle = nullptr;
+MotorControl *motor2Handle = nullptr;
+MotorControl *motor3Handle = nullptr;
+MotorControl *motor4Handle = nullptr;
+MotorControl *motor5Handle = nullptr;
+MotorControl *motor6Handle = nullptr;
+MotorControl *motor7Handle = nullptr;
+MotorControl *motor8Handle = nullptr;
+#elif VEHICLE_TYPE == QUADCOPTER
 MotorControl *motor1Handle = nullptr;
 MotorControl *motor2Handle = nullptr;
 DshotMotorControl *motor3Handle = nullptr;
@@ -55,6 +76,7 @@ MotorControl *motor5Handle = nullptr;
 MotorControl *motor6Handle = nullptr;
 MotorControl *motor7Handle = nullptr;
 MotorControl *motor8Handle = nullptr;
+#endif
 
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
@@ -84,6 +106,16 @@ void initDrivers()
     loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
+    #if VEHICLE_TYPE == FIXED_WING
+    motor1Handle = new (&motor1Storage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
+    motor2Handle = new (&motor2Storage) MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 2);
+    motor3Handle = new (&motor3Storage) MotorControl(&htim3, TIM_CHANNEL_3, 5, 10, 3);
+    motor4Handle = new (&motor4Storage) MotorControl(&htim3, TIM_CHANNEL_4, 5, 10, 4);
+    motor5Handle = new (&motor5Storage) MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
+    motor6Handle = new (&motor6Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
+    motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
+    motor8Handle = new (&motor8Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
+    #elif VEHICLE_TYPE == QUADCOPTER
     motor1Handle = new (&motor1Storage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
     motor2Handle = new (&motor2Storage) MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 2);
     motor3Handle = new (&motor3Storage) DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
@@ -92,7 +124,7 @@ void initDrivers()
     motor6Handle = new (&motor6Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
     motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
     motor8Handle = new (&motor8Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
-
+    #endif
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);

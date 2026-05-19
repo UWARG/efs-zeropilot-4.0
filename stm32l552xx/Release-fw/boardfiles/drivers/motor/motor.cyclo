@@ -1,0 +1,5 @@
+../boardfiles/drivers/motor/motor.cpp:12:6:virtual void MotorControl::set(uint32_t)	7
+../boardfiles/drivers/motor/motor.hpp:6:7:MotorControl::~MotorControl()	1
+../boardfiles/drivers/motor/motor.hpp:6:7:virtual MotorControl::~MotorControl()	1
+../boardfiles/drivers/motor/motor.cpp:3:1:MotorControl::MotorControl(TIM_HandleTypeDef*, uint32_t, uint32_t, uint32_t, uint8_t)	1
+../boardfiles/drivers/motor/motor.cpp:18:6:void MotorControl::init()	7

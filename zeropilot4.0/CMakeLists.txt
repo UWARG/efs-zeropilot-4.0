@@ -3,6 +3,10 @@ project(zeropilot4.0)
 
 include(${CMAKE_SOURCE_DIR}/common.cmake)
 
+add_compile_definitions(VEHICLE_TYPE=${VEHICLE_TYPE})
+add_compile_definitions(FIXED_WING=0)
+add_compile_definitions(QUADCOPTER=1)
+
 set(RELATIVE_ZP_SRC)
 foreach(SRC_FILE IN LISTS ZP_SRC)
     string(PREPEND SRC_FILE "${CMAKE_SOURCE_DIR}/")

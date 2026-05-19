@@ -1,0 +1,13 @@
+../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:20:5:constexpr IPowerModule::IPowerModule()	1
+../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:23:13:IPowerModule::~IPowerModule()	1
+../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:23:13:virtual IPowerModule::~IPowerModule()	1
+../boardfiles/drivers/power_module/power_module.cpp:4:1:PowerModule::PowerModule(I2C_HandleTypeDef*)	1
+../boardfiles/drivers/power_module/power_module.cpp:7:6:bool PowerModule::init()	2
+../boardfiles/drivers/power_module/power_module.cpp:43:6:bool PowerModule::writeRegister(uint16_t, uint8_t*, uint16_t, I2C_HandleTypeDef*)	1
+../boardfiles/drivers/power_module/power_module.cpp:53:6:bool PowerModule::readRegister(uint16_t, uint8_t*, uint16_t, I2C_HandleTypeDef*)	1
+../boardfiles/drivers/power_module/power_module.cpp:63:6:void PowerModule::I2C_MemRxCpltCallback()	6
+../boardfiles/drivers/power_module/power_module.cpp:92:6:void PowerModule::parse(I2C_HandleTypeDef*)	2
+../boardfiles/drivers/power_module/power_module.cpp:98:6:virtual bool PowerModule::readData(PMData_t*)	1
+../boardfiles/drivers/power_module/power_module.cpp:120:20:I2C_HandleTypeDef* PowerModule::getI2C()	1
+../boardfiles/drivers/power_module/power_module.hpp:44:7:PowerModule::~PowerModule()	1
+../boardfiles/drivers/power_module/power_module.hpp:44:7:virtual PowerModule::~PowerModule()	1

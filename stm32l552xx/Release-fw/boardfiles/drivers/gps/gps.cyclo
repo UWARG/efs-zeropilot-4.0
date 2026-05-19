@@ -1,0 +1,24 @@
+../boardfiles/drivers/gps/gps.hpp:9:7:GPS::~GPS()	1
+../boardfiles/drivers/gps/gps.hpp:9:7:virtual GPS::~GPS()	1
+../boardfiles/drivers/gps/gps.cpp:5:1:GPS::GPS(UART_HandleTypeDef*)	1
+../boardfiles/drivers/gps/gps.cpp:7:21:UART_HandleTypeDef* GPS::getHUART()	1
+../boardfiles/drivers/gps/gps.cpp:42:6:void GPS::calcChecksum(uint8_t*, uint16_t)	2
+../boardfiles/drivers/gps/gps.cpp:52:6:bool GPS::sendUBX(uint8_t*, uint16_t)	1
+../boardfiles/drivers/gps/gps.cpp:25:19:HAL_StatusTypeDef GPS::enableMessage(uint8_t, uint8_t)	1
+../boardfiles/drivers/gps/gps.cpp:11:6:bool GPS::init()	1
+../boardfiles/drivers/gps/gps.cpp:71:6:void GPS::processGPSData()	1
+../boardfiles/drivers/gps/gps.cpp:209:6:bool GPS::getTimeRMC(int&)	1
+../boardfiles/drivers/gps/gps.cpp:223:6:bool GPS::getLatitudeRMC(int&)	5
+../boardfiles/drivers/gps/gps.cpp:258:6:bool GPS::getLongitudeRMC(int&)	6
+../boardfiles/drivers/gps/gps.cpp:292:6:bool GPS::getSpeedRMC(int&)	4
+../boardfiles/drivers/gps/gps.cpp:312:6:bool GPS::getTrackAngleRMC(int&)	5
+../boardfiles/drivers/gps/gps.cpp:338:6:bool GPS::getDateRMC(int&)	1
+../boardfiles/drivers/gps/gps.cpp:113:6:bool GPS::parseRMC()	18
+../boardfiles/drivers/gps/gps.cpp:352:6:bool GPS::getNumSatellitesGGA(int&)	2
+../boardfiles/drivers/gps/gps.cpp:365:6:bool GPS::getAltitudeGGA(int&)	4
+../boardfiles/drivers/gps/gps.cpp:176:6:bool GPS::parseGGA()	11
+../boardfiles/drivers/gps/gps.cpp:385:6:bool GPS::getVx(int&)	1
+../boardfiles/drivers/gps/gps.cpp:395:6:bool GPS::getVy(int&)	1
+../boardfiles/drivers/gps/gps.cpp:405:6:bool GPS::getVz(int&)	1
+../boardfiles/drivers/gps/gps.cpp:75:6:bool GPS::parseUBX()	8
+../boardfiles/drivers/gps/gps.cpp:57:11:virtual GpsData_t GPS::readData()	3
