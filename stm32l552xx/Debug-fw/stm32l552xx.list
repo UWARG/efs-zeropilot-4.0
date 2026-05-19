@@ -27,25 +27,25 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  11 .ARM.attributes 00000036  00000000  00000000  00023078  2**0
                   CONTENTS, READONLY
- 12 .debug_info   000714d7  00000000  00000000  000230ae  2**0
+ 12 .debug_info   0007158b  00000000  00000000  000230ae  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 13 .debug_abbrev 0000dc50  00000000  00000000  00094585  2**0
+ 13 .debug_abbrev 0000dc50  00000000  00000000  00094639  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 14 .debug_aranges 00003808  00000000  00000000  000a21d8  2**3
+ 14 .debug_aranges 00003808  00000000  00000000  000a2290  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_rnglists 00002aee  00000000  00000000  000a59e0  2**0
+ 15 .debug_rnglists 00002aee  00000000  00000000  000a5a98  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  000298a6  00000000  00000000  000a84ce  2**0
+ 16 .debug_macro  000298b9  00000000  00000000  000a8586  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   000876c0  00000000  00000000  000d1d74  2**0
+ 17 .debug_line   00087701  00000000  00000000  000d1e3f  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    001a901d  00000000  00000000  00159434  2**0
+ 18 .debug_str    001a9001  00000000  00000000  00159540  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000043  00000000  00000000  00302451  2**0
+ 19 .comment      00000043  00000000  00000000  00302541  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  0000f1a8  00000000  00000000  00302494  2**2
+ 20 .debug_frame  0000f1a8  00000000  00000000  00302584  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 0000005e  00000000  00000000  0031163c  2**0
+ 21 .debug_line_str 0000005e  00000000  00000000  0031172c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -58505,8 +58505,9 @@ void initDrivers()
  8015982:	4bad      	ldr	r3, [pc, #692]	@ (8015c38 <_Z11initDriversv+0x310>)
  8015984:	601c      	str	r4, [r3, #0]
 
+
     // Motors (servo index matches SERVOx param)
-    #if VEHICLE_TYPE == FIXED_WING
+    #ifdef FIXED_WING
     motor1Handle = new (&motor1Storage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
  8015986:	4bad      	ldr	r3, [pc, #692]	@ (8015c3c <_Z11initDriversv+0x314>)
  8015988:	4619      	mov	r1, r3
@@ -73946,7 +73947,7 @@ void TelemetryManager::processTXMsgQueue() {
  801ceb8:	3204      	adds	r2, #4
  801ceba:	ca07      	ldmia	r2, {r0, r1, r2}
  801cebc:	e883 0007 	stmia.w	r3, {r0, r1, r2}
-                #if VEHICLE_TYPE == FIXED_WING
+                #ifdef FIXED_WING
                     mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_FIXED_WING, MAV_AUTOPILOT_ARDUPILOTMEGA,
  801cec0:	f897 320c 	ldrb.w	r3, [r7, #524]	@ 0x20c
  801cec4:	f8d7 2210 	ldr.w	r2, [r7, #528]	@ 0x210
@@ -73962,8 +73963,8 @@ void TelemetryManager::processTXMsgQueue() {
  801cede:	2101      	movs	r1, #1
  801cee0:	2001      	movs	r0, #1
  801cee2:	f7ff fe9e 	bl	801cc22 <mavlink_msg_heartbeat_pack>
-                	    heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
-                #elif VEHICLE_TYPE == QUADCOPTER
+                #endif
+                #ifdef QUADCOPTER
                      mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_ARDUPILOTMEGA,
                 	    heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
                 #endif

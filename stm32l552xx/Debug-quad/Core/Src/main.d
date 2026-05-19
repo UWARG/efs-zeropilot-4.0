@@ -92,7 +92,8 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../../zeropilot4.0/build/l552-quad/include/imu_iface.hpp \
  ../../zeropilot4.0/build/l552-quad/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
- ../../zeropilot4.0/build/l552-quad/include/power_module_iface.hpp
+ ../../zeropilot4.0/build/l552-quad/include/power_module_iface.hpp \
+ ../boardfiles/drivers/motor/dshot.hpp
 ../Core/Inc/main.h:
 ../Drivers/STM32L5xx_HAL_Driver/Inc/stm32l5xx_hal.h:
 ../Core/Inc/stm32l5xx_hal_conf.h:
@@ -193,3 +194,4 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
 ../../zeropilot4.0/build/l552-quad/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/l552-quad/include/power_module_iface.hpp:
+../boardfiles/drivers/motor/dshot.hpp:

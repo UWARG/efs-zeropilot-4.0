@@ -92,8 +92,7 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
  ../../zeropilot4.0/build/h753iit-fw/include/imu_iface.hpp \
  ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
- ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp \
- ../boardfiles/drivers/motor/dshot.hpp
+ ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp
 ../Core/Inc/main.h:
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h:
 ../Core/Inc/stm32h7xx_hal_conf.h:
@@ -194,4 +193,3 @@ Core/Src/main.o: ../Core/Src/main.cpp ../Core/Inc/main.h \
 ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:
-../boardfiles/drivers/motor/dshot.hpp:

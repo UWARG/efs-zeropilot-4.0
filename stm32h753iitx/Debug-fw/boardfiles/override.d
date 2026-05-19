@@ -87,8 +87,7 @@ boardfiles/override.o: ../boardfiles/override.cpp \
  ../../zeropilot4.0/build/h753iit-fw/include/imu_iface.hpp \
  ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
- ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp \
- ../boardfiles/drivers/motor/dshot.hpp
+ ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
 ../Core/Inc/main.h:
 ../Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal.h:
@@ -183,4 +182,3 @@ boardfiles/override.o: ../boardfiles/override.cpp \
 ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:
-../boardfiles/drivers/motor/dshot.hpp:

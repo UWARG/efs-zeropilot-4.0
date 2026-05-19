@@ -1,7 +1,0 @@
-../Drivers/CMSIS/Include/core_cm33.h:2845:26:uint32_t ITM_SendChar(uint32_t)	16	static,ignoring_inline_asm
-../boardfiles/override.cpp:15:5:int _write(int, char*, int)	32	static
-../boardfiles/override.cpp:28:6:void HAL_Delay(uint32_t)	32	static
-../boardfiles/override.cpp:50:6:void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef*, uint16_t)	16	static
-../boardfiles/override.cpp:63:6:void HAL_UART_ErrorCallback(UART_HandleTypeDef*)	24	static
-../boardfiles/override.cpp:87:6:void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef*)	16	static
-../boardfiles/override.cpp:98:6:void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef*)	16	static

@@ -1,8 +1,0 @@
-../boardfiles/drivers/rc/rc_crsf.cpp:11:11:virtual RCControl CRSFReceiver::getRCData()	16	static
-../boardfiles/drivers/rc/rc_crsf.hpp:22:7:CRSFReceiver::~CRSFReceiver()	0	static
-../boardfiles/drivers/rc/rc_crsf.hpp:22:7:virtual CRSFReceiver::~CRSFReceiver()	8	static
-../boardfiles/drivers/rc/rc_crsf.cpp:7:1:CRSFReceiver::CRSFReceiver(UART_HandleTypeDef*)	8	static
-../boardfiles/drivers/rc/rc_crsf.cpp:17:6:void CRSFReceiver::init()	0	static
-../boardfiles/drivers/rc/rc_crsf.cpp:23:6:void CRSFReceiver::startDMA()	0	static
-../boardfiles/drivers/rc/rc_crsf.cpp:43:6:void CRSFReceiver::parse()	20	static
-../boardfiles/drivers/rc/rc_crsf.cpp:91:22:UART_HandleTypeDef* CRSFReceiver::getHUART()	0	static

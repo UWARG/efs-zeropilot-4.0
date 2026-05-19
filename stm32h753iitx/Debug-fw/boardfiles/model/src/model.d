@@ -88,7 +88,6 @@ boardfiles/model/src/model.o: ../boardfiles/model/src/model.cpp \
  ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
  ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp \
- ../boardfiles/drivers/motor/dshot.hpp \
  ../boardfiles/model/inc/managers.hpp \
  ../../zeropilot4.0/build/h753iit-fw/include/attitude_manager.hpp \
  ../../zeropilot4.0/build/h753iit-fw/include/direct_mapping.hpp \
@@ -197,7 +196,6 @@ boardfiles/model/src/model.o: ../boardfiles/model/src/model.cpp \
 ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:
-../boardfiles/drivers/motor/dshot.hpp:
 ../boardfiles/model/inc/managers.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/attitude_manager.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/direct_mapping.hpp:

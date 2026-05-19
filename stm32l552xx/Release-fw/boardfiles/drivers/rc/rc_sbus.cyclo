@@ -1,9 +1,0 @@
-../boardfiles/drivers/rc/rc_sbus.cpp:66:11:virtual RCControl SBUSReceiver::getRCData()	1
-../boardfiles/drivers/rc/rc_sbus.hpp:13:7:SBUSReceiver::~SBUSReceiver()	1
-../boardfiles/drivers/rc/rc_sbus.hpp:13:7:virtual SBUSReceiver::~SBUSReceiver()	1
-../boardfiles/drivers/rc/rc_sbus.cpp:57:1:SBUSReceiver::SBUSReceiver(UART_HandleTypeDef*)	1
-../boardfiles/drivers/rc/rc_sbus.cpp:62:21:UART_HandleTypeDef* SBUSReceiver::getHUART()	1
-../boardfiles/drivers/rc/rc_sbus.cpp:72:6:void SBUSReceiver::init()	1
-../boardfiles/drivers/rc/rc_sbus.cpp:77:6:void SBUSReceiver::startDMA()	1
-../boardfiles/drivers/rc/rc_sbus.cpp:95:7:float SBUSReceiver::sbusToRCControl(uint8_t*, int)	3
-../boardfiles/drivers/rc/rc_sbus.cpp:81:6:void SBUSReceiver::parse()	4

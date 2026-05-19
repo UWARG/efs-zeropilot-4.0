@@ -3,7 +3,7 @@
 ../boardfiles/drivers/systemutils/systemutils.hpp:7:9:constexpr SystemUtils::SystemUtils()	16	static
 ../../zeropilot4.0/build/l552-fw/include/logger_iface.hpp:5:9:constexpr ILogger::ILogger()	16	static
 ../boardfiles/drivers/logger/logger.hpp:14:9:Logger::Logger()	16	static
-../boardfiles/model/src/drivers.cpp:101:6:void initDrivers()	24	static
+../boardfiles/model/src/drivers.cpp:105:6:void initDrivers()	24	static
 ../../zeropilot4.0/build/l552-fw/include/queue_iface.hpp:6:9:constexpr IMessageQueue<T>::IMessageQueue() [with T = RCMotorControlMessage_t]	16	static
 ../../zeropilot4.0/build/l552-fw/include/queue_iface.hpp:9:17:IMessageQueue<T>::~IMessageQueue() [with T = RCMotorControlMessage_t]	16	static
 ../../zeropilot4.0/build/l552-fw/include/queue_iface.hpp:9:17:IMessageQueue<T>::~IMessageQueue() [with T = RCMotorControlMessage_t]	16	static

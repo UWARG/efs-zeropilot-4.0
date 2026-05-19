@@ -91,6 +91,7 @@ boardfiles/model/src/managers.o: ../boardfiles/model/src/managers.cpp \
  ../../zeropilot4.0/build/l552-fw/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
  ../../zeropilot4.0/build/l552-fw/include/power_module_iface.hpp \
+ ../boardfiles/drivers/motor/dshot.hpp \
  ../boardfiles/model/inc/managers.hpp \
  ../../zeropilot4.0/build/l552-fw/include/attitude_manager.hpp \
  ../../zeropilot4.0/build/l552-fw/include/fbwa_mapping.hpp \
@@ -198,6 +199,7 @@ boardfiles/model/src/managers.o: ../boardfiles/model/src/managers.cpp \
 ../../zeropilot4.0/build/l552-fw/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/l552-fw/include/power_module_iface.hpp:
+../boardfiles/drivers/motor/dshot.hpp:
 ../boardfiles/model/inc/managers.hpp:
 ../../zeropilot4.0/build/l552-fw/include/attitude_manager.hpp:
 ../../zeropilot4.0/build/l552-fw/include/fbwa_mapping.hpp:

@@ -88,7 +88,7 @@ boardfiles/model/src/drivers.o: ../boardfiles/model/src/drivers.cpp \
  ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
  ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp \
- ../boardfiles/drivers/motor/dshot.hpp ../boardfiles/rtos/museq/museq.hpp
+ ../boardfiles/rtos/museq/museq.hpp
 ../boardfiles/model/inc/drivers.hpp:
 ../boardfiles/drivers/systemutils/systemutils.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/systemutils_iface.hpp:
@@ -182,5 +182,4 @@ boardfiles/model/src/drivers.o: ../boardfiles/model/src/drivers.cpp \
 ../../zeropilot4.0/build/h753iit-fw/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/h753iit-fw/include/power_module_iface.hpp:
-../boardfiles/drivers/motor/dshot.hpp:
 ../boardfiles/rtos/museq/museq.hpp:

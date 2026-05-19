@@ -1,7 +1,0 @@
-../../zeropilot4.0/build/l552-quad/include/iwdg_iface.hpp:5:9:constexpr IIndependentWatchdog::IIndependentWatchdog()	16	static
-../../zeropilot4.0/build/l552-quad/include/iwdg_iface.hpp:8:17:IIndependentWatchdog::~IIndependentWatchdog()	16	static
-../../zeropilot4.0/build/l552-quad/include/iwdg_iface.hpp:8:17:virtual IIndependentWatchdog::~IIndependentWatchdog()	16	static
-../boardfiles/drivers/iwdg/iwdg.cpp:3:1:IndependentWatchdog::IndependentWatchdog(IWDG_HandleTypeDef*)	16	static
-../boardfiles/drivers/iwdg/iwdg.cpp:7:6:virtual bool IndependentWatchdog::refreshWatchdog()	16	static
-../boardfiles/drivers/iwdg/iwdg.hpp:6:7:IndependentWatchdog::~IndependentWatchdog()	16	static
-../boardfiles/drivers/iwdg/iwdg.hpp:6:7:virtual IndependentWatchdog::~IndependentWatchdog()	16	static

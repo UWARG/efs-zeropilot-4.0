@@ -1,5 +1,0 @@
-../Core/Src/main.cpp:216:6:void SystemClock_Config()	4
-../Core/Src/main.cpp:119:5:int main()	45
-../Core/Src/main.cpp:991:6:void StartDefaultTask(void*)	1
-../Core/Src/main.cpp:1006:6:void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*)	2
-../Core/Src/main.cpp:1024:6:void Error_Handler()	1

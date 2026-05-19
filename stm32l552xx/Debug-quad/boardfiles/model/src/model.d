@@ -88,6 +88,7 @@ boardfiles/model/src/model.o: ../boardfiles/model/src/model.cpp \
  ../../zeropilot4.0/build/l552-quad/include/imu_datatypes.hpp \
  ../boardfiles/drivers/power_module/power_module.hpp \
  ../../zeropilot4.0/build/l552-quad/include/power_module_iface.hpp \
+ ../boardfiles/drivers/motor/dshot.hpp \
  ../boardfiles/model/inc/managers.hpp \
  ../../zeropilot4.0/build/l552-quad/include/attitude_manager.hpp \
  ../../zeropilot4.0/build/l552-quad/include/direct_mapping.hpp \
@@ -196,6 +197,7 @@ boardfiles/model/src/model.o: ../boardfiles/model/src/model.cpp \
 ../../zeropilot4.0/build/l552-quad/include/imu_datatypes.hpp:
 ../boardfiles/drivers/power_module/power_module.hpp:
 ../../zeropilot4.0/build/l552-quad/include/power_module_iface.hpp:
+../boardfiles/drivers/motor/dshot.hpp:
 ../boardfiles/model/inc/managers.hpp:
 ../../zeropilot4.0/build/l552-quad/include/attitude_manager.hpp:
 ../../zeropilot4.0/build/l552-quad/include/direct_mapping.hpp:

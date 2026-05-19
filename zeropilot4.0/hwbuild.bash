@@ -55,11 +55,11 @@ else
     mkdir -p "$build_dir"
 fi
 
-if [[ "$vehicle_type" == "fw" ]]; then
-    vehicle_type=0
-elif [[ "$vehicle_type" == "quad" ]]; then
-    vehicle_type=1
-fi
+# if [[ "$vehicle_type" == "fw" ]]; then
+#     vehicle_type=1
+# elif [[ "$vehicle_type" == "quad" ]]; then
+#     vehicle_type=2
+# fi
 
 # create cmake system
 cd "$build_dir"
@@ -86,7 +86,11 @@ if [[ ! -f "CMakeCache.txt" ]]; then
     echo "generating cmake..."
     echo "generator: $generator"
     echo "toolchain: $tc_file"
-    cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DVEHICLE_TYPE="$vehicle_type" "$script_dir"
+    if [[ "$vehicle_type" == "fw" ]]; then
+        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DFIXED_WING_BUILD=ON "$script_dir"
+    elif [[ "$vehicle_type" == "quad" ]]; then
+        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DQUADCOPTER_BUILD=ON "$script_dir"
+    fi
 fi
 
 echo && echo "building..."

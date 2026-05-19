@@ -1,5 +1,0 @@
-../boardfiles/drivers/logger/logger.hpp:7:7:Logger::~Logger()	0	static
-../boardfiles/drivers/logger/logger.cpp:32:5:virtual int Logger::log(const char*)	144	static
-../boardfiles/drivers/logger/logger.cpp:57:5:virtual int Logger::log(const char (*)[100], int)	152	static
-../boardfiles/drivers/logger/logger.hpp:7:7:virtual Logger::~Logger()	8	static
-../boardfiles/drivers/logger/logger.cpp:5:5:int Logger::init()	40	static
