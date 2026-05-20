@@ -1,7 +1,7 @@
 #pragma once
 
 #include "motor_iface.hpp"
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx_hal.h"
 
 static constexpr uint8_t DSHOT_FRAME_LEN = 16;  // 11 bits throttle + 1 bit telem + 4 bits CRC
 static constexpr uint8_t DSHOT_BUF_LEN = DSHOT_FRAME_LEN + 1;   // extra idle slot to hold line low after frame

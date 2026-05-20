@@ -18,6 +18,9 @@ class MotorControl : public IMotorControl {
          */
         void init();
 
+        /**
+         * @brief sets arm flag
+         */
         void setArm(bool arm);
 
     private:

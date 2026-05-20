@@ -1,7 +1,7 @@
 #pragma once
 
 #include "motor_iface.hpp"
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx_hal.h"
 
 class MotorControl : public IMotorControl {
     public:
@@ -18,6 +18,21 @@ class MotorControl : public IMotorControl {
          */
         void init();
 
+        /**
+         * @brief enables servo output
+         * @param 
+         */
+        static void enableServo(GPIO_TypeDef* enGpioBase, uint16_t enGpioNum);
+
+        /**
+         * @brief enables servo switch
+         * @param 
+         */
+        static void enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi);
+
+        /**
+         * @brief sets arm flag
+         */
         void setArm(bool arm);
 
     private:
