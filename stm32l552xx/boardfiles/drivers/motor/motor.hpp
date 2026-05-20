@@ -21,7 +21,7 @@ class MotorControl : public IMotorControl {
         /**
          * @brief sets arm flag
          */
-        void setArm(bool arm);
+        void setArm(bool arm) override;
 
     private:
         TIM_HandleTypeDef * const timer;
