@@ -21,12 +21,16 @@ class DshotMotorControl : public IMotorControl{
          */
         void init();
 
+        /**
+         * @brief sets arm flag
+         */
+        void setArm(bool arm);
+
     private: 
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;
-        const uint8_t tel_req;
+        const uint8_t telReq;
 
         uint16_t update_buffer[DSHOT_BUF_LEN] = {0};
         uint16_t dma_buffer[DSHOT_BUF_LEN] = {0};
-
 };

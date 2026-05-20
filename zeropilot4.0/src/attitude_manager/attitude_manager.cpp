@@ -26,6 +26,7 @@ AttitudeManager::AttitudeManager(
     currentFlightMode(PlaneFlightMode_e::MANUAL),
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
+    setArmFlag(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
@@ -113,6 +114,7 @@ void AttitudeManager::amUpdate() {
 
     // Update armedFlag and activateFlightMode() on rising edge
     if (controlMsg.arm != armedFlag) {
+        setArmFlag = true;
         armedFlag = controlMsg.arm;
         if (armedFlag) {
             activeCLAW->activateFlightMode();
@@ -143,6 +145,8 @@ void AttitudeManager::amUpdate() {
 
     // Output to motors
     outputToMotors(motorOutputs);
+
+    setArmFlag = false;
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
@@ -208,6 +212,12 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
 
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
+
+        // set arm flag for throttle motors, only on arm/disarm edges
+        if(setArmFlag) {
+            bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
+            motor->motorInstance->setArm(armed);
+        }
 
         // Send command to motor
         motor->motorInstance->set(cmd);
