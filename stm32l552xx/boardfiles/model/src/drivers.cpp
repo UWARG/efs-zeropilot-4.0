@@ -132,6 +132,7 @@ void initDrivers()
     motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
     motor8Handle = new (&motor8Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
     #endif
+    
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
