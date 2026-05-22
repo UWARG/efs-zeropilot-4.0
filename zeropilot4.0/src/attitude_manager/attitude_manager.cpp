@@ -120,14 +120,23 @@ void AttitudeManager::amUpdate() {
     }
 
     // Update current flightmode if changed
+
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
+            #ifdef FIXED_WING
             case PlaneFlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
                 break;
             case PlaneFlightMode_e::FBWA:
                 activeCLAW = &fbwaCLAW;
                 break;
+            #endif
+
+            #ifdef QUADCOPTER
+            case CopterFlightMode_e::ACRO:
+                activeCLAW = &manualCLAW;
+                break;
+            #endif
         }
         activeCLAW->activateFlightMode();
         currentFlightMode = controlMsg.flightMode;
@@ -159,8 +168,9 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         // Get current motor
         MotorInstance_t *motor = (mainMotorGroup->motors + i);
 
-        // Extract percentage based on function
         float percent = 0.0f;
+        #ifdef FIXED_WING
+        // Extract percentage based on function
         switch (motor->function) {
             case MotorFunction_e::AILERON:
                 percent = outputControlMsg.roll;
@@ -183,6 +193,30 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
             default:
                 continue;
         }
+        #endif
+
+        #ifdef QUADCOPTER
+        switch (i) {  // need a better way to identify the motors
+            case 1:
+                percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                break;
+            case 2:
+                percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                break;
+            case 3:
+                percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                break;
+            case 4:
+                percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                break;
+            default:
+                continue;  
+        }
+
+        if(motor->motorInstance == motor1Handle) {
+
+        }
+        #endif
 
         // Set cmd based on percent and trim, min, max
         uint32_t cmd = 0;

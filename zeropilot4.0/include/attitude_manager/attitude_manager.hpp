@@ -55,7 +55,12 @@ class AttitudeManager {
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         RCMotorControlMessage_t controlMsg;
         DroneState_t droneState;
+        #ifdef FIXED_WING
         PlaneFlightMode_e currentFlightMode;
+        #endif
+        #ifdef QUADCOPTER
+        CopterFlightMode_e currentFlightMode;
+        #endif
 
         MotorGroupInstance_t *mainMotorGroup;
 
