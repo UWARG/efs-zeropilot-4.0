@@ -1,3 +1,4 @@
+#include <cmath>
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
@@ -150,8 +151,16 @@ void AttitudeManager::amUpdate() {
         motorOutputs.throttle = 0;
     }
 
+    #ifdef QUADCOPTER
+        motorMixer(motorOutputs);
+    #endif
+
     // Output to motors
     outputToMotors(motorOutputs);
+}
+
+void AttitudeManager::motorMixer(RCMotorControlMessage_t outputControlMsg) {
+    
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
@@ -164,6 +173,72 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 }
 
 void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+    #ifdef QUADCOPTER
+    float *motor_percent;
+    motor_percent[0] = outputControlMsg.roll + outputControlMsg.pitch;
+    motor_percent[1] = outputControlMsg.roll - outputControlMsg.pitch;
+    motor_percent[2] = outputControlMsg.roll + outputControlMsg.pitch;
+    motor_percent[3] = outputControlMsg.roll - outputControlMsg.pitch;
+
+    bool disregard_throttle_flag, disregard_yaw_flag = false;
+
+    float scaling_factor = 1.0f;
+    float RP_range = fmax( abs(outputControlMsg.roll + outputControlMsg.pitch), abs(outputControlMsg.roll - outputControlMsg.pitch) );
+    while(RP_range > 1.0) {
+        scaling_factor -= 0.1;
+        if(scaling_factor == 0.0) {
+            // clamp 
+            disregard_yaw_flag = true;
+            disregard_throttle_flag = true;
+            break;
+        }
+        RP_range *= scaling_factor; // scale roll and pitch down equally
+    }
+
+    for(int i = 0; i < 4; i++) {
+        motor_percent[i] = motor_percent[i] * scaling_factor;
+    }
+
+    if(!disregard_throttle_flag) {
+        float max_saturated = 0.0f;
+        bool throttle_saturation = false;
+        for(int i = 0; i < 4; i++) {
+            if(motor_percent[i] + outputControlMsg.throttle > 1) {
+                if(motor_percent[i] + outputControlMsg.throttle > max_saturated) {
+                    max_saturated = motor_percent[i] + outputControlMsg.throttle - 1;
+                }
+                throttle_saturation = true; 
+            }
+        } 
+        if(throttle_saturation) {
+            for(int i = 0; i < 4; i++) {
+                motor_percent[i] += outputControlMsg.throttle - max_saturated;
+            }
+            disregard_yaw_flag = true;
+        }
+    }
+
+    if(!disregard_yaw_flag) {
+        scaling_factor = 1.0f;
+        bool yaw_saturation = true;
+        while(yaw_saturation) {
+            yaw_saturation = false;
+            for(int i = 0; i < 4; i++) {
+                if( scaling_factor * (motor_percent[i] + outputControlMsg.yaw) > 1 ) {
+                    scaling_factor -= 0.1;
+                    yaw_saturation = true; 
+                    break;
+                }
+            }
+        }
+        for(int i = 0; i < 4; i++) {
+            motor_percent[i] += outputControlMsg.yaw * scaling_factor;
+        }
+    }
+
+    #endif
+
+
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         // Get current motor
         MotorInstance_t *motor = (mainMotorGroup->motors + i);
@@ -196,25 +271,21 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
-        switch (i) {  // need a better way to identify the motors
-            case 1:
-                percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+        switch (motor->function) { 
+            case MotorFunction_e::MOTOR_1:
+                percent = motor_percent[0];
                 break;
-            case 2:
-                percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+            case MotorFunction_e::MOTOR_2:
+                percent = motor_percent[1];
                 break;
-            case 3:
-                percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+            case MotorFunction_e::MOTOR_3:
+                percent = motor_percent[2];
                 break;
-            case 4:
-                percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+            case MotorFunction_e::MOTOR_4:
+                percent = motor_percent[3];
                 break;
             default:
                 continue;  
-        }
-
-        if(motor->motorInstance == motor1Handle) {
-
         }
         #endif
 
