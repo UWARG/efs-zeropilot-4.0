@@ -4,8 +4,10 @@
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "fbwa_mapping.hpp"
+#include "fbwb_mapping.hpp"
 #include "motor_datatype.hpp"
 #include "gps_iface.hpp"
+#include "airspeed_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
 #include "MahonyAHRS.hpp"
@@ -22,6 +24,25 @@
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 
+// PID constants for FBWB control law
+static constexpr float AM_FBWB_TOTAL_ENERGY_P_GAIN = 0.0f; // TODO: set TE P-gain
+static constexpr float AM_FBWB_TOTAL_ENERGY_I_GAIN = 0.0f; // TODO set TE I-gain
+static constexpr float AM_FBWB_TOTAL_ENERGY_D_GAIN = 0.0f;
+static constexpr float AM_FBWB_TOTAL_ENERGY_D_TAU = 0.02f;
+static constexpr float AM_FBWB_ENERGY_BALANCE_P_GAIN = 0.0f; // TODO: set EB P-gain
+static constexpr float AM_FBWB_ENERGY_BALANCE_I_GAIN = 0.0f; // TODO: set EB I-gain
+static constexpr float AM_FBWB_ENERGY_BALANCE_D_GAIN = 0.0f;
+static constexpr float AM_FBWB_ENERGY_BALANCE_D_TAU = 0.02f;
+
+typedef enum {
+    YAW = 0,
+    PITCH,
+    ROLL,
+    THROTTLE,
+    FLAP_ANGLE,
+    STEERING
+} ControlAxis_t;
+
 class AttitudeManager {
     friend class AMParamSetup;
 
@@ -30,6 +51,7 @@ class AttitudeManager {
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
+            IAirspeed *airspeedDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
@@ -43,6 +65,7 @@ class AttitudeManager {
 
         IGPS *gpsDriver;
         IIMU *imuDriver;
+        IAirspeed *airspeedDriver;
 
         Mahony mahonyFilter;
 
@@ -53,6 +76,7 @@ class AttitudeManager {
         Flightmode *activeCLAW;     // Pointer to current active Control Law
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
+        FBWBMapping fbwbCLAW;       // Fly-By-Wire B Control Law (TECS)
         RCMotorControlMessage_t controlMsg;
         DroneState_t droneState;
         PlaneFlightMode_e currentFlightMode;
@@ -76,6 +100,30 @@ class AttitudeManager {
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
+
+        // ZP_PARAM callback functions
+        static bool updatePIDRollKp(AttitudeManager* context, float val);
+        static bool updatePIDRollKi(AttitudeManager* context, float val);
+        static bool updatePIDRollKd(AttitudeManager* context, float val);
+        static bool updatePIDRollTau(AttitudeManager* context, float val);
+        static bool updatePIDRollIMax(AttitudeManager* context, float val);
+        static bool updatePIDPitchKp(AttitudeManager* context, float val);
+        static bool updatePIDPitchKi(AttitudeManager* context, float val);
+        static bool updatePIDPitchKd(AttitudeManager* context, float val);
+        static bool updatePIDPitchTau(AttitudeManager* context, float val);
+        static bool updatePIDPitchIMax(AttitudeManager* context, float val);
+        static bool updateKffRddrmix(AttitudeManager* context, float val);
+        static bool updateRollLimitDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
+        static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
+        static bool updateFBWBTEKp(AttitudeManager* context, float val);
+        static bool updateFBWBTEKi(AttitudeManager* context, float val);
+        static bool updateFBWBTEKd(AttitudeManager* context, float val);
+        static bool updateFBWBTETau(AttitudeManager* context, float val);
+        static bool updateFBWBEBKp(AttitudeManager* context, float val);
+        static bool updateFBWBEBKi(AttitudeManager* context, float val);
+        static bool updateFBWBEBKd(AttitudeManager* context, float val);
+        static bool updateFBWBEBTau(AttitudeManager* context, float val);
 
         AMParamSetup paramSetup;
 };
