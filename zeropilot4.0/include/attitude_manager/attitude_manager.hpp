@@ -101,7 +101,6 @@ class AttitudeManager {
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
 
-<<<<<<< HEAD
         // ZP_PARAM callback functions
         static bool updatePIDRollKp(AttitudeManager* context, float val);
         static bool updatePIDRollKi(AttitudeManager* context, float val);
@@ -126,7 +125,5 @@ class AttitudeManager {
         static bool updateFBWBEBKd(AttitudeManager* context, float val);
         static bool updateFBWBEBTau(AttitudeManager* context, float val);
 
-=======
         AMParamSetup paramSetup;
->>>>>>> main
 };
