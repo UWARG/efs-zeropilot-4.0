@@ -17,7 +17,12 @@ TelemetryManager::TelemetryManager(
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
     overflowMsgPending(false),
-    currParamListTxIdx(ZP_PARAM::getCount()) {}
+    currParamListTxIdx(ZP_PARAM::getCount()),
+    paramSetup(this) {
+
+    paramSetup.loadAllParams();
+    paramSetup.bindAllParamCallbacks();
+}
 
 TelemetryManager::~TelemetryManager() = default;
 
@@ -29,8 +34,13 @@ void TelemetryManager::tmUpdate() {
 }
 
 void TelemetryManager::processParamTx() {
-    if (currParamListTxIdx < ZP_PARAM::getCount()) {
-        // Use the helper to pack and push the current index
+    constexpr uint8_t BURST_SZ = 4;
+
+    for (uint8_t i = 0; i < BURST_SZ; ++i) {
+        if (currParamListTxIdx >= ZP_PARAM::getCount()) {
+            break;
+        }
+
         enqueueParamValueTx(currParamListTxIdx);
         ++currParamListTxIdx;
     }

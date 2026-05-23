@@ -11,7 +11,6 @@
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
-#include "sitl_drivers/sitl_airspeed.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
@@ -61,14 +60,6 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
-
-    SITL_Airspeed* airspeed;
-    SITL_Motor* rollMotor;
-    SITL_Motor* pitchMotor;
-    SITL_Motor* yawMotor;
-    SITL_Motor* throttleMotor;
-    SITL_Motor* flapMotor;
-    SITL_Motor* steerMotor;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
     MotorInstance_t motors[SITL_NUM_MOTORS];
@@ -96,14 +87,6 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
-    delete self->airspeed;
-    delete self->rollMotor;
-    delete self->pitchMotor;
-    delete self->yawMotor;
-    delete self->throttleMotor;
-    delete self->flapMotor;
-    delete self->steerMotor;
-
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -136,31 +119,6 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
-
-        self->airspeed = new SITL_Airspeed();
-        self->rollMotor = new SITL_Motor(1);
-        self->pitchMotor = new SITL_Motor(2);
-        self->yawMotor = new SITL_Motor(4);
-        self->throttleMotor = new SITL_Motor(3);
-        self->flapMotor = new SITL_Motor(5);
-        self->steerMotor = new SITL_Motor(6);
-        
-        self->rollMotorInstance = {self->rollMotor, false};
-        self->pitchMotorInstance = {self->pitchMotor, false};
-        self->yawMotorInstance = {self->yawMotor, false};
-        self->throttleMotorInstance = {self->throttleMotor, false};
-        self->flapMotorInstance = {self->flapMotor, false};
-        self->steerMotorInstance = {self->steerMotor, false};
-        
-        self->rollGroup = {&self->rollMotorInstance, 1};
-        self->pitchGroup = {&self->pitchMotorInstance, 1};
-        self->yawGroup = {&self->yawMotorInstance, 1};
-        self->throttleGroup = {&self->throttleMotorInstance, 1};
-        self->flapGroup = {&self->flapMotorInstance, 1};
-        self->steeringGroup = {&self->steerMotorInstance, 1};
-        
-        self->imu->init();
-        
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
@@ -222,7 +180,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->gps, self->imu, self->airspeed,
+            self->sysUtils, self->gps, self->imu,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
@@ -239,20 +197,17 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double roll_rad, pitch_rad;
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
-    double airspeed_mps;
     float fuel_lbs, rpm;
     
-    if (!PyArg_ParseTuple(args, "dddddddddddff",
+    if (!PyArg_ParseTuple(args, "ddddddddddff",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
-        &airspeed_mps,
         &fuel_lbs, &rpm))
         return NULL;
     
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
-    self->airspeed->update_from_plant(airspeed_mps);
     self->pm->update_from_plant(fuel_lbs, rpm);
     
     Py_RETURN_NONE;

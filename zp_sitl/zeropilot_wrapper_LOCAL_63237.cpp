@@ -20,7 +20,9 @@
 #include <queue>
 #include <mutex>
 
-static constexpr int SITL_NUM_MOTORS = 6;
+#define SM_SCHEDULING_RATE_HZ 20
+#define TM_SCHEDULING_RATE_HZ 20
+#define AM_SCHEDULING_RATE_HZ 100
 
 std::queue<std::string> telemTxMessages;
 std::queue<std::string> telemRxMessages;
@@ -28,11 +30,11 @@ std::mutex telemMutex;
 
 static void telemLogCallback(const std::string& message, uint8_t direction) {
     std::lock_guard<std::mutex> lock(telemMutex);
-    if (direction == 1) {
-        telemTxMessages.push(message);
-        if (telemTxMessages.size() > 100) {
-            telemTxMessages.pop(); // Limit the queue size to 100 messages
-        }
+if (direction == 1) {
+    telemTxMessages.push(message);
+    if (telemTxMessages.size() > 100) {
+        telemTxMessages.pop(); // Limit the queue size to 100 messages
+}
     } else if (direction == 0) {
         telemRxMessages.push(message);
         if (telemRxMessages.size() > 100) {
@@ -61,7 +63,6 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
-
     SITL_Airspeed* airspeed;
     SITL_Motor* rollMotor;
     SITL_Motor* pitchMotor;
@@ -69,10 +70,19 @@ typedef struct {
     SITL_Motor* throttleMotor;
     SITL_Motor* flapMotor;
     SITL_Motor* steerMotor;
-    SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
-    MotorInstance_t motors[SITL_NUM_MOTORS];
-    MotorGroupInstance_t motorGroup;
+    MotorInstance_t rollMotorInstance;
+    MotorInstance_t pitchMotorInstance;
+    MotorInstance_t yawMotorInstance;
+    MotorInstance_t throttleMotorInstance;
+    MotorInstance_t flapMotorInstance;
+    MotorInstance_t steerMotorInstance;
+    MotorGroupInstance_t rollGroup;
+    MotorGroupInstance_t pitchGroup;
+    MotorGroupInstance_t yawGroup;
+    MotorGroupInstance_t throttleGroup;
+    MotorGroupInstance_t flapGroup;
+    MotorGroupInstance_t steeringGroup;
     
     uint32_t sitlRateHz;
     uint32_t smCounter;
@@ -103,8 +113,6 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->throttleMotor;
     delete self->flapMotor;
     delete self->steerMotor;
-
-    for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -136,7 +144,6 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
-
         self->airspeed = new SITL_Airspeed();
         self->rollMotor = new SITL_Motor(1);
         self->pitchMotor = new SITL_Motor(2);
@@ -161,57 +168,6 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->imu->init();
         
-        for (int i = 0; i < SITL_NUM_MOTORS; i++) {
-            self->sitlMotors[i] = new SITL_Motor();
-            self->motors[i] = {self->sitlMotors[i]};
-        }
-
-        self->motorGroup = {self->motors, SITL_NUM_MOTORS};
-
-        // Set servo params — loadServoParams() in AM constructor reads these
-        ZP_PARAM::setParamById("SERVO1_TRIM", 1500);
-        ZP_PARAM::setParamById("SERVO1_MIN", 1000);
-        ZP_PARAM::setParamById("SERVO1_MAX", 2000);
-        ZP_PARAM::setParamById("SERVO1_REVERSED", 0);
-        ZP_PARAM::setParamById("SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::AILERON));
-
-        ZP_PARAM::setParamById("SERVO2_TRIM", 1500);
-        ZP_PARAM::setParamById("SERVO2_MIN", 1000);
-        ZP_PARAM::setParamById("SERVO2_MAX", 2000);
-        ZP_PARAM::setParamById("SERVO2_REVERSED", 0);
-        ZP_PARAM::setParamById("SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::ELEVATOR));
-
-        ZP_PARAM::setParamById("SERVO3_TRIM", 1500);
-        ZP_PARAM::setParamById("SERVO3_MIN", 1000);
-        ZP_PARAM::setParamById("SERVO3_MAX", 2000);
-        ZP_PARAM::setParamById("SERVO3_REVERSED", 0);
-        ZP_PARAM::setParamById("SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::THROTTLE));
-
-        ZP_PARAM::setParamById("SERVO4_TRIM", 1500);
-        ZP_PARAM::setParamById("SERVO4_MIN", 1000);
-        ZP_PARAM::setParamById("SERVO4_MAX", 2000);
-        ZP_PARAM::setParamById("SERVO4_REVERSED", 0);
-        ZP_PARAM::setParamById("SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::RUDDER));
-
-        ZP_PARAM::setParamById("SERVO5_TRIM", 1500);
-        ZP_PARAM::setParamById("SERVO5_MIN", 1000);
-        ZP_PARAM::setParamById("SERVO5_MAX", 2000);
-        ZP_PARAM::setParamById("SERVO5_REVERSED", 0);
-        ZP_PARAM::setParamById("SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::FLAP));
-
-        ZP_PARAM::setParamById("SERVO6_TRIM", 1500);
-        ZP_PARAM::setParamById("SERVO6_MIN", 1000);
-        ZP_PARAM::setParamById("SERVO6_MAX", 2000);
-        ZP_PARAM::setParamById("SERVO6_REVERSED", 0);
-        ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::GROUND_STEERING));
-
-        ZP_PARAM::setParamById("SERVO7_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
-        ZP_PARAM::setParamById("SERVO8_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
-        ZP_PARAM::setParamById("SERVO9_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
-        ZP_PARAM::setParamById("SERVO10_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
-        ZP_PARAM::setParamById("SERVO11_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
-        ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
-
         self->sm = new SystemManager(
             self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
             self->amQueue, self->tmQueue, self->logQueue
@@ -224,7 +180,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->am = new AttitudeManager(
             self->sysUtils, self->gps, self->imu, self->airspeed,
             self->amQueue, self->tmQueue, self->logQueue,
-            &self->motorGroup
+            &self->rollGroup, &self->pitchGroup, &self->yawGroup,
+            &self->throttleGroup, &self->flapGroup, &self->steeringGroup
         );
         
         self->sitlRateHz = sitlRateHz;
@@ -300,13 +257,12 @@ static PyObject* ZP_update(ZPObject* self, PyObject* args) {
 }
 
 static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
-    // Motors indexed by servo param order: aileron, elevator, throttle, rudder, flap, steering
-    uint32_t roll = self->sitlMotors[0]->get();
-    uint32_t pitch = self->sitlMotors[1]->get();
-    uint32_t throttle = self->sitlMotors[2]->get();
-    uint32_t yaw = self->sitlMotors[3]->get();
-    uint32_t flap = self->sitlMotors[4]->get();
-    uint32_t steer = self->sitlMotors[5]->get();
+    uint32_t roll = self->rollMotor->get();
+    uint32_t pitch = self->pitchMotor->get();
+    uint32_t yaw = self->yawMotor->get();
+    uint32_t throttle = self->throttleMotor->get();
+    uint32_t flap = self->flapMotor->get();
+    uint32_t steer = self->steerMotor->get();
     
     return Py_BuildValue("(iiiiii)", roll, pitch, yaw, throttle, flap, steer);
 }

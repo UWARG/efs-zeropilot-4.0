@@ -61,7 +61,7 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
-
+<<<<<<< HEAD
     SITL_Airspeed* airspeed;
     SITL_Motor* rollMotor;
     SITL_Motor* pitchMotor;
@@ -69,7 +69,9 @@ typedef struct {
     SITL_Motor* throttleMotor;
     SITL_Motor* flapMotor;
     SITL_Motor* steerMotor;
+=======
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
+>>>>>>> main
     
     MotorInstance_t motors[SITL_NUM_MOTORS];
     MotorGroupInstance_t motorGroup;
@@ -96,6 +98,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
+<<<<<<< HEAD
     delete self->airspeed;
     delete self->rollMotor;
     delete self->pitchMotor;
@@ -103,8 +106,9 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->throttleMotor;
     delete self->flapMotor;
     delete self->steerMotor;
-
+=======
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
+>>>>>>> main
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -136,7 +140,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
-
+<<<<<<< HEAD
         self->airspeed = new SITL_Airspeed();
         self->rollMotor = new SITL_Motor(1);
         self->pitchMotor = new SITL_Motor(2);
@@ -161,6 +165,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->imu->init();
         
+=======
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
@@ -212,6 +217,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO11_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
+>>>>>>> main
         self->sm = new SystemManager(
             self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
             self->amQueue, self->tmQueue, self->logQueue

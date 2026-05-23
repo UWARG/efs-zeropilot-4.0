@@ -10,6 +10,7 @@
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
+#include "sm_param_setup.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -39,6 +40,8 @@ typedef struct{
 } BatteryData_t;
 
 class SystemManager {
+    friend class SMParamSetup;
+
     public:
         SystemManager(
             ISystemUtils *systemUtilsDriver,
@@ -85,7 +88,5 @@ class SystemManager {
 
         void sendMessagesToLogger();
 
-        // ZP_PARAM callbacks
-        template <uint8_t Idx>
-        static bool updateFltMode(SystemManager* context, float val);
+        SMParamSetup paramSetup;
 };
