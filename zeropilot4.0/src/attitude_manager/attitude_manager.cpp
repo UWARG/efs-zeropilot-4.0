@@ -180,48 +180,51 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
     motor_percent[2] = outputControlMsg.roll + outputControlMsg.pitch;
     motor_percent[3] = -outputControlMsg.roll - outputControlMsg.pitch;
 
-    bool disregard_throttle_flag = false;
     bool disregard_yaw_flag = false;
 
-    // Yaw and Pitch
-    float RP_range = 0;
+    // Roll and Pitch
+    float max_range = 0.0f;
     // max range
     for (int i = 0; i < 4; i++) {
-        if (fabsf(motor_percent[i]) > RP_range) {
-            RP_range = fabsf(motor_percent[i]);
+        if (fabsf(motor_percent[i]) > max_range) {
+            max_range = fabsf(motor_percent[i]);
         }
     }
-    // scale down to [0,1]
-    if (RP_range > 1) {
-        float scaling_factor = 1 / RP_range;
+    // scale down to [-1,1]
+    if (max_range > 1) {
+        float scaling_factor = 1 / max_range;
         for (int i = 0; i < 4; i++) {
             motor_percent[i] *= scaling_factor;
         }
-        disregard_throttle_flag = true;
-        disregard_yaw_flag = true;
     }
 
     // Throttle
-    if (!disregard_throttle_flag) {
-        float max_overshoot = 0.0f;
-        for (int i = 0; i < 4; i++) {
-            float overshoot = motor_percent[i] + outputControlMsg.throttle - 1;
-            if (overshoot > max_overshoot) {
-                max_overshoot = overshoot;
-            }
-        } 
+    float min_throttle = 0.0f;
+    for (int i = 0; i < 4; i++) {
+        if (motor_percent[i] < 0 && fabsf(motor_percent[i]) > min_throttle) {
+            min_throttle = fabsf(motor_percent[i]);
+        }
+    }
+    if (outputControlMsg.throttle < min_throttle) { outputControlMsg.throttle = min_throttle; }
 
-        if (max_overshoot > 0) {
-            // Decrease throttle to fit in [0,1]
-            for(int i = 0; i < 4; i++) {
-                motor_percent[i] += outputControlMsg.throttle - max_overshoot;
-            }
-            disregard_yaw_flag = true;
-        } else {
-            // Throttle does not cause saturation
-            for(int i = 0; i < 4; i++) {
-                motor_percent[i] += outputControlMsg.throttle;
-            }
+    float max_overshoot = 0.0f;
+    for (int i = 0; i < 4; i++) {
+        float overshoot = motor_percent[i] + outputControlMsg.throttle - 1;
+        if (overshoot > max_overshoot) {
+            max_overshoot = overshoot;
+        }
+    }
+
+    if (max_overshoot > 0) {
+        // Decrease throttle to fit in [0,1]
+        for(int i = 0; i < 4; i++) {
+            motor_percent[i] += outputControlMsg.throttle - max_overshoot;
+        }
+        disregard_yaw_flag = true;
+    } else {
+        // Throttle does not cause saturation
+        for(int i = 0; i < 4; i++) {
+            motor_percent[i] += outputControlMsg.throttle;
         }
     }
 
