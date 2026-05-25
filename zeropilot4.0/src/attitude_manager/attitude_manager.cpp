@@ -190,8 +190,8 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
             max_range = fabsf(motor_percent[i]);
         }
     }
-    // scale down to [-1,1]
-    if (max_range > 1) {
+    // scale down to [-0.5,0.5]
+    if (max_range > 0.5f) {
         float scaling_factor = 1 / max_range;
         for (int i = 0; i < 4; i++) {
             motor_percent[i] *= scaling_factor;
@@ -214,16 +214,15 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
             max_overshoot = overshoot;
         }
     }
-
     if (max_overshoot > 0) {
         // Decrease throttle to fit in [0,1]
-        for(int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             motor_percent[i] += outputControlMsg.throttle - max_overshoot;
         }
         disregard_yaw_flag = true;
     } else {
         // Throttle does not cause saturation
-        for(int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             motor_percent[i] += outputControlMsg.throttle;
         }
     }
@@ -306,9 +305,9 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         }
         #endif
 
-        // Set cmd based on percent and trim, min, max
         uint32_t cmd = 0;
         #ifdef FIXED_WING
+        // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
             // Scale [0, 50] to [min, trim]
             cmd = motor->min + (percent / 50.0f) * (motor->trim - motor->min);
@@ -316,11 +315,6 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
             // Scale [50, 100] to [trim, max]
             cmd = motor->trim + ((percent - 50.0f) / 50.0f) * (motor->max - motor->trim);
         }
-        #endif
-
-        #ifdef QUADCOPTER
-
-        #endif
 
         // Clamp cmd to [0, 100]
         if (cmd > 100) {
@@ -333,6 +327,13 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         if (motor->isInverted) {
             cmd = 100 - cmd;
         }
+        #endif
+
+        #ifdef QUADCOPTER
+        if(percent > 1.0f) { percent = 1.0f; }
+        if(percent < 0.0f) { percent = 0.0f; }
+        cmd = percent * 100.0f;
+        #endif
 
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
