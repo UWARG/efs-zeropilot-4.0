@@ -89,10 +89,22 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     PTCH2SRV_D,
     PTCH2SRV_TAU,
     PTCH2SRV_IMAX,
+    #ifdef FIXED_WING
     KFF_RDDRMIX,
     ROLL_LIMIT_DEG,
     PTCH_LIM_MAX_DEG,
     PTCH_LIM_MIN_DEG,
+    #endif
+    #ifdef QUADCOPTER
+    YAW2SRV_P,
+    YAW2SRV_I,
+    YAW2SRV_D,
+    YAW2SRV_TAU,
+    YAW2SRV_IMAX,
+    ROLL_LIMIT_DEG,
+    PTCH_LIMIT_DEG,
+    YAW_LIMIT_DEG,
+    #endif
     FLTMODE1,
     FLTMODE2,
     FLTMODE3,
@@ -104,6 +116,10 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     BATT_CRT_VOLT,
     BATT_CAPACITY,
     BATT_LOW_TIMER,
+
+  
+
+    
     PARAM_COUNT
 };
 

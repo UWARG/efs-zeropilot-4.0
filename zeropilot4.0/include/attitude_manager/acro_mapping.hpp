@@ -63,4 +63,4 @@ class ACROMapping : public Flightmode{
 
         // Assumed normalized range of RC Input to be [0, 100]
         static constexpr float MAX_RC_INPUT_VAL = 100.0f;
-}
+};

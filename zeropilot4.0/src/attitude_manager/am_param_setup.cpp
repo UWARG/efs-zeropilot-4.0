@@ -10,6 +10,7 @@ static inline int usToPercent(float us) {
 AMParamSetup::AMParamSetup(AttitudeManager* am) : am(am) {}
 
 void AMParamSetup::loadAllParams() {
+    #ifdef FIXED_WING
     // FBWA params
     am->fbwaCLAW.setRollPIDConstants(
         ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
@@ -29,6 +30,34 @@ void AMParamSetup::loadAllParams() {
     am->fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
     am->fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
     am->fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
+    #endif
+
+    #ifdef QUADCOPTER
+    am->acroCLAW.setRollPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_IMAX)
+    );
+    am->acroCLAW.setPitchPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
+    );
+    am->acroCLAW.setYawPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::YAW2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::YAW2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::YAW2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::YAW2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::YAW2SRV_IMAX)
+    );
+    am->acroCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
+    am->acroCLAW.setPitchLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIMIT_DEG));
+    am->acroCLAW.setYawLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::YAW_LIMIT_DEG));
+    #endif
 
     // Servo params
     auto loadMotor = [&](uint8_t ch, ZP_PARAM_ID trim, ZP_PARAM_ID min, ZP_PARAM_ID max, ZP_PARAM_ID rev, ZP_PARAM_ID func) {
@@ -74,10 +103,22 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D,       am, updatePIDPitchKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU,     am, updatePIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX,    am, updatePIDPitchIMax);
+    #ifdef FIXED_WING
     ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX,      am, updateKffRddrmix);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG,   am, updateRollLimitDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, am, updatePitchLimMaxDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, am, updatePitchLimMinDeg);
+    #endif
+    #ifdef QUADCOPTER
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P,       am, updatePIDYawKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I,       am, updatePIDYawKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D,       am, updatePIDYawKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU,     am, updatePIDYawTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX,    am, updatePIDYawIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG,   am, updateRollLimitDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_DEG,   am, updatePitchLimitDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::YAW_LIMIT_DEG,   am, updateYawLimitDeg);
+    #endif
 
     // Servo params: each AM_PARAM_SETUP_BIND_SERVO_CB expands to 5 bindCallback calls
     AM_PARAM_SETUP_BIND_SERVO_CB(1)
@@ -100,64 +141,122 @@ void AMParamSetup::bindAllParamCallbacks() {
 
 bool AMParamSetup::updatePIDRollKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setKp(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getRollPID()->setKp(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setKi(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getRollPID()->setKi(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setKd(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getRollPID()->setKd(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setTau(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getRollPID()->setTau(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->acroCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setKp(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getPitchPID()->setKp(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setKi(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getPitchPID()->setKi(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setKd(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getPitchPID()->setKd(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setTau(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getPitchPID()->setTau(val);
+    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->acroCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     return true;
-}
-bool AMParamSetup::updateKffRddrmix(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 1.0f) return false;
-    ctx->fbwaCLAW.setYawRudderMixingConstant(val);
-    return true;
+    #endif
 }
 bool AMParamSetup::updateRollLimitDeg(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 90.0f) return false;
+    #ifdef FIXED_WING
     ctx->fbwaCLAW.setRollLimitDeg(val);
+    #endif
+    #ifdef QUADCOPTER
+    ctx->acroCLAW.setRollLimitDeg(val);
+    #endif
+    return true;
+}
+#ifdef FIXED_WING
+bool AMParamSetup::updateKffRddrmix(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f) return false;
+    ctx->fbwaCLAW.setYawRudderMixingConstant(val);
     return true;
 }
 bool AMParamSetup::updatePitchLimMaxDeg(AttitudeManager* ctx, float val) {
@@ -170,6 +269,45 @@ bool AMParamSetup::updatePitchLimMinDeg(AttitudeManager* ctx, float val) {
     ctx->fbwaCLAW.setPitchLimitMinDeg(val);
     return true;
 }
+#endif
+#ifdef QUADCOPTER
+bool AMParamSetup::updatePIDYawKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getYawPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updatePIDYawKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getYawPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updatePIDYawKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getYawPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updatePIDYawTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getYawPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->acroCLAW.getYawPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->acroCLAW.getYawPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updatePitchLimitDeg(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+    ctx->acroCLAW.setPitchLimitDeg(val);
+    return true;
+}
+bool AMParamSetup::updateYawLimitDeg(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+    ctx->acroCLAW.setYawLimitDeg(val);
+    return true;
+}
+#endif
 
 // Servo field helpers
 

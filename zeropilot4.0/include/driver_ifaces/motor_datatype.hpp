@@ -5,10 +5,8 @@
 
 typedef struct {
     IMotorControl *motorInstance; 
-    #ifdef FIXED_WING
     bool isInverted;
     int trim;   // neutral position for motor
-    #endif
     int min;    // min position for motor
     int max;    // max position for motor
     MotorFunction_e function;

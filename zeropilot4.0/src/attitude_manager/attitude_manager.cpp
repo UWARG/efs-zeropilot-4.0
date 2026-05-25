@@ -21,10 +21,21 @@ AttitudeManager::AttitudeManager(
     smLoggerQueue(smLoggerQueue),
     activeCLAW(&manualCLAW),
     manualCLAW(),
+    #ifdef FIXED_WING
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
+    controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
+    #endif
+    #ifdef QUADCOPTER
+    acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
+    #endif
     droneState(DRONE_STATE_DEFAULT),
-    currentFlightMode(PlaneFlightMode_e::MANUAL),
+    #ifdef FIXED_WING
+    currentFlightMode(FlightMode_e::MANUAL),
+    #endif
+    #ifdef QUADCOPTER
+    currentFlightMode(FlightMode_e::ACRO),
+    #endif
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     lastServoOutputs{0},
@@ -91,7 +102,9 @@ void AttitudeManager::amUpdate() {
             motorOutputs.pitch = 50;
             motorOutputs.yaw = 50;
             motorOutputs.throttle = 0;
+            #ifdef FIXED_WING
             motorOutputs.flapAngle = 0;
+            #endif
             outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
@@ -125,16 +138,16 @@ void AttitudeManager::amUpdate() {
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
             #ifdef FIXED_WING
-            case PlaneFlightMode_e::MANUAL:
+            case FlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
                 break;
-            case PlaneFlightMode_e::FBWA:
+            case FlightMode_e::FBWA:
                 activeCLAW = &fbwaCLAW;
                 break;
             #endif
 
             #ifdef QUADCOPTER
-            case CopterFlightMode_e::ACRO:
+            case FlightMode_e::ACRO:
                 activeCLAW = &manualCLAW;
                 break;
             #endif
@@ -306,7 +319,6 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         uint32_t cmd = 0;
-        #ifdef FIXED_WING
         // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
             // Scale [0, 50] to [min, trim]
@@ -327,7 +339,6 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         if (motor->isInverted) {
             cmd = 100 - cmd;
         }
-        #endif
 
         #ifdef QUADCOPTER
         if(percent > 1.0f) { percent = 1.0f; }
