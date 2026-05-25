@@ -12,6 +12,7 @@
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
+#include "acro_mapping.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -52,15 +53,15 @@ class AttitudeManager {
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
-        FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
-        RCMotorControlMessage_t controlMsg;
-        DroneState_t droneState;
         #ifdef FIXED_WING
-        PlaneFlightMode_e currentFlightMode;
+        FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         #endif
         #ifdef QUADCOPTER
-        CopterFlightMode_e currentFlightMode;
+        ACROMapping acroCLAW;
         #endif
+        RCMotorControlMessage_t controlMsg;
+        DroneState_t droneState;
+        FlightMode_e currentFlightMode;
 
         MotorGroupInstance_t *mainMotorGroup;
 

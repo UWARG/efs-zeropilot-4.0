@@ -11,7 +11,7 @@ void SMParamSetup::loadAllParams() {
         ZP_PARAM_ID::FLTMODE4, ZP_PARAM_ID::FLTMODE5, ZP_PARAM_ID::FLTMODE6
     };
     for (uint8_t i = 0; i < SM_FLIGHTMODE_COUNT; i++) {
-        sm->flightModes[i] = static_cast<PlaneFlightMode_e>(
+        sm->flightModes[i] = static_cast<FlightMode_e>(
             static_cast<uint32_t>(ZP_PARAM::get(FLTMODE_PARAMS[i])));
     }
 }
@@ -27,8 +27,8 @@ void SMParamSetup::bindAllParamCallbacks() {
 
 bool SMParamSetup::setFltMode(SystemManager* ctx, uint8_t idx, float val) {
     uint32_t mode = static_cast<uint32_t>(val);
-    if (!isValidPlaneFlightMode(mode)) return false;
-    ctx->flightModes[idx] = static_cast<PlaneFlightMode_e>(mode);
+    if (!isValidFlightMode(mode)) return false;
+    ctx->flightModes[idx] = static_cast<FlightMode_e>(mode);
     return true;
 }
 
