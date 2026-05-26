@@ -5,15 +5,20 @@ import platform
 
 zeropilot_root = '../zeropilot4.0'
 
+# Vehicle type: set V=QUAD or V=FW (default: FIXED_WING)
+VEHICLE = os.environ.get('V', 'FIXED_WING').upper()
+if VEHICLE not in ('QUADCOPTER', 'FIXED_WING'):
+    raise ValueError(f"ZP_VEHICLE must be QUADCOPTER or FIXED_WING, got: {VEHICLE}")
+
 # 1. Handle OS-specific compiler and linker settings
 if platform.system() == "Windows":
     # MSVC Flags: /std:c++20 is needed for designated initializers
     # /D_USE_MATH_DEFINES ensures M_PI etc. are available
-    compile_args = ['/std:c++20', '/D_USE_MATH_DEFINES', '/D_CRT_SECURE_NO_WARNINGS', '/wd4244']
-    libraries = ['ws2_32'] 
+    compile_args = ['/std:c++20', '/D_USE_MATH_DEFINES', '/D_CRT_SECURE_NO_WARNINGS', '/wd4244', f'/D{VEHICLE}']
+    libraries = ['ws2_32']
 else:
     # GCC/Clang Flags
-    compile_args = ['-std=c++17']
+    compile_args = ['-std=c++17', f'-D{VEHICLE}']
     libraries = []
     
 sources = ['zeropilot_wrapper.cpp']

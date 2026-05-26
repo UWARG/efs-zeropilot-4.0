@@ -1,4 +1,3 @@
-#include <cmath>
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
@@ -19,13 +18,14 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
+    #ifdef FIXED_WING
     activeCLAW(&manualCLAW),
     manualCLAW(),
-    #ifdef FIXED_WING
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
     #endif
     #ifdef QUADCOPTER
+    activeCLAW(&acroCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
     #endif
@@ -150,7 +150,7 @@ void AttitudeManager::amUpdate() {
 
             #ifdef QUADCOPTER
             case FlightMode_e::ACRO:
-                activeCLAW = &manualCLAW;
+                activeCLAW = &acroCLAW;
                 break;
             #endif
         }
@@ -164,6 +164,12 @@ void AttitudeManager::amUpdate() {
     // Disarm logic
     if (!armedFlag) {
         motorOutputs.throttle = 0;
+
+        #ifdef QUADCOPTER
+        motorOutputs.pitch = 0;
+        motorOutputs.roll = 0;
+        motorOutputs.yaw = 0;
+        #endif
     }
 
     #ifdef QUADCOPTER
@@ -191,11 +197,16 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 
 void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
     #ifdef QUADCOPTER
+    float roll = outputControlMsg.roll;
+    float pitch = outputControlMsg.pitch;
+    float yaw = outputControlMsg.yaw;
+    float throttle = outputControlMsg.throttle / 100.0f; // scale from [0,100] to [0,1]
+
     float motor_percent[4];
-    motor_percent[0] = -outputControlMsg.roll + outputControlMsg.pitch;
-    motor_percent[1] = outputControlMsg.roll - outputControlMsg.pitch;
-    motor_percent[2] = outputControlMsg.roll + outputControlMsg.pitch;
-    motor_percent[3] = -outputControlMsg.roll - outputControlMsg.pitch;
+    motor_percent[0] = -roll + pitch;
+    motor_percent[1] = roll - pitch;
+    motor_percent[2] = roll + pitch;
+    motor_percent[3] = -roll - pitch;
 
     bool disregard_yaw_flag = false;
 
@@ -209,7 +220,7 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
     }
     // scale down to [-0.5,0.5]
     if (max_range > 0.5f) {
-        float scaling_factor = 1 / max_range;
+        float scaling_factor = 0.5 / max_range;
         for (int i = 0; i < 4; i++) {
             motor_percent[i] *= scaling_factor;
         }
@@ -222,11 +233,11 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
             min_throttle = fabsf(motor_percent[i]);
         }
     }
-    if (outputControlMsg.throttle < min_throttle) { outputControlMsg.throttle = min_throttle; }
+    if (throttle < min_throttle) { throttle = min_throttle; }
 
     float max_overshoot = 0.0f;
     for (int i = 0; i < 4; i++) {
-        float overshoot = motor_percent[i] + outputControlMsg.throttle - 1;
+        float overshoot = motor_percent[i] + throttle - 1;
         if (overshoot > max_overshoot) {
             max_overshoot = overshoot;
         }
@@ -234,13 +245,13 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
     if (max_overshoot > 0) {
         // Decrease throttle to fit in [0,1]
         for (int i = 0; i < 4; i++) {
-            motor_percent[i] += outputControlMsg.throttle - max_overshoot;
+            motor_percent[i] += throttle - max_overshoot;
         }
         disregard_yaw_flag = true;
     } else {
         // Throttle does not cause saturation
         for (int i = 0; i < 4; i++) {
-            motor_percent[i] += outputControlMsg.throttle;
+            motor_percent[i] += throttle;
         }
     }
 
@@ -249,10 +260,10 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         float min_yaw_scale = 1.0f;
         int8_t yaw_signs[4] = { 1, 1, -1, -1 };
         for(int i = 0; i < 4; i++) {
-            float yaw_contribution = outputControlMsg.yaw * yaw_signs[i]; // yaw contribution could be neg or pos
+            float yaw_contribution = yaw * yaw_signs[i]; // yaw contribution could be neg or pos
             if (yaw_contribution > 0) {
                 // Saturates above 0 
-                float yaw_scale = (1 - motor_percent[i]) / yaw_contribution;  
+                float yaw_scale = (1.0f - motor_percent[i]) / yaw_contribution;  
                 if( yaw_scale < min_yaw_scale) {
                     min_yaw_scale = yaw_scale;
                 }
@@ -266,7 +277,7 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         }
 
         for (int i = 0; i < 4; i++) {
-            motor_percent[i] += yaw_signs[i] * outputControlMsg.yaw * min_yaw_scale;
+            motor_percent[i] += yaw_signs[i] * yaw * min_yaw_scale;
         }
     }
     #endif
@@ -306,16 +317,20 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #ifdef QUADCOPTER
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
-                percent = motor_percent[0];
+                // percent = motor_percent[0];
+                percent = throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
                 break;
             case MotorFunction_e::MOTOR_2:
-                percent = motor_percent[1];
+                // percent = motor_percent[1];
+                percent = throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
                 break;
             case MotorFunction_e::MOTOR_3:
-                percent = motor_percent[2];
+                // percent = motor_percent[2];
+                percent = throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
                 break;
             case MotorFunction_e::MOTOR_4:
-                percent = motor_percent[3];
+                // percent = motor_percent[3];
+                percent = throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
                 break;
             default:
                 continue;  
@@ -323,6 +338,7 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         uint32_t cmd = 0;
+        #ifdef FIXED_WING
         // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
             // Scale [0, 50] to [min, trim]
@@ -343,6 +359,7 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         if (motor->isInverted) {
             cmd = 100 - cmd;
         }
+        #endif
 
         #ifdef QUADCOPTER
         if(percent > 1.0f) { percent = 1.0f; }
