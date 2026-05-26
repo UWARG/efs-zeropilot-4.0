@@ -13,7 +13,7 @@ import math
 SITL_RATE_HZ = 1000
 
 class ZP_QUAD_SITL_AIRSIM:
-    def __init__(self, ip, port):
+    def __init__(self):
         # Input Setup (Joysticks)
         pygame.init()
         pygame.joystick.init()
@@ -118,7 +118,7 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Yaw:  {self.commands['yaw']:>5.1f}% | Thr:   {self.commands['throttle']:>5.1f}%",
             f" FltMode: {self.fltmode_index + 1}",
             "----------------------------------------------",
-            f" Alt:  {self.state.gps_location.altitude:>6.1f} m  | Spd: {ground_speed:>5.2f} m/s",
+            f" Alt:  {self.state.gps_location.altitude:>6.1f} m",
             f" Pos:  ({self.state.gps_location.latitude:.4f}, {self.state.gps_location.longitude:.4f})",
             "==============================================",
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
