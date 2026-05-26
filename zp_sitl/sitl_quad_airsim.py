@@ -28,7 +28,7 @@ class ZP_QUAD_SITL_AIRSIM:
         self.client.armDisarm(True)
         
         # State setup 
-        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ, ip=ip, port=port)
+        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ)
         self.running = True
         self.armed = False
         self.paused = True 
@@ -36,6 +36,7 @@ class ZP_QUAD_SITL_AIRSIM:
         self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
         self.fltmode_index = 0
 
+        print("initialized")
     def update_joystick(self):
         while self.running:
             pygame.event.pump()
@@ -54,10 +55,6 @@ class ZP_QUAD_SITL_AIRSIM:
                     if event.type == pygame.JOYBUTTONDOWN:
                         if event.button == 6:
                             self.paused = not self.paused
-                        elif event.button == 9:  # L button
-                            self.flap_index = max(0, self.flap_index - 1)
-                        elif event.button == 10:  # R button
-                            self.flap_index = min(len(self.flap_setpoints) - 1, self.flap_index + 1)
                     elif event.type == pygame.JOYAXISMOTION:
                         if event.axis == 4 and event.value > 0.5:  # ZL button
                             self.fltmode_index = max(0, self.fltmode_index - 1)
@@ -73,7 +70,7 @@ class ZP_QUAD_SITL_AIRSIM:
         pitch, roll, yaw = airsim.to_eularian_angles(q)
 
         # angular velocities (p,q,r)
-        ang_vel = state.KinematicsState.angular_velocity
+        ang_vel = state.kinematics_estimated.angular_velocity
         p_rad = ang_vel.x_val
         q_rad = ang_vel.y_val
         r_rad = ang_vel.z_val
@@ -102,8 +99,8 @@ class ZP_QUAD_SITL_AIRSIM:
                 self.commands['throttle'], 100 if self.armed else 0, self.fltmode_setpoints[self.fltmode_index])
         
         if not self.paused:
-            m1_percent, m2_percent, m3_percent, m4_percent, = self.zp.get_motor_outputs() / 100
-            self.client.moveByMotorPWMsAsync(m1_percent, m2_percent, m3_percent, m4_percent, 0.01) 
+            m1, m2, m3, m4, = self.zp.get_motor_outputs()
+            self.client.moveByMotorPWMsAsync(m1 / 100, m2 / 100, m3 / 100, m4 / 100, 0.01) 
         
     def print_state(self):
         sys.stdout.write("\033[H")
@@ -118,8 +115,8 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Yaw:  {self.commands['yaw']:>5.1f}% | Thr:   {self.commands['throttle']:>5.1f}%",
             f" FltMode: {self.fltmode_index + 1}",
             "----------------------------------------------",
-            f" Alt:  {self.state.gps_location.altitude:>6.1f} m",
-            f" Pos:  ({self.state.gps_location.latitude:.4f}, {self.state.gps_location.longitude:.4f})",
+            # f" Alt:  {self.state.gps_location.altitude:>6.1f} m",
+            # f" Pos:  ({self.state.gps_location.latitude:.4f}, {self.state.gps_location.longitude:.4f})",
             "==============================================",
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
             " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
