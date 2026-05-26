@@ -96,7 +96,7 @@ class ZP_QUAD_SITL_AIRSIM:
         )
 
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
-                self.commands['throttle'], 100 if self.armed else 0, self.fltmode_setpoints[self.fltmode_index])
+                self.commands['throttle'], 100 if self.armed else 0, 0.0, self.fltmode_setpoints[self.fltmode_index])
         
         if not self.paused:
             m1, m2, m3, m4, = self.zp.get_motor_outputs()
