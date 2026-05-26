@@ -47,7 +47,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO2_FUNCTION, "SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::ELEVATOR), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_2), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO2_FUNCTION, "SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_2), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO3_TRIM, "SERVO3_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -58,7 +58,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO3_FUNCTION, "SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::THROTTLE), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_3), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO3_FUNCTION, "SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_3), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO4_TRIM, "SERVO4_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -69,7 +69,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO4_FUNCTION, "SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::RUDDER), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_4), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO4_FUNCTION, "SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_4), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO5_TRIM, "SERVO5_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -80,7 +80,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO5_FUNCTION, "SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::AILERON), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO5_FUNCTION, "SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO6_TRIM, "SERVO6_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -91,7 +91,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO6_FUNCTION, "SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::FLAP), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO6_FUNCTION, "SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO7_TRIM, "SERVO7_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -102,7 +102,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO7_FUNCTION, "SERVO7_FUNCTION", static_cast<float>(MotorFunction_e::FLAP), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO7_FUNCTION, "SERVO7_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO8_TRIM, "SERVO8_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -113,7 +113,7 @@ void init() {
     initParam(ZP_PARAM_ID::SERVO8_FUNCTION, "SERVO8_FUNCTION", static_cast<float>(MotorFunction_e::GROUND_STEERING), MAV_PARAM_TYPE_INT16);
     #endif
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::SERVO1_FUNCTION, "SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
+    initParam(ZP_PARAM_ID::SERVO8_FUNCTION, "SERVO8_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED), MAV_PARAM_TYPE_INT16);
     #endif
 
     initParam(ZP_PARAM_ID::SERVO9_TRIM, "SERVO9_TRIM", 1500, MAV_PARAM_TYPE_UINT16);
@@ -152,7 +152,7 @@ void init() {
     initParam(ZP_PARAM_ID::PTCH2SRV_TAU, "PTCH2SRV_TAU", 0.020f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::PTCH2SRV_IMAX, "PTCH2SRV_IMAX", 50, MAV_PARAM_TYPE_UINT8);
 
-    #ifdef QUADCOPTEr 
+    #ifdef QUADCOPTER
     initParam(ZP_PARAM_ID::YAW2SRV_P, "YAW2SRV_P", 2.250f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::YAW2SRV_I, "YAW2SRV_I", 0.250f, MAV_PARAM_TYPE_REAL32);
     initParam(ZP_PARAM_ID::YAW2SRV_D, "YAW2SRV_D", 1.400f, MAV_PARAM_TYPE_REAL32);
