@@ -262,7 +262,7 @@ static PyObject* ZP_setRC(ZPObject* self, PyObject* args) {
     float roll, pitch, yaw, throttle, arm, fltmode;
     if (!PyArg_ParseTuple(args, "ffffff", &roll, &pitch, &yaw, &throttle, &arm, &fltmode))
         return NULL;
-        self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, fltmode);
+        self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, 0.0f, fltmode);
     #endif
     
     Py_RETURN_NONE;
