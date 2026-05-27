@@ -172,6 +172,8 @@ void AttitudeManager::amUpdate() {
     // Run the active control law
     RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
 
+    // motorOutputs = controlMsg;
+
     // Disarm logic
     if (!armedFlag) {
         motorOutputs.throttle = 0;
@@ -211,7 +213,7 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
     float roll = outputControlMsg.roll;
     float pitch = outputControlMsg.pitch;
     float yaw = outputControlMsg.yaw;
-    float throttle = outputControlMsg.throttle / 100.0f; // scale from [0,100] to [0,1]
+    float throttle = outputControlMsg.throttle; // scale from [0,100] to [0,1]
 
     float motor_percent[4];
     motor_percent[0] = -roll + pitch;
@@ -328,20 +330,25 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #ifdef QUADCOPTER
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
-                percent = motor_percent[0];
-                // percent = throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                // percent = motor_percent[0];
+                // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                percent = outputControlMsg.throttle;
                 break;
             case MotorFunction_e::MOTOR_2:
-                percent = motor_percent[1];
-                // percent = throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                // percent = motor_percent[1];
+                // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                percent = outputControlMsg.roll;
                 break;
-            case MotorFunction_e::MOTOR_3:
-                percent = motor_percent[2];
-                // percent = throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                case MotorFunction_e::MOTOR_3:
+                // percent = motor_percent[2];
+                // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                percent = outputControlMsg.pitch;
+
                 break;
             case MotorFunction_e::MOTOR_4:
-                percent = motor_percent[3];
-                // percent = throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                // percent = motor_percent[3];
+                // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                percent = outputControlMsg.yaw;
                 break;
             default:
                 continue;  
@@ -373,9 +380,10 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
-        if(percent > 1.0f) { percent = 1.0f; }
-        if(percent < 0.0f) { percent = 0.0f; }
-        cmd = percent * 100.0f;
+        cmd = percent;
+        // cmd = percent * 100;
+        // if(cmd > 100.0f) { cmd = 100.0f; }
+        // if(cmd < 0.0f) { cmd = 0.0f; }
         #endif
 
         // Store for telemetry output
