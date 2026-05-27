@@ -32,7 +32,7 @@ class ZP_QUAD_SITL_AIRSIM:
         self.running = True
         self.armed = False
         self.paused = True 
-        self.commands = {'roll': 50, 'pitch': 50, 'yaw': 50, 'throttle': 0}
+        self.commands = {'roll': 0, 'pitch': 0, 'yaw': 0, 'throttle': 0}
         self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
         self.fltmode_index = 0
 
@@ -132,7 +132,7 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Alt:  {state.gps_location.altitude:>6.1f} m",
             f" Pos:  ({state.gps_location.latitude:.4f}, {state.gps_location.longitude:.4f})",
             "==============================================",
-            f" M1: {m1 / 100} | M2: {m2 / 100} | M3: {m3 / 100} | M4: {m4 / 100}",
+            f" M1: {m1:>7.3f} | M2: {m2:>7.3f} | M3: {m3:>7.3f} | M4: {m4:>7.3f}",
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
             " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
             "\033[K"
