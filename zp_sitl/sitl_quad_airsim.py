@@ -48,19 +48,22 @@ class ZP_QUAD_SITL_AIRSIM:
                 self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
                 self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
 
-                if self.joy.get_button(0): self.armed = True
-                if self.joy.get_button(1): self.armed = False
-                if self.joy.get_button(7): self.reset_to_air()
+                # if self.joy.get_button(7): self.reset_to_air()
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
-                        if event.button == 6:
+                        if event.button == 2:
+                            self.armed = True
+                        elif event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
                         if event.axis == 4 and event.value > 0.5:  # ZL button
                             self.fltmode_index = max(0, self.fltmode_index - 1)
                         elif event.axis == 5 and event.value > 0.5:  # ZR button
                             self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
+                    elif event.type == pygame.JOYBUTTONUP:
+                             self.armed = False
+
             time.sleep(0.01)
     
     def reset_to_air(self):
