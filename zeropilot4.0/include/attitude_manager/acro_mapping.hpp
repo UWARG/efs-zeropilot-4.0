@@ -21,14 +21,14 @@ class ACROMapping : public Flightmode{
         // Setter for *yaw* PID consts
         void setYawPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
-        // Setter for *rollLimitRad*
-        void setRollLimitDeg(float newRollLimitDeg) noexcept;
+        // Setter for *rollLimitRate* in deg / s
+        void setRollLimitRate(float newRollLimitRate) noexcept;
 
-         // Setter for *pitchLimitRad*
-        void setPitchLimitDeg(float newPitchLimitDeg) noexcept;
+         // Setter for *pitchLimitRate* in deg / s
+        void setPitchLimitRate(float newPitchLimitRate) noexcept;
 
-         // Setter for *yawLimitRad*
-        void setYawLimitDeg(float newYawLimitDeg) noexcept;
+         // Setter for *yawLimitRate* in deg / s
+        void setYawLimitRate(float newYawLimitRate) noexcept;
 
         // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
         void resetControlLoopState() noexcept;
@@ -51,9 +51,9 @@ class ACROMapping : public Flightmode{
         PID yawPID;
 
         // Values for roll, pitch and yaw limits
-        float rollLimitRad;
-        float pitchLimitRad;
-        float yawLimitRad;
+        float rollLimitRate;
+        float pitchLimitRate;
+        float yawLimitRate;
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;

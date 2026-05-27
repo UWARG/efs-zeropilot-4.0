@@ -75,6 +75,10 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
+    droneState.rollRate = scaledImuData.xgyro;
+    droneState.pitchRate = scaledImuData.ygyro;
+    droneState.yawRate = scaledImuData.zgyro;
+
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         sendRawIMUDataToTelemetryManager(imuData);
@@ -98,12 +102,19 @@ void AttitudeManager::amUpdate() {
 
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
             RCMotorControlMessage_t motorOutputs{0};
+            #ifdef FIXED_WING
             motorOutputs.roll = 50;
             motorOutputs.pitch = 50;
             motorOutputs.yaw = 50;
             motorOutputs.throttle = 0;
-            #ifdef FIXED_WING
             motorOutputs.flapAngle = 0;
+            #endif
+
+            #ifdef QUADCOPTER
+            motorOutputs.roll = 0;
+            motorOutputs.pitch = 0;
+            motorOutputs.yaw = 0;
+            motorOutputs.throttle = 0;      
             #endif
             outputToMotors(motorOutputs);
 
