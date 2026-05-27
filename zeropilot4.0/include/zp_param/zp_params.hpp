@@ -101,9 +101,9 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     YAW2SRV_D,
     YAW2SRV_TAU,
     YAW2SRV_IMAX,
-    ROLL_LIMIT_DEG,
-    PTCH_LIMIT_DEG,
-    YAW_LIMIT_DEG,
+    ROLL_LIMIT_RATE,
+    PTCH_LIMIT_RATE,
+    YAW_LIMIT_RATE,
     #endif
     FLTMODE1,
     FLTMODE2,

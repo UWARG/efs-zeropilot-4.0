@@ -12,9 +12,9 @@ ACROMapping::ACROMapping(float control_iter_period_s) noexcept :
     yawPID(0.0f, 0.0f, 0.0f, 0.0f, 
     OUTPUT_MIN, OUTPUT_MAX, 100,
     control_iter_period_s), 
-    rollLimitRad(0.0f),
-    pitchLimitRad(0.0f),
-    yawLimitRad(0.0f)
+    rollLimitRate(0.0f),
+    pitchLimitRate(0.0f),
+    yawLimitRate(0.0f)
 {
     rollPID.pidInitState();
     pitchPID.pidInitState();
@@ -43,19 +43,19 @@ void ACROMapping::resetControlLoopState() noexcept {
     yawPID.pidInitState();
 }
 
-// Setter for *rollLimitDeg*
-void ACROMapping::setRollLimitDeg(float newRollLimitDeg) noexcept {
-    rollLimitRad = ZP_UNITS::deg2rad(newRollLimitDeg);
+// Setter for *rollLimitRate* in deg / s
+void ACROMapping::setRollLimitRate(float newRollLimitRate) noexcept {
+    rollLimitRate = newRollLimitRate;
 }
 
-// Setter for *pitchLimitRad*
-void ACROMapping::setPitchLimitDeg(float newPitchLimitDeg) noexcept {
-    pitchLimitRad = ZP_UNITS::deg2rad(newPitchLimitDeg);
+// Setter for *pitchLimitRate* in deg / s
+void ACROMapping::setPitchLimitRate(float newPitchLimitRate) noexcept {
+    pitchLimitRate = newPitchLimitRate;
 }
 
-// Setter for *rollLimitDeg*
-void ACROMapping::setYawLimitDeg(float newYawLimitDeg) noexcept {
-    yawLimitRad = ZP_UNITS::deg2rad(newYawLimitDeg);
+// Setter for *rollLimitRate* in deg / s
+void ACROMapping::setYawLimitRate(float newYawLimitRate) noexcept {
+    yawLimitRate = newYawLimitRate;
 }
 
 // Getter for PID objects
@@ -67,22 +67,22 @@ void ACROMapping::activateFlightMode() {
     resetControlLoopState();
 }
 
-// Main control mapping function for FBWA mode
+// Main control mapping function for ACRO mode
 RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
     // Setpoints: Maps [0, 100] to [-limit, +limit]
-    float rollSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitRad;
-    float pitchSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitRad;
-    float yawSetpoint = ((controlInputs.yaw / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * yawLimitRad;
+    float rollRateSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitRate;
+    float pitchRateSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitRate;
+    float yawRateSetpoint = ((controlInputs.yaw / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * yawLimitRate;
 
     // Get measured values from drone state (populated by IMU)
-    float rollMeasured = droneState.roll;
-    float pitchMeasured = droneState.pitch;
-    float yawMeasured = droneState.yaw;
+    float rollRateMeasured = droneState.rollRate;
+    float pitchRateMeasured = droneState.pitchRate;
+    float yawRateMeasured = droneState.yawRate;
 
-    // Run PID, outputs are absolute angles
-    controlInputs.roll = rollPID.pidOutput(rollSetpoint, rollMeasured);
-    controlInputs.pitch = pitchPID.pidOutput(pitchSetpoint, pitchMeasured);
-    controlInputs.yaw = yawPID.pidOutput(yawSetpoint, yawMeasured);
+    // Run PID, outputs control effort in [-1,1]
+    controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
+    controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
+    controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
 
     return controlInputs;
 }
