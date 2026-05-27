@@ -172,9 +172,9 @@ void AttitudeManager::amUpdate() {
         #endif
     }
 
-    #ifdef QUADCOPTER
-        motorMixer(motorOutputs);
-    #endif
+    // #ifdef QUADCOPTER
+    //     motorMixer(motorOutputs);
+    // #endif
 
     // Output to motors
     outputToMotors(motorOutputs);
@@ -317,20 +317,20 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #ifdef QUADCOPTER
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
-                // percent = motor_percent[0];
-                percent = throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                percent = motor_percent[0];
+                // percent = throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
                 break;
             case MotorFunction_e::MOTOR_2:
-                // percent = motor_percent[1];
-                percent = throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                percent = motor_percent[1];
+                // percent = throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
                 break;
             case MotorFunction_e::MOTOR_3:
-                // percent = motor_percent[2];
-                percent = throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                percent = motor_percent[2];
+                // percent = throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
                 break;
             case MotorFunction_e::MOTOR_4:
-                // percent = motor_percent[3];
-                percent = throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                percent = motor_percent[3];
+                // percent = throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
                 break;
             default:
                 continue;  
