@@ -37,15 +37,16 @@ class ZP_QUAD_SITL_AIRSIM:
         self.fltmode_index = 0
 
         print("initialized")
+
     def update_joystick(self):
         while self.running:
             pygame.event.pump()
             if self.joy:
                 # Mapping: 2:Roll, 3:Pitch, 0:Yaw, 1:Throttle
-                self.commands['roll'] = (self.joy.get_axis(1) + 1) * 50
-                self.commands['pitch'] = (self.joy.get_axis(0) + 1) * 50
+                self.commands['roll'] = (self.joy.get_axis(0) + 1) * 50
+                self.commands['pitch'] = (self.joy.get_axis(1) + 1) * 50
                 self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
-                self.commands['throttle'] = ((-self.joy.get_axis(2) + 1) * 50)
+                self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
 
                 if self.joy.get_button(0): self.armed = True
                 if self.joy.get_button(1): self.armed = False
@@ -62,6 +63,11 @@ class ZP_QUAD_SITL_AIRSIM:
                             self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
             time.sleep(0.01)
     
+    def reset_to_air(self):
+        self.client.reset()
+        self.client.enableApiControl(True)
+        self.client.armDisarm(True)
+
     def step(self):
         state = self.client.getMultirotorState()
 
@@ -107,6 +113,9 @@ class ZP_QUAD_SITL_AIRSIM:
         arm_s = "\033[1;32mARMED   \033[0m" if self.armed else "\033[1;31mDISARMED\033[0m"
         sim_s = "\033[1;33mPAUSED  \033[0m" if self.paused else "\033[1;32mRUNNING \033[0m"
         
+        state = self.client.getMultirotorState()
+        m1, m2, m3, m4, = self.zp.get_motor_outputs()
+
         dash = [
             "==============================================",
             f"   ZeroPilot SITL | {arm_s} | {sim_s}",
@@ -115,9 +124,10 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Yaw:  {self.commands['yaw']:>5.1f}% | Thr:   {self.commands['throttle']:>5.1f}%",
             f" FltMode: {self.fltmode_index + 1}",
             "----------------------------------------------",
-            # f" Alt:  {self.state.gps_location.altitude:>6.1f} m",
-            # f" Pos:  ({self.state.gps_location.latitude:.4f}, {self.state.gps_location.longitude:.4f})",
+            f" Alt:  {state.gps_location.altitude:>6.1f} m",
+            f" Pos:  ({state.gps_location.latitude:.4f}, {state.gps_location.longitude:.4f})",
             "==============================================",
+            f" M1: {m1 / 100} | M2: {m2 / 100} | M3: {m3 / 100} | M4: {m4 / 100}"
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
             " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
             "\033[K"
