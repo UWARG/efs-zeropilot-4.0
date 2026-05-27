@@ -43,8 +43,8 @@ class ZP_QUAD_SITL_AIRSIM:
             pygame.event.pump()
             if self.joy:
                 # Mapping: 2:Roll, 3:Pitch, 0:Yaw, 1:Throttle
-                self.commands['roll'] = (self.joy.get_axis(0) + 1) * 50
-                self.commands['pitch'] = (self.joy.get_axis(1) + 1) * 50
+                self.commands['roll'] = (self.joy.get_axis(1) + 1) * 50
+                self.commands['pitch'] = (self.joy.get_axis(0) + 1) * 50
                 self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
                 self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
 
