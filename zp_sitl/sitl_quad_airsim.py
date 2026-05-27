@@ -23,7 +23,7 @@ class ZP_QUAD_SITL_AIRSIM:
         # AirSim setup
         self.client = airsim.MultirotorClient()
         self.client.confirmConnection()
-        # self.client.reset()
+        self.client.reset()
         self.client.enableApiControl(True)
         self.client.armDisarm(True)
         
@@ -43,17 +43,22 @@ class ZP_QUAD_SITL_AIRSIM:
             pygame.event.pump()
             if self.joy:
                 # Mapping: 2:Roll, 3:Pitch, 0:Yaw, 1:Throttle
-                self.commands['roll'] = (self.joy.get_axis(1) + 1) * 50
-                self.commands['pitch'] = (self.joy.get_axis(0) + 1) * 50
+                self.commands['roll'] = (self.joy.get_axis(0) + 1) * 50
+                self.commands['pitch'] = ((self.joy.get_axis(1) + 1) * 50)
                 self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
                 self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
+
+                if self.joy.get_axis(4) > 0.5: 
+                    self.armed = True
+                elif self.joy.get_axis(4) < 0.5:
+                    self.armed = False
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
                         if event.button == 1:
                             self.reset_to_air()
-                        if event.button == 2:
-                            self.armed = True
+                        # if event.button == 2:
+                        #     self.armed = True
                         elif event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
@@ -61,9 +66,9 @@ class ZP_QUAD_SITL_AIRSIM:
                             self.fltmode_index = max(0, self.fltmode_index - 1)
                         elif event.axis == 5 and event.value > 0.5:  # ZR button
                             self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
-                    elif event.type == pygame.JOYBUTTONUP:
-                        if event.button == 2:
-                             self.armed = False
+                    # elif event.type == pygame.JOYBUTTONUP:
+                    #     if event.button == 2:
+                    #          self.armed = False
 
             time.sleep(0.01)
     
@@ -71,6 +76,7 @@ class ZP_QUAD_SITL_AIRSIM:
         self.client.reset()
         self.client.enableApiControl(True)
         self.client.armDisarm(True)
+        time.sleep(1)
 
     def step(self):
         state = self.client.getMultirotorState()

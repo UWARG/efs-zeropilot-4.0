@@ -210,10 +210,11 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 
 void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
     #ifdef QUADCOPTER
+    // roll, pitch, yaw, throttle in range [0,100]
     float roll = outputControlMsg.roll;
     float pitch = outputControlMsg.pitch;
     float yaw = outputControlMsg.yaw;
-    float throttle = outputControlMsg.throttle; // scale from [0,100] to [0,1]
+    float throttle = outputControlMsg.throttle; 
 
     float motor_percent[4];
     motor_percent[0] = -roll + pitch;
@@ -331,24 +332,23 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
                 // percent = motor_percent[0];
-                // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
-                percent = outputControlMsg.throttle;
+                percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                // percent = outputControlMsg.throttle;
                 break;
             case MotorFunction_e::MOTOR_2:
                 // percent = motor_percent[1];
-                // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
-                percent = outputControlMsg.roll;
+                percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                // percent = outputControlMsg.roll;
                 break;
                 case MotorFunction_e::MOTOR_3:
                 // percent = motor_percent[2];
-                // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
-                percent = outputControlMsg.pitch;
-
+                percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                // percent = outputControlMsg.pitch;
                 break;
             case MotorFunction_e::MOTOR_4:
                 // percent = motor_percent[3];
-                // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
-                percent = outputControlMsg.yaw;
+                percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                // percent = outputControlMsg.yaw;
                 break;
             default:
                 continue;  
