@@ -308,9 +308,9 @@ static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
 
     #ifdef QUADCOPTER
     uint32_t motor_1 = self->sitlMotors[0]->get();
-    uint32_t motor_2 = self->sitlMotors[0]->get();
-    uint32_t motor_3 = self->sitlMotors[0]->get();
-    uint32_t motor_4 = self->sitlMotors[0]->get();
+    uint32_t motor_2 = self->sitlMotors[1]->get();
+    uint32_t motor_3 = self->sitlMotors[2]->get();
+    uint32_t motor_4 = self->sitlMotors[3]->get();
 
     return Py_BuildValue("(iiii)", motor_1, motor_2, motor_3, motor_4);
     #endif
