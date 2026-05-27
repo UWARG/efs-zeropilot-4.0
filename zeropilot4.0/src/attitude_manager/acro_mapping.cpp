@@ -82,10 +82,11 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     float pitchRateSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitRate;
     float yawRateSetpoint = ((controlInputs.yaw / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * yawLimitRate;
 
-    // Get measured values from drone state (populated by IMU)
-    float rollRateMeasured = droneState.rollRate;
-    float pitchRateMeasured = droneState.pitchRate;
-    float yawRateMeasured = droneState.yawRate;
+    // Get measured values from drone state (populated by IMU), convert rad/s → deg/s to match setpoints
+    constexpr float RAD_TO_DEG = 57.2957795f;
+    float rollRateMeasured = droneState.rollRate * RAD_TO_DEG;
+    float pitchRateMeasured = droneState.pitchRate * RAD_TO_DEG;
+    float yawRateMeasured = droneState.yawRate * RAD_TO_DEG;
 
     // // Run PID, outputs control effort in [-1,1]
     // controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
