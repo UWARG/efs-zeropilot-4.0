@@ -62,6 +62,7 @@ class ZP_QUAD_SITL_AIRSIM:
                         elif event.axis == 5 and event.value > 0.5:  # ZR button
                             self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
                     elif event.type == pygame.JOYBUTTONUP:
+                        if event.button == 2:
                              self.armed = False
 
             time.sleep(0.01)
@@ -104,9 +105,10 @@ class ZP_QUAD_SITL_AIRSIM:
             0.0
         )
 
-        self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
+        self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'],
                 self.commands['throttle'], 100 if self.armed else 0, self.fltmode_setpoints[self.fltmode_index])
-        
+        self.zp.update()
+
         if not self.paused:
             m1, m2, m3, m4 = self.zp.get_motor_outputs()
             self.client.moveByMotorPWMsAsync(m1 / 100, m2 / 100, m3 / 100, m4 / 100, 0.01) 
