@@ -102,10 +102,10 @@ class ZP_QUAD_SITL_AIRSIM:
         )
 
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
-                self.commands['throttle'], 100 if self.armed else 0, 0.0, self.fltmode_setpoints[self.fltmode_index])
+                self.commands['throttle'], 100 if self.armed else 0, self.fltmode_setpoints[self.fltmode_index])
         
         if not self.paused:
-            m1, m2, m3, m4, = self.zp.get_motor_outputs()
+            m1, m2, m3, m4 = self.zp.get_motor_outputs()
             self.client.moveByMotorPWMsAsync(m1 / 100, m2 / 100, m3 / 100, m4 / 100, 0.01) 
         
     def print_state(self):
@@ -114,7 +114,7 @@ class ZP_QUAD_SITL_AIRSIM:
         sim_s = "\033[1;33mPAUSED  \033[0m" if self.paused else "\033[1;32mRUNNING \033[0m"
         
         state = self.client.getMultirotorState()
-        m1, m2, m3, m4, = self.zp.get_motor_outputs()
+        m1, m2, m3, m4 = self.zp.get_motor_outputs()
 
         dash = [
             "==============================================",
@@ -127,7 +127,7 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Alt:  {state.gps_location.altitude:>6.1f} m",
             f" Pos:  ({state.gps_location.latitude:.4f}, {state.gps_location.longitude:.4f})",
             "==============================================",
-            f" M1: {m1 / 100} | M2: {m2 / 100} | M3: {m3 / 100} | M4: {m4 / 100}"
+            f" M1: {m1 / 100} | M2: {m2 / 100} | M3: {m3 / 100} | M4: {m4 / 100}",
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
             " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
             "\033[K"
