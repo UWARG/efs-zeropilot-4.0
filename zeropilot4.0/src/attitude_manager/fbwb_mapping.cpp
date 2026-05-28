@@ -56,11 +56,10 @@ RCMotorControlMessage_t FBWBMapping::runControl(RCMotorControlMessage_t controlI
     // run every 10 calls, and run on initialization too. The counter loops from 0 - 9.
     if(outerLoopSchedulingCounter == 0){
         // convert to m/s and scale to [20, 60]
-        float targetThrottle = (controlInputs.throttle / MAX_RC_INPUT_VAL) * (MAX_AIRSPEED_MPS - MIN_AIRSPEED_MPS) + MIN_AIRSPEED_MPS;
-        targetAirspeed_mps = targetThrottle;
+        targetAirspeed_mps = (controlInputs.throttle / MAX_RC_INPUT_VAL) * (MAX_AIRSPEED_MPS - MIN_AIRSPEED_MPS) + MIN_AIRSPEED_MPS;
 
         float height = targetAltitude_m;
-        float velocity = targetThrottle;
+        float velocity = targetAirspeed_mps;
 
         float measuredVelocity = droneState.airspeed;
         float measuredHeight = droneState.altitude;
