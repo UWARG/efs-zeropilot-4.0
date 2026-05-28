@@ -92,6 +92,9 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
     controlInputs.throttle /= 100.0f; 
 
+    // Run motor mixing
+    motorMixer(controlInputs);
+
     return controlInputs;
 }
 
@@ -204,6 +207,6 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
     }
 }
 
-float *getMixedMotors() {
+const float *getMixedMotors() {
     return motor_percent;
 }
