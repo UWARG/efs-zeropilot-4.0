@@ -11,8 +11,10 @@ class ACROMapping : public Flightmode{
         void activateFlightMode() override;
 
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
+        
+        const float *getMixedMotors() override;
 
-        void motorMixer(const RCMotorControlMessage_t outputControlMsg) override;
+        void motorMixer(const RCMotorControlMessage_t outputControlMsg);
 
         // Setter *roll* for PID consts
         void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
@@ -40,9 +42,6 @@ class ACROMapping : public Flightmode{
         PID *getPitchPID() noexcept;
         PID *getYawPID() noexcept;
 
-        float *getMixedMotors() noexcept;
-
-
         // Destructor
         ~ACROMapping() noexcept override = default;
 
@@ -59,7 +58,7 @@ class ACROMapping : public Flightmode{
         float yawLimitRate;
 
         // Motor mixer output for each motor 
-        float motor_percent[4];
+        float motor_percent[NUM_MOTORS] = {0};
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;

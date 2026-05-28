@@ -203,11 +203,6 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 }
 
 void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
-    #ifdef QUADCOPTER
-    if(controlMsg.flightMode == FlightMode_e::ACRO) {
-        float *motor_percent = activeCLAW->getMixedMotors();
-    }
-    #endif
 
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         // Get current motor
@@ -241,6 +236,10 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
+        const float *motor_percent;
+        if(outputControlMsg.flightMode == FlightMode_e::ACRO) {
+            motor_percent = activeCLAW->getMixedMotors();
+        }
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
                 percent = motor_percent[0];
