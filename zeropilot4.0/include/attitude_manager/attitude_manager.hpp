@@ -78,8 +78,6 @@ class AttitudeManager {
 
         void outputToMotors(RCMotorControlMessage_t outputControlMsg);
 
-        void motorMixer(RCMotorControlMessage_t outputControlMsg);
-
         void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);

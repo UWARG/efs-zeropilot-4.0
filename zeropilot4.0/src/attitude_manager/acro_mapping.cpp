@@ -92,26 +92,15 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
     controlInputs.throttle /= 100.0f; 
 
-    // // Run PID, outputs control effort in [-1,1]
-    // float rollOutput = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
-    // float pitchOutput = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
-    // float yawOutput = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
-
-    // // Convert to [0,100] range
-    // controlInputs.roll = (rollOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
-    // controlInputs.pitch = (pitchOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
-    // controlInputs.yaw = (yawOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
-
     return controlInputs;
 }
 
-float *ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
+void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
 {
     float roll = outputControlMsg.roll;
     float pitch = outputControlMsg.pitch;
     float yaw = outputControlMsg.yaw;
     float throttle = outputControlMsg.throttle / 100.0f; // scale from [0,100] to [0,1]
-    float motor_percent[4];
     motor_percent[0] = -roll + pitch;
     motor_percent[1] = roll - pitch;
     motor_percent[2] = roll + pitch;
@@ -213,5 +202,8 @@ float *ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
             motor_percent[i] += yaw_signs[i] * yaw * min_yaw_scale;
         }
     }
+}
+
+float *getMixedMotors() {
     return motor_percent;
 }
