@@ -87,20 +87,20 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     float yawRateMeasured = droneState.yawRate;
 
     // // Run PID, outputs control effort in [-1,1]
-    // controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
-    // controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
-    // controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
-    // controlInputs.throttle /= 100.0f; 
+    controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
+    controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
+    controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
+    controlInputs.throttle /= 100.0f; 
 
-    // Run PID, outputs control effort in [-1,1]
-    float rollOutput = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
-    float pitchOutput = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
-    float yawOutput = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
+    // // Run PID, outputs control effort in [-1,1]
+    // float rollOutput = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
+    // float pitchOutput = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
+    // float yawOutput = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
 
-    // Convert to [0,100] range
-    controlInputs.roll = (rollOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
-    controlInputs.pitch = (pitchOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
-    controlInputs.yaw = (yawOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
+    // // Convert to [0,100] range
+    // controlInputs.roll = (rollOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
+    // controlInputs.pitch = (pitchOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
+    // controlInputs.yaw = (yawOutput * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
 
     return controlInputs;
 }

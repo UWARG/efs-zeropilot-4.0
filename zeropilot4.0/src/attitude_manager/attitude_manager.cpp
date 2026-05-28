@@ -331,23 +331,23 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #ifdef QUADCOPTER
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
-                // percent = motor_percent[0];
-                percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                percent = motor_percent[0];
+                // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
                 // percent = outputControlMsg.throttle;
                 break;
             case MotorFunction_e::MOTOR_2:
-                // percent = motor_percent[1];
-                percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                percent = motor_percent[1];
+                // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
                 // percent = outputControlMsg.roll;
                 break;
                 case MotorFunction_e::MOTOR_3:
-                // percent = motor_percent[2];
-                percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                percent = motor_percent[2];
+                // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
                 // percent = outputControlMsg.pitch;
                 break;
             case MotorFunction_e::MOTOR_4:
-                // percent = motor_percent[3];
-                percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                percent = motor_percent[3];
+                // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
                 // percent = outputControlMsg.yaw;
                 break;
             default:
@@ -380,8 +380,8 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
-        cmd = percent;
-        // cmd = percent * 100;
+        // cmd = percent;
+        cmd = percent * 100;
         // if(cmd > 100.0f) { cmd = 100.0f; }
         // if(cmd < 0.0f) { cmd = 0.0f; }
         #endif

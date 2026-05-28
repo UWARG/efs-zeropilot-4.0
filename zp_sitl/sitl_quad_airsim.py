@@ -44,7 +44,7 @@ class ZP_QUAD_SITL_AIRSIM:
             if self.joy:
                 # Mapping: 2:Roll, 3:Pitch, 0:Yaw, 1:Throttle
                 self.commands['roll'] = (self.joy.get_axis(0) + 1) * 50
-                self.commands['pitch'] = ((self.joy.get_axis(1) + 1) * 50)
+                self.commands['pitch'] = ((-self.joy.get_axis(1) + 1) * 50)
                 self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
                 self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
 
@@ -55,11 +55,11 @@ class ZP_QUAD_SITL_AIRSIM:
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
-                        if event.button == 1:
-                            self.reset_to_air()
+                        # if event.button == 1:
+                        #     self.reset_to_air()
                         # if event.button == 2:
                         #     self.armed = True
-                        elif event.button == 3:
+                        if event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
                         if event.axis == 4 and event.value > 0.5:  # ZL button
