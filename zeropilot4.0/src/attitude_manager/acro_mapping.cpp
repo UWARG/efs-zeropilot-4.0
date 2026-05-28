@@ -207,6 +207,6 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
     }
 }
 
-const float *getMixedMotors() {
+const float *ACROMapping::getMixedMotors() {
     return motor_percent;
 }
