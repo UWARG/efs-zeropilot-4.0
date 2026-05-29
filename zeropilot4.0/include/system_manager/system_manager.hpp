@@ -39,9 +39,9 @@ static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -
 typedef struct {
     float voltage;
     float soc;
-} voltageToSoc_t;
+} VoltageToSoc_t;
 
-static constexpr voltageToSoc_t SOC_LUT[] = {
+static constexpr VoltageToSoc_t SOC_LUT[] = {
     {4.20f, 100.0f},
     {4.15f, 95.0f},
     {4.11f, 90.0f},
