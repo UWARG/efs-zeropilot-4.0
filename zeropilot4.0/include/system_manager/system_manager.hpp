@@ -59,6 +59,9 @@ static constexpr voltageToSoc_t socLUT[] = {
     {3.50f, 0.0f}
 };
 
+static constexpr float V_MAX = 4.20f;
+static constexpr float V_MIN = 3.50f;
+
 typedef struct {
     float voltage;
     float soc;

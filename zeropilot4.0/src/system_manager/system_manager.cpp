@@ -168,35 +168,43 @@ void SystemManager::updateBatteryFSM() {
 }
 
 void SystemManager::calcStateOfCharge(int mode) {
-    // State 1: Interpolate
-    if (mode == SOC_IDLE_MODE){
-        float currVoltage = batteryData.pmData.busVoltage;
+    float currVoltage = batteryData.pmData.busVoltage;            
+    float batteryCharge = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY) * 3.6f; // mA to C
+    float remainingCharge = batteryCharge - batteryData.pmData.charge;
 
-        // linear search to find points to linearly interpolate
-        uint8_t i = 0;
-        while (i < socLUT.size() && socLUT[i].voltage*BATTERY_NCELLS < currVoltage) i += 1;
-        
-        // linear interpolation
-        if (i == socLUT.size()) socData.socPercentage = 100; // Assume 100% SOC
-        else if (i == 0) socData.socPercentage = 0; // Assume 0% SOC
-        else{
-            voltageToSoc_t pointA = socLUT[i-1], pointB = socLUT[i];
-            socData.socPercentage = static_cast<uint8_t>((pointB.soc - pointA.soc)/(pointB.voltage-pointA.voltage)*(currVoltage-pointA.voltage)+pointA.soc);
+    // Calibrate SOC
+    if (currVoltage <= V_MIN*BATTERY_NCELLS) socData.socPercentage = 0;
+    else if (currVoltage >= V_MAX*BATTERY_NCELLS) socData.socPercentage = 100;
+    
+    // Calculate SOC
+    else {
+        // State 1: Interpolate
+        if (mode == SOC_IDLE_MODE){
+            // linear search to find points to linearly interpolate
+            uint8_t i = 0;
+            while (i < socLUT.size() && socLUT[i].voltage*BATTERY_NCELLS < currVoltage) i += 1;
+            
+            // linear interpolation
+            if (i == socLUT.size()) socData.socPercentage = 100; // Assume 100% SOC
+            else if (i == 0) socData.socPercentage = 0; // Assume 0% SOC
+            else{
+                voltageToSoc_t pointA = socLUT[i-1], pointB = socLUT[i];
+                socData.socPercentage = static_cast<uint8_t>((pointB.soc - pointA.soc)/(pointB.voltage-pointA.voltage)*(currVoltage-pointA.voltage)+pointA.soc);
+            }
         }
+
+        // State 2: Charge Cycle
+        if (mode == SOC_CHARGE_DISCHARGE_MODE) {    
+            // Charge Method - Non-iterative, Uses accumulated board charge
+            float socPercentage = (remainingCharge / batteryCharge) * 100.0f;
+            socData.socPercentage = static_cast<uint8_t>((socPercentage > 100.0f) ? 100.0f : (socPercentage < 0.0f) ? 0.0f : socPercentage);
+        } 
     }
 
-    // State 2: Charge Cycle
-    if (mode == SOC_CHARGE_DISCHARGE_MODE) {    
-        // Charge Method - Non-iterative, Uses accumulated board charge
-        float batteryCharge = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY) * 3.6f; // mA to C
-        float remainingCharge = batteryCharge - batteryData.pmData.charge;
-        float socPercentage = (remainingCharge / batteryCharge) * 100.0f;
-        socData.socPercentage = static_cast<uint8_t>((socPercentage > 100.0f) ? 100.0f : (socPercentage < 0.0f) ? 0.0f : socPercentage);
-
-        if (batteryData.pmData.current > 0.5f) {
-            socData.timeRemaining = static_cast<int32_t>(remainingCharge / batteryData.pmData.current);
-        }
-    } 
+    // Calculate Time Remaining
+    if (batteryData.pmData.current > 0.5f) {
+        socData.timeRemaining = static_cast<int32_t>(remainingCharge / batteryData.pmData.current);
+    }
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
