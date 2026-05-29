@@ -11,6 +11,7 @@
 #include "MahonyAHRS.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
+#include "am_param_setup.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 100
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -21,16 +22,9 @@
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 
-typedef enum {
-    YAW = 0,
-    PITCH,
-    ROLL,
-    THROTTLE,
-    FLAP_ANGLE,
-    STEERING
-} ControlAxis_t;
-
 class AttitudeManager {
+    friend class AMParamSetup;
+
     public:
         AttitudeManager(
             ISystemUtils *systemUtilsDriver,
@@ -39,12 +33,7 @@ class AttitudeManager {
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
-            MotorGroupInstance_t *rollMotors,
-            MotorGroupInstance_t *pitchMotors,
-            MotorGroupInstance_t *yawMotors,
-            MotorGroupInstance_t *throttleMotors,
-            MotorGroupInstance_t *flapMotors,
-            MotorGroupInstance_t *steeringMotors
+            MotorGroupInstance_t *mainMotorGroup
         );
 
         void amUpdate();
@@ -68,12 +57,7 @@ class AttitudeManager {
         DroneState_t droneState;
         PlaneFlightMode_e currentFlightMode;
 
-        MotorGroupInstance_t *rollMotors;
-        MotorGroupInstance_t *pitchMotors;
-        MotorGroupInstance_t *yawMotors;
-        MotorGroupInstance_t *throttleMotors;
-        MotorGroupInstance_t *flapMotors;
-        MotorGroupInstance_t *steeringMotors;
+        MotorGroupInstance_t *mainMotorGroup;
 
         bool armedFlag;
 
@@ -86,26 +70,12 @@ class AttitudeManager {
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-        void outputToMotor(ControlAxis_t axis, uint8_t percent);
+        void outputToMotors(RCMotorControlMessage_t outputControlMsg);
 
         void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
 
-        // ZP_PARAM callback functions
-        static bool updatePIDRollKp(AttitudeManager* context, float val);
-        static bool updatePIDRollKi(AttitudeManager* context, float val);
-        static bool updatePIDRollKd(AttitudeManager* context, float val);
-        static bool updatePIDRollTau(AttitudeManager* context, float val);
-        static bool updatePIDRollIMax(AttitudeManager* context, float val);
-        static bool updatePIDPitchKp(AttitudeManager* context, float val);
-        static bool updatePIDPitchKi(AttitudeManager* context, float val);
-        static bool updatePIDPitchKd(AttitudeManager* context, float val);
-        static bool updatePIDPitchTau(AttitudeManager* context, float val);
-        static bool updatePIDPitchIMax(AttitudeManager* context, float val);
-        static bool updateKffRddrmix(AttitudeManager* context, float val);
-        static bool updateRollLimitDeg(AttitudeManager* context, float val);
-        static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
-        static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
+        AMParamSetup paramSetup;
 };

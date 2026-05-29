@@ -19,7 +19,10 @@
 #include "tm_queue.hpp"
 #include "rc_motor_control.hpp"
 #include "telemlink_iface.hpp"
+#include "tm_param_setup.hpp"
 class TelemetryManager {
+    friend class TMParamSetup;
+
   private:
     ISystemUtils *systemUtilsDriver;                        // System Utils Driver
     ITelemLink *telemLinkDriver;                            // Driver used to actually send mavlink messages
@@ -47,4 +50,6 @@ class TelemetryManager {
     ~TelemetryManager();
 
     void tmUpdate();
+
+    TMParamSetup paramSetup;
 };

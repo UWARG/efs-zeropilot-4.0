@@ -1,6 +1,7 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
+#include "motor_functions.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -9,12 +10,7 @@ AttitudeManager::AttitudeManager(
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    MotorGroupInstance_t *rollMotors,
-    MotorGroupInstance_t *pitchMotors,
-    MotorGroupInstance_t *yawMotors,
-    MotorGroupInstance_t *throttleMotors,
-    MotorGroupInstance_t *flapMotors,
-    MotorGroupInstance_t *steeringMotors
+    MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
@@ -28,53 +24,16 @@ AttitudeManager::AttitudeManager(
     controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
     currentFlightMode(PlaneFlightMode_e::MANUAL),
-    rollMotors(rollMotors),
-    pitchMotors(pitchMotors),
-    yawMotors(yawMotors),
-    throttleMotors(throttleMotors),
-    flapMotors(flapMotors),
-    steeringMotors(steeringMotors),
+    mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
-    failsafeTriggered(false) {
+    failsafeTriggered(false),
+    paramSetup(this) {
 
-    // Bind all ZP Param setters relevant to AM
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P, this, AttitudeManager::updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I, this, AttitudeManager::updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D, this, AttitudeManager::updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU, this, AttitudeManager::updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX, this, AttitudeManager::updatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P, this, AttitudeManager::updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I, this, AttitudeManager::updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D, this, AttitudeManager::updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU, this, AttitudeManager::updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX, this, AttitudeManager::updatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, this, AttitudeManager::updatePitchLimMinDeg);
-
-    // Set PID constants, rddr mixing constant, and roll/pitch limits for FBWA control law
-    fbwaCLAW.setRollPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
-        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
-        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
-        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_IMAX)
-    );
-    fbwaCLAW.setPitchPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
-        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
-        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
-        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
-    );
-    fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
-    fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
-    fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
-    fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
+    paramSetup.loadAllParams();
+    paramSetup.bindAllParamCallbacks();
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
@@ -126,12 +85,13 @@ void AttitudeManager::amUpdate() {
         ++noDataCount;
 
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
-            outputToMotor(YAW, 50);
-            outputToMotor(PITCH, 50);
-            outputToMotor(ROLL, 50);
-            outputToMotor(THROTTLE, 0);
-            outputToMotor(FLAP_ANGLE, 0);
-            outputToMotor(STEERING, 50);
+            RCMotorControlMessage_t motorOutputs{0};
+            motorOutputs.roll = 50;
+            motorOutputs.pitch = 50;
+            motorOutputs.yaw = 50;
+            motorOutputs.throttle = 0;
+            motorOutputs.flapAngle = 0;
+            outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
               char errorMsg[100] = "Failsafe triggered";
@@ -182,12 +142,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Output to motors
-    outputToMotor(YAW, motorOutputs.yaw);
-    outputToMotor(PITCH, motorOutputs.pitch);
-    outputToMotor(ROLL, motorOutputs.roll);
-    outputToMotor(THROTTLE, motorOutputs.throttle);
-    outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle);
-    outputToMotor(STEERING, motorOutputs.yaw);
+    outputToMotors(motorOutputs);
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
@@ -199,36 +154,45 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
-    MotorGroupInstance_t *motorGroup = nullptr;
+void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        // Get current motor
+        MotorInstance_t *motor = (mainMotorGroup->motors + i);
 
-    switch (axis) {
-        case ROLL:
-            motorGroup = rollMotors;
-            break;
-        case PITCH:
-            motorGroup = pitchMotors;
-            break;
-        case YAW:
-            motorGroup = yawMotors;
-            break;
-        case THROTTLE:
-            motorGroup = throttleMotors;
-            break;
-        case FLAP_ANGLE:
-            motorGroup = flapMotors;
-            break;
-        case STEERING:
-            motorGroup = steeringMotors;
-            break;
-        default:
-            return;
-    }
+        // Extract percentage based on function
+        float percent = 0.0f;
+        switch (motor->function) {
+            case MotorFunction_e::AILERON:
+                percent = outputControlMsg.roll;
+                break;
+            case MotorFunction_e::ELEVATOR:
+                percent = outputControlMsg.pitch;
+                break;
+            case MotorFunction_e::RUDDER:
+                percent = outputControlMsg.yaw;
+                break;
+            case MotorFunction_e::THROTTLE:
+                percent = outputControlMsg.throttle;
+                break;
+            case MotorFunction_e::FLAP:
+                percent = outputControlMsg.flapAngle;
+                break;
+            case MotorFunction_e::GROUND_STEERING:
+                percent = outputControlMsg.yaw;
+                break;
+            default:
+                continue;
+        }
 
-    for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
-        MotorInstance_t *motor = (motorGroup->motors + i);
-
-        int32_t cmd = (int32_t)percent + motor->trim;
+        // Set cmd based on percent and trim, min, max
+        uint32_t cmd = 0;
+        if (percent <= 50.0f) {
+            // Scale [0, 50] to [min, trim]
+            cmd = motor->min + (percent / 50.0f) * (motor->trim - motor->min);
+        } else {
+            // Scale [50, 100] to [trim, max]
+            cmd = motor->trim + ((percent - 50.0f) / 50.0f) * (motor->max - motor->trim);
+        }
 
         // Clamp cmd to [0, 100]
         if (cmd > 100) {
@@ -243,9 +207,7 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
         }
 
         // Store for telemetry output
-        uint8_t servoIdx = motor->motorInstance->getServoIdx();
-        if (servoIdx < 16)
-            lastServoOutputs[servoIdx - 1] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
+        lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
         // Send command to motor
         motor->motorInstance->set(cmd);
@@ -321,106 +283,3 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
     tmQueue->push(&servoOutputMsg);
 }
-
-// STATIC FUNCTIONS ONLY FOR PARAM CHAINING
-// ==============================================================
-bool AttitudeManager::updatePIDRollKp(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getRollPID()->setKp(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDRollKi(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getRollPID()->setKi(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDRollKd(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getRollPID()->setKd(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDRollTau(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getRollPID()->setTau(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDRollIMax(AttitudeManager* context, float val) {
-    if (val < 0.0f || val > 100.0f) return false;
-
-    context->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
-    context->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
-    return true;
-}
-
-bool AttitudeManager::updatePIDPitchKp(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getPitchPID()->setKp(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDPitchKi(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getPitchPID()->setKi(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDPitchKd(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getPitchPID()->setKd(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDPitchTau(AttitudeManager* context, float val) {
-    if (val < 0.0f) return false;
-
-    context->fbwaCLAW.getPitchPID()->setTau(val);
-    return true;
-}
-
-bool AttitudeManager::updatePIDPitchIMax(AttitudeManager* context, float val) {
-    if (val < 0.0f || val > 100.0f) return false;
-
-    context->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
-    context->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
-    return true;
-}
-
-bool AttitudeManager::updateKffRddrmix(AttitudeManager* context, float val) {
-    if (val < 0.0f || val > 1.0f) return false;
-
-    context->fbwaCLAW.setYawRudderMixingConstant(val);
-    return true;
-}
-
-bool AttitudeManager::updateRollLimitDeg(AttitudeManager* context, float val) {
-    if (val < 0.0f || val > 90.0f) return false;
-
-    context->fbwaCLAW.setRollLimitDeg(val);
-    return true;
-}
-
-bool AttitudeManager::updatePitchLimMaxDeg(AttitudeManager* context, float val) {
-    if (val < 0.0f || val > 90.0f) return false;
-    
-    context->fbwaCLAW.setPitchLimitMaxDeg(val);
-    return true;
-}
-
-bool AttitudeManager::updatePitchLimMinDeg(AttitudeManager* context, float val) {
-    if (val < -90.0f || val > 0.0f) return false;
-    
-    context->fbwaCLAW.setPitchLimitMinDeg(val);
-    return true;
-}
-// ==============================================================
