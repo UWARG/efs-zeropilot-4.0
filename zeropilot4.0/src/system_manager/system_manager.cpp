@@ -186,14 +186,8 @@ void SystemManager::calcStateOfCharge(int mode) {
     }
 
     // State 2: Charge Cycle
-    if (mode == SOC_CHARGE_DISCHARGE_MODE) {
-        /* Current Method - Iterative, Assumes SOC is calculated every 20Hz */
-        /* float currCurrent = batteryData.pmData.current;
-        float integratedCharge = currCurrent * (SM_UPDATE_LOOP_DELAY_MS / 3600.0f); // charge in mAH
-        float soc = static_cast<uint8_t>(socData.socPercentage - (integratedCharge / ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY)) * 100.0f);
-        socData.socPercentage = (soc > 100.0f) ? 100.0f : (soc < 0.0f) ? 0.0f : soc; */
-    
-        // Charge Method - Is not iterative, Uses accumulated board charge
+    if (mode == SOC_CHARGE_DISCHARGE_MODE) {    
+        // Charge Method - Non-iterative, Uses accumulated board charge
         float batteryCharge = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY) * 3.6f; // mA to C
         float remainingCharge = batteryCharge - batteryData.pmData.charge;
         float socPercentage = (remainingCharge / batteryCharge) * 100.0f;
