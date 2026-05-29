@@ -106,83 +106,137 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
     float yaw = outputControlMsg.yaw;
     float throttle = outputControlMsg.throttle; 
 
-    motor_percent[0] = -roll + pitch;
-    motor_percent[1] = roll - pitch;
-    motor_percent[2] = roll + pitch;
-    motor_percent[3] = -roll - pitch;
+    static const int8_t roll_sign[4] = { -1, 1, 1, -1};
+    static const int8_t pitch_sign[4] = { 1, -1, 1, -1};
+    static const int8_t yaw_sign[4] = { 1, 1, -1, -1};
 
-    bool disregard_yaw_flag = false;
+    const float YAW_HEADROOM = 0.02f;
 
+    float max = 0.0f;
+    float min = 0.0f;
+    float range = max - min;
     // Roll and Pitch
-    float max_range = 0.0f;
-    // max range
     for (int i = 0; i < 4; i++) {
-        if (fabsf(motor_percent[i]) > max_range) {
-            max_range = fabsf(motor_percent[i]);
-        }
+        motor_percent[i] = roll * roll_sign[i] + pitch * pitch_sign[i];
+        max = fmaxf(max, motor_percent[i]);
+        min = fminf(min, motor_percent[i]);
     }
-    // scale down to [-0.5,0.5]
-    if (max_range > 0.5f) {
-        float scaling_factor = 0.5 / max_range;
+    // reduce roll and pitch if leaving no room for yaw
+    if (range > 1.0f - YAW_HEADROOM) {
+        float scaling_factor = (1.0f - YAW_HEADROOM) / range;
         for (int i = 0; i < 4; i++) {
             motor_percent[i] *= scaling_factor;
         }
     }
 
-    // Throttle
-    float min_throttle = 0.0f;
-    for (int i = 0; i < 4; i++) {
-        if (motor_percent[i] < 0 && fabsf(motor_percent[i]) > min_throttle) {
-            min_throttle = fabsf(motor_percent[i]);
-        }
-    }
-    if (throttle < min_throttle) { throttle = min_throttle; }
-
-    float max_overshoot = 0.0f;
-    for (int i = 0; i < 4; i++) {
-        float overshoot = motor_percent[i] + throttle - 1;
-        if (overshoot > max_overshoot) {
-            max_overshoot = overshoot;
-        }
-    }
-    if (max_overshoot > 0) {
-        // Decrease throttle to fit in [0,1]
-        for (int i = 0; i < 4; i++) {
-            motor_percent[i] += throttle - max_overshoot;
-        }
-        disregard_yaw_flag = true;
-    } else {
-        // Throttle does not cause saturation
-        for (int i = 0; i < 4; i++) {
-            motor_percent[i] += throttle;
-        }
-    }
-
+    min = 0.0f;
+    max = 0.0f;
     // Yaw
-    if (!disregard_yaw_flag) {
-        float min_yaw_scale = 1.0f;
-        int8_t yaw_signs[4] = { 1, 1, -1, -1 };
-        for(int i = 0; i < 4; i++) {
-            float yaw_contribution = yaw * yaw_signs[i]; // yaw contribution could be neg or pos
-            if (yaw_contribution > 0) {
-                // Saturates above 0 
-                float yaw_scale = (1.0f - motor_percent[i]) / yaw_contribution;  
-                if( yaw_scale < min_yaw_scale) {
-                    min_yaw_scale = yaw_scale;
-                }
-            } else if (yaw_contribution < 0){
-                // Saturates below 0
-                float yaw_scale = motor_percent[i] / (-yaw_contribution);  
-                if( yaw_scale < min_yaw_scale) {
-                    min_yaw_scale = yaw_scale;
-                }
-            }
-        }
-
+    for(int i = 0; i < 4; i++) {
+        motor_percent[i] += yaw * yaw_sign[i];
+        max = fmaxf(max, motor_percent[i]);
+        min = fminf(min, motor_percent[i]);
+    }
+    range = max - min;
+    // reduce roll, pitch and yaw together if adding yaw saturates
+    if (range > 1.0f ) {
+        float scaling_factor = 1.0f / range;
+        min = 0.0f;
+        max = 0.0f;
         for (int i = 0; i < 4; i++) {
-            motor_percent[i] += yaw_signs[i] * yaw * min_yaw_scale;
+            motor_percent[i] *= scaling_factor;
+            max = fmaxf(max, motor_percent[i]);
+            min = fminf(min, motor_percent[i]);     
         }
     }
+
+    // Throttle
+    float min_throttle = fmaxf(-min, throttle);     // Add enough throttle to keep all motors >= 0
+    float max_throttle = 1.0f - max;
+    throttle = fminf(min_throttle, max_throttle);
+    for(int i = 0; i < 4; i++) {
+        motor_percent[i] += throttle;
+    }
+
+
+//     motor_percent[0] = -roll + pitch;
+//     motor_percent[1] = roll - pitch;
+//     motor_percent[2] = roll + pitch;
+//     motor_percent[3] = -roll - pitch;
+
+//     bool disregard_yaw_flag = false;
+
+//     // Roll and Pitch
+//     float max_range = 0.0f;
+//     // max range
+//     for (int i = 0; i < 4; i++) {
+//         if (fabsf(motor_percent[i]) > max_range) {
+//             max_range = fabsf(motor_percent[i]);
+//         }
+//     }
+//     // scale down to [-0.5,0.5]
+//     if (max_range > 0.5f) {
+//         float scaling_factor = 0.5 / max_range;
+//         for (int i = 0; i < 4; i++) {
+//             motor_percent[i] *= scaling_factor;
+//         }
+//     }
+
+//     // Throttle
+//     float min_throttle = 0.0f;
+//     for (int i = 0; i < 4; i++) {
+//         if (motor_percent[i] < 0 && fabsf(motor_percent[i]) > min_throttle) {
+//             min_throttle = fabsf(motor_percent[i]);
+//         }
+//     }
+//     if (throttle < min_throttle) { throttle = min_throttle; }
+
+//     float max_overshoot = 0.0f;
+//     for (int i = 0; i < 4; i++) {
+//         float overshoot = motor_percent[i] + throttle - 1;
+//         if (overshoot > max_overshoot) {
+//             max_overshoot = overshoot;
+//         }
+//     }
+//     if (max_overshoot > 0) {
+//         // Decrease throttle to fit in [0,1]
+//         for (int i = 0; i < 4; i++) {
+//             motor_percent[i] += throttle - max_overshoot;
+//         }
+//         disregard_yaw_flag = true;
+//     } else {
+//         // Throttle does not cause saturation
+//         for (int i = 0; i < 4; i++) {
+//             motor_percent[i] += throttle;
+//         }
+//     }
+
+//     // Yaw
+//     if (!disregard_yaw_flag) {
+//         float min_yaw_scale = 1.0f;
+//         int8_t yaw_signs[4] = { 1, 1, -1, -1 };
+//         for(int i = 0; i < 4; i++) {
+//             float yaw_contribution = yaw * yaw_signs[i]; // yaw contribution could be neg or pos
+//             if (yaw_contribution > 0) {
+//                 // Saturates above 0 
+//                 float yaw_scale = (1.0f - motor_percent[i]) / yaw_contribution;  
+//                 if( yaw_scale < min_yaw_scale) {
+//                     min_yaw_scale = yaw_scale;
+//                 }
+//             } else if (yaw_contribution < 0){
+//                 // Saturates below 0
+//                 float yaw_scale = motor_percent[i] / (-yaw_contribution);  
+//                 if( yaw_scale < min_yaw_scale) {
+//                     min_yaw_scale = yaw_scale;
+//                 }
+//             }
+//         }
+
+//         for (int i = 0; i < 4; i++) {
+//             motor_percent[i] += yaw_signs[i] * yaw * min_yaw_scale;
+//         }
+//     }
+
 }
 
 const float *ACROMapping::getMixedMotors() {
