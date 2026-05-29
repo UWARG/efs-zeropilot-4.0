@@ -175,7 +175,7 @@ void SystemManager::calcStateOfCharge(int mode) {
             if (i == sizeof(SOC_LUT)) socData.socPercentage = 100; // Assume 100% SOC
             else if (i == 0) socData.socPercentage = 0; // Assume 0% SOC
             else{
-                voltageToSoc_t pointA = SOC_LUT[i-1], pointB = SOC_LUT[i];
+                VoltageToSoc_t pointA = SOC_LUT[i-1], pointB = SOC_LUT[i];
                 socData.socPercentage = static_cast<uint8_t>((pointB.soc - pointA.soc)/(pointB.voltage-pointA.voltage)*(currVoltage-pointA.voltage)+pointA.soc);
             }
         }
