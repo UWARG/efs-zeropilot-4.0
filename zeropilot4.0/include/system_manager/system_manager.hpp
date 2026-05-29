@@ -41,7 +41,7 @@ typedef struct {
     float soc;
 } voltageToSoc_t;
 
-static constexpr voltageToSoc_t socLUT[] = {
+static constexpr voltageToSoc_t SOC_LUT[] = {
     {4.20f, 100.0f},
     {4.15f, 95.0f},
     {4.11f, 90.0f},
