@@ -169,10 +169,10 @@ void SystemManager::calcStateOfCharge(int mode) {
         if (mode == SOC_IDLE_MODE){
             // linear search to find points to linearly interpolate
             uint8_t i = 0;
-            while (i < socLUT.size() && socLUT[i].voltage*BATTERY_NCELLS < currVoltage) i += 1;
+            while (i < sizeof(socLUT) && socLUT[i].voltage*BATTERY_NCELLS < currVoltage) i += 1;
             
             // linear interpolation
-            if (i == socLUT.size()) socData.socPercentage = 100; // Assume 100% SOC
+            if (i == sizeof(socLUT)) socData.socPercentage = 100; // Assume 100% SOC
             else if (i == 0) socData.socPercentage = 0; // Assume 0% SOC
             else{
                 voltageToSoc_t pointA = socLUT[i-1], pointB = socLUT[i];

@@ -36,6 +36,11 @@ static constexpr float SM_FLIGHTMODE3_MAX = 49.0f; // (1425 + 1555) / 2 = 1490 -
 static constexpr float SM_FLIGHTMODE4_MAX = 62.0f; // (1555 + 1685) / 2 = 1620 -> scaled/offset to 62.0
 static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -> scaled/offset to 75.0
 
+typedef struct {
+    float voltage;
+    float soc;
+} voltageToSoc_t;
+
 static constexpr voltageToSoc_t socLUT[] = {
     {4.20f, 100.0f},
     {4.15f, 95.0f},
@@ -62,11 +67,6 @@ static constexpr voltageToSoc_t socLUT[] = {
 
 static constexpr float V_MAX = 4.20f;
 static constexpr float V_MIN = 3.50f;
-
-typedef struct {
-    float voltage;
-    float soc;
-} voltageToSoc_t;
 
 typedef struct {
     uint8_t socPercentage;
