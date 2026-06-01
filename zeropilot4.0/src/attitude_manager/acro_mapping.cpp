@@ -114,7 +114,6 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
 
     float max = 0.0f;
     float min = 0.0f;
-    float range = max - min;
     // Roll and Pitch
     for (int i = 0; i < 4; i++) {
         motor_percent[i] = roll * roll_sign[i] + pitch * pitch_sign[i];
@@ -122,6 +121,7 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
         min = fminf(min, motor_percent[i]);
     }
     // reduce roll and pitch if leaving no room for yaw
+    float range = max - min;
     if (range > 1.0f - YAW_HEADROOM) {
         float scaling_factor = (1.0f - YAW_HEADROOM) / range;
         for (int i = 0; i < 4; i++) {
