@@ -1,0 +1,2 @@
+../boardfiles/rtos/threads/src/stats_threads.cpp:16:6:void statsMainLoop(void*)	3
+../boardfiles/rtos/threads/src/stats_threads.cpp:40:6:void statsInitThread()	1

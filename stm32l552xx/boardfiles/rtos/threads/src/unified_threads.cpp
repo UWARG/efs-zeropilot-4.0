@@ -6,4 +6,5 @@ void initThreads()
   amInitThreads();
   smInitThreads();
   tmInitThreads();
+  statsInitThread();
 }

@@ -1,4 +1,5 @@
 #include "sm_threads.hpp"
+#include "task_profiler.hpp"
 #include "managers.hpp"
 #include "utils.h"
 
@@ -12,8 +13,12 @@ static const osThreadAttr_t smMainLoopAttr = {
 
 void smMainLoopWrapper(void *arg)
 {
+  uint8_t profileId;
+  profilerRegister("smMain", &profileId);
+
   while(true)
   {
+    profilerTick(profileId);
     smHandle->smUpdate();
     osDelay(timeToTicks(SM_UPDATE_LOOP_DELAY_MS));
   }
