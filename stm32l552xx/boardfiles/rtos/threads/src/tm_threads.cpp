@@ -18,8 +18,9 @@ void tmMainLoopWrapper(void *arg)
 
   while(true)
   {
-    profilerTick(profileId);
+    profilerBegin(profileId);
     tmHandle->tmUpdate();
+    profilerEnd(profileId);
     osDelay(timeToTicks(TM_UPDATE_LOOP_DELAY_MS));
   }
 }

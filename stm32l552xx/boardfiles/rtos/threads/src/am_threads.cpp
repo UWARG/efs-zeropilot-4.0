@@ -18,8 +18,9 @@ void amMainLoopWrapper(void *arg)
 
   while(true)
   {
-    profilerTick(profileId);
+    profilerBegin(profileId);
     amHandle->amUpdate();
+    profilerEnd(profileId);
     osDelay(timeToTicks(AM_UPDATE_LOOP_DELAY_MS));
   }
 }

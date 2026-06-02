@@ -26,10 +26,10 @@ void statsMainLoop(void *arg)
     profilerGetAll(profiles, &count);
 
     uint16_t offset = 0;
-    offset += snprintf((char*)buf + offset, sizeof(buf) - offset, "--- task rates ---\r\n");
+    offset += snprintf((char*)buf + offset, sizeof(buf) - offset, "--- Task execution time ---\r\n");
     for (uint8_t i = 0; i < count && offset < sizeof(buf) - 1; i++) {
       offset += snprintf((char*)buf + offset, sizeof(buf) - offset,
-                         "%-12s %lu ms\r\n", profiles[i].name, profiles[i].delta);
+                         "%-12s %lu us\r\n", profiles[i].name, profiles[i].delta);
     }
 
     HAL_UART_AbortTransmit(&huart1);

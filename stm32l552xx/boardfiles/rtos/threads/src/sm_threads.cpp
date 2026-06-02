@@ -18,8 +18,9 @@ void smMainLoopWrapper(void *arg)
 
   while(true)
   {
-    profilerTick(profileId);
+    profilerBegin(profileId);
     smHandle->smUpdate();
+    profilerEnd(profileId);
     osDelay(timeToTicks(SM_UPDATE_LOOP_DELAY_MS));
   }
 }
