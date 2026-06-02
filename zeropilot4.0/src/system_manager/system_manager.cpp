@@ -112,7 +112,7 @@ void SystemManager::smUpdate() {
             if (strcmp(profiles[i].name, "SM") == 0) {
                 if (profiles[i].deltaExec >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "SM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.2f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].deltaExec >= 0.8f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "SM execution time about to exceed scheduled rate");
                 }
             } else if (strcmp(profiles[i].name, "AM") == 0) {
