@@ -302,7 +302,14 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
 
         // set arm flag for throttle motors, only on arm/disarm edges
         if(setArmFlag) {
+            #ifdef FIXED_WING
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
+            #endif
+            
+            #ifdef QUADCOPTER
+            bool armed = (motor->function == MotorFunction_e::MOTOR_1 || motor->function == MotorFunction_e::MOTOR_2 
+                || motor->function == MotorFunction_e::MOTOR_3 || motor->function == MotorFunction_e::MOTOR_4) ? armedFlag : true;  
+            #endif
             motor->motorInstance->setArm(armed);
         }
 
