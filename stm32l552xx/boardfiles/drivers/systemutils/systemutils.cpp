@@ -6,6 +6,7 @@ struct TaskEntry {
     const char* name;
     uint32_t startCycle;
     uint32_t deltaUs;
+    uint32_t deltaStartTime;
 };
 
 static TaskEntry registry[MAX_PROFILED_TASKS] = {};
@@ -35,6 +36,8 @@ void SystemUtils::profilerRegister(const char* name, uint8_t* outId) {
 }
 
 void SystemUtils::profilerBegin(uint8_t id) {
+    uint32_t cycles = DWT->CYCCNT - registry[id].startCycle;
+    registry[id].deltaStartTime = cycles / (SystemCoreClock / 1000000U);
     registry[id].startCycle = DWT->CYCCNT;
 }
 
@@ -46,6 +49,6 @@ void SystemUtils::profilerEnd(uint8_t id) {
 void SystemUtils::profilerGetAll(TaskProfile* out, uint8_t* count) {
     *count = taskCount;
     for (uint8_t i = 0; i < taskCount; i++) {
-        out[i] = { registry[i].name, registry[i].deltaUs };
+        out[i] = { registry[i].name, registry[i].deltaUs, registry[i].deltaStartTime > 0 ? 1000000U / registry[i].deltaStartTime : 0 };
     }
 }

@@ -1,0 +1,11 @@
+../boardfiles/drivers/systemutils/systemutils.cpp:14:6:virtual void SystemUtils::delayMs(uint32_t)	1
+../boardfiles/drivers/systemutils/systemutils.cpp:18:10:virtual uint32_t SystemUtils::getCurrentTimestampMs()	1
+../boardfiles/drivers/systemutils/systemutils.cpp:23:6:static void SystemUtils::dwtInit()	1
+../boardfiles/drivers/systemutils/systemutils.cpp:29:6:static void SystemUtils::profilerRegister(const char*, uint8_t*)	3
+../boardfiles/drivers/systemutils/systemutils.cpp:37:6:static void SystemUtils::profilerBegin(uint8_t)	1
+../boardfiles/drivers/systemutils/systemutils.cpp:41:6:static void SystemUtils::profilerEnd(uint8_t)	1
+../boardfiles/drivers/systemutils/systemutils.cpp:46:6:virtual void SystemUtils::profilerGetAll(TaskProfile*, uint8_t*)	2
+../../zeropilot4.0/build/l552-quad/include/systemutils_iface.hpp:17:17:ISystemUtils::~ISystemUtils()	1
+../../zeropilot4.0/build/l552-quad/include/systemutils_iface.hpp:17:17:virtual ISystemUtils::~ISystemUtils()	1
+../boardfiles/drivers/systemutils/systemutils.hpp:6:7:SystemUtils::~SystemUtils()	1
+../boardfiles/drivers/systemutils/systemutils.hpp:6:7:virtual SystemUtils::~SystemUtils()	1

@@ -1,6 +1,8 @@
 #include "system_manager.hpp"
 #include "zp_params.hpp"
 #include "flightmode.hpp"
+#include "attitude_manager.hpp"
+#include "telemetry_manager.hpp"
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
@@ -96,6 +98,39 @@ void SystemManager::smUpdate() {
     // Log if new messages
     if (smLoggerQueue->count() > 0) {
         sendMessagesToLogger();
+    }
+
+    // Send profiler stats at 1Hz
+    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
+        uint8_t count = 0;
+        systemUtilsDriver->profilerGetAll(profiles, &count);
+
+        for (uint8_t i = 0; i < count; i++) {
+            snprintf((char*)profiler_buf, sizeof(profiler_buf), "%-12s %u us      %u hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profiler_buf);
+
+            if (strcmp(profiles[i].name, "SM") == 0) {
+                if (profiles[i].deltaExec >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "SM execution time exceeding scheduled rate");
+                } else if (profiles[i].deltaExec >= 0.2f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "SM execution time about to exceed scheduled rate");
+                }
+            } else if (strcmp(profiles[i].name, "AM") == 0) {
+                if (profiles[i].deltaExec >= (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "AM execution time exceeding scheduled rate");
+                } else if (profiles[i].deltaExec >= 0.8f * (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "AM execution time about to exceed scheduled rate");
+                }
+            } else if (strcmp(profiles[i].name, "TM") == 0) {
+                if (profiles[i].deltaExec >= (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "TM execution time exceeding scheduled rate");
+                } else if (profiles[i].deltaExec >= 0.8f * (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "TM execution time about to exceed scheduled rate");
+                }
+            }
+        }
+        sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "-------TASK TIMINGS-------");
+
     }
 
     // Increment scheduling counter

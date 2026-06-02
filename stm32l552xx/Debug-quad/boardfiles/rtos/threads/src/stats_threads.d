@@ -2,7 +2,8 @@ boardfiles/rtos/threads/src/stats_threads.o: \
  ../boardfiles/rtos/threads/src/stats_threads.cpp \
  ../boardfiles/rtos/threads/inc/stats_thread.hpp \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- ../boardfiles/rtos/threads/inc/task_profiler.hpp \
+ ../boardfiles/drivers/systemutils/systemutils.hpp \
+ ../../zeropilot4.0/build/l552-quad/include/systemutils_iface.hpp \
  ../boardfiles/utils/utils.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h \
  ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h \
@@ -54,7 +55,8 @@ boardfiles/rtos/threads/src/stats_threads.o: \
  ../Drivers/STM32L5xx_HAL_Driver/Inc/stm32l5xx_hal_uart_ex.h
 ../boardfiles/rtos/threads/inc/stats_thread.hpp:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
-../boardfiles/rtos/threads/inc/task_profiler.hpp:
+../boardfiles/drivers/systemutils/systemutils.hpp:
+../../zeropilot4.0/build/l552-quad/include/systemutils_iface.hpp:
 ../boardfiles/utils/utils.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os.h:
 ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h:

@@ -2,13 +2,22 @@
 
 #include <cstdint>
 
+#define MAX_PROFILED_TASKS 8
+
+struct TaskProfile {
+    const char* name;
+    uint32_t deltaExec;
+    uint32_t deltaPeriod;
+};
+
 class ISystemUtils {
     protected:
         ISystemUtils() = default;
 
     public:
         virtual ~ISystemUtils() = default;
-        
+
         virtual void delayMs(uint32_t delay_ms) = 0;
         virtual uint32_t getCurrentTimestampMs() = 0;
+        virtual void profilerGetAll(TaskProfile* out, uint8_t* count) = 0;
 };

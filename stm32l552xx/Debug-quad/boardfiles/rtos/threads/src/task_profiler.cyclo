@@ -1,3 +1,5 @@
-../boardfiles/rtos/threads/src/task_profiler.cpp:12:6:void profilerRegister(const char*, uint8_t*)	2
-../boardfiles/rtos/threads/src/task_profiler.cpp:19:6:void profilerTick(uint8_t)	1
-../boardfiles/rtos/threads/src/task_profiler.cpp:25:6:void profilerGetAll(TaskProfile*, uint8_t*)	2
+../boardfiles/rtos/threads/src/task_profiler.cpp:13:13:void dwtInit()	1
+../boardfiles/rtos/threads/src/task_profiler.cpp:19:6:void profilerRegister(const char*, uint8_t*)	3
+../boardfiles/rtos/threads/src/task_profiler.cpp:27:6:void profilerBegin(uint8_t)	1
+../boardfiles/rtos/threads/src/task_profiler.cpp:31:6:void profilerEnd(uint8_t)	1
+../boardfiles/rtos/threads/src/task_profiler.cpp:36:6:void profilerGetAll(TaskProfile*, uint8_t*)	2
