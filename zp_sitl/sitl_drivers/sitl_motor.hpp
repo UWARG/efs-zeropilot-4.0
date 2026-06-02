@@ -13,6 +13,10 @@ public:
         return currentPercent;
     }
 
+    void setArm(bool arm) override { 
+        armFlag = arm;
+    }
+
 private:
     uint32_t currentPercent = 0;
 };

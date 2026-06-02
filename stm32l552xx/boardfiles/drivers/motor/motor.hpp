@@ -18,6 +18,11 @@ class MotorControl : public IMotorControl {
          */
         void init();
 
+        /**
+         * @brief sets arm flag
+         */
+        void setArm(bool arm) override;
+
     private:
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;

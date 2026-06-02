@@ -66,6 +66,7 @@ class AttitudeManager {
         MotorGroupInstance_t *mainMotorGroup;
 
         bool armedFlag;
+        bool setArmFlag;
 
         uint16_t lastServoOutputs[16];
 

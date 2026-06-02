@@ -11,7 +11,12 @@ MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint
 
 void MotorControl::set(uint32_t percent) {
     percent = percent > 100 ? 100 : percent;
-    uint32_t ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
+    
+    uint32_t ticks = 0;
+    if(armFlag) {
+        ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
+    }
+
     __HAL_TIM_SET_COMPARE(timer, timerChannel, ticks);
 }
 
@@ -32,4 +37,8 @@ void MotorControl::enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNu
     HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_SET);
+}
+
+void MotorControl::setArm(bool arm) {
+    armFlag = arm;
 }
