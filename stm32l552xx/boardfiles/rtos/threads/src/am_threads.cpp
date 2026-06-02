@@ -1,5 +1,5 @@
 #include "am_threads.hpp"
-#include "task_profiler.hpp"
+#include "systemutils.hpp"
 #include "managers.hpp"
 #include "utils.h"
 
@@ -14,13 +14,13 @@ static const osThreadAttr_t amMainLoopAttr = {
 void amMainLoopWrapper(void *arg)
 {
   uint8_t profileId;
-  profilerRegister("amMain", &profileId);
+  SystemUtils::profilerRegister("amMain", &profileId);
 
   while(true)
   {
-    profilerBegin(profileId);
+    SystemUtils::profilerBegin(profileId);
     amHandle->amUpdate();
-    profilerEnd(profileId);
+    SystemUtils::profilerEnd(profileId);
     osDelay(timeToTicks(AM_UPDATE_LOOP_DELAY_MS));
   }
 }

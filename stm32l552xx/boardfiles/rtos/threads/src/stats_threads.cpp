@@ -1,5 +1,5 @@
 #include "stats_thread.hpp"
-#include "task_profiler.hpp"
+#include "systemutils.hpp"
 #include "utils.h"
 #include "main.h"
 #include <cstring>
@@ -13,6 +13,7 @@ static const osThreadAttr_t statsMainLoopAttr = {
     .priority = (osPriority_t) osPriorityNormal
 };
 
+SystemUtils sysutil;
 void statsMainLoop(void *arg)
 {
   static uint8_t buf[256];
@@ -23,7 +24,7 @@ void statsMainLoop(void *arg)
     osDelay(timeToTicks(2000));
 
     uint8_t count = 0;
-    profilerGetAll(profiles, &count);
+    sysutil.profilerGetAll(profiles, &count);
 
     uint16_t offset = 0;
     offset += snprintf((char*)buf + offset, sizeof(buf) - offset, "--- Task execution time ---\r\n");
