@@ -34,10 +34,10 @@ alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
 #endif
 #ifdef QUADCOPTER
-alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
+alignas(DshotMotorControl) static uint8_t motor1Storage[sizeof(DshotMotorControl)];
+alignas(DshotMotorControl) static uint8_t motor2Storage[sizeof(DshotMotorControl)];
 alignas(DshotMotorControl) static uint8_t motor3Storage[sizeof(DshotMotorControl)];
-alignas(MotorControl) static uint8_t motor4Storage[sizeof(MotorControl)];
+alignas(DshotMotorControl) static uint8_t motor4Storage[sizeof(DshotMotorControl)];
 alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
@@ -73,10 +73,10 @@ MotorControl *motor7Handle = nullptr;
 MotorControl *motor8Handle = nullptr;
 #endif
 #ifdef QUADCOPTER
-MotorControl *motor1Handle = nullptr;
-MotorControl *motor2Handle = nullptr;
+DshotMotorControl *motor1Handle = nullptr;
+DshotMotorControl *motor2Handle = nullptr;
 DshotMotorControl *motor3Handle = nullptr;
-MotorControl *motor4Handle = nullptr;
+DshotMotorControl *motor4Handle = nullptr;
 MotorControl *motor5Handle = nullptr;
 MotorControl *motor6Handle = nullptr;
 MotorControl *motor7Handle = nullptr;
@@ -122,10 +122,10 @@ void initDrivers()
     motor8Handle = new (&motor8Storage) MotorControl(&htim2, TIM_CHANNEL_4, 5, 10, 8);
     #endif
     #ifdef QUADCOPTER
-    motor1Handle = new (&motor1Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 1);
-    motor2Handle = new (&motor2Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 2);
+    motor1Handle = new (&motor1Storage) DshotMotorControl(&htim1, TIM_CHANNEL_1, false);
+    motor2Handle = new (&motor2Storage) DshotMotorControl(&htim1, TIM_CHANNEL_2, false);
     motor3Handle = new (&motor3Storage) DshotMotorControl(&htim1, TIM_CHANNEL_3, false);
-    motor4Handle = new (&motor4Storage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10, 4);
+    motor4Handle = new (&motor4Storage) DshotMotorControl(&htim1, TIM_CHANNEL_4, false);
     motor5Handle = new (&motor5Storage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10, 5);
     motor6Handle = new (&motor6Storage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10, 6);
     motor7Handle = new (&motor7Storage) MotorControl(&htim2, TIM_CHANNEL_3, 5, 10, 7);

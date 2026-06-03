@@ -147,7 +147,6 @@ void AttitudeManager::amUpdate() {
     }
 
     // Update current flightmode if changed
-
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
             #ifdef FIXED_WING
@@ -184,8 +183,6 @@ void AttitudeManager::amUpdate() {
         motorOutputs.yaw = 0;
         #endif
     }
-
-   
 
     // Output to motors
     outputToMotors(motorOutputs);
