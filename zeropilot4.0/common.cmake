@@ -1,6 +1,7 @@
 # attitude manager files
 set(AM_SRC
     "src/attitude_manager/attitude_manager.cpp"
+    "src/attitude_manager/acro_mapping.cpp"
     "src/attitude_manager/direct_mapping.cpp"
     "src/attitude_manager/fbwa_mapping.cpp"
     "src/attitude_manager/pid.cpp"
