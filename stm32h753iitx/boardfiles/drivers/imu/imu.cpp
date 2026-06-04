@@ -125,6 +125,7 @@ float IMU::lowPassFilter(float raw_value, int select) {
 
 
 int IMU::init() {
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
     csHigh();
     reset();
     uint8_t address = whoAmI();

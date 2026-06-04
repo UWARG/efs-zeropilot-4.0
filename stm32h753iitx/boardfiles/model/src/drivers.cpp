@@ -100,7 +100,7 @@ void initDrivers()
     gpsHandle = new (&gpsStorage) GPS(&huart2);
     rcHandle = new (&rcStorage) CRSFReceiver(&huart4);
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
-    imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_5);
+    imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_4);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
     // Queues
