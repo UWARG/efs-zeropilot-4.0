@@ -15,3 +15,4 @@ Release/
 
 # remove build host
 *build-host*
+AirSim/
