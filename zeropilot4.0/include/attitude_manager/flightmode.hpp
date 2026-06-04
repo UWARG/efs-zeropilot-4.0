@@ -20,6 +20,6 @@ class Flightmode {
 
         virtual void activateFlightMode() = 0;
         virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
-
-        virtual const float *getMixedMotors() = 0;
+        
+        virtual const float *getMixedMotors();
 };

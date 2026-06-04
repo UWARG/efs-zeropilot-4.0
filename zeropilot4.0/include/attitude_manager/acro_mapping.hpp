@@ -58,7 +58,7 @@ class ACROMapping : public Flightmode{
         float yawLimitRate;
 
         // Motor mixer output for each motor 
-        float motor_percent[NUM_MOTORS] = {0};
+        float motor_percent[NUM_MOTORS];
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
