@@ -97,7 +97,29 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
 
     return controlInputs;
 }
+/*
+    Notes/Improvements:
+    1. yaw and throttle priority
+        here: roll/pitch -> 2% reserved for yaw -> scale RP if saturates -> add yaw -> scale RPY together if saturates-> clamp throttle to fit
+        ardu: roll/pitch > throttle > yaw
+        roll and pitch has the highest in both, but ardupilot sacrafices yaw over thruttle
 
+        Ardupilot computes: throttle_thrust_best_rpy = -(rpy_low + rpy_high) / 2
+        which is the throttle that perfectly centers roll/pitch contributions. Then yaw is added last, with a "yaw headroom" parameter, and if yaw doesn't fit it's scaled down
+
+        Here we scale roll/pitch to make room for yaw. If pilot throttle is high it gets clamped down and yaw always gets added. 
+        In ArduPilot, asking for full throttle while roll/pitching hard would drop yaw, not throttle.
+        In practice, in a sharp turn, we would expect a slight altitude dip while ardupilot gets a tiny heading drift
+        But this is compensation made due to very slow/little reaction of yaw compared to roll/pitch
+
+    2. Yaw headroom can be made reactive to roll/pitch, currently is always set to 2%
+
+    3. scale motor outputs dynamically based on battery status
+        Ardupilot scaled moor outputs by battery_voltage / battery_voltage_resting (MOT_BAT_VOLT_*)
+        so thrust stays constant as the battery drains. Without it, tuning may be less acurate as battey drains.
+    
+
+*/
 void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
 {
     // roll, pitch, yaw in range [-1, 1], throttle in [0,1]
@@ -157,85 +179,6 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
     for(int i = 0; i < 4; i++) {
         motor_percent[i] += throttle;
     }
-
-
-//     motor_percent[0] = -roll + pitch;
-//     motor_percent[1] = roll - pitch;
-//     motor_percent[2] = roll + pitch;
-//     motor_percent[3] = -roll - pitch;
-
-//     bool disregard_yaw_flag = false;
-
-//     // Roll and Pitch
-//     float max_range = 0.0f;
-//     // max range
-//     for (int i = 0; i < 4; i++) {
-//         if (fabsf(motor_percent[i]) > max_range) {
-//             max_range = fabsf(motor_percent[i]);
-//         }
-//     }
-//     // scale down to [-0.5,0.5]
-//     if (max_range > 0.5f) {
-//         float scaling_factor = 0.5 / max_range;
-//         for (int i = 0; i < 4; i++) {
-//             motor_percent[i] *= scaling_factor;
-//         }
-//     }
-
-//     // Throttle
-//     float min_throttle = 0.0f;
-//     for (int i = 0; i < 4; i++) {
-//         if (motor_percent[i] < 0 && fabsf(motor_percent[i]) > min_throttle) {
-//             min_throttle = fabsf(motor_percent[i]);
-//         }
-//     }
-//     if (throttle < min_throttle) { throttle = min_throttle; }
-
-//     float max_overshoot = 0.0f;
-//     for (int i = 0; i < 4; i++) {
-//         float overshoot = motor_percent[i] + throttle - 1;
-//         if (overshoot > max_overshoot) {
-//             max_overshoot = overshoot;
-//         }
-//     }
-//     if (max_overshoot > 0) {
-//         // Decrease throttle to fit in [0,1]
-//         for (int i = 0; i < 4; i++) {
-//             motor_percent[i] += throttle - max_overshoot;
-//         }
-//         disregard_yaw_flag = true;
-//     } else {
-//         // Throttle does not cause saturation
-//         for (int i = 0; i < 4; i++) {
-//             motor_percent[i] += throttle;
-//         }
-//     }
-
-//     // Yaw
-//     if (!disregard_yaw_flag) {
-//         float min_yaw_scale = 1.0f;
-//         int8_t yaw_signs[4] = { 1, 1, -1, -1 };
-//         for(int i = 0; i < 4; i++) {
-//             float yaw_contribution = yaw * yaw_signs[i]; // yaw contribution could be neg or pos
-//             if (yaw_contribution > 0) {
-//                 // Saturates above 0 
-//                 float yaw_scale = (1.0f - motor_percent[i]) / yaw_contribution;  
-//                 if( yaw_scale < min_yaw_scale) {
-//                     min_yaw_scale = yaw_scale;
-//                 }
-//             } else if (yaw_contribution < 0){
-//                 // Saturates below 0
-//                 float yaw_scale = motor_percent[i] / (-yaw_contribution);  
-//                 if( yaw_scale < min_yaw_scale) {
-//                     min_yaw_scale = yaw_scale;
-//                 }
-//             }
-//         }
-
-//         for (int i = 0; i < 4; i++) {
-//             motor_percent[i] += yaw_signs[i] * yaw * min_yaw_scale;
-//         }
-//     }
 
 }
 
