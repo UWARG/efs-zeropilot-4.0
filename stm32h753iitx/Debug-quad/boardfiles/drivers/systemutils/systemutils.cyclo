@@ -1,9 +1,9 @@
 ../boardfiles/drivers/systemutils/systemutils.cpp:15:6:virtual void SystemUtils::delayMs(uint32_t)	1
 ../boardfiles/drivers/systemutils/systemutils.cpp:19:10:virtual uint32_t SystemUtils::getCurrentTimestampMs()	1
-../boardfiles/drivers/systemutils/systemutils.cpp:24:6:static void SystemUtils::dwtInit()	1
-../boardfiles/drivers/systemutils/systemutils.cpp:30:6:static void SystemUtils::profilerRegister(const char*, uint8_t*)	3
-../boardfiles/drivers/systemutils/systemutils.cpp:38:6:static void SystemUtils::profilerBegin(uint8_t)	1
-../boardfiles/drivers/systemutils/systemutils.cpp:44:6:static void SystemUtils::profilerEnd(uint8_t)	1
+../boardfiles/drivers/systemutils/systemutils.cpp:24:6:void SystemUtils::dwtInit()	1
+../boardfiles/drivers/systemutils/systemutils.cpp:30:6:virtual void SystemUtils::profilerRegister(const char*, uint8_t*)	3
+../boardfiles/drivers/systemutils/systemutils.cpp:38:6:virtual void SystemUtils::profilerBegin(uint8_t)	1
+../boardfiles/drivers/systemutils/systemutils.cpp:44:6:virtual void SystemUtils::profilerEnd(uint8_t)	1
 ../boardfiles/drivers/systemutils/systemutils.cpp:49:6:virtual void SystemUtils::profilerGetAll(TaskProfile*, uint8_t*)	3
 ../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp:18:17:ISystemUtils::~ISystemUtils()	1
 ../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp:18:17:virtual ISystemUtils::~ISystemUtils()	1

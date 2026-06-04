@@ -2,10 +2,9 @@ boardfiles/rtos/threads/src/tm_threads.o: \
  ../boardfiles/rtos/threads/src/tm_threads.cpp \
  ../boardfiles/rtos/threads/inc/tm_threads.hpp \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h \
- ../boardfiles/drivers/systemutils/systemutils.hpp \
- ../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp \
  ../boardfiles/model/inc/managers.hpp \
  ../../zeropilot4.0/build/h753iit-quad/include/attitude_manager.hpp \
+ ../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp \
  ../../zeropilot4.0/build/h753iit-quad/include/direct_mapping.hpp \
  ../../zeropilot4.0/build/h753iit-quad/include/flightmode.hpp \
  ../../zeropilot4.0/build/h753iit-quad/include/rc_motor_control.hpp \
@@ -49,10 +48,9 @@ boardfiles/rtos/threads/src/tm_threads.o: \
  ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h
 ../boardfiles/rtos/threads/inc/tm_threads.hpp:
 ../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.h:
-../boardfiles/drivers/systemutils/systemutils.hpp:
-../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp:
 ../boardfiles/model/inc/managers.hpp:
 ../../zeropilot4.0/build/h753iit-quad/include/attitude_manager.hpp:
+../../zeropilot4.0/build/h753iit-quad/include/systemutils_iface.hpp:
 ../../zeropilot4.0/build/h753iit-quad/include/direct_mapping.hpp:
 ../../zeropilot4.0/build/h753iit-quad/include/flightmode.hpp:
 ../../zeropilot4.0/build/h753iit-quad/include/rc_motor_control.hpp:

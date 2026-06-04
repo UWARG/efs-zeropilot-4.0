@@ -329,9 +329,14 @@
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Debug">
+=======
+>>>>>>> 8b549335 (Move profiler calls to manager update, #if for debug timings, delayUntil() to match intent)
 			<resource resourceType="PROJECT" workspacePath="/stm32h753iitx"/>
 		</configuration>
 		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/stm32h753iitx"/>
+		</configuration>
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/stm32h753iitx"/>
 		</configuration>
 	</storageModule>
