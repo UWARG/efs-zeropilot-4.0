@@ -38,6 +38,8 @@ class TelemetryManager {
     uint8_t txBuffer[TM_MAX_TX_BYTES];
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
 
+    uint8_t profilerId;
+
     void processRxMsg(const mavlink_message_t &msg);
     void processTXMsgQueue();
     void transmit();

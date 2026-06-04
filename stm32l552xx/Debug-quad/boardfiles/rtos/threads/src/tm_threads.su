@@ -1,2 +1,0 @@
-../boardfiles/rtos/threads/src/tm_threads.cpp:14:6:void tmMainLoopWrapper(void*)	24	static
-../boardfiles/rtos/threads/src/tm_threads.cpp:28:6:void tmInitThreads()	8	static

@@ -5,5 +5,11 @@ build/
 *.so
 *.o
 *.pyd
+release-fw/
+release-quad/
+Release-fw/
+Release-quad/
+Debug-fw/
+Debug-quad/
 
 sd_card/

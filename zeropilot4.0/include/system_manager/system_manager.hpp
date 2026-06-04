@@ -90,6 +90,8 @@ class SystemManager {
 
         SMParamSetup paramSetup;
 
+        uint8_t profilerId;
+
         uint8_t profiler_buf[256];
         TaskProfile profiles[MAX_PROFILED_TASKS];
 };

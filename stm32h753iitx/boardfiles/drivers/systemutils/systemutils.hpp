@@ -8,12 +8,14 @@ class SystemUtils : public ISystemUtils {
         SystemUtils() = default;
         void delayMs(uint32_t delay_ms) override;
         uint32_t getCurrentTimestampMs() override;
-        void profilerGetAll(TaskProfile* out, uint8_t* count) override;
 
-        static void dwtInit();
-        static void profilerRegister(const char* name, uint8_t* outId);
-        static void profilerBegin(uint8_t id);
-        static void profilerEnd(uint8_t id);
+        void profilerGetAll(TaskProfile* out, uint8_t* count) override;
+        void profilerRegister(const char* name, uint8_t* outId) override;
+        void profilerBegin(uint8_t id) override;
+        void profilerEnd(uint8_t id) override;
+
+    private:
+        void dwtInit();
 };
 
 

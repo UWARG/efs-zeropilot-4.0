@@ -26,13 +26,18 @@ SystemManager::SystemManager(
         oldDataCount(0),
         rcConnected(false),
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
-        paramSetup(this)
+        paramSetup(this),
+        profilerId(0)
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
+    systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
 void SystemManager::smUpdate() {
+
+    systemUtilsDriver->profilerBegin(profilerId);
+
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
@@ -106,9 +111,6 @@ void SystemManager::smUpdate() {
         systemUtilsDriver->profilerGetAll(profiles, &count);
 
         for (uint8_t i = 0; i < count; i++) {
-            snprintf((char*)profiler_buf, sizeof(profiler_buf), "%-12s %u us      %u hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
-            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profiler_buf);
-
             if (strcmp(profiles[i].name, "SM") == 0) {
                 if (profiles[i].deltaExec >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "SM execution time exceeding scheduled rate");
@@ -128,13 +130,20 @@ void SystemManager::smUpdate() {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "TM execution time about to exceed scheduled rate");
                 }
             }
+            #if LOG_TIMING
+            snprintf((char*)profiler_buf, sizeof(profiler_buf), "%-12s %u us      %u hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profiler_buf);
+            #endif
         }
+        #if LOG_TIMING
         sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "-------TASK TIMINGS-------");
-
+        #endif
     }
 
     // Increment scheduling counter
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
+
+    systemUtilsDriver->profilerEnd(profilerId);
 }
 
 void SystemManager::updateBatteryFSM() {

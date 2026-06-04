@@ -1,5 +1,4 @@
 #include "sm_threads.hpp"
-#include "systemutils.hpp"
 #include "managers.hpp"
 #include "utils.h"
 
@@ -13,15 +12,12 @@ static const osThreadAttr_t smMainLoopAttr = {
 
 void smMainLoopWrapper(void *arg)
 {
-  uint8_t profileId;
-  SystemUtils::profilerRegister("SM", &profileId);
-
+  uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
-    SystemUtils::profilerBegin(profileId);
     smHandle->smUpdate();
-    SystemUtils::profilerEnd(profileId);
-    osDelay(timeToTicks(SM_UPDATE_LOOP_DELAY_MS));
+    nextWakeUp += timeToTicks(SM_UPDATE_LOOP_DELAY_MS);
+    osDelayUntil(nextWakeUp);
   }
 }
 

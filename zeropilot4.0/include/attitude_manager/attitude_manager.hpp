@@ -78,4 +78,6 @@ class AttitudeManager {
         void sendServoOutputRawToTelemetryManager();
 
         AMParamSetup paramSetup;
+
+        uint8_t profilerId;
 };

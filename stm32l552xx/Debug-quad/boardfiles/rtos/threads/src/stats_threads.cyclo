@@ -1,8 +1,0 @@
-../../zeropilot4.0/build/l552-quad/include/systemutils_iface.hpp:17:17:ISystemUtils::~ISystemUtils()	1
-../../zeropilot4.0/build/l552-quad/include/systemutils_iface.hpp:17:17:virtual ISystemUtils::~ISystemUtils()	1
-../boardfiles/rtos/threads/src/stats_threads.cpp:17:6:void statsMainLoop(void*)	3
-../boardfiles/rtos/threads/src/stats_threads.cpp:41:6:void statsInitThread()	1
-../boardfiles/drivers/systemutils/systemutils.hpp:6:7:SystemUtils::~SystemUtils()	1
-../boardfiles/drivers/systemutils/systemutils.hpp:6:7:virtual SystemUtils::~SystemUtils()	1
-../boardfiles/rtos/threads/src/stats_threads.cpp:43:1:void __static_initialization_and_destruction_0()	1
-../boardfiles/rtos/threads/src/stats_threads.cpp:43:1:cpp)	1
