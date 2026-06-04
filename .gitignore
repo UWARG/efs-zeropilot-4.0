@@ -16,6 +16,7 @@ Debug-fw/
 Debug-quad/
 Release-fw/
 Release-quad/
+Debug-quad-log/
 
 # remove build host
 *build-host*

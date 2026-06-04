@@ -1,2 +1,0 @@
-../boardfiles/rtos/threads/src/sm_threads.cpp:13:6:void smMainLoopWrapper(void*)	16	static
-../boardfiles/rtos/threads/src/sm_threads.cpp:22:6:void smInitThreads()	8	static

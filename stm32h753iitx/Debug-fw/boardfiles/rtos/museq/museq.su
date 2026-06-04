@@ -1,3 +1,0 @@
-../boardfiles/rtos/museq/museq.cpp:22:6:void initMutexes()	8	static
-../boardfiles/rtos/museq/museq.cpp:31:6:void initSemphrs()	4	static
-../boardfiles/rtos/museq/museq.cpp:40:6:void initQueues()	8	static

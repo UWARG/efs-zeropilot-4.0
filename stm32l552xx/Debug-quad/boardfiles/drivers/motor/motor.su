@@ -1,8 +1,0 @@
-../../zeropilot4.0/build/l552-quad/include/motor_iface.hpp:7:9:constexpr IMotorControl::IMotorControl()	16	static
-../../zeropilot4.0/build/l552-quad/include/motor_iface.hpp:10:17:IMotorControl::~IMotorControl()	16	static
-../../zeropilot4.0/build/l552-quad/include/motor_iface.hpp:10:17:virtual IMotorControl::~IMotorControl()	16	static
-../boardfiles/drivers/motor/motor.cpp:3:1:MotorControl::MotorControl(TIM_HandleTypeDef*, uint32_t, uint32_t, uint32_t, uint8_t)	32	static
-../boardfiles/drivers/motor/motor.cpp:12:6:virtual void MotorControl::set(uint32_t)	32	static
-../boardfiles/drivers/motor/motor.cpp:18:6:void MotorControl::init()	16	static
-../boardfiles/drivers/motor/motor.hpp:6:7:MotorControl::~MotorControl()	16	static
-../boardfiles/drivers/motor/motor.hpp:6:7:virtual MotorControl::~MotorControl()	16	static
