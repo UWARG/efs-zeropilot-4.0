@@ -47,7 +47,14 @@ void DshotMotorControl::set(uint32_t percent) {
 }
 
 void DshotMotorControl::init() {
+    timer->Init.Prescaler = 0;
+    timer->Init.Period = 199;
+    if (HAL_TIM_Base_Init(timer) != HAL_OK)
+    {
+        // Error_Handler();
+    }
     this->set(0);
+
 }
 
 void DshotMotorControl::setArm(bool arm) { 
