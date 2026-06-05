@@ -94,11 +94,11 @@ void initDrivers()
     #endif
 
     // Peripherals
-    gpsHandle = new GPS(&huart2);
-    rcHandle = new CRSFReceiver(&huart4);
-    telemLinkHandle = new RFD(&huart1);
-    imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
-    pmHandle = new PowerModule(&hi2c1);
+    gpsHandle = new (&gpsStorage) GPS(&huart2);
+    rcHandle = new (&rcStorage) CRSFReceiver(&huart4);
+    telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
+    imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_4);
+    pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
