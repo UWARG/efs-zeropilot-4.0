@@ -24,4 +24,3 @@ endforeach()
 add_library(${PROJECT_NAME} STATIC ${RELATIVE_ZP_SRC})
 target_include_directories(${PROJECT_NAME} PRIVATE ${RELATIVE_ZP_INC})
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RELATIVE_EXTERNAL_INC})
-
