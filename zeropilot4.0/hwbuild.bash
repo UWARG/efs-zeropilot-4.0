@@ -55,12 +55,6 @@ else
     mkdir -p "$build_dir"
 fi
 
-# if [[ "$vehicle_type" == "fw" ]]; then
-#     vehicle_type=1
-# elif [[ "$vehicle_type" == "quad" ]]; then
-#     vehicle_type=2
-# fi
-
 # create cmake system
 cd "$build_dir"
 if [[ ! -f "CMakeCache.txt" ]]; then

@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  compile_test:
+  compile_test_fixed_wing:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,4 +23,22 @@ jobs:
 
     - name: Build project
       working-directory: ./zeropilot4.0
-      run: bash ./hwbuild.bash -c l552
+      run: bash ./hwbuild.bash -c -v fw -b l552 
+
+compile_test_fixed_wing:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install cmake make gcc-arm-none-eabi
+
+    - name: Checkout the repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build project
+      working-directory: ./zeropilot4.0
+      run: bash ./hwbuild.bash -c -v quad -b l552 
