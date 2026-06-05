@@ -72,39 +72,39 @@ void initDrivers()
 
     // Motors (servo index matches SERVOx param)
     #ifdef FIXED_WING
-    motor1Handle = new (&motor1Storage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
-    motor2Handle = new (&motor2Storage) MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 2);
-    motor3Handle = new (&motor3Storage) MotorControl(&htim3, TIM_CHANNEL_3, 5, 10, 3);
-    motor4Handle = new (&motor4Storage) MotorControl(&htim3, TIM_CHANNEL_4, 5, 10, 4);
-    motor5Handle = new (&motor5Storage) MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
-    motor6Handle = new (&motor6Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
-    motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
-    motor8Handle = new (&motor8Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
+    motor1Handle = new MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
+    motor2Handle = new MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 2);
+    motor3Handle = new MotorControl(&htim3, TIM_CHANNEL_3, 5, 10, 3);
+    motor4Handle = new MotorControl(&htim3, TIM_CHANNEL_4, 5, 10, 4);
+    motor5Handle = new MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
+    motor6Handle = new MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
+    motor7Handle = new MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
+    motor8Handle = new MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
 	#endif
 
 	#ifdef QUADCOPTER
-    motor1Handle = new (&motor1Storage) DshotMotorControl(&htim3, TIM_CHANNEL_1, false;
-    motor2Handle = new (&motor2Storage) DshotMotorControl(&htim3, TIM_CHANNEL_2, false);
-    motor3Handle = new (&motor3Storage) DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
-    motor4Handle = new (&motor4Storage) DshotMotorControl(&htim3, TIM_CHANNEL_4, false);
-    motor5Handle = new (&motor5Storage) MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
-    motor6Handle = new (&motor6Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
-    motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
-    motor8Handle = new (&motor8Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
+    motor1Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_1, false;
+    motor2Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_2, false);
+    motor3Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
+    motor4Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_4, false);
+    motor5Handle = new MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
+    motor6Handle = new MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
+    motor7Handle = new MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
+    motor8Handle = new MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
     #endif
     
     // Peripherals
-    gpsHandle = new (&gpsStorage) GPS(&huart2);
-    rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
-    telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
-    imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
-    pmHandle = new (&pmStorage) PowerModule(&hi2c1);
+    gpsHandle = new GPS(&huart2);
+    rcHandle = new CRSFReceiver(&huart4);
+    telemLinkHandle = new RFD(&huart3);
+    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0);
+    pmHandle = new PowerModule(&hi2c1);
 
     // Queues
-    amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
-    tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
-    messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
+    amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
+    smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
+    tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
+    messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
     motor1Handle->init();
