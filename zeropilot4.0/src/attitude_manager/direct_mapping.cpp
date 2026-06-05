@@ -7,7 +7,3 @@ void DirectMapping::activateFlightMode() {
 RCMotorControlMessage_t DirectMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
     return controlInputs;
 }
-
-const float *DirectMapping::getMixedMotors() {
-    return motor_percent;
-}

@@ -9,6 +9,7 @@ set(AM_TSRC
     attitude_manager/pid_test.cpp
     attitude_manager/direct_mapping_test.cpp
     attitude_manager/fbwa_mapping_test.cpp
+    attitude_manager/acro_mapping_test.cpp
 )
 
 # system manager test files
@@ -77,3 +78,10 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RELATIVE_EXTERNAL_IN
 target_link_libraries(${PROJECT_NAME} GTest::gmock_main)
 
 gtest_discover_tests(${PROJECT_NAME})
+
+if(FIXED_WING_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE FIXED_WING)
+endif()
+if(QUADCOPTER_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE QUADCOPTER)
+endif()

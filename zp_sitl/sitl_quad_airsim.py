@@ -2,7 +2,6 @@ import airsim
 import time
 import threading
 import os
-import tempfile
 import pygame
 import sys
 import zeropilot # type: ignore
