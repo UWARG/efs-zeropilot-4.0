@@ -17,7 +17,6 @@ while getopts "c" opt; do
             clean="true"
             ;;
         v)
-            v)
             if [[ "$OPTARG" == "quad" || "$OPTARG" == "fw" ]]; then
                 vehicle_type="$OPTARG"
             fi
