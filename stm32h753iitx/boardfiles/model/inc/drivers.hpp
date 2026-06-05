@@ -24,7 +24,7 @@ extern Logger *loggerHandle;
 
 extern MotorControl *motor1Handle;
 extern MotorControl *motor2Handle;
-extern DshotMotorControl *motor3Handle;
+extern MotorControl *motor3Handle;
 extern MotorControl *motor4Handle;
 extern MotorControl *motor5Handle;
 extern MotorControl *motor6Handle;

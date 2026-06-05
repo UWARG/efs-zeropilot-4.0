@@ -25,7 +25,7 @@ alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
 
 alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
-alignas(DshotMotorControl) static uint8_t motor3Storage[sizeof(DshotMotorControl)];
+alignas(MotorControl) static uint8_t motor3Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor4Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
@@ -52,7 +52,7 @@ Logger *loggerHandle = nullptr;
 
 MotorControl *motor1Handle = nullptr;
 MotorControl *motor2Handle = nullptr;
-DshotMotorControl *motor3Handle = nullptr;
+MotorControl *motor3Handle = nullptr;
 MotorControl *motor4Handle = nullptr;
 MotorControl *motor5Handle = nullptr;
 MotorControl *motor6Handle = nullptr;
@@ -89,7 +89,7 @@ void initDrivers()
     // Motors (servo index matches SERVOx param)
     motor1Handle = new (&motor1Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 1);
     motor2Handle = new (&motor2Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 2);
-    motor3Handle = new (&motor3Storage) DshotMotorControl(&htim1, TIM_CHANNEL_3, false);
+    motor3Handle = new (&motor3Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 3);
     motor4Handle = new (&motor4Storage) MotorControl(&htim1, TIM_CHANNEL_4, 5, 10, 4);
     motor5Handle = new (&motor5Storage) MotorControl(&htim2, TIM_CHANNEL_1, 5, 10, 5);
     motor6Handle = new (&motor6Storage) MotorControl(&htim2, TIM_CHANNEL_2, 5, 10, 6);

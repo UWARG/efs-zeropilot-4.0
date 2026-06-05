@@ -13,7 +13,7 @@
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
 
-#define AM_SCHEDULING_RATE_HZ 1000
+#define AM_SCHEDULING_RATE_HZ 100
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
