@@ -33,10 +33,10 @@ extern MotorControl *motor7Handle;
 extern MotorControl *motor8Handle;
 #endif
 #ifdef QUADCOPTER
-extern MotorControl *motor1Handle;
-extern MotorControl *motor2Handle;
+extern DshotMotorControl *motor1Handle;
+extern DshotMotorControl *motor2Handle;
 extern DshotMotorControl *motor3Handle;
-extern MotorControl *motor4Handle;
+extern DshotMotorControl *motor4Handle;
 extern MotorControl *motor5Handle;
 extern MotorControl *motor6Handle;
 extern MotorControl *motor7Handle;

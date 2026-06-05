@@ -14,46 +14,6 @@ extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
 
 // ----------------------------------------------------------------------------
-// Static storage for each driver (aligned for correct type)
-// ----------------------------------------------------------------------------
-alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
-alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
-alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
-
-#ifdef FIXED_WING
-alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor3Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor4Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
-#endif
-
-#ifdef QUADCOPTER
-alignas(MotorControl) static uint8_t motor1Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor2Storage[sizeof(MotorControl)];
-alignas(DshotMotorControl) static uint8_t motor3Storage[sizeof(DshotMotorControl)];
-alignas(MotorControl) static uint8_t motor4Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor5Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
-#endif
-
-alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
-alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
-alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
-alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
-alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
-
-alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
-alignas(MessageQueue<char[100]>) static uint8_t smLoggerQueueStorage[sizeof(MessageQueue<char[100]>)];
-alignas(MessageQueue<TMMessage_t>) static uint8_t tmQueueStorage[sizeof(MessageQueue<TMMessage_t>)];
-alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[sizeof(MessageQueue<mavlink_message_t>)];
-
-// ----------------------------------------------------------------------------
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
@@ -72,10 +32,10 @@ MotorControl *motor8Handle = nullptr;
 #endif
 
 #ifdef QUADCOPTER
-MotorControl *motor1Handle = nullptr;
-MotorControl *motor2Handle = nullptr;
+DshotMotorControl *motor1Handle = nullptr;
+DshotMotorControl *motor2Handle = nullptr;
 DshotMotorControl *motor3Handle = nullptr;
-MotorControl *motor4Handle = nullptr;
+DshotMotorControl *motor4Handle = nullptr;
 MotorControl *motor5Handle = nullptr;
 MotorControl *motor6Handle = nullptr;
 MotorControl *motor7Handle = nullptr;
@@ -123,10 +83,10 @@ void initDrivers()
 	#endif
 
 	#ifdef QUADCOPTER
-    motor1Handle = new (&motor1Storage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
-    motor2Handle = new (&motor2Storage) MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 2);
+    motor1Handle = new (&motor1Storage) DshotMotorControl(&htim3, TIM_CHANNEL_1, false;
+    motor2Handle = new (&motor2Storage) DshotMotorControl(&htim3, TIM_CHANNEL_2, false);
     motor3Handle = new (&motor3Storage) DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
-    motor4Handle = new (&motor4Storage) MotorControl(&htim3, TIM_CHANNEL_4, 5, 10, 4);
+    motor4Handle = new (&motor4Storage) DshotMotorControl(&htim3, TIM_CHANNEL_4, false);
     motor5Handle = new (&motor5Storage) MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
     motor6Handle = new (&motor6Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
     motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
