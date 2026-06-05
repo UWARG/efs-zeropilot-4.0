@@ -5,15 +5,14 @@ set -e
 script_dir=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
 clean="false"
 board="h753iit"
-log_timing="OFF"
 
 usage() {
-    echo "Usage: $0 [-c] [-b] <board> [-l]"
+    echo "Usage: $0 [-c] [-b] <board>"
     exit 1
 }
 
 # parse args
-while getopts "b:cl" opt; do
+while getopts "b:c" opt; do
     case "${opt}" in
         b)
             if [[ "$OPTARG" == "l552" || "$OPTARG" == "h753iit" ]]; then
@@ -22,9 +21,6 @@ while getopts "b:cl" opt; do
             ;;
         c)
             clean="true"
-            ;;
-        l)
-            log_timing="ON"
             ;;
         *)
             usage
@@ -74,7 +70,7 @@ if [[ ! -f "CMakeCache.txt" ]]; then
     echo "generating cmake..."
     echo "generator: $generator"
     echo "toolchain: $tc_file"
-    cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DLOG_TIMING=${log_timing} "$script_dir"
+    cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" "$script_dir"
 fi
 
 echo && echo "building..."

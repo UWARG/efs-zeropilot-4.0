@@ -18,8 +18,8 @@ TelemetryManager::TelemetryManager(
     packedMsgBuffer(packedMsgBuffer),
     overflowMsgPending(false),
     currParamListTxIdx(ZP_PARAM::getCount()),
-    paramSetup(this),
-    profilerId(0){
+    profilerId(0),
+    paramSetup(this){
 
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();

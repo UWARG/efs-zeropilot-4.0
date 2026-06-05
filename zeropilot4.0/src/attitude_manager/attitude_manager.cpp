@@ -30,8 +30,8 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
-    paramSetup(this),
-    profilerId(0){
+    profilerId(0),
+    paramSetup(this){
 
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();

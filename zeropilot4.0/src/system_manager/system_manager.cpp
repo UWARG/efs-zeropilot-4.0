@@ -4,6 +4,8 @@
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
+#define LOG_TIMING 0
+
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
@@ -26,8 +28,8 @@ SystemManager::SystemManager(
         oldDataCount(0),
         rcConnected(false),
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
-        paramSetup(this),
-        profilerId(0)
+        profilerId(0),
+        paramSetup(this)
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
@@ -131,7 +133,7 @@ void SystemManager::smUpdate() {
                 }
             }
             #if LOG_TIMING
-            snprintf((char*)profiler_buf, sizeof(profiler_buf), "%-12s %u us      %u hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            snprintf((char*)profiler_buf, sizeof(profiler_buf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profiler_buf);
             #endif
         }

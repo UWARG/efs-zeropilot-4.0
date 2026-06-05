@@ -76,8 +76,9 @@ class AttitudeManager {
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
-
+        
+        uint8_t profilerId;
+        
         AMParamSetup paramSetup;
 
-        uint8_t profilerId;
 };

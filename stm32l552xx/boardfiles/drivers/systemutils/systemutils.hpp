@@ -10,10 +10,12 @@ class SystemUtils : public ISystemUtils {
         uint32_t getCurrentTimestampMs() override;
         void profilerGetAll(TaskProfile* out, uint8_t* count) override;
 
-        static void dwtInit();
-        static void profilerRegister(const char* name, uint8_t* outId);
-        static void profilerBegin(uint8_t id);
-        static void profilerEnd(uint8_t id);
+        void profilerRegister(const char* name, uint8_t* outId);
+        void profilerBegin(uint8_t id);
+        void profilerEnd(uint8_t id);
+        
+    private:
+        void dwtInit();
 };
 
 
