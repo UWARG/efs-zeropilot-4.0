@@ -4,6 +4,7 @@ set -e
 
 script_dir=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
 clean="false"
+vehicle_type="fw"
 
 usage() {
     echo "Usage: $0 [-c] [-v] <vehicle_type>"
@@ -11,7 +12,7 @@ usage() {
 }
 
 # parse args
-while getopts "c" opt; do
+while getopts "cv:" opt; do
     case "${opt}" in
         c)
             clean="true"

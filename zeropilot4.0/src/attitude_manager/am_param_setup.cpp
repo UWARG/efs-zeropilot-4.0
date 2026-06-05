@@ -246,6 +246,7 @@ bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
     #endif
     #ifdef QUADCOPTER
     ctx->acroCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
