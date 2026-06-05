@@ -23,7 +23,7 @@ jobs:
 
     - name: Build tests
       working-directory: ./zeropilot4.0/tests
-      run: bash ./testbuild.bash -c l552
+      run: bash ./testbuild.bash -c
     
     - name: Run tests
       working-directory: ./zeropilot4.0/tests

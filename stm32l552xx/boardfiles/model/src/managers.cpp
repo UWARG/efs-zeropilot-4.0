@@ -22,12 +22,7 @@ void initManagers()
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 
-        &rollMotors, 
-        &pitchMotors, 
-        &yawMotors, 
-        &throttleMotors, 
-        &flapMotors, 
-        &steeringMotors
+        &mainMotorGroup
     );
 
     // SM initialization
@@ -46,7 +41,7 @@ void initManagers()
     // TM initialization
     tmHandle = new (&tmHandleStorage) TelemetryManager(
         systemUtilsHandle,
-        rfdHandle,
+        telemLinkHandle,
         tmQueueHandle,
         amRCQueueHandle,
         messageBufferHandle
