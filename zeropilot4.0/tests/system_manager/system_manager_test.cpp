@@ -6,6 +6,7 @@
 #include "mock_iwdg.hpp"
 #include "mock_logger.hpp"
 #include "mock_rc.hpp"
+#include "mock_can.hpp"
 #include "mock_power_module.hpp"
 #include "mock_queue.hpp"
 
@@ -22,6 +23,7 @@ protected:
     NiceMock<MockWatchdog> mockWatchdog;
     NiceMock<MockLogger> mockLogger;
     NiceMock<MockRCReceiver> mockRC;
+    NiceMock<MockCAN> mockCAN;
     NiceMock<MockPowerModule> mockPM;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
@@ -38,9 +40,18 @@ protected:
 TEST_F(SystemManagerTest, WatchdogRefresh) {
     EXPECT_CALL(mockWatchdog, refreshWatchdog()).Times(1);
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
+    sm.smUpdate();
+}
+
+TEST_F(SystemManagerTest, CANRoutineTasks) {
+    EXPECT_CALL(mockCAN, routineTasks()).Times(1);
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
+                     &mockAMQueue, &mockTMQueue, &mockLogQueue);
+
     sm.smUpdate();
 }
 
@@ -62,7 +73,7 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
 
     EXPECT_CALL(mockAMQueue, push(_)).Times(1); 
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     sm.smUpdate();
@@ -82,7 +93,7 @@ TEST_F(SystemManagerTest, HeartbeatSentToTelemetry) {
             return 0;
         }));
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
@@ -109,7 +120,7 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
             return 0;
         }));
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
@@ -131,7 +142,7 @@ TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
             return 0;
         }));
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
@@ -168,7 +179,7 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger,
-                     &mockRC, &mockPM,
+                     &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToLow =
@@ -212,7 +223,7 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger,
-                     &mockRC, &mockPM,
+                     &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToCritical =
@@ -245,7 +256,7 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         {1815.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE6)))}
     };
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockPM,
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockRC, &mockCAN, &mockPM,
                      &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     for (const auto& test : testCases) {
