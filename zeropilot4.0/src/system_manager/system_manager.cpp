@@ -28,6 +28,7 @@ SystemManager::SystemManager(
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
+    calcStateOfCharge(SOC_IDLE_MODE);
 }
 
 void SystemManager::smUpdate() {
@@ -89,6 +90,7 @@ void SystemManager::smUpdate() {
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
     updateBatteryFSM();
+    calcStateOfCharge(SOC_CHARGE_DISCHARGE_MODE);
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
         sendBatteryDataToTelemetryManager(batteryData, 0);
     }
@@ -152,6 +154,46 @@ void SystemManager::updateBatteryFSM() {
     }
 }
 
+void SystemManager::calcStateOfCharge(int mode) {
+    float currVoltage = batteryData.pmData.busVoltage;            
+    float batteryCharge = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY) * 3.6f; // mA to C
+    float remainingCharge = batteryCharge - batteryData.pmData.charge;
+
+    // Calibrate SOC
+    if (currVoltage <= V_MIN*BATTERY_NCELLS) socData.socPercentage = 0;
+    else if (currVoltage >= V_MAX*BATTERY_NCELLS) socData.socPercentage = 100;
+    
+    // Calculate SOC
+    else {
+        // State 1: Interpolate
+        if (mode == SOC_IDLE_MODE){
+            // linear search to find points to linearly interpolate
+            uint8_t i = 0;
+            while (i < sizeof(SOC_LUT) && SOC_LUT[i].voltage*BATTERY_NCELLS < currVoltage) i += 1;
+            
+            // linear interpolation
+            if (i == sizeof(SOC_LUT)) socData.socPercentage = 100; // Assume 100% SOC
+            else if (i == 0) socData.socPercentage = 0; // Assume 0% SOC
+            else{
+                VoltageToSoc_t pointA = SOC_LUT[i-1], pointB = SOC_LUT[i];
+                socData.socPercentage = static_cast<uint8_t>((pointB.soc - pointA.soc)/(pointB.voltage-pointA.voltage)*(currVoltage-pointA.voltage)+pointA.soc);
+            }
+        }
+
+        // State 2: Charge Cycle
+        if (mode == SOC_CHARGE_DISCHARGE_MODE) {    
+            // Charge Method - Non-iterative, Uses accumulated board charge
+            float socPercentage = (remainingCharge / batteryCharge) * 100.0f;
+            socData.socPercentage = static_cast<uint8_t>((socPercentage > 100.0f) ? 100.0f : (socPercentage < 0.0f) ? 0.0f : socPercentage);
+        } 
+    }
+
+    // Calculate Time Remaining
+    if (batteryData.pmData.current > 0.5f) {
+        socData.timeRemaining = static_cast<int32_t>(remainingCharge / batteryData.pmData.current);
+    }
+}
+
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
     tmQueue->push(&rcDataMsg);
@@ -180,21 +222,6 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
 
-    // Get battery capacity from ZP_PARAM
-    float battCapacityMah = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY);
-
-    // SOC estimation (0-100 %) based on capacity
-    float consumedColoumbs = batteryData.pmData.charge;
-    float remainingColoumbs = (battCapacityMah * 3.6f) - consumedColoumbs;
-    remainingColoumbs = remainingColoumbs < 0 ? 0 : remainingColoumbs; // Floor at 0
-    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (battCapacityMah * 3.6f)) * 100.0f);
-
-    // Simple time remaining estimation based on current consumption
-    int32_t timeRemainingSec = 0; // Default to unknown if current is too low to estimate
-    if (batteryData.pmData.current > 0.5f) {
-        timeRemainingSec = static_cast<int32_t>(remainingColoumbs / batteryData.pmData.current);
-    }
-
     // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
@@ -205,8 +232,8 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
         batteryData.pmData.current,
         batteryData.pmData.charge,
         batteryData.pmData.energy,
-        socPercentage,
-        timeRemainingSec,
+        socData.socPercentage,
+        socData.timeRemaining,
         batteryData.chargeState
     );
     tmQueue->push(&batteryDataMsg);
