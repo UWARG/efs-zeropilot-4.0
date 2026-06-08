@@ -117,13 +117,14 @@ void AttitudeManager::amUpdate() {
             motorOutputs.yaw = 0;
             motorOutputs.throttle = 0;      
             #endif
-            outputToMotors(motorOutputs);
-
+            
             if (!failsafeTriggered) {
-              char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
-              failsafeTriggered = true;
+                char errorMsg[100] = "Failsafe triggered";
+                smLoggerQueue->push(&errorMsg);
+                failsafeTriggered = true;
             }
+            
+            outputToMotors(motorOutputs);
 
             return;
         }
@@ -233,30 +234,34 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
-        const float *motorPercent = activeCLAW->getMixedMotors();
-        switch (motor->function) { 
-            case MotorFunction_e::MOTOR_1:
-                percent = motorPercent[0];
-                // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
-                // percent = outputControlMsg.throttle;
-                break;
-            case MotorFunction_e::MOTOR_2:
-                percent = motorPercent[1];
-                // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
-                // percent = outputControlMsg.roll;
-                break;
-                case MotorFunction_e::MOTOR_3:
-                percent = motorPercent[2];
-                // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
-                // percent = outputControlMsg.pitch;
-                break;
-            case MotorFunction_e::MOTOR_4:
-                percent = motorPercent[3];
-                // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
-                // percent = outputControlMsg.yaw;
-                break;
-            default:
-                continue;  
+        if(!armedFlag || failsafeTriggered) {
+            percent = 0;
+        } else {
+            const float *motorPercent = activeCLAW->getMixedMotors();
+            switch (motor->function) { 
+                case MotorFunction_e::MOTOR_1:
+                    percent = motorPercent[0];
+                    // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
+                    // percent = outputControlMsg.throttle;
+                    break;
+                case MotorFunction_e::MOTOR_2:
+                    percent = motorPercent[1];
+                    // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
+                    // percent = outputControlMsg.roll;
+                    break;
+                    case MotorFunction_e::MOTOR_3:
+                    percent = motorPercent[2];
+                    // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
+                    // percent = outputControlMsg.pitch;
+                    break;
+                case MotorFunction_e::MOTOR_4:
+                    percent = motorPercent[3];
+                    // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
+                    // percent = outputControlMsg.yaw;
+                    break;
+                default:
+                    continue;  
+            }
         }
         #endif
 
