@@ -65,9 +65,9 @@ MotorGroupInstance_t mainMotorGroup;
 void initDrivers()
 {
     // Core utilities
-    systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
-    iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    systemUtilsHandle = new SystemUtils();
+    iwdgHandle = new IndependentWatchdog(&hiwdg);
+    loggerHandle = new Logger(); // Initialized later in RTOS task
 
 
     // Motors (servo index matches SERVOx param)
@@ -83,7 +83,7 @@ void initDrivers()
 	#endif
 
 	#ifdef QUADCOPTER
-    motor1Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_1, false;
+    motor1Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_1, false);
     motor2Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_2, false);
     motor3Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
     motor4Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_4, false);

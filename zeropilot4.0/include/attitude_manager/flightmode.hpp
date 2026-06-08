@@ -15,11 +15,14 @@ class Flightmode {
         static constexpr uint8_t NUM_MOTORS = 4;
         #endif
 
+        // Motor mixer output for each motor 
+        float motor_percent[NUM_MOTORS];
+
     public:
         virtual ~Flightmode() = default;
 
         virtual void activateFlightMode() = 0;
         virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
         
-        virtual const float *getMixedMotors();
+        virtual const float *getMixedMotors() { return nullptr; };
 };
