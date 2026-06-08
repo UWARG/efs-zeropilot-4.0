@@ -27,7 +27,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install numpy
+        pip install numpy msgpack-rpc-python
         pip install --no-build-isolation airsim==1.8.1
         pip install -r zp_sitl/requirements.txt
 
@@ -65,7 +65,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install numpy
+        pip install numpy msgpack-rpc-python
         pip install --no-build-isolation airsim==1.8.1
         pip install -r zp_sitl/requirements.txt
 
