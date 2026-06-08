@@ -46,6 +46,8 @@ class TelemetryManager {
     void processParamTx();
     void enqueueParamValueTx(uint16_t index);
 
+    uint8_t profilerId;
+    
   public:
     TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, ITelemLink *telemLinkUsbDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();

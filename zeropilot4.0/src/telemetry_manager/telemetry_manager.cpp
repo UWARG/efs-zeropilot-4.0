@@ -20,19 +20,23 @@ TelemetryManager::TelemetryManager(
     packedMsgBuffer(packedMsgBuffer),
     overflowMsgPending(false),
     currParamListTxIdx(ZP_PARAM::getCount()),
-    paramSetup(this) {
+    profilerId(0),
+    paramSetup(this){
 
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
+    systemUtilsDriver->profilerRegister("TM", &profilerId);
 }
 
 TelemetryManager::~TelemetryManager() = default;
 
 void TelemetryManager::tmUpdate() {
+    systemUtilsDriver->profilerBegin(profilerId);
 	receive();
     processParamTx();
     processTXMsgQueue();
     transmit();
+    systemUtilsDriver->profilerEnd(profilerId);
 }
 
 void TelemetryManager::processParamTx() {
