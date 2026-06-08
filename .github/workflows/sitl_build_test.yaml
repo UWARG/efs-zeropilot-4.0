@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.10'
 
     - name: Install build dependencies
       run: |
@@ -27,7 +27,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install numpy msgpack-rpc-python
+        pip install numpy msgpack-rpc-python backports.ssl-match-hostname
         pip install --no-build-isolation airsim==1.8.1
         pip install -r zp_sitl/requirements.txt
 
@@ -57,7 +57,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.10'
 
     - name: Install build dependencies
       run: |
