@@ -194,6 +194,7 @@ void AttitudeManager::amUpdate() {
     outputToMotors(motorOutputs);
 
     setArmFlag = false;
+    
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
