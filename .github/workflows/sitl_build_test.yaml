@@ -24,7 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install numpy
-        pip install -r zp_sitl/requirements.txt
+        pip install --no-build-isolation -r zp_sitl/requirements.txt
 
     - name: Build SITL
       run: |
@@ -57,7 +57,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install numpy
-        pip install -r zp_sitl/requirements.txt
+        pip install --no-build-isolation -r zp_sitl/requirements.txt
 
     - name: Build SITL
       run: |
