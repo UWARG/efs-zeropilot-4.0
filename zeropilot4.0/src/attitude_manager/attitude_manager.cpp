@@ -233,28 +233,25 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
-        const float *MOTOR_PERCENT;
-        if(outputControlMsg.flightMode == FlightMode_e::ACRO) {
-            MOTOR_PERCENT = activeCLAW->getMixedMotors();
-        }
+        const float *motorPercent = activeCLAW->getMixedMotors();
         switch (motor->function) { 
             case MotorFunction_e::MOTOR_1:
-                percent = MOTOR_PERCENT[0];
+                percent = motorPercent[0];
                 // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
                 // percent = outputControlMsg.throttle;
                 break;
             case MotorFunction_e::MOTOR_2:
-                percent = MOTOR_PERCENT[1];
+                percent = motorPercent[1];
                 // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
                 // percent = outputControlMsg.roll;
                 break;
                 case MotorFunction_e::MOTOR_3:
-                percent = MOTOR_PERCENT[2];
+                percent = motorPercent[2];
                 // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
                 // percent = outputControlMsg.pitch;
                 break;
             case MotorFunction_e::MOTOR_4:
-                percent = MOTOR_PERCENT[3];
+                percent = motorPercent[3];
                 // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
                 // percent = outputControlMsg.yaw;
                 break;
