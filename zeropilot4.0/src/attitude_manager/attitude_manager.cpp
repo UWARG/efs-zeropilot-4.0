@@ -43,16 +43,21 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
-    paramSetup(this) {
+    profilerId(0),
+    paramSetup(this){
 
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
 
     // Activate the activeCLAW
     activeCLAW->activateFlightMode();
+
+    systemUtilsDriver->profilerRegister("AM", &profilerId);
 }
 
 void AttitudeManager::amUpdate() {
+
+    systemUtilsDriver->profilerBegin(profilerId);
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 
@@ -189,6 +194,7 @@ void AttitudeManager::amUpdate() {
     outputToMotors(motorOutputs);
 
     setArmFlag = false;
+    systemUtilsDriver->profilerEnd(profilerId);
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
