@@ -17,6 +17,3 @@ class SystemUtils : public ISystemUtils {
     private:
         void dwtInit();
 };
-
-
-

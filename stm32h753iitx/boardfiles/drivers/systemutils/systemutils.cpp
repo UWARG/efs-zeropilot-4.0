@@ -29,9 +29,12 @@ void SystemUtils::dwtInit() {
 
 void SystemUtils::profilerRegister(const char* name, uint8_t* outId) {
     if (taskCount == 0) dwtInit();
-    if (taskCount >= MAX_PROFILED_TASKS) return;
+    if (taskCount >= MAX_PROFILED_TASKS) {
+        *out_id = -1;
+        return;
+    }
     uint8_t id = taskCount++;
-    registry[id] = { name, 0, 0 };
+    registry[id] = { name, 0, 0, 0 };
     *outId = id;
 }
 

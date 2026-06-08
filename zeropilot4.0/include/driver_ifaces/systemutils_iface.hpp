@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#define MAX_PROFILED_TASKS 8
+#define MAX_PROFILED_TASKS 4
 
 struct TaskProfile {
     const char* name;
