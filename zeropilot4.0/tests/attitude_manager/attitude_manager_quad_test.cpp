@@ -176,10 +176,10 @@ TEST_F(AttitudeManagerQuadTest, FailsafeRecovery) {
 
 TEST_F(AttitudeManagerQuadTest, MotorClampingUpper) {
     RCMotorControlMessage_t rcMsg;
-    rcMsg.roll = 150.0f;
+    rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
-    rcMsg.throttle = 50.0f;
+    rcMsg.throttle = 150.0f;
     rcMsg.arm = true;
     rcMsg.flightMode = FlightMode_e::ACRO;
 
@@ -187,6 +187,9 @@ TEST_F(AttitudeManagerQuadTest, MotorClampingUpper) {
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
 
     EXPECT_CALL(motor1, set(100));
+    EXPECT_CALL(motor2, set(100));
+    EXPECT_CALL(motor3, set(100));
+    EXPECT_CALL(motor4, set(100));
 
     AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
