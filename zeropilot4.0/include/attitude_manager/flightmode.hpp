@@ -16,7 +16,7 @@ class Flightmode {
         #endif
 
         // Motor mixer output for each motor 
-        float motor_percent[NUM_MOTORS];
+        float motorPercent[NUM_MOTORS];
 
     public:
         virtual ~Flightmode() = default;

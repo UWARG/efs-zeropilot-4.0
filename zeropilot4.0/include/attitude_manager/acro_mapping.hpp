@@ -14,7 +14,7 @@ class ACROMapping : public Flightmode{
         
         const float *getMixedMotors() override;
 
-        void motorMixer(const RCMotorControlMessage_t outputControlMsg);
+        void motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG);
 
         // Setter *roll* for PID consts
         void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;

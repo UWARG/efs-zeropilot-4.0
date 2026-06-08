@@ -120,17 +120,17 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     
 
 */
-void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
+void ACROMapping::motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG)
 {
     // roll, pitch, yaw in range [-1, 1], throttle in [0,1]
-    float roll = outputControlMsg.roll;
-    float pitch = -outputControlMsg.pitch;
-    float yaw = outputControlMsg.yaw;
-    float throttle = outputControlMsg.throttle; 
+    float roll = OUTPUT_CONTROL_MSG.roll;
+    float pitch = -OUTPUT_CONTROL_MSG.pitch;
+    float yaw = OUTPUT_CONTROL_MSG.yaw;
+    float throttle = OUTPUT_CONTROL_MSG.throttle; 
 
-    static const int8_t roll_sign[4] = { -1, 1, 1, -1};
-    static const int8_t pitch_sign[4] = { 1, -1, 1, -1};
-    static const int8_t yaw_sign[4] = { 1, 1, -1, -1};
+    static const int8_t ROLL_SIGN[4] = { -1, 1, 1, -1};
+    static const int8_t PITCH_SIGN[4] = { 1, -1, 1, -1};
+    static const int8_t YAW_SIGN[4] = { 1, 1, -1, -1};
 
     const float YAW_HEADROOM = 0.02f;
 
@@ -138,16 +138,16 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
     float min = 0.0f;
     // Roll and Pitch
     for (int i = 0; i < 4; i++) {
-        motor_percent[i] = roll * roll_sign[i] + pitch * pitch_sign[i];
-        max = fmaxf(max, motor_percent[i]);
-        min = fminf(min, motor_percent[i]);
+        motorPercent[i] = roll * ROLL_SIGN[i] + pitch * PITCH_SIGN[i];
+        max = fmaxf(max, motorPercent[i]);
+        min = fminf(min, motorPercent[i]);
     }
     // reduce roll and pitch if leaving no room for yaw
     float range = max - min;
     if (range > 1.0f - YAW_HEADROOM) {
-        float scaling_factor = (1.0f - YAW_HEADROOM) / range;
+        float scalingFactor = (1.0f - YAW_HEADROOM) / range;
         for (int i = 0; i < 4; i++) {
-            motor_percent[i] *= scaling_factor;
+            motorPercent[i] *= scalingFactor;
         }
     }
 
@@ -155,33 +155,33 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t outputControlMsg)
     max = 0.0f;
     // Yaw
     for(int i = 0; i < 4; i++) {
-        motor_percent[i] += yaw * yaw_sign[i];
-        max = fmaxf(max, motor_percent[i]);
-        min = fminf(min, motor_percent[i]);
+        motorPercent[i] += yaw * YAW_SIGN[i];
+        max = fmaxf(max, motorPercent[i]);
+        min = fminf(min, motorPercent[i]);
     }
     range = max - min;
     // reduce roll, pitch and yaw together if adding yaw saturates
     if (range > 1.0f ) {
-        float scaling_factor = 1.0f / range;
+        float scalingFactor = 1.0f / range;
         min = 0.0f;
         max = 0.0f;
         for (int i = 0; i < 4; i++) {
-            motor_percent[i] *= scaling_factor;
-            max = fmaxf(max, motor_percent[i]);
-            min = fminf(min, motor_percent[i]);     
+            motorPercent[i] *= scalingFactor;
+            max = fmaxf(max, motorPercent[i]);
+            min = fminf(min, motorPercent[i]);     
         }
     }
 
     // Throttle
-    float min_throttle = fmaxf(-min, throttle);     // Add enough throttle to keep all motors >= 0
-    float max_throttle = 1.0f - max;
-    throttle = fminf(min_throttle, max_throttle);
+    float minThrottle = fmaxf(-min, throttle);     // Add enough throttle to keep all motors >= 0
+    float maxThrottle = 1.0f - max;
+    throttle = fminf(minThrottle, maxThrottle);
     for(int i = 0; i < 4; i++) {
-        motor_percent[i] += throttle;
+        motorPercent[i] += throttle;
     }
 
 }
 
 const float *ACROMapping::getMixedMotors() {
-    return motor_percent;
+    return motorPercent;
 }
