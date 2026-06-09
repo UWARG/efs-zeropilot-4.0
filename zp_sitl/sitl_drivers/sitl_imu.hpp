@@ -64,19 +64,10 @@ public:
         scaled.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
         scaled.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-        #ifdef FIXED_WING
-        // Convert LSB back to rad/s: (Raw / Scale) -> deg/s -> rad/s
-        scaled.xgyro = ((float)raw.xgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-        scaled.ygyro = ((float)raw.ygyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-        scaled.zgyro = ((float)raw.zgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-        #endif
-
-        #ifdef QUADCOPTER
         // Convert LSB back to deg/s (consistent with hardware IMU driver)
         scaled.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
         scaled.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
         scaled.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
-        #endif
 
         return scaled;
     }
