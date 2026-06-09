@@ -304,17 +304,17 @@ bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
     return true;
 }
 bool AMParamSetup::updateRollLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 360.0f) return false;
+    if (val < 0.0f || val > 6.28318f) return false;
     ctx->acroCLAW.setRollLimitRate(val);
     return true;
 }
 bool AMParamSetup::updatePitchLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 360.0f) return false;
+    if (val < 0.0f || val > 6.28318f) return false;
     ctx->acroCLAW.setPitchLimitRate(val);
     return true;
 }
 bool AMParamSetup::updateYawLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 360.0f) return false;
+    if (val < 0.0f || val > 6.28318f) return false;
     ctx->acroCLAW.setYawLimitRate(val);
     return true;
 }

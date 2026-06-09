@@ -3,6 +3,9 @@
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
 
+static constexpr float RAD_TO_DEG = 57.2957795f;
+static constexpr float DEG_TO_RAD = 0.0174532925f;
+
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
@@ -81,9 +84,9 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
-    droneState.rollRate = scaledImuData.xgyro;
-    droneState.pitchRate = scaledImuData.ygyro;
-    droneState.yawRate = scaledImuData.zgyro;
+    droneState.rollRate = scaledImuData.xgyro * DEG_TO_RAD;
+    droneState.pitchRate = scaledImuData.ygyro * DEG_TO_RAD;
+    droneState.yawRate = scaledImuData.zgyro * DEG_TO_RAD;
 
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {

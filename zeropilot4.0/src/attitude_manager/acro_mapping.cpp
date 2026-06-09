@@ -46,19 +46,19 @@ void ACROMapping::resetControlLoopState() noexcept
     yawPID.pidInitState();
 }
 
-// Setter for *rollLimitRate* in deg / s
+// Setter for *rollLimitRate* in rad / s
 void ACROMapping::setRollLimitRate(float newRollLimitRate) noexcept
 {
     rollLimitRate = newRollLimitRate;
 }
 
-// Setter for *pitchLimitRate* in deg / s
+// Setter for *pitchLimitRate* in rad / s
 void ACROMapping::setPitchLimitRate(float newPitchLimitRate) noexcept
 {
     pitchLimitRate = newPitchLimitRate;
 }
 
-// Setter for *rollLimitRate* in deg / s
+// Setter for *rollLimitRate* in rad / s
 void ACROMapping::setYawLimitRate(float newYawLimitRate) noexcept
 {
     yawLimitRate = newYawLimitRate;

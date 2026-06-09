@@ -6,9 +6,9 @@ typedef struct {
     float yaw;        // Yaw angle in radians
     float altitude;   // Altitude in meters
     float airspeed;   // Airspeed in m/s
-    float rollRate;   // Roll rate in deg/s
-    float pitchRate;  // Pitch rate in deg/s
-    float yawRate;    // Yaw rate in deg/s
+    float rollRate;   // Roll rate in rad/s
+    float pitchRate;  // Pitch rate in rad/s
+    float yawRate;    // Yaw rate in rad/s
 } DroneState_t;
 
 // Default drone state initialization
