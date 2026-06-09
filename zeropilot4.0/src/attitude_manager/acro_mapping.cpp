@@ -123,7 +123,7 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG)
 {
     // Roll, pitch, yaw in range [-1, 1], throttle in [0,1]
     float roll = OUTPUT_CONTROL_MSG.roll;
-    float pitch = -OUTPUT_CONTROL_MSG.pitch;
+    float pitch = OUTPUT_CONTROL_MSG.pitch;
     float yaw = OUTPUT_CONTROL_MSG.yaw;
     float throttle = OUTPUT_CONTROL_MSG.throttle; 
 
