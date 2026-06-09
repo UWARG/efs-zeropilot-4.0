@@ -47,9 +47,9 @@ class ZP_QUAD_SITL_AIRSIM:
                 self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
                 self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
 
-                if self.joy.get_axis(4) > 0.5: 
+                if self.joy.get_axis(6) > 0.5: 
                     self.armed = True
-                elif self.joy.get_axis(4) < 0.5:
+                elif self.joy.get_axis(6) < 0.5:
                     self.armed = False
                 
                 for event in pygame.event.get():
