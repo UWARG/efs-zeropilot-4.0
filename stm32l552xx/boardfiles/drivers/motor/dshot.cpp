@@ -32,8 +32,7 @@ void DshotMotorControl::set(uint32_t percent) {
     }
 
     // 11 bits throttle + 1 bit telemetry request + 4 bits CRC
-    uint16_t preCrc = (throttleVal << 1) | telReq;
-    uint8_t crc = (preCrc ^ (preCrc >> 4) ^ (preCrc >> 8)) & CRC_MASK;
+    uint8_t crc = DshotMotorControl::calculateCrc(throttleVal, telReq);
     uint16_t frame = ( (throttleVal & THROTTLE_MASK) << THROTTLE_SHIFT ) | ( (telReq & TEL_MASK) << TEL_SHIFT ) | (crc & CRC_MASK);
 
     // Encode each bit to CRC val into temp buffer
@@ -60,4 +59,9 @@ void DshotMotorControl::init() {
     }
     setArm(false);
     this->set(0);
+}
+
+uint8_t DshotMotorControl::calculateCrc(uint16_t throttleVal, uint8_t telReq) {
+    uint16_t preCrc = (throttleVal << 1) | telReq;
+    return (preCrc ^ (preCrc >> 4) ^ (preCrc >> 8)) & CRC_MASK;
 }

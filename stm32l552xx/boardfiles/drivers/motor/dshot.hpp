@@ -28,4 +28,6 @@ class DshotMotorControl : public IMotorControl{
 
         uint16_t updateBuffer[DSHOT_BUF_LEN] = {0};
         uint16_t dmaBuffer[DSHOT_BUF_LEN] = {0};
+
+        static uint8_t calculateCrc(uint16_t throttleVal, uint8_t telReq);
 };
