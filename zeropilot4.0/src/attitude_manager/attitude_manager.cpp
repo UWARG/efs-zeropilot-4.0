@@ -177,8 +177,6 @@ void AttitudeManager::amUpdate() {
     // Run the active control law
     RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
 
-    // motorOutputs = controlMsg;
-
     // Disarm logic
     if (!armedFlag) {
         motorOutputs.throttle = 0;
@@ -248,23 +246,15 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
             switch (motor->function) { 
                 case MotorFunction_e::MOTOR_1:
                     percent = motorPercent[0];
-                    // percent = outputControlMsg.throttle - outputControlMsg.roll + outputControlMsg.pitch + outputControlMsg.yaw;
-                    // percent = outputControlMsg.throttle;
                     break;
                 case MotorFunction_e::MOTOR_2:
                     percent = motorPercent[1];
-                    // percent = outputControlMsg.throttle + outputControlMsg.roll - outputControlMsg.pitch + outputControlMsg.yaw;
-                    // percent = outputControlMsg.roll;
                     break;
                     case MotorFunction_e::MOTOR_3:
                     percent = motorPercent[2];
-                    // percent = outputControlMsg.throttle + outputControlMsg.roll + outputControlMsg.pitch - outputControlMsg.yaw;
-                    // percent = outputControlMsg.pitch;
                     break;
                 case MotorFunction_e::MOTOR_4:
                     percent = motorPercent[3];
-                    // percent = outputControlMsg.throttle - outputControlMsg.roll - outputControlMsg.pitch - outputControlMsg.yaw;
-                    // percent = outputControlMsg.yaw;
                     break;
                 default:
                     continue;  
@@ -297,7 +287,6 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         #endif
 
         #ifdef QUADCOPTER
-        // cmd = percent;
         cmd = percent * 100;
         if(cmd > 100.0f) { cmd = 100.0f; }
         if(cmd < 0.0f) { cmd = 0.0f; }
@@ -306,7 +295,7 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
-        // set arm flag for throttle motors, only on arm/disarm edges
+        // Set arm flag for throttle motors, only on arm/disarm edges
         if(setArmFlag) {
             #ifdef FIXED_WING
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;

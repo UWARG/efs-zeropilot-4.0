@@ -4,7 +4,7 @@ import threading
 import os
 import pygame
 import sys
-import zeropilot # type: ignore
+import zeropilot
 import math
 
 

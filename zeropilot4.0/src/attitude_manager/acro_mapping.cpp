@@ -97,6 +97,7 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
 
     return controlInputs;
 }
+
 /*
     Notes/Improvements:
     1. yaw and throttle priority
@@ -117,12 +118,10 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     3. scale motor outputs dynamically based on battery status
         Ardupilot scaled moor outputs by battery_voltage / battery_voltage_resting (MOT_BAT_VOLT_*)
         so thrust stays constant as the battery drains. Without it, tuning may be less acurate as battey drains.
-    
-
 */
 void ACROMapping::motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG)
 {
-    // roll, pitch, yaw in range [-1, 1], throttle in [0,1]
+    // Roll, pitch, yaw in range [-1, 1], throttle in [0,1]
     float roll = OUTPUT_CONTROL_MSG.roll;
     float pitch = -OUTPUT_CONTROL_MSG.pitch;
     float yaw = OUTPUT_CONTROL_MSG.yaw;
@@ -142,7 +141,7 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG)
         max = fmaxf(max, motorPercent[i]);
         min = fminf(min, motorPercent[i]);
     }
-    // reduce roll and pitch if leaving no room for yaw
+    // Reduce roll and pitch if leaving no room for yaw
     float range = max - min;
     if (range > 1.0f - YAW_HEADROOM) {
         float scalingFactor = (1.0f - YAW_HEADROOM) / range;
@@ -160,7 +159,7 @@ void ACROMapping::motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG)
         min = fminf(min, motorPercent[i]);
     }
     range = max - min;
-    // reduce roll, pitch and yaw together if adding yaw saturates
+    // Reduce roll, pitch and yaw together if adding yaw saturates
     if (range > 1.0f ) {
         float scalingFactor = 1.0f / range;
         min = 0.0f;
