@@ -219,8 +219,8 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
-        // set arm flag for throttle motors, only on arm/disarm edges
-        if(setArmFlag) {
+        // Set arm flag for throttle motors, only on arm/disarm edges
+        if (setArmFlag) {
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
             motor->motorInstance->setArm(armed);
         }

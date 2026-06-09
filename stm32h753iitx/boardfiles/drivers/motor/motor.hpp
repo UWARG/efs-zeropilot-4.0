@@ -30,11 +30,6 @@ class MotorControl : public IMotorControl {
          */
         static void enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi);
 
-        /**
-         * @brief sets arm flag
-         */
-        void setArm(bool arm) override;
-
     private:
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;

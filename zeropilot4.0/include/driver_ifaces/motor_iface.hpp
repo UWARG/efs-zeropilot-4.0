@@ -14,5 +14,6 @@ class IMotorControl {
         // set pwm percentage of servo motors
         virtual void set(uint32_t percent) = 0;
 
-        virtual void setArm(bool arm) = 0; 
+        // set arm flag
+        virtual void setArm(bool arm) { armFlag = arm; }; 
 };

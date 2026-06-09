@@ -38,7 +38,3 @@ void MotorControl::enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNu
     HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_SET);
 }
-
-void MotorControl::setArm(bool arm) {
-    armFlag = arm;
-}

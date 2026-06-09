@@ -8,7 +8,7 @@ static constexpr uint8_t DSHOT_BUF_LEN = DSHOT_FRAME_LEN + 1;   // extra idle sl
 
 class DshotMotorControl : public IMotorControl{
     public:
-        DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, bool tel_req);
+        DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, bool telReq);
 
         /**
          * @brief sets dshot throttle output
@@ -21,16 +21,11 @@ class DshotMotorControl : public IMotorControl{
          */
         void init();
 
-        /**
-         * @brief sets arm flag
-         */
-        void setArm(bool arm) override;
-
     private: 
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;
         const uint8_t telReq;
 
-        uint16_t update_buffer[DSHOT_BUF_LEN] = {0};
-        uint16_t dma_buffer[DSHOT_BUF_LEN] = {0};
+        uint16_t updateBuffer[DSHOT_BUF_LEN] = {0};
+        uint16_t dmaBuffer[DSHOT_BUF_LEN] = {0};
 };
