@@ -34,25 +34,25 @@ void AMParamSetup::loadAllParams() {
 
     #ifdef QUADCOPTER
     am->acroCLAW.setRollPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_RLL_P),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_RLL_I),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_RLL_D),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_RLL_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_RLL_IMAX)
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_IMAX)
     );
     am->acroCLAW.setPitchPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_PTCH_P),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_PTCH_I),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_PTCH_D),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_PTCH_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_PTCH_IMAX)
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_PTCH_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_PTCH_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_PTCH_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_PTCH_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_PTCH_IMAX)
     );
     am->acroCLAW.setYawPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_YAW_P),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_YAW_I),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_YAW_D),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_YAW_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::ACT_YAW_IMAX)
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_YAW_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_YAW_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_YAW_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_YAW_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_YAW_IMAX)
     );
     am->acroCLAW.setRollLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_RATE));
     am->acroCLAW.setPitchLimitRate(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIMIT_RATE));
@@ -110,21 +110,21 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, am, updatePitchLimMinDeg);
     #endif
     #ifdef QUADCOPTER
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RLL_P,        am, updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RLL_I,        am, updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RLL_D,        am, updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RLL_TAU,      am, updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RLL_IMAX,     am, updatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_PTCH_P,       am, updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_PTCH_I,       am, updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_PTCH_D,       am, updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_PTCH_TAU,     am, updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_PTCH_IMAX,    am, updatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_YAW_P,       am, updatePIDYawKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_YAW_I,       am, updatePIDYawKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_YAW_D,       am, updatePIDYawKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_YAW_TAU,     am, updatePIDYawTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_YAW_IMAX,    am, updatePIDYawIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_P,        am, updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_I,        am, updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_D,        am, updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_TAU,      am, updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_IMAX,     am, updatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_P,       am, updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_I,       am, updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_D,       am, updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_TAU,     am, updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_IMAX,    am, updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_P,       am, updatePIDYawKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_I,       am, updatePIDYawKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_D,       am, updatePIDYawKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_TAU,     am, updatePIDYawTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_IMAX,    am, updatePIDYawIMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_RATE,   am, updateRollLimitRate);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_RATE,   am, updatePitchLimitRate);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::YAW_LIMIT_RATE,   am, updateYawLimitRate);
