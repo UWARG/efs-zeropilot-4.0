@@ -110,24 +110,37 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, am, updatePitchLimMinDeg);
     #endif
     #ifdef QUADCOPTER
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_P,        am, updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_I,        am, updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_D,        am, updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_TAU,      am, updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_IMAX,     am, updatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_P,       am, updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_I,       am, updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_D,       am, updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_TAU,     am, updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_IMAX,    am, updatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_P,       am, updatePIDYawKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_I,       am, updatePIDYawKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_D,       am, updatePIDYawKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_TAU,     am, updatePIDYawTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_IMAX,    am, updatePIDYawIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_RATE,   am, updateRollLimitRate);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_RATE,   am, updatePitchLimitRate);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::YAW_LIMIT_RATE,   am, updateYawLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_P,        am, updateRatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_I,        am, updateRatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_D,        am, updateRatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_TAU,      am, updateRatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_RLL_IMAX,     am, updateRatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_P,       am, updateRatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_I,       am, updateRatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_D,       am, updateRatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_TAU,     am, updateRatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_PTCH_IMAX,    am, updateRatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_P,        am, updateRatePIDYawKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_I,        am, updateRatePIDYawKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_D,        am, updateRatePIDYawKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_TAU,      am, updateRatePIDYawTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_RATE_YAW_IMAX,     am, updateRatePIDYawIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_RATE,       am, updateRollLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_RATE,       am, updatePitchLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::YAW_LIMIT_RATE,        am, updateYawLimitRate);
+
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_RLL_P,         am, updateAngPIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_RLL_I,         am, updateAngPIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_RLL_D,         am, updateAngPIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_RLL_TAU,       am, updateAngPIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_RLL_IMAX,      am, updateAngPIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_P,        am, updateAngPIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_I,        am, updateAngPIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_D,        am, updateAngPIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_TAU,      am, updateAngPIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_IMAX,     am, updateAngPIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_ANG,       am, updateRollLimitAng);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_ANG,       am, updatePitchLimitAng);
     #endif
 
     // Servo params: each AM_PARAM_SETUP_BIND_SERVO_CB expands to 5 bindCallback calls
@@ -147,114 +160,60 @@ void AMParamSetup::bindAllParamCallbacks() {
 
 #undef AM_PARAM_SETUP_BIND_SERVO_CB
 
+#ifdef FIXED_WING
 // FBWA callbacks
-
 bool AMParamSetup::updatePIDRollKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setKp(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getRollPID()->setKp(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setKi(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getRollPID()->setKi(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setKd(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getRollPID()->setKd(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setTau(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getRollPID()->setTau(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDRollIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
-    ctx->acroCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setKp(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getPitchPID()->setKp(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setKi(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getPitchPID()->setKi(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setKd(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getPitchPID()->setKd(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setTau(val);
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getPitchPID()->setTau(val);
-    #endif
     return true;
 }
 bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
-    #ifdef FIXED_WING
     ctx->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     return true;
-    #endif
-    #ifdef QUADCOPTER
-    ctx->acroCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
-    ctx->acroCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
-    return true;
-    #endif
 }
-#ifdef FIXED_WING
 bool AMParamSetup::updateKffRddrmix(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 1.0f) return false;
     ctx->fbwaCLAW.setYawRudderMixingConstant(val);
@@ -277,27 +236,80 @@ bool AMParamSetup::updatePitchLimMinDeg(AttitudeManager* ctx, float val) {
 }
 #endif
 #ifdef QUADCOPTER
-bool AMParamSetup::updatePIDYawKp(AttitudeManager* ctx, float val) {
+// Acro callbacks
+bool AMParamSetup::updateRatePIDRollKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getRollPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDRollKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getRollPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDRollKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getRollPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDRollTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getRollPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDRollIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->acroCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->acroCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updateRatePIDPitchKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getPitchPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDPitchKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getPitchPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDPitchKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getPitchPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDPitchTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->acroCLAW.getPitchPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updateRatePIDPitchIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->acroCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->acroCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updateRatePIDYawKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
     ctx->acroCLAW.getYawPID()->setKp(val);
     return true;
 }
-bool AMParamSetup::updatePIDYawKi(AttitudeManager* ctx, float val) {
+bool AMParamSetup::updateRatePIDYawKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
     ctx->acroCLAW.getYawPID()->setKi(val);
     return true;
 }
-bool AMParamSetup::updatePIDYawKd(AttitudeManager* ctx, float val) {
+bool AMParamSetup::updateRatePIDYawKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
     ctx->acroCLAW.getYawPID()->setKd(val);
     return true;
 }
-bool AMParamSetup::updatePIDYawTau(AttitudeManager* ctx, float val) {
+bool AMParamSetup::updateRatePIDYawTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
     ctx->acroCLAW.getYawPID()->setTau(val);
     return true;
 }
-bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
+bool AMParamSetup::updateRatePIDYawIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
     ctx->acroCLAW.getYawPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->acroCLAW.getYawPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
@@ -318,10 +330,72 @@ bool AMParamSetup::updateYawLimitRate(AttitudeManager* ctx, float val) {
     ctx->acroCLAW.setYawLimitRate(val);
     return true;
 }
+// Stabilize callbacks
+bool AMParamSetup::updateAngPIDRollKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getRollPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDRollKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getRollPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDRollKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getRollPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDRollTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getRollPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDRollIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->stabilizeCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->stabilizeCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updateAngPIDPitchKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getPitchPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDPitchKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getPitchPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDPitchKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getPitchPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDPitchTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->stabilizeCLAW.getPitchPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updateAngPIDPitchIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->stabilizeCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->stabilizeCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updateRollLimitAng(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 45.0f) return false;
+    ctx->stabilizeCLAW.setRollLimitAngle(val);
+    return true;
+}
+bool AMParamSetup::updatePitchLimitAng(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 45.0f) return false;
+    ctx->stabilizeCLAW.setPitchLimitAngle(val);
+    return true;
+}
 #endif
 
 // Servo field helpers
-
 bool AMParamSetup::setServoTrim(AttitudeManager* ctx, uint8_t ch, float val) {
     if (ch >= ctx->mainMotorGroup->motorCount || val < 0.0f || val > 2000.0f) return false;
     ctx->mainMotorGroup->motors[ch].trim = usToPercent(val);
