@@ -7,15 +7,11 @@
 
 class STABILIZEMapping : public Flightmode{
     public: 
-        STABILIZEMapping(float control_iter_period_s_stabilize, float control_iter_period_s_acro)  noexcept;
+        STABILIZEMapping(float control_iter_period_s_stabilize, float control_iter_period_s_acro) noexcept;
 
         void activateFlightMode() override;
 
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
-        
-        const float *getMixedMotors() override;
-
-        void motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG);
 
         // Setter *roll* for PID consts
         void setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
@@ -28,7 +24,25 @@ class STABILIZEMapping : public Flightmode{
 
         // Setter for *pitchLimitAngle* in rad
         void setPitchLimitAngle(float newPitchLimitAngle) noexcept;
-
+        
+        // Setter for ACRO *roll* for PID consts
+        void setAcroRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        
+        // Setter for ACRO *pitch* PID consts
+        void setAcroPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        
+        // Setter for ACRO *yaw* PID consts
+        void setAcroYawPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+        
+        // Setter for ACRO *rollLimitRate* in rad / s
+        void setAcroRollLimitRate(float newRollLimitRate) noexcept;
+        
+        // Setter for ACRO *pitchLimitRate* in rad / s
+        void setAcroPitchLimitRate(float newPitchLimitRate) noexcept;
+        
+        // Setter for ACRO *yawLimitRate* in rad / s
+        void setAcroYawLimitRate(float newYawLimitRate) noexcept;
+        
         // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
         void resetControlLoopState() noexcept;
 

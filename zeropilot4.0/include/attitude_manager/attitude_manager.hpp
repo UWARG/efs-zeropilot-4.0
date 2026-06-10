@@ -14,6 +14,7 @@
 #include "am_param_setup.hpp"
 #include "acro_mapping.hpp"
 #include "motor_mixing.hpp"
+#include "stabilize_mapping.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -23,6 +24,10 @@
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
+
+#ifdef QUADCOPTER
+#define AM_CONTROL_STABILIZE_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 100.0f)
+#endif
 
 class AttitudeManager {
     friend class AMParamSetup;
@@ -59,6 +64,7 @@ class AttitudeManager {
         #endif
         #ifdef QUADCOPTER
         ACROMapping acroCLAW;
+        STABILIZEMapping stabilizeCLAW;
         #endif
         RCMotorControlMessage_t controlMsg;
         DroneState_t droneState;
