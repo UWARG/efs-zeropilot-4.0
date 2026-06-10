@@ -8,21 +8,9 @@ class Flightmode {
     protected:
         Flightmode() = default;
 
-        #ifdef FIXED_WING
-        static constexpr uint8_t NUM_MOTORS = 0;
-        #endif
-        #ifdef QUADCOPTER
-        static constexpr uint8_t NUM_MOTORS = 4;
-        #endif
-
-        // Motor mixer output for each motor 
-        float motorPercent[NUM_MOTORS];
-
     public:
         virtual ~Flightmode() = default;
 
         virtual void activateFlightMode() = 0;
         virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
-        
-        virtual const float *getMixedMotors() { return nullptr; };
 };
