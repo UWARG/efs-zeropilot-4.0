@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "telemetry_manager.hpp"
+#include "zp_params.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_telemlink.hpp"
 #include "mock_queue.hpp"
@@ -17,6 +18,10 @@ protected:
     MockMessageQueue<TMMessage_t> mockTMQueue;
     MockMessageQueue<RCMotorControlMessage_t> mockAMQueue;
     MockMessageQueue<mavlink_message_t> mockPackedMsgBuffer;
+
+    void SetUp() override {
+        ZP_PARAM::init();
+    }
 };
 
 TEST_F(TelemetryManagerTest, HeartbeatProcessing) {

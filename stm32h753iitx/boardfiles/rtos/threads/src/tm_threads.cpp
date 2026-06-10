@@ -12,10 +12,12 @@ static const osThreadAttr_t tmMainLoopAttr = {
 
 void tmMainLoopWrapper(void *arg)
 {
+  uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
     tmHandle->tmUpdate();
-    osDelay(timeToTicks(TM_UPDATE_LOOP_DELAY_MS));
+    nextWakeUp += timeToTicks(TM_UPDATE_LOOP_DELAY_MS);
+    osDelayUntil(nextWakeUp);
   }
 }
 

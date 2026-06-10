@@ -8,7 +8,7 @@ GeminiMavlink* GeminiMavlink::instance = nullptr; // global instance
 GeminiMavlink::GeminiMavlink(UART_HandleTypeDef* huart): huart(huart), readIndex(0), writeIndex(0) {
     // Create only one instance of GeminiMavlink
     instance = this;
-}
+}   
 
 GeminiMavlink::~GeminiMavlink() {
     instance = nullptr;

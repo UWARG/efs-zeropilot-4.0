@@ -4,7 +4,6 @@
 #define TM_UPDATE_LOOP_DELAY_MS (1000 / TM_SCHEDULING_RATE_HZ)
 
 #define MAVLINK_MSG_MAX_SIZE 280
-#define MAVLINK_MAX_IDENTIFIER_LEN 17
 #define RX_BUFFER_LEN 8192
 
 #define TM_LINK_BAUDRATE 57600
@@ -22,7 +21,10 @@
 #include "telemlink_iface.hpp"
 #include "rc_iface.hpp"
 
+#include "tm_param_setup.hpp"
 class TelemetryManager {
+    friend class TMParamSetup;
+
   private:
     ISystemUtils *systemUtilsDriver;                        // System Utils Driver
     ITelemLink *telemLinkDriver;                            // Driver used to actually send mavlink messages
@@ -31,9 +33,10 @@ class TelemetryManager {
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;   // Driver that currently is only used to set arm/disarm
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
     mavlink_status_t status;
-    mavlink_message_t message;
     mavlink_message_t overflowBuf;
     bool overflowMsgPending;
+
+    uint16_t currParamListTxIdx;
 
     uint8_t txBuffer[TM_MAX_TX_BYTES];
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
@@ -42,10 +45,16 @@ class TelemetryManager {
     void processTXMsgQueue();
     void transmit();
     void receive();
+    void processParamTx();
+    void enqueueParamValueTx(uint16_t index);
 
+    uint8_t profilerId;
+    
   public:
     TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IRCReceiver *rcDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();
 
     void tmUpdate();
+
+    TMParamSetup paramSetup;
 };

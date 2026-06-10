@@ -22,12 +22,7 @@ void initManagers()
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 
-        &rollMotors, 
-        &pitchMotors, 
-        &yawMotors, 
-        &throttleMotors, 
-        &flapMotors, 
-        &steeringMotors
+        &mainMotorGroup
     );
 
     // SM initialization
