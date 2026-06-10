@@ -74,6 +74,11 @@ void SBUSReceiver::init() {
     HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
 }
 
+void SBUSReceiver::forcePushMAVLinkRC(RCControl rcData) {
+    // TODO: Add MAVLink RC support for crsf and sbus files
+    return;
+}
+
 void SBUSReceiver::startDMA() {
     HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
 }

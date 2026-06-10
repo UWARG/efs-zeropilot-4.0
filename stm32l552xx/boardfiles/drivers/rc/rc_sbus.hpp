@@ -31,6 +31,8 @@ class SBUSReceiver : public IRCReceiver {
          * @brief Updates RCControl values
          */
         void parse();
+
+        void forcePushMAVLinkRC(RCControl rcData) override;
        
     private:
         UART_HandleTypeDef *uart;
