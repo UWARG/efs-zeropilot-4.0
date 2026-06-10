@@ -2,15 +2,15 @@
 #include "stabilize_mapping.hpp"
 #include "unit_conversions.hpp"
 
-STABILIZEMapping::STABILIZEMapping(float control_iter_period_s_stabilize, float control_iter_period_s_acro) noexcept :  rollPID(0.0f, 0.0f, 0.0f, 0.0f,
-                                                                                                                                OUTPUT_MIN, OUTPUT_MAX, 100,
-                                                                                                                                control_iter_period_s_stabilize),
-                                                                                                                        pitchPID(0.0f, 0.0f, 0.0f, 0.0f,
-                                                                                                                                OUTPUT_MIN, OUTPUT_MAX, 100,
-                                                                                                                                control_iter_period_s_stabilize),
-                                                                                                                        rollLimitAngle(0.0f),
-                                                                                                                        pitchLimitAngle(0.0f),
-                                                                                                                        acroCLAW(control_iter_period_s_acro)                          
+STABILIZEMapping::STABILIZEMapping(float control_iter_period_s_stabilize, ACROMapping &acroCLAW) noexcept : rollPID(0.0f, 0.0f, 0.0f, 0.0f,
+                                                                                                                OUTPUT_MIN, OUTPUT_MAX, 100,
+                                                                                                                control_iter_period_s_stabilize),
+                                                                                                        pitchPID(0.0f, 0.0f, 0.0f, 0.0f,
+                                                                                                                OUTPUT_MIN, OUTPUT_MAX, 100,
+                                                                                                                control_iter_period_s_stabilize),
+                                                                                                        rollLimitAngle(0.0f),
+                                                                                                        pitchLimitAngle(0.0f),
+                                                                                                        acroCLAW(acroCLAW)                          
 {
     rollPID.pidInitState();
     pitchPID.pidInitState();
@@ -46,36 +46,6 @@ void STABILIZEMapping::setRollLimitAngle(float newRollLimitAngle) noexcept
 void STABILIZEMapping::setPitchLimitAngle(float newPitchLimitAngle) noexcept
 {
     pitchLimitAngle = newPitchLimitAngle;
-}
-
-// Setter for ACRO *roll* for PID consts
-void STABILIZEMapping::setAcroRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) {
-    acroCLAW.setRollPIDConstants(newKp, newKi, newKd, newTau, newIMaxPct);
-}
-
-// Setter for ACRO *pitch* PID consts
-void STABILIZEMapping::setAcroPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) {
-    acroCLAW.setPitchPIDConstants(newKp, newKi, newKd, newTau, newIMaxPct);
-}
-
-// Setter for ACRO *yaw* PID consts
-void STABILIZEMapping::setAcroYawPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) {
-    acroCLAW.setYawPIDConstants(newKp, newKi, newKd, newTau, newIMaxPct);
-}
-
-// Setter for ACRO *rollLimitRate* in rad / s
-void STABILIZEMapping::setAcroRollLimitRate(float newRollLimitRate) {
-    acroCLAW.setRollLimitRate(newRollLimitRate);
-}
-
-// Setter for ACRO *pitchLimitRate* in rad / s
-void STABILIZEMapping::setAcroPitchLimitRate(float newPitchLimitRate) {
-    acroCLAW.setPitchLimitRate(newPitchLimitRate);
-}
-
-// Setter for ACRO *yawLimitRate* in rad / s
-void STABILIZEMapping::setAcroYawLimitRate(float newYawLimitRate) {
-    acroCLAW.setYawLimitRate(newYawLimitRate);
 }
 
 // Getter for PID objects
