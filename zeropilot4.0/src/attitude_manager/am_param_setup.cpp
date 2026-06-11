@@ -57,6 +57,23 @@ void AMParamSetup::loadAllParams() {
     am->acroCLAW.setRollLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_RATE));
     am->acroCLAW.setPitchLimitRate(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIMIT_RATE));
     am->acroCLAW.setYawLimitRate(ZP_PARAM::get(ZP_PARAM_ID::YAW_LIMIT_RATE));
+
+    am->stabilizeCLAW.setRollPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_RLL_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_RLL_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_RLL_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_RLL_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_RLL_IMAX)
+    );
+    am->stabilizeCLAW.setPitchPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_PTCH_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_PTCH_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_PTCH_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_PTCH_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ACT_ANG_PTCH_IMAX)
+    );
+    am->stabilizeCLAW.setRollLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_ANG));
+    am->stabilizeCLAW.setPitchLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIMIT_ANG));
     #endif
 
     // Servo params
@@ -139,7 +156,7 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_D,        am, updateAngPIDPitchKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_TAU,      am, updateAngPIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ACT_ANG_PTCH_IMAX,     am, updateAngPIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_ANG,       am, updateRollLimitAng);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_ANG,       am, updateRollLimitAng);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_ANG,       am, updatePitchLimitAng);
     #endif
 

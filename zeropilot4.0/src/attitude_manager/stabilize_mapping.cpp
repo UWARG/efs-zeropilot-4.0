@@ -39,13 +39,13 @@ void STABILIZEMapping::resetControlLoopState() noexcept
 // Setter for *rollLimitAngle* in rad
 void STABILIZEMapping::setRollLimitAngle(float newRollLimitAngle) noexcept
 {
-    rollLimitAngle = newRollLimitAngle;
+    rollLimitAngle = newRollLimitAngle * ZP_UNITS::DEG_TO_RAD;
 }
 
 // Setter for *pitchLimitAngle* in rad
 void STABILIZEMapping::setPitchLimitAngle(float newPitchLimitAngle) noexcept
 {
-    pitchLimitAngle = newPitchLimitAngle;
+    pitchLimitAngle = newPitchLimitAngle * ZP_UNITS::DEG_TO_RAD;
 }
 
 // Getter for PID objects
