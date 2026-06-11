@@ -11,6 +11,10 @@ import math
 # SITL Scheduling Rate Hz
 SITL_RATE_HZ = 1000
 
+FLTMODE_AXIS = 6
+# The 6 positions of fltmode buttons on the controller connected to sitl
+FLTMODE_AXIS_VALUES = [-0.8, -0.38, -0.12, 0.0, 0.29, 0.99]
+
 class ZP_QUAD_SITL_AIRSIM:
     def __init__(self):
         # Input Setup (Joysticks)
@@ -30,10 +34,19 @@ class ZP_QUAD_SITL_AIRSIM:
         self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ)
         self.running = True
         self.armed = False
-        self.paused = True 
+        self.paused = True
+        # Reset is requested from the joystick thread but must run on the main
+        # thread: the AirSim RPC client is not safe to call from two threads.
+        self.reset_requested = False
         self.commands = {'roll': 0, 'pitch': 0, 'yaw': 0, 'throttle': 0}
+        # setpoints RC driver expects for fltmode
         self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
-        self.fltmode_index = 0
+        # Get fltmode on startup
+        if self.joy:
+            pygame.event.pump()
+            self.fltmode_index = self.axis_to_fltmode(self.joy.get_axis(FLTMODE_AXIS))
+        else:
+            self.fltmode_index = 0
 
         print("initialized")
 
@@ -54,22 +67,21 @@ class ZP_QUAD_SITL_AIRSIM:
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
-                        # if event.button == 1:
-                        #     self.reset_to_air()
-                        # if event.button == 2:
-                        #     self.armed = True
+                        if event.button == 2:
+                            self.reset_requested = True
                         if event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
-                        if event.axis == 4 and event.value > 0.5:  # ZL button
-                            self.fltmode_index = max(0, self.fltmode_index - 1)
-                        elif event.axis == 5 and event.value > 0.5:  # ZR button
-                            self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
+                        if event.axis == FLTMODE_AXIS:
+                            self.fltmode_index = self.axis_to_fltmode(event.value)
                     # elif event.type == pygame.JOYBUTTONUP:
                     #     if event.button == 2:
                     #          self.armed = False
 
             time.sleep(0.01)
+
+    def axis_to_fltmode(self, value):
+        return min(range(len(FLTMODE_AXIS_VALUES)), key=lambda i: abs(FLTMODE_AXIS_VALUES[i] - value))
     
     def reset_to_air(self):
         self.client.reset()
@@ -139,7 +151,7 @@ class ZP_QUAD_SITL_AIRSIM:
             "==============================================",
             f" M1: {m1:>7.3f} | M2: {m2:>7.3f} | M3: {m3:>7.3f} | M4: {m4:>7.3f}",
             " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
-            " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
+            " [L] Flaps Down | [R] Flaps Up | [Axis 6 switch] Flight Mode 1-6",
             "\033[K"
         ]
         sys.stdout.write("\n".join(dash) + "\n")
@@ -156,6 +168,10 @@ if __name__ == '__main__':
     try:
         while True:
             while time.perf_counter() < next_step: pass
+            if sitl.reset_requested:
+                sitl.reset_to_air()
+                sitl.reset_requested = False
+                next_step = time.perf_counter()
             sitl.step()
             if time.perf_counter() - last_print > 0.05:
                 sitl.print_state(); last_print = time.perf_counter()
