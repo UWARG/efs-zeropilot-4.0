@@ -29,7 +29,7 @@ private:
 
     uint8_t rxBuffer[MAX_NMEA_DATA_LENGTH];
     uint8_t processBuffer[MAX_NMEA_DATA_LENGTH];
-    uint8_t *processBufferEnd = processBuffer;
+    uint8_t *processBufferEnd = processBuffer + MAX_NMEA_DATA_LENGTH;
     UART_HandleTypeDef *huart;
 
     HAL_StatusTypeDef enableMessage(uint8_t msgClass, uint8_t msgId);
