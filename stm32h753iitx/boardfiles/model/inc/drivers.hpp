@@ -12,7 +12,8 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
-#include "rfd.hpp"
+#include "rdf.hpp"
+#include "usb_uart.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
 
@@ -34,6 +35,7 @@ extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern IMU *imuHandle;
 extern RFD *telemLinkHandle;
+extern usb_uart *telemLinkUsbHandle;
 extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
