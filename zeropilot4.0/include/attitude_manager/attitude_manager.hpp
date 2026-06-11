@@ -13,6 +13,7 @@
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
 #include "acro_mapping.hpp"
+#include "motor_mixing.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -77,8 +78,6 @@ class AttitudeManager {
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-        void motorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG);
-
         void outputToMotors(RCMotorControlMessage_t outputControlMsg);
 
         void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
@@ -88,11 +87,10 @@ class AttitudeManager {
         
         uint8_t profilerId;
         
-        AMParamSetup paramSetup;
-
         static constexpr uint8_t NUM_MOTORS = 8;
-
+        
         // Motor mixer output for each motor 
         float motorPercent[NUM_MOTORS];
 
+        AMParamSetup paramSetup;
 };
