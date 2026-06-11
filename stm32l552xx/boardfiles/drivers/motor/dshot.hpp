@@ -19,7 +19,7 @@ class DshotMotorControl : public IMotorControl{
         /**
          * @brief starts arming sequence for ESC
          */
-        void init();
+        void init() override;
 
     private: 
         TIM_HandleTypeDef * const timer;
