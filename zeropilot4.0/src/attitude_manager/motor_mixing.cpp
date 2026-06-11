@@ -1,7 +1,7 @@
 #include "motor_mixing.hpp"
 
-
-float *MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
+#ifdef FIXED_WING
+void MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         switch (mainMotorGroup->motors[i].function) {
             case MotorFunction_e::AILERON: 
@@ -27,10 +27,11 @@ float *MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CON
                 break;
         }
     }
-    return motorPercent;
 }
+#endif
 
-float *MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
+#ifdef QUADCOPTER
+void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
     /*
     Notes/Improvements:
     1. yaw and throttle priority
@@ -132,6 +133,6 @@ float *MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_
                 break;
         }
     }
-    return motorPercent;
 }
+#endif
 

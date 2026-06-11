@@ -5,7 +5,10 @@
 
 class MotorMixing{
     public:
-        static float *quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
-
-        static float *fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        #ifdef FIXED_WING
+        static void fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        #endif
+        #ifdef QUADCOPTER
+        static void quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        #endif
 };
