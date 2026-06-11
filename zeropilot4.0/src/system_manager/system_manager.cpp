@@ -14,12 +14,19 @@ SystemManager::SystemManager(
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *smLoggerQueue,
+    ISafetySwitch *safetySwitchDriver,
+    IBuzzer *buzzerDriver,
+    ILed *ledDriver
+    ) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
+        safetySwitchDriver(safetySwitchDriver),
+        buzzerDriver(buzzerDriver),
+        ledDriver(ledDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
@@ -43,12 +50,34 @@ void SystemManager::smUpdate() {
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
-
     // Get RC data from the RC receiver and passthrough to AM if new
     RCControl rcData = rcDriver->getRCData();
+
+    const bool SAFETY_SWITCH_ON = (safetySwitchDriver == nullptr) || safetySwitchDriver->isOn();
+
+    const bool ARM_REQUESTED = rcData.arm > SM_RC_ARM_THRESHOLD;
+    const bool ARMED = ARM_REQUESTED && SAFETY_SWITCH_ON;
+
+    if (buzzerDriver != nullptr){
+        if (SAFETY_SWITCH_ON) {
+            buzzerDriver->buzzerOff();
+        } else {
+            buzzerDriver->buzzerOn();
+        }
+    }
+
+    if (ledDriver != nullptr){
+        if (SAFETY_SWITCH_ON) {
+            ledDriver->ledOn();
+        } else {
+            ledDriver->ledOff();
+        }
+    }
+
+
     if (rcData.isDataNew) {
         oldDataCount = 0;
-        sendRCDataToAttitudeManager(rcData);
+        sendRCDataToAttitudeManager(rcData, ARMED);
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
@@ -70,12 +99,9 @@ void SystemManager::smUpdate() {
         sendRCDataToTelemetryManager(rcData);
     }
 
-    // Set armed status based on SM_RC_ARM_THRESHOLD
-    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
-
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    if (armed) {
+    if (ARMED) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -83,7 +109,7 @@ void SystemManager::smUpdate() {
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (!rcConnected) {
         systemStatus = MAV_STATE_CRITICAL;
-    } else if (!armed) {
+    } else if (!ARMED) {
         systemStatus = MAV_STATE_STANDBY;
     }
 
@@ -208,14 +234,14 @@ void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32
     tmQueue->push(&hbDataMsg);
 }
 
-void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
+void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData, bool armed) {
     RCMotorControlMessage_t rcDataMessage;
 
     rcDataMessage.roll = rcData.roll;
     rcDataMessage.pitch = rcData.pitch;
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
-    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    rcDataMessage.arm = armed;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 

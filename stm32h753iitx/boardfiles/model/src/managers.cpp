@@ -34,7 +34,10 @@ void initManagers()
         pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle
+        smLoggerQueueHandle,
+        nullptr, // No safety switch driver on this board
+        nullptr, // No buzzer driver on this board
+        nullptr  // No LED driver on this board
     );
 
     // TM initialization
