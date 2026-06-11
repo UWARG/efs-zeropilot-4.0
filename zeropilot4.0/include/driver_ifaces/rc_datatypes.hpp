@@ -37,10 +37,18 @@ class RCControl {
 
         RCControl() {
             isDataNew   = false;
+            #ifdef FIXED_WING
             roll        = 50.0f;
             pitch       = 50.0f;
             throttle    = 0.0f;
             yaw         = 50.0f;
+            #endif
+            #ifdef QUADCOPTER
+            roll        = 0.0f;
+            pitch       = 0.0f;
+            throttle    = 0.0f;
+            yaw         = 0.0f;
+            #endif
             arm         = 0.0f;
             aux1        = 0.0f;
             aux2        = 0.0f;

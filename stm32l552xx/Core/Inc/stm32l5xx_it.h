@@ -68,6 +68,7 @@ void USART3_IRQHandler(void);
 void UART4_IRQHandler(void);
 void DMA2_Channel1_IRQHandler(void);
 void DMA2_Channel2_IRQHandler(void);
+void DMA2_Channel3_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

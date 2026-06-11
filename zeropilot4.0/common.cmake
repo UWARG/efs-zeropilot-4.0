@@ -1,11 +1,13 @@
 # attitude manager files
 set(AM_SRC
     "src/attitude_manager/attitude_manager.cpp"
+    "src/attitude_manager/acro_mapping.cpp"
     "src/attitude_manager/direct_mapping.cpp"
     "src/attitude_manager/fbwa_mapping.cpp"
     "src/attitude_manager/pid.cpp"
     "src/attitude_manager/MahonyAHRS.cpp"
     "src/attitude_manager/am_param_setup.cpp"
+    "src/attitude_manager/motor_mixing.cpp"
 )
 set(AM_INC
     "include/attitude_manager/"

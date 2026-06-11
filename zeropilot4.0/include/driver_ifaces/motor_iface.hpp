@@ -5,10 +5,14 @@
 class IMotorControl {
     protected: 
         IMotorControl() = default;
+
+        bool armFlag = false;
         
     public:
         virtual ~IMotorControl() = default;
 
         // set pwm percentage of servo motors
         virtual void set(uint32_t percent) = 0;
+
+        virtual void setArm(bool arm) = 0; 
 };

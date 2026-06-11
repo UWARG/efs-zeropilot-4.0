@@ -7,7 +7,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sitl_build:
+  sitl_build_fixed_wing:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,10 +19,16 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.10'
+
+    - name: Install build dependencies
+      run: |
+        pip install --upgrade pip setuptools wheel
 
     - name: Install dependencies
       run: |
+        pip install numpy msgpack-rpc-python backports.ssl-match-hostname
+        pip install --no-build-isolation airsim==1.8.1
         pip install -r zp_sitl/requirements.txt
 
     - name: Build SITL
@@ -38,3 +44,41 @@ jobs:
       run: |
         cd zp_sitl
         timeout 10s python sitl_main.py || [ $? -eq 124 ]
+
+  sitl_build_quad:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install build dependencies
+      run: |
+        pip install --upgrade pip setuptools wheel
+
+    - name: Install dependencies
+      run: |
+        pip install numpy msgpack-rpc-python backports.ssl-match-hostname
+        pip install --no-build-isolation airsim==1.8.1
+        pip install -r zp_sitl/requirements.txt
+
+    - name: Build SITL
+      run: |
+        cd zp_sitl
+        ./scripts/build_sitl.sh
+
+    - name: SITL Syntax Check (Bytecode Compilation)
+      run: |
+        python -m compileall -q zp_sitl/
+
+    - name: Test SITL runs
+      run: |
+        cd zp_sitl
+        timeout 10s python sitl_quad_airsim.py || true

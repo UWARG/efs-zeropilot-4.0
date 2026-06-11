@@ -10,4 +10,4 @@ rm -f *.so *.pyd
 echo "Building ZeroPilot C++ extension in root..."
 python setup.py build_ext --inplace
 
-echo "Build complete! Run with: python sitl_main.py"
+echo "Build complete! Run with: python sitl_main.py for fixed-wing or sitl_quad_airsim.py for quadcopter"

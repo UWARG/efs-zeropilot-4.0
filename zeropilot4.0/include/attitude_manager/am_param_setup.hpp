@@ -15,7 +15,7 @@ class AMParamSetup : public IParamSetup {
    private:
     AttitudeManager* am;
 
-    // FBWA param callbacks
+    // Flightmode param callbacks
     static bool updatePIDRollKp(AttitudeManager* ctx, float val);
     static bool updatePIDRollKi(AttitudeManager* ctx, float val);
     static bool updatePIDRollKd(AttitudeManager* ctx, float val);
@@ -26,10 +26,22 @@ class AMParamSetup : public IParamSetup {
     static bool updatePIDPitchKd(AttitudeManager* ctx, float val);
     static bool updatePIDPitchTau(AttitudeManager* ctx, float val);
     static bool updatePIDPitchIMax(AttitudeManager* ctx, float val);
+    #ifdef FIXED_WING
     static bool updateKffRddrmix(AttitudeManager* ctx, float val);
     static bool updateRollLimitDeg(AttitudeManager* ctx, float val);
     static bool updatePitchLimMaxDeg(AttitudeManager* ctx, float val);
     static bool updatePitchLimMinDeg(AttitudeManager* ctx, float val);
+    #endif
+    #ifdef QUADCOPTER
+    static bool updatePIDYawKp(AttitudeManager* ctx, float val);
+    static bool updatePIDYawKi(AttitudeManager* ctx, float val);
+    static bool updatePIDYawKd(AttitudeManager* ctx, float val);
+    static bool updatePIDYawTau(AttitudeManager* ctx, float val);
+    static bool updatePIDYawIMax(AttitudeManager* ctx, float val);
+    static bool updateRollLimitRate(AttitudeManager* ctx, float val);
+    static bool updatePitchLimitRate(AttitudeManager* ctx, float val);
+    static bool updateYawLimitRate(AttitudeManager* ctx, float val);
+    #endif
 
     // Servo param callback helpers
     static bool setServoTrim(AttitudeManager* ctx, uint8_t ch, float val);
