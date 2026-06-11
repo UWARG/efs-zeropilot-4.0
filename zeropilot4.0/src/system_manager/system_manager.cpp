@@ -37,13 +37,13 @@ void SystemManager::smUpdate() {
     // Get RC data from the RC receiver and passthrough to AM if new
     RCControl rcData = rcDriver->getRCData();
 
-    const bool safetySwitchOn = (safetySwitchDriver == nullptr) || safetySwitchDriver->isOn();
+    const bool SAFETY_SWITCH_ON = (safetySwitchDriver == nullptr) || safetySwitchDriver->isOn();
 
-    const bool armRequested = rcData.arm > SM_RC_ARM_THRESHOLD;
-    const bool armed = armRequested && safetySwitchOn;
+    const bool ARM_REQUESTED = rcData.arm > SM_RC_ARM_THRESHOLD;
+    const bool ARMED = ARM_REQUESTED && SAFETY_SWITCH_ON;
 
     if (buzzerDriver != nullptr){
-        if (safetySwitchOn) {
+        if (SAFETY_SWITCH_ON) {
             buzzerDriver->buzzerOff();
         } else {
             buzzerDriver->buzzerOn();
@@ -51,7 +51,7 @@ void SystemManager::smUpdate() {
     }
 
     if (ledDriver != nullptr){
-        if (safetySwitchOn) {
+        if (SAFETY_SWITCH_ON) {
             ledDriver->ledOn();
         } else {
             ledDriver->ledOff();
@@ -61,7 +61,7 @@ void SystemManager::smUpdate() {
 
     if (rcData.isDataNew) {
         oldDataCount = 0;
-        sendRCDataToAttitudeManager(rcData, armed);
+        sendRCDataToAttitudeManager(rcData, ARMED);
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
@@ -85,7 +85,7 @@ void SystemManager::smUpdate() {
 
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
-    if (armed) {
+    if (ARMED) {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
@@ -93,7 +93,7 @@ void SystemManager::smUpdate() {
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (!rcConnected) {
         systemStatus = MAV_STATE_CRITICAL;
-    } else if (!armed) {
+    } else if (!ARMED) {
         systemStatus = MAV_STATE_STANDBY;
     }
 
