@@ -43,7 +43,7 @@ MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 MotorInstance_t motorInstances[8];
 MotorGroupInstance_t mainMotorGroup;
 
-typedef struct{ 
+typedef struct { 
     TIM_HandleTypeDef *timer; 
     uint32_t channel; 
 } motorChannel_t;

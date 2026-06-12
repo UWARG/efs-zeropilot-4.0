@@ -11,12 +11,12 @@ class IMotorControl {
     public:
         virtual ~IMotorControl() = default;
 
-        // set pwm percentage of servo motors
+        // Set pwm percentage of servo motors
         virtual void set(uint32_t percent) = 0;
 
-        // initialize/start motor output
+        // Initialize/start motor output
         virtual void init() = 0;
 
-        // set arm flag
+        // Set arm flag
         virtual void setArm(bool arm) { armFlag = arm; };
 };

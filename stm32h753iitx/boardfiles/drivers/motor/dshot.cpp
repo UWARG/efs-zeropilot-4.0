@@ -17,9 +17,7 @@ static constexpr uint8_t CRC_MASK = 0x0F;
 DshotMotorControl::DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, bool telReq):
     timer(timer), 
     timerChannel(timerChannel), 
-    telReq(telReq){
-        // blank
-}
+    telReq(telReq){}
 
 void DshotMotorControl::set(uint32_t percent) {
     percent =  (percent > 100) ? 100 : percent;
@@ -44,7 +42,7 @@ void DshotMotorControl::set(uint32_t percent) {
     updateBuffer[DSHOT_BUF_LEN - 1] = 0;
 
     memcpy(dmaBuffer, updateBuffer, sizeof(updateBuffer));
-    if (HAL_TIM_PWM_Start_DMA(timer, timerChannel, (uint32_t*)dmaBuffer, DSHOT_BUF_LEN) != HAL_OK){
+    if (HAL_TIM_PWM_Start_DMA(timer, timerChannel, (uint32_t*)dmaBuffer, DSHOT_BUF_LEN) != HAL_OK) {
         // Error_Handler();    Error handling to be done
     }
 }
@@ -52,9 +50,8 @@ void DshotMotorControl::set(uint32_t percent) {
 void DshotMotorControl::init() {
     timer->Init.Prescaler = 0;
     timer->Init.Period = 199;
-    if (HAL_TIM_Base_Init(timer) != HAL_OK)
-    {
-        // Error_Handler();
+    if (HAL_TIM_Base_Init(timer) != HAL_OK) {
+        Error_Handler();
     }
     setArm(false);
     this->set(0);
