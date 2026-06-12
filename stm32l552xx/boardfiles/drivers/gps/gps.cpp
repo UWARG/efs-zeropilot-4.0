@@ -428,7 +428,7 @@ bool GPS::getVz(uint16_t &idx) {
 }
 
 bool GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
-    if (processBuffer + idx + increment > processBufferEnd) return false;
+    if (processBuffer + idx + increment >= processBufferEnd) return false;
     idx += increment;
     return true;
 }

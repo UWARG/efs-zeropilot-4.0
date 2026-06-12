@@ -57,7 +57,6 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
 
 GpsData_t GPS::readData() {
     __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
-    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_TC);
 
     bool success = parseRMC() && parseGGA() && parseUBX();
     tempData.isNew = success;
@@ -66,7 +65,6 @@ GpsData_t GPS::readData() {
     validData.isNew = false;
 
    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
-   __HAL_DMA_ENABLE_IT(huart->hdmarx, DMA_IT_TC);
 
     return tempData;
 }
@@ -76,7 +74,7 @@ void GPS::rxCallback(uint16_t size) {
     HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
 		rxBuffer,
-		size
+		MAX_NMEA_DATA_LENGTH
     );
     processBufferEnd = processBuffer + size;
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
@@ -95,12 +93,12 @@ bool GPS::parseUBX() {
         if (!incrementProcessBufferIndex(idx, 1)) return false;
     }
     // Check message class and ID
-    if (processBuffer[idx+2] != UBX_MESSAGE_CLASS || processBuffer[idx+3] != UBC_MESSAGE_ID) {
+    if (processBuffer[idx+1] != UBX_MESSAGE_CLASS || processBuffer[idx+2] != UBC_MESSAGE_ID) {
         return false;
     }
 
     // Payload
-    if (!incrementProcessBufferIndex(idx, 6)) return false;
+    if (!incrementProcessBufferIndex(idx, 5)) return false;
 
     if (!incrementProcessBufferIndex(idx, 4)) return false;
 
@@ -127,7 +125,7 @@ bool GPS::parseRMC() {
         if (!incrementProcessBufferIndex(idx, 1)) return false;
     }
 
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    if (!incrementProcessBufferIndex(idx, 2)) return false;
 
     // Check if data exists
     if (processBuffer[idx] == ',') {
@@ -189,7 +187,7 @@ bool GPS::parseGGA() {
     while (!(processBuffer[idx - 2] == 'G' && processBuffer[idx - 1] == 'G' && processBuffer[idx] == 'A')) {
         if (!incrementProcessBufferIndex(idx, 1)) return false;
     }
-    if (!incrementProcessBufferIndex(idx, 4)) return false; // Skip to data
+    if (!incrementProcessBufferIndex(idx, 2)) return false; // Skip to data
 
     // Check if data exists
     if (processBuffer[idx] == ',') {
@@ -397,40 +395,40 @@ bool GPS::getAltitudeGGA(uint16_t &idx) {
 
 
 bool GPS::getVx(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 3)) return false;
-    int32_t ecefVX = (int32_t)((uint32_t)processBuffer[idx - 3] |
-                               ((uint32_t)processBuffer[idx - 2] << 8) |
-                               ((uint32_t)processBuffer[idx - 1] << 16) |
-                               ((uint32_t)processBuffer[idx] << 24));
+    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    int32_t ecefVX = (int32_t)((uint32_t)processBuffer[idx - 4] |
+                               ((uint32_t)processBuffer[idx - 3] << 8) |
+                               ((uint32_t)processBuffer[idx - 2] << 16) |
+                               ((uint32_t)processBuffer[idx - 1] << 24));
 
     tempData.vx = ecefVX / 100.0f;
     return true;
 }
 
 bool GPS::getVy(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 3)) return false;
-    int32_t ecefVY = (int32_t)((uint32_t)processBuffer[idx - 3] |
-                               ((uint32_t)processBuffer[idx - 2] << 8) |
-                               ((uint32_t)processBuffer[idx - 1] << 16) |
-                               ((uint32_t)processBuffer[idx] << 24));
+    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    int32_t ecefVY = (int32_t)((uint32_t)processBuffer[idx - 4] |
+                               ((uint32_t)processBuffer[idx - 3] << 8) |
+                               ((uint32_t)processBuffer[idx - 2] << 16) |
+                               ((uint32_t)processBuffer[idx - 1] << 24));
 
     tempData.vy = ecefVY / 100.0f;
     return true;
 }
 
 bool GPS::getVz(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 3)) return false;
-    int32_t ecefVZ = (int32_t)((uint32_t)processBuffer[idx - 3] |
-                               ((uint32_t)processBuffer[idx - 2] << 8) |
-                               ((uint32_t)processBuffer[idx - 1] << 16) |
-                               ((uint32_t)processBuffer[idx] << 24));
+    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    int32_t ecefVZ = (int32_t)((uint32_t)processBuffer[idx - 4] |
+                               ((uint32_t)processBuffer[idx - 3] << 8) |
+                               ((uint32_t)processBuffer[idx - 2] << 16) |
+                               ((uint32_t)processBuffer[idx - 1] << 24));
 
     tempData.vz = ecefVZ / 100.0f;
     return true;
 }
 
 bool GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
-    if (processBuffer + idx >= processBufferEnd) return false;
+    if (processBuffer + idx + increment >= processBufferEnd) return false;
     idx += increment;
     return true;
 }
