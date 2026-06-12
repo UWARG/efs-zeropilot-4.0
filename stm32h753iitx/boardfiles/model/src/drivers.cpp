@@ -97,7 +97,7 @@ void initDrivers()
     motor8Handle = new (&motor8Storage) MotorControl(&htim2, TIM_CHANNEL_4, 5, 10, 8);
 
     // Peripherals
-    gpsHandle = new (&gpsStorage) GPS(&huart2);
+    gpsHandle = new (&gpsStorage) GPS(&huart3);
     rcHandle = new (&rcStorage) CRSFReceiver(&huart4);
     telemLinkHandle = new (&telemLinkStorage) RFD(&huart1);
     imuHandle = new (&imuStorage) IMU(&hspi1, GPIOC, GPIO_PIN_4);
