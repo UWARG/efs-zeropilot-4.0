@@ -59,10 +59,10 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
    float pitch = OUTPUT_CONTROL_MSG.pitch;
    float yaw = OUTPUT_CONTROL_MSG.yaw;
    float throttle = OUTPUT_CONTROL_MSG.throttle; 
-   
-   static const int8_t ROLL_SIGN[4] = { -1, 1, 1, -1};
-   static const int8_t PITCH_SIGN[4] = { 1, -1, 1, -1};
-   static const int8_t YAW_SIGN[4] = { 1, 1, -1, -1};
+   static constexpr float F = 0.7071067811865476f;
+   static constexpr float ROLL_SIGN[4] = { -F, F, F, -F};
+   static constexpr float PITCH_SIGN[4] = { F, -F, F, -F};
+   static constexpr float YAW_SIGN[4] = { 1, 1, -1, -1};
    
    float mixed[4] = {0};
    #if 0
@@ -160,7 +160,7 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
     // Clip yaw 
     yaw_allowed = fmaxf(YAW_HEADROOM, yaw_allowed); // Yaw is at least the headroom reserved
     if (fabsf(yaw) > yaw_allowed) {
-        yaw = std::clamp(yaw, -yaw_allowed, yaw_allowed);
+        yaw = fmaxf(-yaw_allowed, fminf(yaw, yaw_allowed));
     }
     
     // Add yaw in and track the range rpy spans

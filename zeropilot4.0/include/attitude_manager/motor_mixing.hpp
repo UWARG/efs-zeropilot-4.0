@@ -2,7 +2,6 @@
 #include "rc_motor_control.hpp"
 #include "motor_datatype.hpp"
 #include <cmath>
-#include <algorithm>
 
 class MotorMixing{
     public:
