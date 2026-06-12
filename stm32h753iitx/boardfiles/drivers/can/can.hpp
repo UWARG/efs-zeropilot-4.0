@@ -1,15 +1,14 @@
 
 #pragma once
 
+#include <cstdint>
+#include <cstring>
+
 #include "can_iface.hpp"
 #include "canard.h"
-#include "stm32h7xx_hal.h"
-#include "can_defines.hpp"
-#include <cstdint>
-#include "can_datatypes.hpp"
 #include "dronecan_msgs.h"
 #include "uavcan.protocol.NodeStatus.h"
-#include <string.h>
+#include "stm32h7xx_hal.h"
 #include "cmsis_os2.h"
 #include "museq.hpp"
 
@@ -18,67 +17,73 @@
 class CAN : public ICAN {
 
 private:
-	canNode canNodes[CANARD_MAX_NODE_ID + 1];
-	uint8_t nextAvailableID = CANARD_MIN_NODE_ID + 1;
+	struct canNode {
+		uint64_t lastSeenTick;
+		uavcan_protocol_NodeStatus status;
+	};
 
+	struct DnaAllocationEntry {
+		uint8_t unique_id[16];
+		uint8_t node_id;
+	};
+
+	enum class DnaStage : int8_t {
+		INVALID = 0,
+		FIRST_UNIQUE_ID_PART = 1,
+		SECOND_UNIQUE_ID_PART = 2,
+		FINAL_UNIQUE_ID_PART = 3,
+	};
+
+	static constexpr uint8_t NODE_ID = CANARD_MIN_NODE_ID;
 	static constexpr uint8_t MAX_ALLOCATION_ENTRIES = 125;
-	DnaAllocationEntry allocationTable_[MAX_ALLOCATION_ENTRIES];
-	uint8_t allocationCount_ = 0;
-	FDCAN_HandleTypeDef *hfdcan;
-
-	CanardInstance canard;
-
-	void sendNodeStatus(); //heartbeat
-
-	void sendCANTx();
-
-	void handleNodeAllocation(CanardRxTransfer* transfer);
-	void handleNodeStatus(CanardRxTransfer* transfer);
-	
-	uint8_t dlcToLength(uint32_t dlc); // data length, may delete.
-
-	int8_t allocateNode();
-	int8_t lookupAllocation(const uint8_t unique_id[16]) const;
-	bool isNodeIdAllocated(uint8_t node_id) const;
-
-    // Called once every second
-	void process1HzTasks();
-
-	uavcan_protocol_NodeStatus nodeStatus;
-
-	uint32_t last1HzTick = 0;
-	uint32_t node_id = NODE_ID;
+	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;
 	static uint8_t node_status_transfer_id;
 	static uint8_t dna_allocation_transfer_id;
 
-	//stuff needed for dynamic node allocation
-	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;
-	uint8_t  dnaCurrentUniqueId[UAVCAN_UNIQUE_ID_LENGTH] = {0}; // accumulates uid
-	uint8_t  dnaCurrentUniqueIdLen = 0; 
-	uint8_t  dnaPreferredNodeId = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID; // the id the requester wants
+	FDCAN_HandleTypeDef *hfdcan;
+	CanardInstance canard;
+
+	canNode canNodes[CANARD_MAX_NODE_ID + 1];
+	uint8_t nextAvailableID = CANARD_MIN_NODE_ID + 1;
+	DnaAllocationEntry allocationTable_[MAX_ALLOCATION_ENTRIES];
+	uint8_t allocationCount_ = 0;
+
+	uavcan_protocol_NodeStatus nodeStatus;
+	uint32_t last1HzTick = 0;
+	uint32_t node_id = NODE_ID;
+
+	uint8_t dnaCurrentUniqueId[UAVCAN_UNIQUE_ID_LENGTH] = {0};
+	uint8_t dnaCurrentUniqueIdLen = 0;
+	uint8_t dnaPreferredNodeId = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID;
 	uint32_t dnaLastAcceptedTick = 0;
 
-
+	void sendNodeStatus();
+	void sendCANTx();
+	void handleNodeAllocation(CanardRxTransfer* transfer);
+	void handleNodeStatus(CanardRxTransfer* transfer);
+	uint8_t dlcToLength(uint32_t dlc);
+	int8_t allocateNode();
+	int8_t lookupAllocation(const uint8_t unique_id[16]) const;
+	bool isNodeIdAllocated(uint8_t node_id) const;
+	void process1HzTasks();
 	DnaStage detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_Allocation& msg) const;
 	DnaStage getExpectedDnaStage() const;
 	void resetDnaInProgress();
 	int16_t publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique_id, uint8_t unique_id_len);
 
-
-
 public:
 	CAN(FDCAN_HandleTypeDef *hfdcan);
 
-	bool CanardShouldAcceptTransfer(const CanardInstance* ins,          ///< Library instance
-		uint64_t* out_data_type_signature,  ///< Must be set by the application!
-		uint16_t data_type_id,              ///< Refer to the specification
-		CanardTransferType transfer_type,   ///< Refer to CanardTransferType
+	bool CanardShouldAcceptTransfer(const CanardInstance* ins,
+		uint64_t* out_data_type_signature,
+		uint16_t data_type_id,
+		CanardTransferType transfer_type,
 		uint8_t source_node_id);
 
-	void CanardOnTransferReception(CanardInstance* ins,                 ///< Library instance
+	void CanardOnTransferReception(CanardInstance* ins,
 		CanardRxTransfer* transfer);
 
-	virtual ~CAN();
+	~CAN();
 
 	// Called as much as possible
 	bool routineTasks() override;
@@ -98,16 +103,16 @@ public:
 		const uint8_t* payload,
 		uint16_t payload_len
 		#if CANARD_ENABLE_CANFD
-			, bool canfd; ///< True if CAN FD is enabled
+			, bool canfd              // True to send as a CAN FD frame
 		#endif
 		#if CANARD_ENABLE_DEADLINE
-			, uint64_t deadline_usec; ///< Deadline in microseconds
+			, uint64_t deadline_usec  // Transfer deadline in microseconds
 		#endif
 		#if CANARD_MULTI_IFACE
-			, uint8_t iface_mask; ///< Bitmask of interfaces to send the transfer on
+			, uint8_t iface_mask
 		#endif
 		#if CANARD_ENABLE_TAO_OPTION
-			, bool tao; ///< True if tail array optimization is enabled
+			, bool tao                // True to enable tail array optimization
 		#endif
 	);
 };
