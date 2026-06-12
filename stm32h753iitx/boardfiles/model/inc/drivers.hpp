@@ -12,7 +12,7 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
-#include "can.hpp"
+#include "can_controller.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
@@ -31,7 +31,7 @@ extern MotorControl *motor6Handle;
 extern MotorControl *motor7Handle;
 extern MotorControl *motor8Handle;
 
-extern CAN *canHandle;
+extern CANController *canControllerHandle;
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern IMU *imuHandle;

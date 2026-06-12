@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstring>
 
-#include "can_iface.hpp"
+#include "can_controller_iface.hpp"
 #include "canard.h"
 #include "dronecan_msgs.h"
 #include "uavcan.protocol.NodeStatus.h"
@@ -14,7 +14,7 @@
 
 
 
-class CAN : public ICAN {
+class CANController : public ICANController {
 
 private:
 	struct canNode {
@@ -72,7 +72,7 @@ private:
 	int16_t publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique_id, uint8_t unique_id_len);
 
 public:
-	CAN(FDCAN_HandleTypeDef *hfdcan);
+	CANController(FDCAN_HandleTypeDef *hfdcan);
 
 	bool CanardShouldAcceptTransfer(const CanardInstance* ins,
 		uint64_t* out_data_type_signature,
@@ -83,7 +83,7 @@ public:
 	void CanardOnTransferReception(CanardInstance* ins,
 		CanardRxTransfer* transfer);
 
-	~CAN();
+	~CANController();
 
 	// Called as much as possible
 	bool routineTasks() override;

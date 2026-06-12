@@ -33,7 +33,7 @@ alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
 
-alignas(CAN) static uint8_t canStorage[sizeof(CAN)];
+alignas(CANController) static uint8_t canControllerStorage[sizeof(CANController)];
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
@@ -61,7 +61,7 @@ MotorControl *motor6Handle = nullptr;
 MotorControl *motor7Handle = nullptr;
 MotorControl *motor8Handle = nullptr;
 
-CAN *canHandle = nullptr;
+CANController *canControllerHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
@@ -125,7 +125,7 @@ void initDrivers()
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
 
     // TODO: Cleanup!
-    canHandle = new (&canStorage) CAN(&hfdcan1);
+    canControllerHandle = new (&canControllerStorage) CANController(&hfdcan1);
 
     FDCAN_FilterTypeDef sFilterConfig;
     sFilterConfig.IdType = FDCAN_EXTENDED_ID;

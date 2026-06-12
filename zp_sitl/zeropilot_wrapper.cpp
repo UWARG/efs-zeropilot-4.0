@@ -7,7 +7,7 @@
 #include "sitl_drivers/sitl_iwdg.hpp"
 #include "sitl_drivers/sitl_logger.hpp"
 #include "sitl_drivers/sitl_rc.hpp"
-#include "sitl_drivers/sitl_can.hpp"
+#include "sitl_drivers/sitl_can_controller.hpp"
 #include "sitl_drivers/sitl_powermodule.hpp"
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
@@ -57,7 +57,7 @@ typedef struct {
     SITL_IWDG* iwdg;
     SITL_Logger* logger;
     SITL_RC* rc;
-    SITL_CAN* can;
+    SITL_CANController* canController;
     SITL_PowerModule* pm;
     SITL_TELEM* telem;
     SITL_IMU* imu;
@@ -85,7 +85,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->iwdg;
     delete self->logger;
     delete self->rc;
-    delete self->can;
+    delete self->canController;
     delete self->pm;
     delete self->telem;
     delete self->imu;
@@ -118,7 +118,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->iwdg = new SITL_IWDG();
         self->logger = new SITL_Logger();
         self->rc = new SITL_RC();
-        self->can = new SITL_CAN();
+        self->canController = new SITL_CANController();
         self->pm = new SITL_PowerModule();
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
@@ -175,7 +175,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->can, self->pm,
+            self->sysUtils, self->iwdg, self->logger, self->rc, self->canController, self->pm,
             self->amQueue, self->tmQueue, self->logQueue
         );
         

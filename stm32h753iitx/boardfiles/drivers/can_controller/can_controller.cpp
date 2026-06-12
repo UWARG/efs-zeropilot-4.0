@@ -1,23 +1,23 @@
 
-#include "can.hpp"
+#include "can_controller.hpp"
 
 static constexpr size_t CANARD_MEMORY_BUFFER_SIZE = 1024;
 static constexpr uint32_t CAN_BROADCAST_MUTEX_TIMEOUT = HAL_MAX_DELAY;
 
-uint8_t CAN::node_status_transfer_id = 0;
-uint8_t CAN::dna_allocation_transfer_id = 0;
+uint8_t CANController::node_status_transfer_id = 0;
+uint8_t CANController::dna_allocation_transfer_id = 0;
 
 static void StaticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
-    CAN* self = static_cast<CAN*>(ins->user_reference);
+    CANController* self = static_cast<CANController*>(ins->user_reference);
     self->CanardOnTransferReception(ins, transfer);
 }
 
 static bool StaticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* out_sig, uint16_t id, CanardTransferType type, uint8_t src) {
 
-	return static_cast<CAN*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, out_sig, id, type, src);
+	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, out_sig, id, type, src);
 }
 
-CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
+CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	static uint8_t canardMemoryPool[CANARD_MEMORY_BUFFER_SIZE];
 
 	canardInit(&canard,
@@ -34,18 +34,18 @@ CAN::CAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 		canNodes[i].lastSeenTick = 0;
 		canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
 	}
-	canNodes[CAN::NODE_ID].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+	canNodes[CANController::NODE_ID].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
 	const uint32_t startup_tick = HAL_GetTick();
-	canNodes[CAN::NODE_ID].lastSeenTick = startup_tick;
+	canNodes[CANController::NODE_ID].lastSeenTick = startup_tick;
 
-	canard.node_id = CAN::NODE_ID;
+	canard.node_id = CANController::NODE_ID;
 }
 
-CAN::~CAN() {}
+CANController::~CANController() {}
 
 
 
-bool CAN::CanardShouldAcceptTransfer(
+bool CANController::CanardShouldAcceptTransfer(
     const CanardInstance* ins,
     uint64_t* out_data_type_signature,
     uint16_t data_type_id,
@@ -70,7 +70,7 @@ bool CAN::CanardShouldAcceptTransfer(
     }
 }
 
-void CAN::CanardOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer)
+void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer)
 {
 
     switch (transfer->data_type_id)
@@ -96,7 +96,7 @@ void CAN::CanardOnTransferReception(CanardInstance* ins, CanardRxTransfer* trans
     }
 }
 
-uint8_t CAN::dlcToLength(uint32_t dlc) {
+uint8_t CANController::dlcToLength(uint32_t dlc) {
 	switch (dlc) {
 		case FDCAN_DLC_BYTES_0: return 0;
 		case FDCAN_DLC_BYTES_1: return 1;
@@ -112,7 +112,7 @@ uint8_t CAN::dlcToLength(uint32_t dlc) {
 }
 
 
-void CAN::handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t * rx_data) {
+void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t * rx_data) {
 	const uint64_t timestamp_usec = HAL_GetTick() * 1000ULL;
 
 	CanardCANFrame frame;
@@ -124,10 +124,10 @@ void CAN::handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t * rx_data) {
 	canardHandleRxFrame(&canard, &frame, timestamp_usec);
 }
 
-void CAN::handleNodeStatus(CanardRxTransfer *transfer) {
+void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
 	uint32_t tick = HAL_GetTick();
 
-	CAN::canNode node {0};
+	CANController::canNode node {0};
 
 	node.lastSeenTick = tick;
 
@@ -142,7 +142,7 @@ void CAN::handleNodeStatus(CanardRxTransfer *transfer) {
 	canNodes[transfer->source_node_id] = node;
 }
 
-void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
+void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
 
 	// Only process anonymous requests
 	if (transfer->source_node_id != 0) return;
@@ -158,8 +158,8 @@ void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 		resetDnaInProgress();
 	}
 
-	const CAN::DnaStage incoming = detectDnaRequestStage(msg);
-	if (incoming == CAN::DnaStage::INVALID)
+	const CANController::DnaStage incoming = detectDnaRequestStage(msg);
+	if (incoming == CANController::DnaStage::INVALID)
 		return;
 	if (incoming != getExpectedDnaStage())
 		return;
@@ -168,7 +168,7 @@ void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 	dnaCurrentUniqueIdLen += msg.unique_id.len;
 
 
-	if (incoming == CAN::DnaStage::FIRST_UNIQUE_ID_PART) {
+	if (incoming == CANController::DnaStage::FIRST_UNIQUE_ID_PART) {
 		dnaPreferredNodeId = msg.node_id;
 	}
 
@@ -187,7 +187,7 @@ void CAN::handleNodeAllocation(CanardRxTransfer *transfer){
 	}
 }
 
-int8_t CAN::lookupAllocation(const uint8_t unique_id[16]) const {
+int8_t CANController::lookupAllocation(const uint8_t unique_id[16]) const {
 	for (uint8_t i = 0; i < allocationCount_; i++) {
 		if (memcmp(allocationTable_[i].unique_id, unique_id, 16) == 0) {
 			return allocationTable_[i].node_id;
@@ -196,7 +196,7 @@ int8_t CAN::lookupAllocation(const uint8_t unique_id[16]) const {
 	return -1;
 }
 
-bool CAN::isNodeIdAllocated(uint8_t node_id) const {
+bool CANController::isNodeIdAllocated(uint8_t node_id) const {
 	for (uint8_t i = 0; i < allocationCount_; i++) {
 		if (allocationTable_[i].node_id == node_id) {
 			return true;
@@ -205,7 +205,7 @@ bool CAN::isNodeIdAllocated(uint8_t node_id) const {
 	return false;
 }
 
-int8_t CAN::allocateNode() {
+int8_t CANController::allocateNode() {
 	// DroneCAN reserves 126 and 127
 	static constexpr uint8_t MAX_DYNAMIC_NODE_ID = 125;
 
@@ -250,7 +250,7 @@ int8_t CAN::allocateNode() {
 	return assignedId;
 }
 
-CAN::DnaStage CAN::detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_Allocation& msg) const {
+CANController::DnaStage CANController::detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_Allocation& msg) const {
 
 	constexpr uint8_t MAX_LEN = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_LENGTH_OF_UNIQUE_ID_IN_REQUEST;
 	constexpr uint8_t STAGE3_LEN = UAVCAN_UNIQUE_ID_LENGTH - MAX_LEN * 2U;
@@ -259,47 +259,47 @@ CAN::DnaStage CAN::detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_A
 
 	// Length should be 6 or 4
 	if (len != MAX_LEN && len != STAGE3_LEN) {
-		return CAN::DnaStage::INVALID;
+		return CANController::DnaStage::INVALID;
 	}
 
 	if (msg.first_part_of_unique_id) {
-		return CAN::DnaStage::FIRST_UNIQUE_ID_PART;
+		return CANController::DnaStage::FIRST_UNIQUE_ID_PART;
 	}
 
 	if (len == MAX_LEN) {
-		return CAN::DnaStage::SECOND_UNIQUE_ID_PART;
+		return CANController::DnaStage::SECOND_UNIQUE_ID_PART;
 	}
 
 	if (len == STAGE3_LEN) {
-		return CAN::DnaStage::FINAL_UNIQUE_ID_PART;
+		return CANController::DnaStage::FINAL_UNIQUE_ID_PART;
 	}
 
-	return CAN::DnaStage::INVALID;
+	return CANController::DnaStage::INVALID;
 }
 
-CAN::DnaStage CAN::getExpectedDnaStage() const {
+CANController::DnaStage CANController::getExpectedDnaStage() const {
 	constexpr uint8_t MAX_LEN = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_LENGTH_OF_UNIQUE_ID_IN_REQUEST;
 
 	switch (dnaCurrentUniqueIdLen) {
 		case 0: 
-			return CAN::DnaStage::FIRST_UNIQUE_ID_PART;
+			return CANController::DnaStage::FIRST_UNIQUE_ID_PART;
 		case MAX_LEN:
-			return CAN::DnaStage::SECOND_UNIQUE_ID_PART;
+			return CANController::DnaStage::SECOND_UNIQUE_ID_PART;
 		case MAX_LEN * 2:
-			return CAN::DnaStage::FINAL_UNIQUE_ID_PART;
+			return CANController::DnaStage::FINAL_UNIQUE_ID_PART;
 		default:
-			return CAN::DnaStage::INVALID;
+			return CANController::DnaStage::INVALID;
 	}
 }
 
 
-void CAN::resetDnaInProgress() {
+void CANController::resetDnaInProgress() {
 	dnaCurrentUniqueIdLen = 0;
 	dnaPreferredNodeId = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID;
 	dnaLastAcceptedTick = 0;
 }
 
-int16_t CAN::publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique_id, uint8_t unique_id_len) {
+int16_t CANController::publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique_id, uint8_t unique_id_len) {
 	uavcan_protocol_dynamic_node_id_Allocation msg {};
 	msg.node_id = node_id;
 	msg.first_part_of_unique_id = false;
@@ -340,7 +340,7 @@ Function to convert all Canard CAN frames and send them through HAL.
 
 Consider removing for loop.
 */
-void CAN::sendCANTx() {
+void CANController::sendCANTx() {
 	CanardCANFrame* frame = canardPeekTxQueue(&canard);
 	if (frame == nullptr) return;
 
@@ -367,7 +367,7 @@ void CAN::sendCANTx() {
 	}
 }
 
-bool CAN::routineTasks() {
+bool CANController::routineTasks() {
 
 	sendCANTx();
 
@@ -381,7 +381,7 @@ bool CAN::routineTasks() {
 	return true;
 }
 
-void CAN::sendNodeStatus() {
+void CANController::sendNodeStatus() {
 	uint8_t buffer[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_MAX_SIZE];
 
     nodeStatus.uptime_sec = HAL_GetTick()/1000LL;
@@ -408,7 +408,7 @@ void CAN::sendNodeStatus() {
 
 }
 
-void CAN::process1HzTasks() {
+void CANController::process1HzTasks() {
 
 	uint32_t timestamp_msec = HAL_GetTick();
 
@@ -416,7 +416,7 @@ void CAN::process1HzTasks() {
 	for (int i = CANARD_MIN_NODE_ID; i <= CANARD_MAX_NODE_ID; i++) {
 		// Make copy of status in case it changes
 
-		if (i != CAN::NODE_ID && timestamp_msec-canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
+		if (i != CANController::NODE_ID && timestamp_msec-canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
 			canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
 		}
 	}
@@ -429,7 +429,7 @@ void CAN::process1HzTasks() {
 /*
 Wrapper function with mutex.
 */
-int16_t CAN::broadcastObj(CanardTxTransfer* transfer) {
+int16_t CANController::broadcastObj(CanardTxTransfer* transfer) {
 //	osStatus_t status = osMutexAcquire(canBroadcastMutex, CAN_BROADCAST_MUTEX_TIMEOUT);
 
 //	if (status != osOK){
@@ -442,7 +442,7 @@ int16_t CAN::broadcastObj(CanardTxTransfer* transfer) {
 	return res;
 }
 
-int16_t CAN::broadcast(
+int16_t CANController::broadcast(
 	CanardTransferType transfer_type,
 	uint64_t data_type_signature,
 	uint16_t data_type_id,

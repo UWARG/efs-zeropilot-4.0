@@ -1,9 +1,9 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include "can_iface.hpp"
+#include "can_controller_iface.hpp"
 
-class MockCAN : public ICAN {
+class MockCANController : public ICANController {
 public:
     MOCK_METHOD(bool, routineTasks, (), (override));
 };
