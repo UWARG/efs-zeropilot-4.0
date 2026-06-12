@@ -88,6 +88,3 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
 #ifdef __cplusplus
 }
 #endif
-
-
-
