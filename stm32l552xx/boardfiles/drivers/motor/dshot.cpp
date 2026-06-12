@@ -52,7 +52,7 @@ void DshotMotorControl::init() {
     timer->Init.Prescaler = 0;
     timer->Init.Period = 199;
     if (HAL_TIM_Base_Init(timer) != HAL_OK) {
-        Error_Handler();
+        // Error_Handler();
     }
     setArm(false);
     this->set(0);
