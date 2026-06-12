@@ -53,20 +53,21 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
         Ardupilot scaled moor outputs by battery_voltage / battery_voltage_resting (MOT_BAT_VOLT_*)
         so thrust stays constant as the battery drains. Without it, tuning may be less acurate as battey drains.
     */
+   
+   // Roll, pitch, yaw in range [-1, 1], throttle in [0,1]
+   float roll = OUTPUT_CONTROL_MSG.roll;
+   float pitch = OUTPUT_CONTROL_MSG.pitch;
+   float yaw = OUTPUT_CONTROL_MSG.yaw;
+   float throttle = OUTPUT_CONTROL_MSG.throttle; 
+   
+   static const int8_t ROLL_SIGN[4] = { -1, 1, 1, -1};
+   static const int8_t PITCH_SIGN[4] = { 1, -1, 1, -1};
+   static const int8_t YAW_SIGN[4] = { 1, 1, -1, -1};
+   
+   float mixed[4] = {0};
+   #if 0
+   const float YAW_HEADROOM = 0.02f;
 
-    // Roll, pitch, yaw in range [-1, 1], throttle in [0,1]
-    float roll = OUTPUT_CONTROL_MSG.roll;
-    float pitch = OUTPUT_CONTROL_MSG.pitch;
-    float yaw = OUTPUT_CONTROL_MSG.yaw;
-    float throttle = OUTPUT_CONTROL_MSG.throttle; 
-
-    static const int8_t ROLL_SIGN[4] = { -1, 1, 1, -1};
-    static const int8_t PITCH_SIGN[4] = { 1, -1, 1, -1};
-    static const int8_t YAW_SIGN[4] = { 1, 1, -1, -1};
-
-    const float YAW_HEADROOM = 0.02f;
-
-    float mixed[4] = {0};
     float max = 0.0f;
     float min = 0.0f;
     // Roll and Pitch
@@ -114,6 +115,99 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
     }
 
     // Place mixed motor outputs into physical channels by function
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        switch (mainMotorGroup->motors[i].function) {
+            case MotorFunction_e::MOTOR_1: 
+                motorPercent[i] = mixed[0]; 
+                break;
+            case MotorFunction_e::MOTOR_2: 
+                motorPercent[i] = mixed[1]; 
+                break;
+            case MotorFunction_e::MOTOR_3: 
+                motorPercent[i] = mixed[2]; 
+                break;
+            case MotorFunction_e::MOTOR_4: 
+                motorPercent[i] = mixed[3]; 
+                break;
+            default:
+                motorPercent[i] = 0.0f;
+                break;
+        }
+    }
+    #endif
+    static constexpr uint8_t NUM_MOTORS = 4;
+    static constexpr float YAW_HEADROOM = 0.2f;
+
+    // Ensure the maximum average throttle across the 4 motors are at least the throttle commanded and never exceeds the set max
+    float throttleAvgMax = throttle;
+
+    // The optimal throttle that gives the best symmetric room for rpy (equal room for above and below)
+    // 0.5 is the best but take the commanded throttle if its lower than 0.5, and take 0.5 if its higher, so the drone wont elevate when little throttle is commanded
+    float idealThrottle = fminf(0.5f, throttleAvgMax);
+
+    // Add roll and pitch, while finding the yaw allowed at the same time
+    float yaw_allowed = 1.0f;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        mixed[i] = roll * ROLL_SIGN[i] + pitch * PITCH_SIGN[i];
+
+        float predictedMotorThrust = idealThrottle + mixed[i]; 
+        float motorRoom = (yaw * YAW_SIGN[i] >= 0) 
+                            ? 1.0f - predictedMotorThrust // Yaw is added to overall thrust
+                            : predictedMotorThrust; // Yaw is subtracted from overall thrust
+        yaw_allowed = fminf(yaw_allowed, fmaxf(motorRoom, 0)); // fmaxf(motorRoom, 0) so motorRoom being negative means 0 yaw allowed
+    }
+
+    // Clip yaw 
+    yaw_allowed = fmaxf(YAW_HEADROOM, yaw_allowed); // Yaw is at least the headroom reserved
+    if (fabsf(yaw) > yaw_allowed) {
+        yaw = std::clamp(yaw, -yaw_allowed, yaw_allowed);
+    }
+    
+    // Add yaw in and track the range rpy spans
+    float rpy_max = 0.0f;
+    float rpy_min = 1.0f;
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        mixed[i] += yaw * YAW_SIGN[i];
+        rpy_max = fmaxf(rpy_max, mixed[i]);
+        rpy_min = fminf(rpy_min, mixed[i]);
+    }
+
+    // Scale rpy span
+    float rpy_scale = 1.0f;
+    if (rpy_max - rpy_min >= 1.0f) {
+        // Total rpy span exceeds 1.0, scale everything down
+        rpy_scale = 1.0f / (rpy_max - rpy_min);
+    }
+    if (throttleAvgMax + rpy_min < 0.0f) {
+        // The lowest value motor still below 0 after applying the max allowed collective thrust 
+        rpy_scale = fminf(rpy_scale, fabsf(throttleAvgMax / rpy_min)); // Scale down rpy together to make the lowest motor fit
+    }
+    rpy_max *= rpy_scale;
+    rpy_min *= rpy_scale;
+
+    // Collective throttle that prevents the lowest motor from going negative
+    float minThrottle = fabsf(rpy_min); 
+    // The amount needed to shift up from minThrottle to match the commanded throttle
+    float throttle_adj = throttle - minThrottle;
+    // Calculate throttle to add
+    if (rpy_scale < 1.0f) {
+        // The rpy already saturated so no room for throttle
+        throttle_adj = 0.0f;
+    } else if (throttle_adj < 0.0f) {
+        // Wants less throttle than minThrottle, will make some motor negative, drop it(not decreasing throttle)
+        throttle_adj = 0.0f;
+    } else if (throttle_adj > (1.0f - minThrottle - rpy_max)) {
+        // Wants more throttle but has no room, cap it to the available room
+        throttle_adj = 1.0f - minThrottle - rpy_max;
+    }
+    float finalThrottle = minThrottle + throttle_adj;
+
+    // Final output
+    for (int i = 0; i < NUM_MOTORS; i++) {
+        mixed[i] = finalThrottle + rpy_scale * mixed[i];
+    }
+    
+     // Place mixed motor outputs into physical channels by function
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         switch (mainMotorGroup->motors[i].function) {
             case MotorFunction_e::MOTOR_1: 
