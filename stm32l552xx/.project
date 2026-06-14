@@ -32,4 +32,16 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>dronecan</name>
+			<type>2</type>
+			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/generated/src</location>
+		</link>
+		<link>
+			<name>libcanard</name>
+			<type>2</type>
+			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/libcanard</location>
+		</link>
+	</linkedResources>
 </projectDescription>

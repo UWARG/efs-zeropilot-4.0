@@ -12,6 +12,7 @@ extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
+extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
 // Static storage for each driver (aligned for correct type)
@@ -29,6 +30,7 @@ alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
 
+alignas(CANController) static uint8_t canControllerStorage[sizeof(CANController)];
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
@@ -56,6 +58,7 @@ MotorControl *motor6Handle = nullptr;
 MotorControl *motor7Handle = nullptr;
 MotorControl *motor8Handle = nullptr;
 
+CANController *canControllerHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
@@ -92,6 +95,23 @@ void initDrivers()
     motor6Handle = new (&motor6Storage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
     motor7Handle = new (&motor7Storage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
     motor8Handle = new (&motor8Storage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
+
+
+    canControllerHandle = new (&canControllerStorage) CANController(&hfdcan1);
+
+    FDCAN_FilterTypeDef sFilterConfig;
+    sFilterConfig.IdType = FDCAN_EXTENDED_ID;
+    sFilterConfig.FilterIndex = 0;
+    sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+    sFilterConfig.FilterID1 = 0x000;
+    sFilterConfig.FilterID2 = 0x000;  // mask=0 accepts everything
+    HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
+
+    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+  		Error_Handler();
+  	}
+    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
 
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);

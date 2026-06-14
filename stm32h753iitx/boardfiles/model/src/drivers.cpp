@@ -15,6 +15,7 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
+extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
 // Static storage for each driver (aligned for correct type)
@@ -32,6 +33,7 @@ alignas(MotorControl) static uint8_t motor6Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
 
+alignas(CANController) static uint8_t canControllerStorage[sizeof(CANController)];
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
 alignas(CRSFReceiver) static uint8_t rcStorage[sizeof(CRSFReceiver)];
 alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
@@ -59,6 +61,7 @@ MotorControl *motor6Handle = nullptr;
 MotorControl *motor7Handle = nullptr;
 MotorControl *motor8Handle = nullptr;
 
+CANController *canControllerHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
@@ -120,6 +123,22 @@ void initDrivers()
     motor8Handle->init();
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
+
+    canControllerHandle = new (&canControllerStorage) CANController(&hfdcan1);
+
+    FDCAN_FilterTypeDef sFilterConfig;
+    sFilterConfig.IdType = FDCAN_EXTENDED_ID;
+    sFilterConfig.FilterIndex = 0;
+    sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+    sFilterConfig.FilterID1 = 0x000;
+    sFilterConfig.FilterID2 = 0x000;  // mask=0 accepts everything
+    HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
+
+    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+  		Error_Handler();
+  	}
+    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
 
     rcHandle->init();
     gpsHandle->init();
