@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <cstring>
 
-#include "can_controller_iface.hpp"
 #include "can_node.hpp"
 #include "canard.h"
 #include "dronecan_msgs.h"
@@ -15,7 +14,7 @@
 
 
 
-class CANController : public ICANController {
+class CANController {
 
 private:
 	struct DnaAllocationEntry {
@@ -81,7 +80,7 @@ public:
 	~CANController();
 
 	// Called as much as possible
-	bool routineTasks() override;
+	bool routineTasks();
 
 	void handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t *rx_data);
 

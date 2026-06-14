@@ -11,7 +11,6 @@ SystemManager::SystemManager(
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
     IRCReceiver *rcDriver,
-    ICANController *canDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
@@ -21,7 +20,6 @@ SystemManager::SystemManager(
         loggerDriver(loggerDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
-        canDriver(canDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
@@ -104,7 +102,6 @@ void SystemManager::smUpdate() {
         sendBatteryDataToTelemetryManager(batteryData, 0);
     }
 
-    canDriver->routineTasks();
     // Log if new messages
     if (smLoggerQueue->count() > 0) {
         sendMessagesToLogger();

@@ -10,7 +10,6 @@
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
-#include "can_controller_iface.hpp"
 #include "sm_param_setup.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
@@ -49,7 +48,6 @@ class SystemManager {
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
             IRCReceiver *rcDriver,
-            ICANController *canDriver,
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
@@ -65,7 +63,6 @@ class SystemManager {
         ILogger *loggerDriver; // Logger driver
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver; // Power module driver
-        ICANController *canDriver;
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager

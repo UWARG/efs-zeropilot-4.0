@@ -31,7 +31,6 @@ void initManagers()
         iwdgHandle,
         loggerHandle,
         rcHandle,
-        canControllerHandle,
         pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
