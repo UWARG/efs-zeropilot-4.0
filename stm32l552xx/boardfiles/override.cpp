@@ -105,11 +105,10 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
       FDCAN_RxHeaderTypeDef RxHeader;
       uint8_t RxData[8];
 
-      if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK) {
-        Error_Handler();
+      if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK
+          && canControllerHandle) {
+        canControllerHandle->handleRxFrame(&RxHeader, RxData);
       }
-
-      if (canControllerHandle) canControllerHandle->handleRxFrame(&RxHeader, RxData);
 
     }
 }

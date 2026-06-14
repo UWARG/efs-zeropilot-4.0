@@ -17,14 +17,14 @@
 class CANController : public ICANController {
 
 private:
-	struct canNode {
+	struct CanNode {
 		uint64_t lastSeenTick;
 		uavcan_protocol_NodeStatus status;
 	};
 
 	struct DnaAllocationEntry {
 		uint8_t unique_id[16];
-		uint8_t node_id;
+		uint8_t nodeId;
 	};
 
 	enum class DnaStage : int8_t {
@@ -43,14 +43,13 @@ private:
 	FDCAN_HandleTypeDef *hfdcan;
 	CanardInstance canard;
 
-	canNode canNodes[CANARD_MAX_NODE_ID + 1];
+	CanNode canNodes[CANARD_MAX_NODE_ID + 1];
 	uint8_t nextAvailableID = CANARD_MIN_NODE_ID + 1;
-	DnaAllocationEntry allocationTable_[MAX_ALLOCATION_ENTRIES];
-	uint8_t allocationCount_ = 0;
+	DnaAllocationEntry allocationTable[MAX_ALLOCATION_ENTRIES];
+	uint8_t allocationCount = 0;
 
 	uavcan_protocol_NodeStatus nodeStatus;
 	uint32_t last1HzTick = 0;
-	uint32_t node_id = NODE_ID;
 
 	uint8_t dnaCurrentUniqueId[UAVCAN_UNIQUE_ID_LENGTH] = {0};
 	uint8_t dnaCurrentUniqueIdLen = 0;
@@ -61,15 +60,15 @@ private:
 	void sendCANTx();
 	void handleNodeAllocation(CanardRxTransfer* transfer);
 	void handleNodeStatus(CanardRxTransfer* transfer);
-	uint8_t dlcToLength(uint32_t dlc);
+	static uint8_t dlcToLength(uint32_t dlc);
 	int8_t allocateNode();
 	int8_t lookupAllocation(const uint8_t unique_id[16]) const;
-	bool isNodeIdAllocated(uint8_t node_id) const;
+	bool isNodeIdAllocated(uint8_t nodeId) const;
 	void process1HzTasks();
 	DnaStage detectDnaRequestStage(const uavcan_protocol_dynamic_node_id_Allocation& msg) const;
 	DnaStage getExpectedDnaStage() const;
 	void resetDnaInProgress();
-	int16_t publishDnaAllocationResponse(uint8_t node_id, const uint8_t* unique_id, uint8_t unique_id_len);
+	int16_t publishDnaAllocationResponse(uint8_t nodeId, const uint8_t* unique_id, uint8_t unique_id_len);
 
 public:
 	CANController(FDCAN_HandleTypeDef *hfdcan);
@@ -78,7 +77,7 @@ public:
 		uint64_t* out_data_type_signature,
 		uint16_t data_type_id,
 		CanardTransferType transfer_type,
-		uint8_t source_node_id);
+		uint8_t sourceNodeId);
 
 	void CanardOnTransferReception(CanardInstance* ins,
 		CanardRxTransfer* transfer);
@@ -109,7 +108,7 @@ public:
 			, uint64_t deadline_usec  // Transfer deadline in microseconds
 		#endif
 		#if CANARD_MULTI_IFACE
-			, uint8_t iface_mask
+			, uint8_t iface_mask      // Bitmask of interfaces to send the transfer on
 		#endif
 		#if CANARD_ENABLE_TAO_OPTION
 			, bool tao                // True to enable tail array optimization

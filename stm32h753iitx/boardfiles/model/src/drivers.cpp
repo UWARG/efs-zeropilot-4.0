@@ -124,7 +124,6 @@ void initDrivers()
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
 
-    // TODO: Cleanup!
     canControllerHandle = new (&canControllerStorage) CANController(&hfdcan1);
 
     FDCAN_FilterTypeDef sFilterConfig;
@@ -135,10 +134,6 @@ void initDrivers()
     sFilterConfig.FilterID1 = 0x000;
     sFilterConfig.FilterID2 = 0x000;  // mask=0 accepts everything
     HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
-
-    HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_ACCEPT_IN_RX_FIFO0,
-                                  FDCAN_ACCEPT_IN_RX_FIFO0,
-                                  FDCAN_REJECT_REMOTE, FDCAN_REJECT_REMOTE);
 
     if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
   		Error_Handler();
