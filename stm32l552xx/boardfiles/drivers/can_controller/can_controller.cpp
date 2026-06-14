@@ -30,13 +30,8 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 
 	nodeStatus = {0};
 
-	for (int i = 0; i <= CANARD_MAX_NODE_ID; i++) {
-		canNodes[i].lastSeenTick = 0;
-		canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
-	}
-	canNodes[CANController::NODE_ID].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
-	const uint32_t startup_tick = HAL_GetTick();
-	canNodes[CANController::NODE_ID].lastSeenTick = startup_tick;
+	canNodes[CANController::NODE_ID].markOnline(HAL_GetTick());
+	// All other nodes are default-constructed to OFFLINE.
 
 	canard.node_id = CANController::NODE_ID;
 }
@@ -128,11 +123,9 @@ void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t * rx
 void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
 	uint32_t tick = HAL_GetTick();
 
-	CANController::CanNode node {0};
+	uavcan_protocol_NodeStatus status {};
 
-	node.lastSeenTick = tick;
-
-	bool invalid = uavcan_protocol_NodeStatus_decode(transfer, &node.status);
+	bool invalid = uavcan_protocol_NodeStatus_decode(transfer, &status);
 
 	if (invalid) return;
 
@@ -141,7 +134,7 @@ void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
 	// Node ID out of bounds or is anonymous
 	if (sourceNodeId > CANARD_MAX_NODE_ID || sourceNodeId == 0) return;
 
-	canNodes[sourceNodeId] = node;
+	canNodes[sourceNodeId].update(status, tick);
 }
 
 void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
@@ -223,7 +216,7 @@ int8_t CANController::allocateNode() {
 	if (dnaPreferredNodeId != UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ANY_NODE_ID &&
 		dnaPreferredNodeId >= CANARD_MIN_NODE_ID &&
 		dnaPreferredNodeId <= MAX_DYNAMIC_NODE_ID &&
-		canNodes[dnaPreferredNodeId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE &&
+		canNodes[dnaPreferredNodeId].isOffline() &&
 		!isNodeIdAllocated(dnaPreferredNodeId)) {
 		assignedId = dnaPreferredNodeId;
 	}
@@ -231,7 +224,7 @@ int8_t CANController::allocateNode() {
 	// Scan for free ID
 	if (assignedId == 0) {
 		for (int currId = nextAvailableID; currId <= MAX_DYNAMIC_NODE_ID && assignedId == 0; currId++) {
-			if (canNodes[currId].status.mode == UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE
+			if (canNodes[currId].isOffline()
 				&& !isNodeIdAllocated(currId)) {
 				nextAvailableID = currId + 1;
 				assignedId = currId;
@@ -411,8 +404,8 @@ void CANController::process1HzTasks() {
 
 	// Mark remote nodes offline if they have not been seen recently
 	for (int i = CANARD_MIN_NODE_ID; i <= CANARD_MAX_NODE_ID; i++) {
-		if (i != CANController::NODE_ID && timestamp_msec - canNodes[i].lastSeenTick > UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS) {
-			canNodes[i].status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OFFLINE;
+		if (i != CANController::NODE_ID) {
+			canNodes[i].updateLiveness(timestamp_msec, UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS);
 		}
 	}
 

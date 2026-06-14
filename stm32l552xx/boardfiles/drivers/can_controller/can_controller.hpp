@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "can_controller_iface.hpp"
+#include "can_node.hpp"
 #include "canard.h"
 #include "dronecan_msgs.h"
 #include "uavcan.protocol.NodeStatus.h"
@@ -17,11 +18,6 @@
 class CANController : public ICANController {
 
 private:
-	struct CanNode {
-		uint64_t lastSeenTick;
-		uavcan_protocol_NodeStatus status;
-	};
-
 	struct DnaAllocationEntry {
 		uint8_t unique_id[16];
 		uint8_t nodeId;
