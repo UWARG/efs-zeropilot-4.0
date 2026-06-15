@@ -61,12 +61,14 @@ void initDrivers()
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
-    uint32_t servoMask = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
-    for (int i = 0; i < 8; i++) {
-        if (servoMask & (1 << i)) {
-            motorHandles[i] = new DshotMotorControl(motorMap[i].timer, motorMap[i].channel, false);
-        } else {
+    uint32_t servoFunc = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
+    if (servoFunc == 0) {
+        for (int i = 0; i < 8; i++) {
             motorHandles[i] = new MotorControl(motorMap[i].timer, motorMap[i].channel, 5, 10, i + 1);
+        }
+    } else if (servoFunc == 5) {
+        for (int i = 0; i < 8; i++) {
+            motorHandles[i] = new DshotMotorControl(motorMap[i].timer, motorMap[i].channel, false);
         }
     }
 
