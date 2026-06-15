@@ -100,10 +100,14 @@ void SystemManager::smUpdate() {
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
-    updateBatteryFSM();
-    calcStateOfCharge(SOC_CHARGE_DISCHARGE_MODE);
-    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
-        sendBatteryDataToTelemetryManager(batteryData, 0);
+    if (batteryData.pmData.isValid) {
+        updateBatteryFSM();
+        calcStateOfCharge(SOC_CHARGE_DISCHARGE_MODE);
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
+            sendBatteryDataToTelemetryManager(batteryData, 0);
+        }
+
+        batteryData.pmData.isValid = false;
     }
 
     // Log if new messages

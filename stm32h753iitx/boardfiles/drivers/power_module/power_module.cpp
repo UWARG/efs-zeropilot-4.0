@@ -110,6 +110,7 @@ bool PowerModule::readData(PMData_t *data) {
                              (energyData[2] << 16) | (energyData[3] << 8) | energyData[4])) * ENERGY_LSB;
 
     *data = processedData;
+    data->isValid = true;
 
     dataFilled = 0;
     parse(hi2c);
