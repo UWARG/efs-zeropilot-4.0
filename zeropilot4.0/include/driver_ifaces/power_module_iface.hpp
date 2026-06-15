@@ -3,13 +3,12 @@
 #include <cstdint>
 
 typedef struct PMData {
-
-    //instantaneous results
+    // Instantaneous results
     float busVoltage;
     float current;
     float power;
 
-    //accumulated results
+    // Accumulated results
     float charge;
     float energy;
 

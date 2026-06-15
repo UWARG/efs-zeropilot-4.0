@@ -27,7 +27,7 @@ SystemManager::SystemManager(
         flightModes{},
         oldDataCount(0),
         rcConnected(false),
-        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0, false}),
         profilerId(0),
         paramSetup(this)
 {
@@ -97,9 +97,13 @@ void SystemManager::smUpdate() {
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
-    updateBatteryFSM();
-    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
-        sendBatteryDataToTelemetryManager(batteryData, 0);
+    if (batteryData.isValid) {
+        updateBatteryFSM();
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
+            sendBatteryDataToTelemetryManager(batteryData, 0);
+        }
+
+        batteryData.isValid = false;
     }
 
     // Log if new messages
@@ -149,8 +153,10 @@ void SystemManager::smUpdate() {
 }
 
 void SystemManager::updateBatteryFSM() {
+    batteryData.isValid = false;         
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
-    if (pmDriver->readData(&batteryData.pmData)) {          
+    if (pmDriver->readData(&batteryData.pmData)) { 
+        batteryData.isValid = true;         
         currentBatteryState = batteryData.chargeState;
 
         if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT)) {
