@@ -4,15 +4,15 @@
 static constexpr size_t CANARD_MEMORY_BUFFER_SIZE = 1024;
 static constexpr uint32_t CAN_FRAME_EFF_BIT = 31U;
 
-uint8_t CANController::node_status_transfer_id = 0;
-uint8_t CANController::dna_allocation_transfer_id = 0;
+uint8_t CANController::nodeStatusTransferId = 0;
+uint8_t CANController::dnaAllocationTransferId = 0;
 
-static void StaticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
+static void staticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
     CANController* self = static_cast<CANController*>(ins->user_reference);
     self->CanardOnTransferReception(ins, transfer);
 }
 
-static bool StaticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* out_sig, uint16_t id, CanardTransferType type, uint8_t src) {
+static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* out_sig, uint16_t id, CanardTransferType type, uint8_t src) {
 
 	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, out_sig, id, type, src);
 }
@@ -23,8 +23,8 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	canardInit(&canard,
 			canardMemoryPool,
 			sizeof(canardMemoryPool),
-			&StaticOnTransferReception,
-			&StaticShouldAcceptTransfer,
+			&staticOnTransferReception,
+			&staticShouldAcceptTransfer,
 			this
 	);
 
@@ -309,7 +309,7 @@ int16_t CANController::publishDnaAllocationResponse(uint8_t nodeId, const uint8_
 		CanardTransferTypeBroadcast,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE,
 		UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID,
-		&dna_allocation_transfer_id,
+		&dnaAllocationTransferId,
 		CANARD_TRANSFER_PRIORITY_LOW,
 		buffer,
 		len
@@ -390,7 +390,7 @@ void CANController::sendNodeStatus() {
     broadcast(CanardTransferTypeBroadcast,
 			UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
 			UAVCAN_PROTOCOL_NODESTATUS_ID,
-			&node_status_transfer_id,
+			&nodeStatusTransferId,
 			CANARD_TRANSFER_PRIORITY_LOW,
 			buffer,
 			len

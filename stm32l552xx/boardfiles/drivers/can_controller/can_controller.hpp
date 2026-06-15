@@ -32,8 +32,8 @@ private:
 	static constexpr uint8_t NODE_ID = CANARD_MIN_NODE_ID;
 	static constexpr uint8_t MAX_ALLOCATION_ENTRIES = 125;
 	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;
-	static uint8_t node_status_transfer_id;
-	static uint8_t dna_allocation_transfer_id;
+	static uint8_t nodeStatusTransferId;
+	static uint8_t dnaAllocationTransferId;
 
 	FDCAN_HandleTypeDef *hfdcan;
 	CanardInstance canard;
