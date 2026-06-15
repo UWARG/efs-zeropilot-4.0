@@ -101,8 +101,6 @@ void SystemManager::smUpdate() {
         if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
             sendBatteryDataToTelemetryManager(batteryData, 0);
         }
-
-        batteryData.isValid = false;
     }
 
     // Log if new messages
