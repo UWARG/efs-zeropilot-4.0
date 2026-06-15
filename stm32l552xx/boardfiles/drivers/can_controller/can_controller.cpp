@@ -12,9 +12,9 @@ static void staticOnTransferReception(CanardInstance* ins, CanardRxTransfer* tra
     self->CanardOnTransferReception(ins, transfer);
 }
 
-static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* out_sig, uint16_t id, CanardTransferType type, uint8_t src) {
+static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* outSig, uint16_t id, CanardTransferType type, uint8_t src) {
 
-	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, out_sig, id, type, src);
+	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, outSig, id, type, src);
 }
 
 CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {

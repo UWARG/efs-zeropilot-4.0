@@ -12,8 +12,6 @@
 #include "cmsis_os2.h"
 #include "museq.hpp"
 
-
-
 class CANController {
 
 private:
