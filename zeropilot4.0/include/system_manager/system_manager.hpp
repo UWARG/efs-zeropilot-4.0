@@ -132,5 +132,11 @@ class SystemManager {
 
         void sendMessagesToLogger();
 
+        uint8_t profilerId;
+
         SMParamSetup paramSetup;
+
+
+        uint8_t profilerBuf[256];
+        TaskProfile profiles[MAX_PROFILED_TASKS];
 };
