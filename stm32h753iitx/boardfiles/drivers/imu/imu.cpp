@@ -250,7 +250,7 @@ void IMU::processRawData() {
     // raw_imu_data.ygyro = raw[5];
     // raw_imu_data.zgyro = -raw[6];
 
-    int16_t raw[7 * MAX_PACKETS];
+    // int16_t raw[7 * MAX_PACKETS];
 
     for (int k = 0; k < fifo_size; k++) {
         uint8_t base = 1 + k * PACKET_SIZE; // skip the dummy byte
@@ -261,7 +261,7 @@ void IMU::processRawData() {
         int16_t gx = (int16_t)((imu_rx_buffer[base+7]  << 8) | imu_rx_buffer[base+8]);
         int16_t gy = (int16_t)((imu_rx_buffer[base+9]  << 8) | imu_rx_buffer[base+10]);
         int16_t gz = (int16_t)((imu_rx_buffer[base+11] << 8) | imu_rx_buffer[base+12]);
-        int16_t timestamp = (int16_t)((imu_rx_buffer[base+14] << 8) | imu_rx_buffer[base+15]);
+        uint16_t timestamp = (int16_t)((imu_rx_buffer[base+14] << 8) | imu_rx_buffer[base+15]);
     }
     
     
