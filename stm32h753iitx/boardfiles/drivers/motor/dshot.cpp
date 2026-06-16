@@ -1,8 +1,8 @@
 #include "dshot.hpp"
 #include <cstring>
 
-static constexpr uint16_t DSHOT_1_CCR =	150;    // CCR for dshot300 logic 1 
-static constexpr uint16_t DSHOT_0_CCR =	75;    // CCR for dshot300 logic 0 
+static constexpr uint16_t DSHOT_1_CCR =	600;    // CCR for dshot300 logic 1 
+static constexpr uint16_t DSHOT_0_CCR = 300;    // CCR for dshot300 logic 0 
 
 static constexpr uint16_t MAX_THROTTLE = 2047;  // 11 bit max val
 static constexpr uint16_t OFFSET = 100;     // Armed standby throttle
@@ -49,7 +49,7 @@ void DshotMotorControl::set(uint32_t percent) {
 
 void DshotMotorControl::init() {
     timer->Init.Prescaler = 0;
-    timer->Init.Period = 199;
+    timer->Init.Period = 799;
     if (HAL_TIM_Base_Init(timer) != HAL_OK) {
         // Error_Handler();
     }
