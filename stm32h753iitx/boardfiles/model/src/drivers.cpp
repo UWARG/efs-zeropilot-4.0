@@ -3,6 +3,9 @@
 #include "stm32h7xx_hal.h"
 #include "zp_params.hpp"
 
+#define MOT_TYPE_PWM   0
+#define MOT_TYPE_DSHOT 5
+
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg1;
 extern TIM_HandleTypeDef htim1;
@@ -76,10 +79,10 @@ void initDrivers()
         bool isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
         if (isMotor) {
             switch (servoType) {
-                case 5: // DShot
+                case MOT_TYPE_DSHOT: // DShot
                     motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
                     break;
-                case 0: // PWM
+                case MOT_TYPE_PWM: // PWM
                 default:
                     motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
                     break;
