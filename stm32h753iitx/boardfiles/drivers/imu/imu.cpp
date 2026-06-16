@@ -97,12 +97,6 @@ HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_
 RawImu_t IMU::readRawData() {
     setBank(0);
 
-    uint8_t id, ch, cl;
-    readRegister(0, UB0_REG_WHO_AM_I, &id);   // expect 0x47 on ICM-42688
-    HAL_Delay(50);
-    readRegister(0, UB0_FIFO_COUNTH, &ch);
-    readRegister(0, UB0_FIFO_COUNTL, &cl);
-
     // if (spi_tx_rx_flag) {
     //     spi_tx_rx_flag = 0;
 
