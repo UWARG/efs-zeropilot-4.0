@@ -48,9 +48,16 @@ typedef struct {
     uint32_t channel; 
 } motorChannel_t;
 
-const motorChannel_t motorMap[8] = {
+const motorChannel_t MOTOR_MAP[8] = {
     {&htim1, TIM_CHANNEL_1}, {&htim1, TIM_CHANNEL_2}, {&htim1, TIM_CHANNEL_3}, {&htim1, TIM_CHANNEL_4},
     {&htim2, TIM_CHANNEL_1}, {&htim2, TIM_CHANNEL_2}, {&htim2, TIM_CHANNEL_3}, {&htim2, TIM_CHANNEL_4},
+};
+
+const ZP_PARAM_ID SERVO_FUNC[8] = {
+    ZP_PARAM_ID::SERVO1_FUNCTION, ZP_PARAM_ID::SERVO2_FUNCTION,
+    ZP_PARAM_ID::SERVO3_FUNCTION, ZP_PARAM_ID::SERVO4_FUNCTION,
+    ZP_PARAM_ID::SERVO5_FUNCTION, ZP_PARAM_ID::SERVO6_FUNCTION,
+    ZP_PARAM_ID::SERVO7_FUNCTION, ZP_PARAM_ID::SERVO8_FUNCTION,
 };
 
 // ----------------------------------------------------------------------------
@@ -64,14 +71,21 @@ void initDrivers()
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
-    uint32_t servoFunc = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
-    if (servoFunc == 0) {
-        for (int i = 0; i < 8; i++) {
-            motorHandles[i] = new MotorControl(motorMap[i].timer, motorMap[i].channel, 5, 10, i + 1);
-        }
-    } else if (servoFunc == 5) {
-        for (int i = 0; i < 8; i++) {
-            motorHandles[i] = new DshotMotorControl(motorMap[i].timer, motorMap[i].channel, false);
+    uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
+    for (int i = 0; i < 8; i++) {
+        bool isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        if (isMotor) {
+            switch (servoType) {
+                case 5: // DShot
+                    motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
+                    break;
+                case 0: // PWM
+                default:
+                    motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
+                    break;
+            }
+        } else {
+            motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
 
