@@ -16,12 +16,7 @@ class MotorControl : public IMotorControl {
         /**
          * @brief starts PWM output
          */
-        void init();
-
-        /**
-         * @brief sets arm flag
-         */
-        void setArm(bool arm) override;
+        void init() override;
 
     private:
         TIM_HandleTypeDef * const timer;
