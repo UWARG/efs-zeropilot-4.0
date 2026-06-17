@@ -83,9 +83,9 @@ public:
 
 	// Data reading
 	// First read returns all 0s, subsequent reads return latest data
-	RawImu_t readRawData() override; // non-blocking
+	RawImuBatch_t readRawData() override; // non-blocking
 
-	ScaledImu_t scaleIMUData(const RawImu_t &rawData) override;
+	ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawData) override;
 
 	// put this in void HAL_SPI_TxRxCpltCallback (SPI_HandleTypeDef * hspi)
 	void txRxCallback();

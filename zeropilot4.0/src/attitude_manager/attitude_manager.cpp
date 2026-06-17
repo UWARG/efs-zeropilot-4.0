@@ -32,6 +32,8 @@ AttitudeManager::AttitudeManager(
     noDataCount(0),
     failsafeTriggered(false),
     profilerId(0),
+    lastTimestamp(0),
+    haveLastImuTimestamp(false),
     paramSetup(this){
 
     paramSetup.loadAllParams();
@@ -55,23 +57,37 @@ void AttitudeManager::amUpdate() {
     }
 
     // Send IMU raw data to telemetry manager
-    RawImu_t imuData = imuDriver->readRawData();
-    ScaledImu_t scaledImuData = imuDriver->scaleIMUData(imuData);
-    mahonyFilter.updateIMU(
-        scaledImuData.xgyro,
-        scaledImuData.ygyro,
-        scaledImuData.zgyro,
-        scaledImuData.xacc,
-        scaledImuData.yacc,
-        scaledImuData.zacc
-    );
+    RawImuBatch_t imuData = imuDriver->readRawData();
+    ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
+    for (int i = 0; i < scaledImuData.count; i++) {
+        uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp;
+        lastTimestamp = scaledImuData.data[i].timestamp;
+
+        // Make lastTimestamp hold a real timestamp the first iteration
+        if (!haveLastImuTimestamp) {
+            haveLastImuTimestamp = true;
+            continue;
+        }
+
+        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+
+        mahonyFilter.updateIMU(
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro,
+            scaledImuData.data[i].xacc,
+            scaledImuData.data[i].yacc,
+            scaledImuData.data[i].zacc,
+            dt
+        );
+    }
     Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        sendRawIMUDataToTelemetryManager(imuData);
+        sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); // Send the last packed of IMU data
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
