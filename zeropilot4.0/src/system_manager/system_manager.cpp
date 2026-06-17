@@ -100,10 +100,11 @@ void SystemManager::smUpdate() {
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
-    updateBatteryFSM();
-    calcStateOfCharge(SOC_CHARGE_DISCHARGE_MODE);
-    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
-        sendBatteryDataToTelemetryManager(batteryData, 0);
+    if (updateBatteryFSM()) {
+        calcStateOfCharge(SOC_CHARGE_DISCHARGE_MODE);
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
+            sendBatteryDataToTelemetryManager(batteryData, 0);
+        }
     }
 
     // Log if new messages
@@ -152,54 +153,58 @@ void SystemManager::smUpdate() {
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
-void SystemManager::updateBatteryFSM() {
+bool SystemManager::updateBatteryFSM() {
+    batteryData.isValid = false;         
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
-    if (pmDriver->readData(&batteryData.pmData)) {          
-        currentBatteryState = batteryData.chargeState;
 
-        if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT)) {
-            // Normal battery
-            batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK;
-            batteryData.batteryLowCounterMs = 0;
-            batteryData.batteryCritcounterMs = 0;
-        } else if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) {
-            // Low battery detection
-            batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
-            batteryData.batteryCritcounterMs = 0;
-            uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
-            if (battLowTimeMs > 0 && batteryData.batteryLowCounterMs >= battLowTimeMs) {
-                batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
-            }
-        } else {
-            // Critical battery detection
-            batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
-            batteryData.batteryLowCounterMs = 0;
-            uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
-            if (battLowTimeMs > 0 && batteryData.batteryCritcounterMs >= battLowTimeMs) {
-                batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
-            }
+    if (!pmDriver->readData(&batteryData.pmData)) return false; 
+    batteryData.isValid = true;         
+    currentBatteryState = batteryData.chargeState;
+
+    if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT)) {
+        // Normal battery
+        batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK;
+        batteryData.batteryLowCounterMs = 0;
+        batteryData.batteryCritcounterMs = 0;
+    } else if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) {
+        // Low battery detection
+        batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
+        batteryData.batteryCritcounterMs = 0;
+        uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
+        if (battLowTimeMs > 0 && batteryData.batteryLowCounterMs >= battLowTimeMs) {
+            batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
         }
-
-        // Logging --> once per transition, checks if the state has yet to be logged and does so 
-        if (currentBatteryState != batteryData.chargeState) {
-            switch (batteryData.chargeState) {
-                case MAV_BATTERY_CHARGE_STATE_OK:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
-                    // loggerDriver->log("Battery State: OK"); (TODO: Uncomment after rearchitecture)
-                    break;
-                case MAV_BATTERY_CHARGE_STATE_LOW:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
-                    // loggerDriver->log("Battery State: LOW"); (TODO: Uncomment after rearchitecture)
-                    break;
-                case MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
-                    // loggerDriver->log("Battery State: CRITICAL"); (TODO: Uncomment after rearchitecture)
-                    break;
-                default:
-                    break;
-            }
+    } else {
+        // Critical battery detection
+        batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
+        batteryData.batteryLowCounterMs = 0;
+        uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
+        if (battLowTimeMs > 0 && batteryData.batteryCritcounterMs >= battLowTimeMs) {
+            batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
         }
     }
+
+    // Logging --> once per transition, checks if the state has yet to be logged and does so 
+    if (currentBatteryState != batteryData.chargeState) {
+        switch (batteryData.chargeState) {
+            case MAV_BATTERY_CHARGE_STATE_OK:
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
+                // loggerDriver->log("Battery State: OK"); (TODO: Uncomment after rearchitecture)
+                break;
+            case MAV_BATTERY_CHARGE_STATE_LOW:
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
+                // loggerDriver->log("Battery State: LOW"); (TODO: Uncomment after rearchitecture)
+                break;
+            case MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
+                // loggerDriver->log("Battery State: CRITICAL"); (TODO: Uncomment after rearchitecture)
+                break;
+            default:
+                break;
+        }
+    }
+
+    return true;
 }
 
 void SystemManager::calcStateOfCharge(int mode) {

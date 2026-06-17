@@ -4,7 +4,7 @@
 
 void initModel()
 {
-  initDrivers();
   ZP_PARAM::init();
+  initDrivers();
   initManagers();
 }

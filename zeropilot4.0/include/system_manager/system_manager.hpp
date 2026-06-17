@@ -78,6 +78,7 @@ typedef struct{
     MAV_BATTERY_CHARGE_STATE chargeState;
     uint32_t batteryLowCounterMs;
     uint32_t batteryCritcounterMs;
+    bool isValid;
 } BatteryData_t;
 
 class SystemManager {
@@ -117,7 +118,7 @@ class SystemManager {
         bool rcConnected;
         
         BatteryData_t batteryData;
-        void updateBatteryFSM();
+        bool updateBatteryFSM();
 
         StateOfCharge_t socData;
         void calcStateOfCharge(int mode);

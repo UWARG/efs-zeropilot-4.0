@@ -5,13 +5,16 @@ MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint
     timerChannel(timerChannel), 
     minCCR(minDutyCycle / 100.0 * timer->Init.Period), 
     maxCCR(maxDutyCycle / 100.0 * timer->Init.Period),
-    servoIdx(servoIdx) {
-    // blank
-}
+    servoIdx(servoIdx) {}
 
 void MotorControl::set(uint32_t percent) {
     percent = percent > 100 ? 100 : percent;
-    uint32_t ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
+
+    uint32_t ticks = 0;
+    if (armFlag) {
+        ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
+    }
+    
     __HAL_TIM_SET_COMPARE(timer, timerChannel, ticks);
 }
 
