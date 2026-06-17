@@ -138,8 +138,6 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Pos:  ({state.gps_location.latitude:.4f}, {state.gps_location.longitude:.4f})",
             "==============================================",
             f" M1: {m1:>7.3f} | M2: {m2:>7.3f} | M3: {m3:>7.3f} | M4: {m4:>7.3f}",
-            " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
-            " [L] Flaps Down | [R] Flaps Up | [ZL] Mode- | [ZR] Mode+",
             "\033[K"
         ]
         sys.stdout.write("\n".join(dash) + "\n")

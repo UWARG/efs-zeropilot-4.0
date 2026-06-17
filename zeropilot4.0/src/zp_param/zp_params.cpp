@@ -176,7 +176,6 @@ void init() {
     initParam(ZP_PARAM_ID::ACT_RATE_YAW_IMAX, "ACT_RATE_YAW_IMAX", 50, MAV_PARAM_TYPE_UINT8);
     #endif
 
-
     #ifdef FIXED_WING
     initParam(ZP_PARAM_ID::KFF_RDDRMIX, "KFF_RDDRMIX", 0.500f, MAV_PARAM_TYPE_REAL32);
 
@@ -191,6 +190,7 @@ void init() {
     initParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(FlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(FlightMode_e::MANUAL), MAV_PARAM_TYPE_UINT32);
     #endif
+    
     #ifdef QUADCOPTER
     // verify these default values
     initParam(ZP_PARAM_ID::ROLL_LIMIT_RATE, "ROLL_LIMIT_RATE", 3.5f, MAV_PARAM_TYPE_REAL32);

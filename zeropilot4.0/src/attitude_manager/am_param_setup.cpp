@@ -31,8 +31,8 @@ void AMParamSetup::loadAllParams() {
     am->fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
     am->fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
     #endif
-
     #ifdef QUADCOPTER
+    // ACRO params
     am->acroCLAW.setRollPIDConstants(
         ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_P),
         ZP_PARAM::get(ZP_PARAM_ID::ACT_RATE_RLL_I),

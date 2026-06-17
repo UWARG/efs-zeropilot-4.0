@@ -13,11 +13,10 @@ enum class MotorFunction_e : int16_t {
     GROUND_STEERING = 26,
     THROTTLE        = 70,
     #endif
-    
     #ifdef QUADCOPTER
-    MOTOR_1 = 1,        // front right
-    MOTOR_2 = 2,        // rear left 
-    MOTOR_3 = 3,        // front left
-    MOTOR_4 = 4         // rear right
+    MOTOR_1 = 1, // Front right
+    MOTOR_2 = 2, // Rear left 
+    MOTOR_3 = 3, // Front left
+    MOTOR_4 = 4  // Rear right
     #endif
 };

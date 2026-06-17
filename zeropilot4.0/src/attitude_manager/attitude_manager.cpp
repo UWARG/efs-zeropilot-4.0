@@ -88,7 +88,6 @@ void AttitudeManager::amUpdate() {
     droneState.pitchRate = scaledImuData.ygyro * DEG_TO_RAD;
     droneState.yawRate = scaledImuData.zgyro * DEG_TO_RAD;
 
-
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         sendRawIMUDataToTelemetryManager(imuData);
     }
@@ -111,6 +110,7 @@ void AttitudeManager::amUpdate() {
 
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
             RCMotorControlMessage_t motorOutputs{0};
+
             #ifdef FIXED_WING
             motorOutputs.roll = 50;
             motorOutputs.pitch = 50;
@@ -158,6 +158,7 @@ void AttitudeManager::amUpdate() {
     // Update current flightmode if changed
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
+
             #ifdef FIXED_WING
             case FlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
@@ -166,12 +167,13 @@ void AttitudeManager::amUpdate() {
                 activeCLAW = &fbwaCLAW;
                 break;
             #endif
-
+            
             #ifdef QUADCOPTER
             case FlightMode_e::ACRO:
                 activeCLAW = &acroCLAW;
                 break;
             #endif
+
         }
         activeCLAW->activateFlightMode();
         currentFlightMode = controlMsg.flightMode;
@@ -189,6 +191,7 @@ void AttitudeManager::amUpdate() {
         motorOutputs.roll = 0;
         motorOutputs.yaw = 0;
         #endif
+
     }
 
     // Output to motors
@@ -209,9 +212,11 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 }
 
 void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG) {
+
     #ifdef FIXED_WING
         MotorMixing::fixedWingMoterMixer(OUTPUT_CONTROL_MSG, mainMotorGroup, motorPercent);
     #endif
+
     #ifdef QUADCOPTER
         MotorMixing::quadMotorMixer(OUTPUT_CONTROL_MSG, mainMotorGroup, motorPercent);
     #endif
@@ -233,6 +238,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTRO
         #endif
 
         uint32_t cmd = 0;
+
         #ifdef FIXED_WING
         // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
@@ -267,6 +273,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTRO
 
         // Set arm flag for throttle motors, only on arm/disarm edges
         if(setArmFlag) {
+
             #ifdef FIXED_WING
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
             #endif
@@ -275,6 +282,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTRO
             bool armed = (motor->function == MotorFunction_e::MOTOR_1 || motor->function == MotorFunction_e::MOTOR_2 
                 || motor->function == MotorFunction_e::MOTOR_3 || motor->function == MotorFunction_e::MOTOR_4) ? armedFlag : true;  
             #endif
+
             motor->motorInstance->setArm(armed);
         }
 

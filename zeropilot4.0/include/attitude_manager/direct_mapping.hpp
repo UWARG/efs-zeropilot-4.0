@@ -8,5 +8,4 @@ class DirectMapping : public Flightmode {
 
         void activateFlightMode() override;
         RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
-    
 };
