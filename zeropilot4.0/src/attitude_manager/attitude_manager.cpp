@@ -68,7 +68,8 @@ ZP_ERROR_e AttitudeManager::amUpdate() {
                 scaledImuData.xacc, scaledImuData.yacc, scaledImuData.zacc
             );
             
-            Attitude_t attitude = mahonyFilter.getAttitudeRadians();
+            Attitude_t attitude = {};
+            result |= mahonyFilter.getAttitudeRadians(attitude);
             droneState.roll = attitude.roll;
             droneState.pitch = attitude.pitch;
             droneState.yaw = attitude.yaw;
@@ -149,7 +150,9 @@ ZP_ERROR_e AttitudeManager::amUpdate() {
         }
 
         // Run the active control law
-        RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
+        RCMotorControlMessage_t motorOutputs = {};
+        
+        result |= activeCLAW->runControl(motorOutputs, controlMsg, droneState);
 
         // Disarm logic
         if (!armedFlag) {
@@ -179,7 +182,9 @@ ZP_ERROR_e AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMs
     return result;
 }
 
-void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+ZP_ERROR_e AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
+
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         MotorInstance_t *motor = (mainMotorGroup->motors + i);
 
@@ -223,12 +228,16 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         }
 
         // Send command to motor
-        motor->motorInstance->set(cmd);
+        result |= motor->motorInstance->set(cmd);
     }
+
+    return result;
 }
 
 ZP_ERROR_e AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
-    if (!gpsData.isNew) return ZP_ERROR_OK;
+    
+    ZP_ERROR_e result = ZP_ERROR_OK;
+    if (!gpsData.isNew) return result;
 
     uint8_t fixType = (gpsData.numSatellites >= 4) ? 3 : 2;
     int32_t latE7 = static_cast<int32_t>(gpsData.latitude * 1e7f);
@@ -244,33 +253,44 @@ ZP_ERROR_e AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsDa
     }
 
     TMMessage_t gpsDataMsg;
-    ZP_ERROR_e result = gpsRawDataPack(systemUtilsDriver->getCurrentTimestampMs(), fixType, latE7, lonE7, altMM, 
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    ZP_ERROR_e result = gpsRawDataPack(gpsDataMsg, currentTime, fixType, latE7, lonE7, altMM, 
                                       UINT16_MAX, UINT16_MAX, velCmS, cogCDeg, gpsData.numSatellites, 
-                                      0, 0, 0, 0, 0, 0, gpsDataMsg);
+                                      0, 0, 0, 0, 0, 0);
 
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&gpsDataMsg);
     return result;
 }
 
 ZP_ERROR_e AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t imuDataMsg;
-    ZP_ERROR_e result = rawImuDataPack(imuDataMsg, systemUtilsDriver->getCurrentTimestampMs(), imuData.xacc, imuData.yacc, imuData.zacc, imuData.xgyro, imuData.ygyro, imuData.zgyro);
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    ZP_ERROR_e result = rawImuDataPack(imuDataMsg, currentTime, imuData.xacc, imuData.yacc, imuData.zacc, imuData.xgyro, imuData.ygyro, imuData.zgyro);
     
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&imuDataMsg);
     return result;
 }
 
 ZP_ERROR_e AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attitude) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t attitudeDataMsg;
-    ZP_ERROR_e result = attitudeDataPack(attitudeDataMsg, systemUtilsDriver->getCurrentTimestampMs(), attitude.roll, attitude.pitch, attitude.yaw);
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    ZP_ERROR_e result = attitudeDataPack(attitudeDataMsg, currentTime, attitude.roll, attitude.pitch, attitude.yaw);
     
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&attitudeDataMsg);
     return result;
 }
 
 ZP_ERROR_e AttitudeManager::sendServoOutputRawToTelemetryManager() {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t servoOutputMsg;
-    ZP_ERROR_e result = servoOutputRawPack(servoOutputMsg, systemUtilsDriver->getCurrentTimestampMs(), 0, lastServoOutputs);
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    ZP_ERROR_e result = servoOutputRawPack(servoOutputMsg, currentTime, 0, lastServoOutputs);
     
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&servoOutputMsg);
     return result;

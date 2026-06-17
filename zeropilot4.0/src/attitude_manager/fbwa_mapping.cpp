@@ -21,12 +21,14 @@ FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
 
 // Setter *roll* for PID consts
 ZP_ERROR_e FBWAMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    return rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    ZP_ERROR_e result = rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    return result;
 }
 
 // Setter for *pitch* PID consts
 ZP_ERROR_e FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    return pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    ZP_ERROR_e result = pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    return result;
 }
 
 // Resetter for both roll and pitch PIDs
@@ -38,7 +40,7 @@ ZP_ERROR_e FBWAMapping::resetControlLoopState() noexcept {
 }
 
 // Setter for *yaw* rudder mixing const
-void FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
+ZP_ERROR_e FBWAMapping::setYawRudderMixingConstant(float newMixingConst) noexcept {
     yawRudderMixingConst = newMixingConst;
     return ZP_ERROR_OK;
 }

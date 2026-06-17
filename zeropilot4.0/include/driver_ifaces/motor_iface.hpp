@@ -19,5 +19,5 @@ class IMotorControl {
         virtual ZP_ERROR_e init() = 0;
 
         // Set arm flag
-        virtual ZP_ERROR_e setArm(bool arm) { armFlag = arm; };
+        virtual void setArm(bool arm) { armFlag = arm; };
 };

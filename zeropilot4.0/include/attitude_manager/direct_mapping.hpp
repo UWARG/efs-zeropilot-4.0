@@ -8,5 +8,5 @@ class DirectMapping : public Flightmode {
         DirectMapping() = default;
 
         ZP_ERROR_e activateFlightMode() override;
-        ZP_ERROR_e runControl(RCMotorControlMessage_t &motorOutputs, const DroneState_t &droneState, RCMotorControlMessage_t controlInput) override;
+        ZP_ERROR_e runControl(RCMotorControlMessage_t &motorOutputs, RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
 };

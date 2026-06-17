@@ -10,14 +10,15 @@ PID::PID(float kp, float ki, float kd, float tau,
             integralMaxLim((integralMaxPct / 100.0f) * outputMaxLim) {}
 
 // Initialization method - Can be used as resetter
-void PID::pidInitState() noexcept {
+ZP_ERROR_e PID::pidInitState() noexcept {
     pidIntegral = 0.0f;
     prevError = 0.0f;
     pidDerivative = 0.0f;
     prevMeasurement = 0.0f;
+    return ZP_ERROR_OK;
 }
 
-void PID::setConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+ZP_ERROR_e PID::setConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
     kp = newKp;
     ki = newKi;
     kd = newKd;

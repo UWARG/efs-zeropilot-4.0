@@ -124,7 +124,7 @@ inline ZP_ERROR_e statusTextPack(TMMessage_t &data, uint32_t time_boot_ms, uint8
         size_t len = 0;
         while (len < MAX_LEN && text[len] != '\0') ++len;
 
-        std::memcpy(msgData.statusTextData.text, text, len);
+        memcpy(msgData.statusTextData.text, text, len);
         msgData.statusTextData.text[len] = '\0';
 
         data = TMMessage_t{TMMessage_t::STATUSTEXT_DATA, msgData, time_boot_ms};

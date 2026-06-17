@@ -56,7 +56,7 @@ Mahony::Mahony()
 //-------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float az)
+ZP_ERROR_e Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float az)
 {
 	if (!isInitialized) return ZP_ERROR_NOT_READY;
 	ZP_ERROR_e result = ZP_ERROR_OK;

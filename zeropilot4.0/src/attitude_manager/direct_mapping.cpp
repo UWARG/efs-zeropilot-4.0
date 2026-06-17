@@ -5,9 +5,9 @@ ZP_ERROR_e DirectMapping::activateFlightMode() {
 }
 
 
-ZP_ERROR_e DirectMapping::runControl(RCMotorControlMessage_t &motorOutputs, const DroneState_t &droneState, RCMotorControlMessage_t controlInputs){
+ZP_ERROR_e DirectMapping::runControl(RCMotorControlMessage_t &motorOutputs, RCMotorControlMessage_t controlInput, const DroneState_t &droneState){
     // Copy control inputs directly to motor outputs
-    motorOutputs = controlInputs;
+    motorOutputs = controlInput;
 
     return ZP_ERROR_OK;
 }
