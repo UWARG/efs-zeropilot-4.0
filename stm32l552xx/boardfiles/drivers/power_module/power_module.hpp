@@ -4,7 +4,7 @@
 #include "power_module_iface.hpp"
 #include <cmath>
 #include <cstdint>
-
+#include "zp_error.h"
 
 struct RegInfo {
     uint8_t address;
@@ -44,20 +44,20 @@ static constexpr uint8_t REGISTERS_TO_READ = 5;
 
 class PowerModule : public IPowerModule {
     public:
-        bool readData(PMData_t *data);
-        PowerModule(I2C_HandleTypeDef *hi2c);
-        bool init();
         volatile uint8_t callbackCount;
-        void I2C_MemRxCpltCallback();
-        I2C_HandleTypeDef* getI2C();
-
+        
+        PowerModule(I2C_HandleTypeDef *hi2c);
+        ZP_ERROR_e init();
+        ZP_ERROR_e readData(PMData_t *data);
+        ZP_ERROR_e I2C_MemRxCpltCallback();
+        ZP_ERROR_e getI2C(I2C_HandleTypeDef*& out_hi2c);
 
     private:
         PMData_t processedData;
         I2C_HandleTypeDef *hi2c;
-        bool writeRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        bool readRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        void parse(I2C_HandleTypeDef *hi2c);
+        ZP_ERROR_e writeRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
+        ZP_ERROR_e readRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
+        ZP_ERROR_e parse(I2C_HandleTypeDef *hi2c);
 
 
         uint8_t vbusData[3];

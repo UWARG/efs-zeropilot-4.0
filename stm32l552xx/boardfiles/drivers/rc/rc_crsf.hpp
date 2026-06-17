@@ -23,13 +23,13 @@ class CRSFReceiver : public IRCReceiver {
     public:
         CRSFReceiver(UART_HandleTypeDef *uart);
 
-        RCControl getRCData() override;
+        ZP_ERROR_e getRCData(RCControl &data) override;
 
-        void init();
-        void startDMA();
+        ZP_ERROR_e init();
+        ZP_ERROR_e startDMA();
 
-        void parse();
-        UART_HandleTypeDef * getHUART();
+        ZP_ERROR_e parse();
+        ZP_ERROR_e getHUART(UART_HandleTypeDef *& value);
        
     private:
         UART_HandleTypeDef *uart;

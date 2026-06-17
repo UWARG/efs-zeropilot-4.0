@@ -5,6 +5,4 @@
 #include "sm_threads.hpp"
 #include "tm_threads.hpp"
 
-#include "zp_error.h"
-
-ZP_ERROR_e initThreads();
+void initThreads();

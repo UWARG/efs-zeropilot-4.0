@@ -4,9 +4,12 @@
 PowerModule::PowerModule(I2C_HandleTypeDef* hi2c) : hi2c(hi2c) {
 }
 
-bool PowerModule::init() {
+ZP_ERROR_e PowerModule::init() {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     callbackCount = 0;
-    bool success = (HAL_I2C_IsDeviceReady(hi2c, INA228_ADDR << 1, 1, 100) == HAL_OK);
+    if (HAL_I2C_IsDeviceReady(hi2c, INA228_ADDR << 1, 1, 100) != HAL_OK) {
+        result |= ZP_ERROR_FAIL;
+    }
     uint8_t pData[2];
 
     /*
@@ -14,66 +17,79 @@ bool PowerModule::init() {
     */
     pData[0] = (SHUNT_CAL_VALUE >> 8) & 0x7F;
     pData[1] = SHUNT_CAL_VALUE & 0xFF;
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_SHUNT_CAL.address, I2C_MEMADD_SIZE_8BIT, pData, REG_SHUNT_CAL.byte_size, 100) == HAL_OK);
+    if (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_SHUNT_CAL.address, I2C_MEMADD_SIZE_8BIT, pData, REG_SHUNT_CAL.byte_size, 100) != HAL_OK) {
+        result |= ZP_ERROR_FAIL;
+    };
 
 
     pData[0] = (ADC_CONFIG_VALUE >> 8) & 0xFF;
     pData[1] = ADC_CONFIG_VALUE & 0xFF;
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_ADC_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_ADC_CONFIG.byte_size, 100) == HAL_OK);
+    if (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_ADC_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_ADC_CONFIG.byte_size, 100) != HAL_OK) {
+        result |= ZP_ERROR_FAIL;
+    };
 
     uint16_t config = CONFIG_VALUE;
     pData[0] = (config >> 8) & 0xFF;
     pData[1] = config & 0xFF;
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_CONFIG.byte_size, 100) == HAL_OK);
-
+    if (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_CONFIG.byte_size, 100) == HAL_OK) {
+        result |= ZP_ERROR_FAIL;
+    };
 
     /*
     Starting DMA loop
     */
 
-   if(success) {
+   if(result == ZP_ERROR_OK) {
         dataFilled = 0;
         parse(hi2c);
     }
 
-    return success;
+    return result;
 }
 
 
-bool PowerModule::writeRegister(
+ZP_ERROR_e PowerModule::writeRegister(
                                 uint16_t memAddress,
                                 uint8_t * pData,
                                 uint16_t size,
                                 I2C_HandleTypeDef *hi2c) {
 
-    return HAL_I2C_Mem_Write_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
-
+    if (HAL_I2C_Mem_Write_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else {
+        return ZP_ERROR_FAIL;
+    }
 }
 
-bool PowerModule::readRegister(
+ZP_ERROR_e PowerModule::readRegister(
                                 uint16_t memAddress,
                                 uint8_t * pData,
                                 uint16_t size,
                                 I2C_HandleTypeDef *hi2c) {
 
-    return HAL_I2C_Mem_Read_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
+    if (HAL_I2C_Mem_Read_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else {
+        return ZP_ERROR_FAIL;
+    }
 }
 
-void PowerModule::I2C_MemRxCpltCallback() {
+ZP_ERROR_e PowerModule::I2C_MemRxCpltCallback() {
     callbackCount++;
+    ZP_ERROR_e result = ZP_ERROR_OK;
 
     switch(callbackCount) {
         case 1: // read current
-            readRegister(REG_CURRENT.address, currentData, REG_CURRENT.byte_size, hi2c);
+            result |= readRegister(REG_CURRENT.address, currentData, REG_CURRENT.byte_size, hi2c);
             break;
         case 2: // read power
-            readRegister(REG_POWER.address, powerData, REG_POWER.byte_size, hi2c);
+            result |= readRegister(REG_POWER.address, powerData, REG_POWER.byte_size, hi2c);
             break;
         case 3: // read charge
-            readRegister(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size, hi2c);
+            result |= readRegister(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size, hi2c);
             break;
         case 4: // read energy
-            readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
+            result |= readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
             break;
         case 5:
             callbackCount = 0;
@@ -83,19 +99,21 @@ void PowerModule::I2C_MemRxCpltCallback() {
             break;
     }
 
-    return;
+    return result;
 }
 
 
 
-void PowerModule::parse(I2C_HandleTypeDef *hi2c) {
+ZP_ERROR_e PowerModule::parse(I2C_HandleTypeDef *hi2c) {
     // start the cycle
-    if (dataFilled) return;
-    readRegister(REG_VBUS.address, vbusData, REG_VBUS.byte_size, hi2c);
+    ZP_ERROR_e result = ZP_ERROR_OK;
+    if (dataFilled) return result;
+    result |= readRegister(REG_VBUS.address, vbusData, REG_VBUS.byte_size, hi2c);
+    return result;
 }
 
-bool PowerModule::readData(PMData_t *data) {
-
+ZP_ERROR_e PowerModule::readData(PMData_t *data) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     // two's complement
     processedData.busVoltage = (((vbusData[0] << 16) | (vbusData[1] << 8) | vbusData[2]) >> 4) * VBUS_LSB;
     
@@ -115,11 +133,12 @@ bool PowerModule::readData(PMData_t *data) {
     dataFilled = 0;
     parse(hi2c);
 
-    return true;
+    return result;
 }
 
-I2C_HandleTypeDef* PowerModule::getI2C() {
-    return hi2c;
+ZP_ERROR_e PowerModule::getI2C(I2C_HandleTypeDef*& out_hi2c) {
+    out_hi2c = hi2c;
+    return ZP_ERROR_OK;
 }
 
 

@@ -15,28 +15,28 @@ class SBUSReceiver : public IRCReceiver {
     public:
         SBUSReceiver(UART_HandleTypeDef *uart);
 
-        RCControl getRCData() override;
+        ZP_ERROR_e getRCData(RCControl &data) override;
 
-        UART_HandleTypeDef* getHUART();
+        ZP_ERROR_e getHUART(UART_HandleTypeDef*& value);
 
         /**
          * @brief starts DMA receive
          */
-        void init();
+        ZP_ERROR_e init();
 
         /**
          * @brief restarts DMA
          */
-        void startDMA();
+        ZP_ERROR_e startDMA();
         /**
          * @brief Updates RCControl values
          */
-        void parse();
+        ZP_ERROR_e parse();
        
     private:
         UART_HandleTypeDef *uart;
         RCControl rcData;
         uint8_t rawSbus[SBUS_PACKET_SIZE];
 
-        float sbusToRCControl(uint8_t *buf, int channelMappingIdx);
+        ZP_ERROR_e sbusToRCControl(uint8_t *buf, int channelMappingIdx, float &output);
 };
