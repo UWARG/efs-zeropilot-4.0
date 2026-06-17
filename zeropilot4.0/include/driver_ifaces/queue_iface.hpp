@@ -10,8 +10,8 @@ class IMessageQueue {
     public: 
         virtual ~IMessageQueue() = default;
 
-        virtual ZP_ERROR_e get(T *message) = 0;
-        virtual ZP_ERROR_e push(T *message) = 0;
-        virtual ZP_ERROR_e count(int &count_value) = 0;
-        virtual ZP_ERROR_e remainingCapacity(int &capacity) = 0;
+        virtual int get(T *message) = 0;
+        virtual int push(T *message) = 0;
+        virtual int count(int &count_value) = 0;
+        virtual int remainingCapacity(int &capacity) = 0;
 };

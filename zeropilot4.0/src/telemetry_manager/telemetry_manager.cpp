@@ -46,7 +46,6 @@ ZP_ERROR_e TelemetryManager::tmUpdate() {
 ZP_ERROR_e TelemetryManager::processParamTx() {
     ZP_ERROR_e result = ZP_ERROR_OK;
     constexpr uint8_t BURST_SZ = 4;
-    uint16_t paramCount = 0;
 
     for (uint8_t i = 0; i < BURST_SZ; ++i) {
         if (currParamListTxIdx >= ZP_PARAM::getCount()) {
