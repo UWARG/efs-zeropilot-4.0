@@ -80,7 +80,7 @@ ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
             mavlink_message_t mavlinkMessage = {0};
             TMMessage_t tmqMessage = {};
 
-            result |= tmTXQueueDriver->get(&tmqMessage);
+            tmTXQueueDriver->get(&tmqMessage);
             
             if (result == ZP_ERROR_OK) {
                 switch (tmqMessage.dataType) {
@@ -146,7 +146,7 @@ ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
                 }
                 
                 if (mavlinkMessage.len > 0) {
-                    result |= packedMsgBuffer->push(&mavlinkMessage);
+                    packedMsgBuffer->push(&mavlinkMessage);
                 }
             }
         }
@@ -164,7 +164,7 @@ ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
             if (mavlinkMessage.len == 0) {
                 result |= ZP_ERROR_FAIL;
             } else {
-                result |= packedMsgBuffer->push(&mavlinkMessage);
+                packedMsgBuffer->push(&mavlinkMessage);
             }
         }
     }
@@ -184,11 +184,11 @@ ZP_ERROR_e TelemetryManager::transmit() {
     }
 
     uint16_t qCount = 0;
-    result |= packedMsgBuffer->count(qCount);
+    packedMsgBuffer->count(qCount);
 
     if (result == ZP_ERROR_OK && !(qCount == 0 && txBufIdx == 0)) {
         while (qCount > 0 && txBufIdx < TM_MAX_TX_BYTES) {
-            result |= packedMsgBuffer->get(&msgToTX);
+            packedMsgBuffer->get(&msgToTX);
             if (result != ZP_ERROR_OK) break;
 
             const uint16_t MSG_LEN = mavlink_msg_to_send_buffer(txBuffer + txBufIdx, &msgToTX);
@@ -288,7 +288,7 @@ ZP_ERROR_e TelemetryManager::enqueueParamValueTx(uint16_t index) {
             p->paramId, p->paramValue, p->paramType,
             ZP_PARAM::getCount(), index
         );
-        result |= packedMsgBuffer->push(&response);
+        packedMsgBuffer->push(&response);
     } else if (p == nullptr) {
         result |= ZP_ERROR_FAIL;
     }
