@@ -70,7 +70,7 @@ ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
     ZP_ERROR_e result = ZP_ERROR_OK;
     uint16_t count = 0;
 
-    result = tmTXQueueDriver->count(count);
+    tmTXQueueDriver->count(count);
 
     if (result == ZP_ERROR_OK) {
         TMMessage rcMsg = {};
@@ -183,7 +183,7 @@ ZP_ERROR_e TelemetryManager::transmit() {
         overflowMsgPending = false;
     }
 
-    uint16_t qCount = 0;
+    int qCount = 0;
     packedMsgBuffer->count(qCount);
 
     if (result == ZP_ERROR_OK && !(qCount == 0 && txBufIdx == 0)) {
@@ -277,7 +277,6 @@ ZP_ERROR_e TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
 ZP_ERROR_e TelemetryManager::enqueueParamValueTx(uint16_t index) {
     ZP_ERROR_e result = ZP_ERROR_OK;
     Param_t* p = nullptr;
-    uint16_t paramCount = 0;
 
     result |= ZP_PARAM::getParamByIndex(index, p);
 
