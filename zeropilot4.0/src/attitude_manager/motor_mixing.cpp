@@ -146,7 +146,7 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
     float idealThrottle = fminf(0.5f, throttleAvgMax);
 
     // Add roll and pitch, while finding the yaw allowed at the same time
-    float yaw_allowed = 1.0f;
+    float yawAllowed = 1.0f;
     for (int i = 0; i < NUM_MOTORS; i++) {
         mixed[i] = roll * ROLL_SIGN[i] + pitch * PITCH_SIGN[i];
 
@@ -154,57 +154,57 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
         float motorRoom = (yaw * YAW_SIGN[i] >= 0) 
                             ? 1.0f - predictedMotorThrust // Yaw is added to overall thrust
                             : predictedMotorThrust; // Yaw is subtracted from overall thrust
-        yaw_allowed = fminf(yaw_allowed, fmaxf(motorRoom, 0)); // fmaxf(motorRoom, 0) so motorRoom being negative means 0 yaw allowed
+        yawAllowed = fminf(yawAllowed, fmaxf(motorRoom, 0)); // fmaxf(motorRoom, 0) so motorRoom being negative means 0 yaw allowed
     }
 
     // Clip yaw 
-    yaw_allowed = fmaxf(YAW_HEADROOM, yaw_allowed); // Yaw is at least the headroom reserved
-    if (fabsf(yaw) > yaw_allowed) {
-        yaw = fmaxf(-yaw_allowed, fminf(yaw, yaw_allowed));
+    yawAllowed = fmaxf(YAW_HEADROOM, yawAllowed); // Yaw is at least the headroom reserved
+    if (fabsf(yaw) > yawAllowed) {
+        yaw = fmaxf(-yawAllowed, fminf(yaw, yawAllowed));
     }
     
     // Add yaw in and track the range rpy spans
-    float rpy_max = 0.0f;
-    float rpy_min = 1.0f;
+    float rpyMax = 0.0f;
+    float rpyMin = 1.0f;
     for (int i = 0; i < NUM_MOTORS; i++) {
         mixed[i] += yaw * YAW_SIGN[i];
-        rpy_max = fmaxf(rpy_max, mixed[i]);
-        rpy_min = fminf(rpy_min, mixed[i]);
+        rpyMax = fmaxf(rpyMax, mixed[i]);
+        rpyMin = fminf(rpyMin, mixed[i]);
     }
 
     // Scale rpy span
-    float rpy_scale = 1.0f;
-    if (rpy_max - rpy_min >= 1.0f) {
+    float rpyScale = 1.0f;
+    if (rpyMax - rpyMin >= 1.0f) {
         // Total rpy span exceeds 1.0, scale everything down
-        rpy_scale = 1.0f / (rpy_max - rpy_min);
+        rpyScale = 1.0f / (rpyMax - rpyMin);
     }
-    if (throttleAvgMax + rpy_min < 0.0f) {
+    if (throttleAvgMax + rpyMin < 0.0f) {
         // The lowest value motor still below 0 after applying the max allowed collective thrust 
-        rpy_scale = fminf(rpy_scale, fabsf(throttleAvgMax / rpy_min)); // Scale down rpy together to make the lowest motor fit
+        rpyScale = fminf(rpyScale, fabsf(throttleAvgMax / rpyMin)); // Scale down rpy together to make the lowest motor fit
     }
-    rpy_max *= rpy_scale;
-    rpy_min *= rpy_scale;
+    rpyMax *= rpyScale;
+    rpyMin *= rpyScale;
 
     // Collective throttle that prevents the lowest motor from going negative
-    float minThrottle = fabsf(rpy_min); 
+    float minThrottle = fabsf(rpyMin); 
     // The amount needed to shift up from minThrottle to match the commanded throttle
-    float throttle_adj = throttle - minThrottle;
+    float throttleAdj = throttle - minThrottle;
     // Calculate throttle to add
-    if (rpy_scale < 1.0f) {
+    if (rpyScale < 1.0f) {
         // The rpy already saturated so no room for throttle
-        throttle_adj = 0.0f;
-    } else if (throttle_adj < 0.0f) {
+        throttleAdj = 0.0f;
+    } else if (throttleAdj < 0.0f) {
         // Wants less throttle than minThrottle, will make some motor negative, drop it(not decreasing throttle)
-        throttle_adj = 0.0f;
-    } else if (throttle_adj > (1.0f - minThrottle - rpy_max)) {
+        throttleAdj = 0.0f;
+    } else if (throttleAdj > (1.0f - minThrottle - rpyMax)) {
         // Wants more throttle but has no room, cap it to the available room
-        throttle_adj = 1.0f - minThrottle - rpy_max;
+        throttleAdj = 1.0f - minThrottle - rpyMax;
     }
-    float finalThrottle = minThrottle + throttle_adj;
+    float finalThrottle = minThrottle + throttleAdj;
 
     // Final output
     for (int i = 0; i < NUM_MOTORS; i++) {
-        mixed[i] = finalThrottle + rpy_scale * mixed[i];
+        mixed[i] = finalThrottle + rpyScale * mixed[i];
     }
     
      // Place mixed motor outputs into physical channels by function

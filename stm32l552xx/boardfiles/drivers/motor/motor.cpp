@@ -22,7 +22,3 @@ void MotorControl::init() {
     __HAL_TIM_SET_COMPARE(timer, timerChannel, minCCR);
     HAL_TIM_PWM_Start(timer, timerChannel);
 }
-
-void MotorControl::setArm(bool arm) {
-    armFlag = arm;
-}
