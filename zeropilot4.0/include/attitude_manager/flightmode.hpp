@@ -3,6 +3,7 @@
 #include "rc_motor_control.hpp"
 #include "drone_state.hpp"
 #include <cstdint>
+#include "zp_error.h"
 
 class Flightmode {
     protected:

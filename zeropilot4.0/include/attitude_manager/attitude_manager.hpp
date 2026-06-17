@@ -12,6 +12,7 @@
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
+#include "zp_error.h"
 
 #define AM_SCHEDULING_RATE_HZ 100
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -36,7 +37,7 @@ class AttitudeManager {
             MotorGroupInstance_t *mainMotorGroup
         );
 
-        void amUpdate();
+        ZP_ERROR_e amUpdate();
 
     private:
         ISystemUtils *systemUtilsDriver;
@@ -69,17 +70,15 @@ class AttitudeManager {
         int noDataCount;
         bool failsafeTriggered;
 
-        bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
+        ZP_ERROR_e getControlInputs(RCMotorControlMessage_t *pControlMsg);
+        ZP_ERROR_e outputToMotors(RCMotorControlMessage_t outputControlMsg);
 
-        void outputToMotors(RCMotorControlMessage_t outputControlMsg);
-
-        void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-        void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
-        void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
-        void sendServoOutputRawToTelemetryManager();
+        ZP_ERROR_e sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
+        ZP_ERROR_e sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
+        ZP_ERROR_e sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+        ZP_ERROR_e sendServoOutputRawToTelemetryManager();
         
         uint8_t profilerId;
-        
         AMParamSetup paramSetup;
 
 };

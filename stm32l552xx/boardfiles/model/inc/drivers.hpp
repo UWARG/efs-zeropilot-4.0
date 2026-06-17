@@ -1,5 +1,6 @@
 #pragma once
 
+#include "zp_error.h"
 #include "systemutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"

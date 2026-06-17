@@ -1,9 +1,13 @@
 #include "direct_mapping.hpp"
 
-void DirectMapping::activateFlightMode() {
+ZP_ERROR_e DirectMapping::activateFlightMode() {
     // No activation tasks for DirectMapping
 }
 
-RCMotorControlMessage_t DirectMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState){
-    return controlInputs;
+
+ZP_ERROR_e DirectMapping::runControl(RCMotorControlMessage_t &motorOutputs, const DroneState_t &droneState, RCMotorControlMessage_t controlInputs){
+    // Copy control inputs directly to motor outputs
+    motorOutputs = controlInputs;
+
+    return ZP_ERROR_OK;
 }

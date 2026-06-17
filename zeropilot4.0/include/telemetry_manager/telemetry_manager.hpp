@@ -20,6 +20,8 @@
 #include "rc_motor_control.hpp"
 #include "telemlink_iface.hpp"
 #include "tm_param_setup.hpp"
+#include "zp_error.h"
+
 class TelemetryManager {
     friend class TMParamSetup;
 
@@ -38,12 +40,12 @@ class TelemetryManager {
     uint8_t txBuffer[TM_MAX_TX_BYTES];
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
 
-    void processRxMsg(const mavlink_message_t &msg);
-    void processTXMsgQueue();
-    void transmit();
-    void receive();
-    void processParamTx();
-    void enqueueParamValueTx(uint16_t index);
+    ZP_ERROR_e processRxMsg(const mavlink_message_t &msg);
+    ZP_ERROR_e processTXMsgQueue();
+    ZP_ERROR_e transmit();
+    ZP_ERROR_e receive();
+    ZP_ERROR_e processParamTx();
+    ZP_ERROR_e enqueueParamValueTx(uint16_t index);
 
     uint8_t profilerId;
     
@@ -51,7 +53,7 @@ class TelemetryManager {
     TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();
 
-    void tmUpdate();
+    ZP_ERROR_e tmUpdate();
 
     TMParamSetup paramSetup;
 };

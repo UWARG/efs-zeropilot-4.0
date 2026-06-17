@@ -1,5 +1,7 @@
 #pragma once
 
+#include "zp_error.h"
+
 class ILogger {
     protected:
         ILogger() = default;

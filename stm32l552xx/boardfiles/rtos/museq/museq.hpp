@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cmsis_os.h"
+#include "zp_error.h"
 
 /* --- mutexes --- */
 /* declare mutexes begin*/

@@ -2,6 +2,7 @@
 
 #include "iwdg_iface.hpp"
 #include "stm32l5xx_hal.h"
+#include "zp_error.h"
 
 class IndependentWatchdog : public IIndependentWatchdog{
     private:

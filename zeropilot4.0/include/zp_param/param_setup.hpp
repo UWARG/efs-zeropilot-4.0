@@ -3,6 +3,6 @@
 class IParamSetup {
    public:
     virtual ~IParamSetup() = default;
-    virtual void loadAllParams() = 0;
-    virtual void bindAllParamCallbacks() = 0;
+    virtual ZP_ERROR_e loadAllParams() = 0;
+    virtual ZP_ERROR_e bindAllParamCallbacks() = 0;
 };

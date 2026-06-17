@@ -1,4 +1,5 @@
 #pragma once
+#include "zp_error.h"
 
 class IIndependentWatchdog {
     protected:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rc_datatypes.hpp"
+#include "zp_error.h"
 
 class IRCReceiver { 
     protected:
@@ -10,5 +11,5 @@ class IRCReceiver {
         virtual ~IRCReceiver() = default;
 
         // get RCControl data that is parsed from sbus
-        virtual RCControl getRCData() = 0;
+        virtual ZP_ERROR_e getRCData(RCControl &data) = 0;
 };

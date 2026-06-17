@@ -4,6 +4,7 @@
 #include "gps_iface.hpp"
 #include "gps_datatypes.hpp"
 #include "gps_defines.hpp"
+#include "zp_error.h"
 #include <cmath>
 
 class GPS : public IGPS {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cmsis_os.h"
+#include "zp_error.h"
 
 #ifdef __cplusplus
 extern "C" {

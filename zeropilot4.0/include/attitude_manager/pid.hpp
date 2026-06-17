@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-
+#include "zp_error.h"
 class PID {
     public:
         // PID object constructor
@@ -24,7 +24,7 @@ class PID {
         void setIntegralMaxLimPct(uint8_t pct) noexcept;
 
         // Computes PID for a measurement with its desired setpoint passed in
-        float pidOutput(float setpoint, float measurement) noexcept;
+        ZP_ERROR_e pidOutput(float setpoint, float measurement, float &output) noexcept;
 
 
     private:

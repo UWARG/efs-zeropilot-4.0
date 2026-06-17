@@ -3,6 +3,7 @@
 #include "queue_iface.hpp"
 #include "cmsis_os2.h"
 #include "utils.h"
+#include "zp_error.h"
 
 template <typename T>
 class MessageQueue : public IMessageQueue<T> {

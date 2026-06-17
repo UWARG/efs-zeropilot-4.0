@@ -3,6 +3,7 @@
 #include "telemlink_iface.hpp"
 #include "rfd_defines.hpp"
 #include "stm32l5xx_hal.h"
+#include "zp_error.h"
 
 class RFD : public ITelemLink {
 
