@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cstdint>
 typedef enum {
     ZP_ERROR_OK                   = 0x0000, // Operation completed successfully
     ZP_ERROR_FAIL                 = 0x0001, // Generic failure. Prioritize classifying errors listed below first.

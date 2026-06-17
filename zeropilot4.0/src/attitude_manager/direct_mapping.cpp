@@ -2,6 +2,7 @@
 
 ZP_ERROR_e DirectMapping::activateFlightMode() {
     // No activation tasks for DirectMapping
+    return ZP_ERROR_OK;
 }
 
 

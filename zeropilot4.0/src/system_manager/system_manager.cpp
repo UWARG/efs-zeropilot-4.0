@@ -224,8 +224,11 @@ ZP_ERROR_e SystemManager::updateBatteryFSM() {
 }
 
 ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t rcDataMsg;
-    ZP_ERROR_e result = rcDataPack(rcDataMsg, systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    result |= rcDataPack(rcDataMsg, currentTime, rcData.controlSignals, INPUT_CHANNELS);
     
     if (result == ZP_ERROR_OK) {
         result |= tmQueue->push(&rcDataMsg);
@@ -234,8 +237,11 @@ ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) 
 }
 
 ZP_ERROR_e SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t hbDataMsg;
-    ZP_ERROR_e result = heartbeatPack(hbDataMsg, systemUtilsDriver->getCurrentTimestampMs(), baseMode, customMode, systemStatus);
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    result |= heartbeatPack(hbDataMsg, currentTime, baseMode, customMode, systemStatus);
     
     if (result == ZP_ERROR_OK) {
         result |= tmQueue->push(&hbDataMsg);
@@ -282,7 +288,9 @@ ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t 
         }
 
         TMMessage_t batteryDataMsg;
-        result |= batteryDataPack(batteryDataMsg, systemUtilsDriver->getCurrentTimestampMs(), BATTERY_ID, 
+        uint32_t currentTime = 0;
+        result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+        result |= batteryDataPack(batteryDataMsg, currentTime, BATTERY_ID, 
                                   INT16_MAX, voltages, VOLTAGE_LEN, batteryData.pmData.current, 
                                   static_cast<int32_t>(batteryData.pmData.charge), 
                                   static_cast<int32_t>(batteryData.pmData.energy), 
@@ -296,8 +304,11 @@ ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t 
 }
 
 ZP_ERROR_e SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t statusTextMsg;
-    ZP_ERROR_e result = statusTextPack(statusTextMsg, systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
+    uint32_t currentTime = 0;
+    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    result |= statusTextPack(statusTextMsg, currentTime, severity, text, id, chunk_seq);
     
     if (result == ZP_ERROR_OK) {
         result |= tmQueue->push(&statusTextMsg);

@@ -255,7 +255,7 @@ ZP_ERROR_e AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsDa
     TMMessage_t gpsDataMsg;
     uint32_t currentTime = 0;
     result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
-    ZP_ERROR_e result = gpsRawDataPack(gpsDataMsg, currentTime, fixType, latE7, lonE7, altMM, 
+    result |= gpsRawDataPack(gpsDataMsg, currentTime, fixType, latE7, lonE7, altMM, 
                                       UINT16_MAX, UINT16_MAX, velCmS, cogCDeg, gpsData.numSatellites, 
                                       0, 0, 0, 0, 0, 0);
 
@@ -268,7 +268,7 @@ ZP_ERROR_e AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imu
     TMMessage_t imuDataMsg;
     uint32_t currentTime = 0;
     result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
-    ZP_ERROR_e result = rawImuDataPack(imuDataMsg, currentTime, imuData.xacc, imuData.yacc, imuData.zacc, imuData.xgyro, imuData.ygyro, imuData.zgyro);
+    result |= rawImuDataPack(imuDataMsg, currentTime, imuData.xacc, imuData.yacc, imuData.zacc, imuData.xgyro, imuData.ygyro, imuData.zgyro);
     
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&imuDataMsg);
     return result;
@@ -279,7 +279,7 @@ ZP_ERROR_e AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t 
     TMMessage_t attitudeDataMsg;
     uint32_t currentTime = 0;
     result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
-    ZP_ERROR_e result = attitudeDataPack(attitudeDataMsg, currentTime, attitude.roll, attitude.pitch, attitude.yaw);
+    result |= attitudeDataPack(attitudeDataMsg, currentTime, attitude.roll, attitude.pitch, attitude.yaw);
     
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&attitudeDataMsg);
     return result;
@@ -290,7 +290,7 @@ ZP_ERROR_e AttitudeManager::sendServoOutputRawToTelemetryManager() {
     TMMessage_t servoOutputMsg;
     uint32_t currentTime = 0;
     result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
-    ZP_ERROR_e result = servoOutputRawPack(servoOutputMsg, currentTime, 0, lastServoOutputs);
+    result |= servoOutputRawPack(servoOutputMsg, currentTime, 0, lastServoOutputs);
     
     if (result == ZP_ERROR_OK) result |= tmQueue->push(&servoOutputMsg);
     return result;
