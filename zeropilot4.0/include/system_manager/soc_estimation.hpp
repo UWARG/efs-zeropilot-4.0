@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include "driver_ifaces/power_module_iface.hpp"
+#include "power_module_iface.hpp"
 #include "mavlink.h"
 
 #define SOC_IDLE_MODE 0
