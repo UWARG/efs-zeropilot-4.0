@@ -112,8 +112,8 @@ ZP_ERROR_e SystemManager::smUpdate() {
 
     // Log if new messages
     int counter = 0;
-    smLoggerQueue->count(counter);
-    if (counter > 0) {
+    result |= smLoggerQueue->count(counter);
+    if (counter > 0 && result == ZP_ERROR_OK) {
         result |= sendMessagesToLogger();
     }
 
@@ -231,7 +231,7 @@ ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) 
     result |= rcDataPack(rcDataMsg, currentTime, rcData.controlSignals, INPUT_CHANNELS);
     
     if (result == ZP_ERROR_OK) {
-        tmQueue->push(&rcDataMsg);
+        result |= tmQueue->push(&rcDataMsg);
     }
     return result;
 }
@@ -244,7 +244,7 @@ ZP_ERROR_e SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, 
     result |= heartbeatPack(hbDataMsg, currentTime, baseMode, customMode, systemStatus);
     
     if (result == ZP_ERROR_OK) {
-        tmQueue->push(&hbDataMsg);
+        result |= tmQueue->push(&hbDataMsg);
     }
     return result;
 }
@@ -264,7 +264,7 @@ ZP_ERROR_e SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
         rcDataMessage.flapAngle = rcData.aux2;
         rcDataMessage.flightMode = fltMode;
 
-        amRCQueue->push(&rcDataMessage);
+        result |= amRCQueue->push(&rcDataMessage);
     }
     return result;
 }
@@ -297,7 +297,7 @@ ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t 
                                   socPercentage, timeRemainingSec, batteryData.chargeState);
         
         if (result == ZP_ERROR_OK) {
-            tmQueue->push(&batteryDataMsg);
+            result |= tmQueue->push(&batteryDataMsg);
         }
     }
     return result;
@@ -311,7 +311,7 @@ ZP_ERROR_e SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity
     result |= statusTextPack(statusTextMsg, currentTime, severity, text, id, chunk_seq);
     
     if (result == ZP_ERROR_OK) {
-        tmQueue->push(&statusTextMsg);
+        result |= tmQueue->push(&statusTextMsg);
     }
     return result;
 }
@@ -333,11 +333,11 @@ ZP_ERROR_e SystemManager::sendMessagesToLogger() {
     int msgCount = 0;
     int queueCount = 0;
 
-    smLoggerQueue->count(queueCount);
+    result |= smLoggerQueue->count(queueCount);
 
     if (result == ZP_ERROR_OK) {
         while (queueCount-- > 0) {
-            smLoggerQueue->get(&messages[msgCount]);
+            result |= smLoggerQueue->get(&messages[msgCount]);
             if (result != ZP_ERROR_OK) break;
             msgCount++;
         }

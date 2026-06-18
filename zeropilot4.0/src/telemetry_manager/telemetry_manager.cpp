@@ -70,7 +70,7 @@ ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
     ZP_ERROR_e result = ZP_ERROR_OK;
     int count = 0;
 
-    tmTXQueueDriver->count(count);
+    result |= tmTXQueueDriver->count(count);
 
     if (result == ZP_ERROR_OK) {
         TMMessage rcMsg = {};
@@ -80,7 +80,7 @@ ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
             mavlink_message_t mavlinkMessage = {0};
             TMMessage_t tmqMessage = {};
 
-            tmTXQueueDriver->get(&tmqMessage);
+            result |= tmTXQueueDriver->get(&tmqMessage);
             
             if (result == ZP_ERROR_OK) {
                 switch (tmqMessage.dataType) {
