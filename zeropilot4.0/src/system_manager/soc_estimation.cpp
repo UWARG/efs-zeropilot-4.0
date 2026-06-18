@@ -13,7 +13,7 @@ int32_t SocEstimator::getTimeRemaining(){
     return socData.timeRemaining;
 }
 
-void SocEstimator::calcStateOfCharge(BatteryData_t batteryData, bool mode) {
+void SocEstimator::calcStateOfCharge(BatteryData_t batteryData, int mode) {
     float currVoltage = batteryData.pmData.busVoltage;            
     float batteryCharge = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY) * 3.6f; // mA to C
     float remainingCharge = batteryCharge - batteryData.pmData.charge;
