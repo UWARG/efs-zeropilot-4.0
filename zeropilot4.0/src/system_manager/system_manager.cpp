@@ -1,7 +1,6 @@
 #include "system_manager.hpp"
 #include "zp_params.hpp"
 #include "flightmode.hpp"
-#include "soc_estimation.hpp"
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
