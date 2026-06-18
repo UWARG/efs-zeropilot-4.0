@@ -48,9 +48,9 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
     if (currRegisterBank == bank) {
         return HAL_OK;
     }
-    uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
+    uint8_t txBuf[2] = {REG_BANK_SEL, bank};
     csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
 
     currRegisterBank = bank;
@@ -58,14 +58,14 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
 }
 
 
-HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
+HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data) {
     
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
         return status;
     }
     
-    uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // Set 8-th bit to 1 for read, page 53
+    uint8_t tx[2] = {(uint8_t)(registerAddr | 0b10000000), 0}; // Set 8-th bit to 1 for read, page 53
     uint8_t rx[2] = {0, 0};
 
     csLow();
@@ -78,15 +78,15 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t
 }
 
 
-HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
+HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
     
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
         return status;
     }
-    uint8_t tx_buf[2] = {register_addr, data};
+    uint8_t txBuf[2] = {registerAddr, data};
     csLow();
-    status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+    status = HAL_SPI_Transmit(_spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
     return status;
 }
@@ -113,8 +113,8 @@ uint8_t IMU::whoAmI() {
 }
 
 
-float IMU::lowPassFilter(float raw_value, int select) {
-    _filteredGyro[select] = _alpha * raw_value + (1 - _alpha) * _filteredGyro[select];
+float IMU::lowPassFilter(float rawValue, int select) {
+    _filteredGyro[select] = _alpha * rawValue + (1 - _alpha) * _filteredGyro[select];
     return _filteredGyro[select];
 }
 

@@ -45,8 +45,8 @@ private:
 	uint16_t fifoSize = 0;
 
 	// Utility functions
-	HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data); // Blocking
-	HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t register_addr, uint8_t *data); // Blocking
+	HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); // Blocking
+	HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t *data); // Blocking
 
 	void csLow();
 	void csHigh();
@@ -63,7 +63,7 @@ private:
 	void setFIFO();
 
 	// Filtering
-	float lowPassFilter(float raw_value, int select);
+	float lowPassFilter(float rawValue, int select);
 
 	// Internal variables
 	float _alpha;
