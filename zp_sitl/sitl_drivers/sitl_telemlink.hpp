@@ -130,9 +130,8 @@ class SITL_TELEM : public ITelemLink {
                     received_size = static_cast<uint16_t>(receivedBytes);
                     return ZP_ERROR_OK;
                 }
-            } else {
-                received_size = 0;
-                return ZP_ERROR_RESOURCE_UNAVAILABLE;
             }
+            received_size = 0;
+            return ZP_ERROR_FAIL;
     }
-}
+};

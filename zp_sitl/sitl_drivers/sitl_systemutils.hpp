@@ -12,6 +12,7 @@ public:
     
     ZP_ERROR_e delayMs(uint32_t delay_ms) override {
         std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms));
+        return ZP_ERROR_OK;
     }
     
     ZP_ERROR_e getCurrentTimestampMs(uint32_t& currentTime) override {
