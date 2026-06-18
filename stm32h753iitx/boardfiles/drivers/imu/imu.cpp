@@ -149,7 +149,7 @@ void IMU::dmaTransfer() {
     }
 }
 
-RawImuBatch_t IMU::readRawData() {
+ImuBatch_t IMU::readRawData() {
     // Dont start another dma transaction when last dma is not done
     if (!dmaDone) {
         return rawImuDataBatch;
@@ -220,7 +220,7 @@ void IMU::processRawData() {
     // rawImuDataBatch.zgyro = ((float)-gyr_temp[2]);
 }
 
-ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
+ImuBatch_t IMU::scaleIMUData(const ImuBatch_t &rawDataBatch) {
     
     for (int i = 0; i < rawDataBatch.count; i++) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;

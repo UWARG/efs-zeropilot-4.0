@@ -37,10 +37,10 @@ private:
 	volatile RxStates_e rxFlag = COUNT;
 	volatile bool dmaDone = true;
 
-	RawImu_t rawData[MAX_PACKETS] = {};
-	RawImuBatch_t rawImuDataBatch = {};
-	ScaledImu_t scaledData[MAX_PACKETS] = {};
-	ScaledImuBatch_t scaledImuDataBatch = {};
+	Imu_t rawData[MAX_PACKETS] = {};
+	ImuBatch_t rawImuDataBatch = {};
+	Imu_t scaledData[MAX_PACKETS] = {};
+	ImuBatch_t scaledImuDataBatch = {};
 
 	uint16_t fifoSize = 0;
 
@@ -100,9 +100,9 @@ public:
 	int init() override;
 
 	// Data reading, First read returns all 0s, subsequent reads return latest data
-	RawImuBatch_t readRawData() override; // non-blocking
+	ImuBatch_t readRawData() override; // non-blocking
 
-	ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override;
+	ImuBatch_t scaleIMUData(const ImuBatch_t &rawDataBatch) override;
 
 	// Called in HAL_SPI_TxRxCpltCallback
 	void txRxCallback();
