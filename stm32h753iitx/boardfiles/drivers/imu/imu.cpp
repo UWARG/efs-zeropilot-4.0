@@ -3,22 +3,16 @@
 #include "imu.hpp"
 #include <string.h>
 
-
 #define REG_BANK_SEL          0x76
 #define UB0_REG_WHO_AM_I      0x75
 #define UB0_REG_DEVICE_CONFIG 0x11
 #define UB0_REG_PWR_MGMT0     0x4E
-#define UB0_REG_TEMP_DATA1    0x1D
 #define UB0_FIFO_CONFIG       0x16
 #define UB0_FIFO_CONFIG1      0x5F
 #define UB0_INTF_CONFIG0      0x4C
-#define UB0_FIFO_CONFIG2      0x60
-#define UB0_FIFO_CONFIG3      0x61
 #define UB0_FIFO_DATA         0x30
 #define UB0_FIFO_COUNTH       0x2E
 #define UB0_SIGNAL_PATH_RESET 0x4B
-
-
 
 IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
     : _spi(spiHandle), _csPort(csPort), _csPin(csPin),
@@ -33,16 +27,13 @@ IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
     imuTxBuffer[0] = UB0_FIFO_DATA | 0b10000000;
 }
 
-
 void IMU::csLow() {
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
 }
 
-
 void IMU::csHigh() {
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 }
-
 
 HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
     if (currRegisterBank == bank) {
@@ -56,7 +47,6 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
     currRegisterBank = bank;
     return status;
 }
-
 
 HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data) {
     
@@ -76,7 +66,6 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t*
 
     return status;
 }
-
 
 HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
     
@@ -105,13 +94,11 @@ void IMU::flushFIFO() {
     writeRegister(0, UB0_SIGNAL_PATH_RESET, 0b00000010);
 }
 
-
 uint8_t IMU::whoAmI() {
     uint8_t buffer;
     readRegister(0, UB0_REG_WHO_AM_I, &buffer);
     return buffer;
 }
-
 
 float IMU::lowPassFilter(float rawValue, int select) {
     _filteredGyro[select] = _alpha * rawValue + (1 - _alpha) * _filteredGyro[select];
