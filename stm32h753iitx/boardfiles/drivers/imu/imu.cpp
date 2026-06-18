@@ -84,7 +84,6 @@ void IMU::setLowNoiseMode() {
 }
 
 void IMU::reset() {
-    setBank(0);
     writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
     HAL_Delay(1); // Need one ms delay after reset, 
 }
