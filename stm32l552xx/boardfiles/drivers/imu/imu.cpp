@@ -49,7 +49,6 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
 }
 
 HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data) {
-    
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
         return status;
@@ -68,7 +67,6 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t*
 }
 
 HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
-    
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
         return status;
@@ -221,7 +219,6 @@ void IMU::processRawData() {
 }
 
 ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
-    
     for (int i = 0; i < rawDataBatch.count; i++) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
