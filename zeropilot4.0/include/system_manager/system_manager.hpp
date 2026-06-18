@@ -33,14 +33,6 @@ static constexpr float SM_FLIGHTMODE3_MAX = 49.0f; // (1425 + 1555) / 2 = 1490 -
 static constexpr float SM_FLIGHTMODE4_MAX = 62.0f; // (1555 + 1685) / 2 = 1620 -> scaled/offset to 62.0
 static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -> scaled/offset to 75.0
 
-typedef struct{
-    PMData_t pmData;
-    MAV_BATTERY_CHARGE_STATE chargeState;
-    uint32_t batteryLowCounterMs;
-    uint32_t batteryCritcounterMs;
-    bool isValid;
-} BatteryData_t;
-
 class SystemManager {
     friend class SMParamSetup;
 

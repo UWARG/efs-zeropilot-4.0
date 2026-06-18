@@ -29,7 +29,7 @@ SystemManager::SystemManager(
         oldDataCount(0),
         rcConnected(false),
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
-        socEstimator(&batteryData),
+        socEstimator(batteryData),
         profilerId(0),
         paramSetup(this)
 {

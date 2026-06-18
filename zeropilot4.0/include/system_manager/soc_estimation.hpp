@@ -3,7 +3,13 @@
 #define SOC_IDLE_MODE 0
 #define SOC_CHARGE_DISCHARGE_MODE 1
 
-struct BatteryData_t;
+struct BatteryData_t {
+    PMData_t pmData;
+    MAV_BATTERY_CHARGE_STATE chargeState;
+    uint32_t batteryLowCounterMs;
+    uint32_t batteryCritcounterMs;
+    bool isValid;
+};
 
 typedef struct {
     float voltage;
@@ -44,10 +50,10 @@ constexpr size_t SOC_LUT_SIZE = sizeof(SOC_LUT) / sizeof(SOC_LUT[0]);
 
 class SocEstimator {
     public:
-        SocEstimator(const BatteryData_t &batteryData);
+        SocEstimator(BatteryData_t batteryData);
         uint8_t getSocPercentage();
         int32_t getTimeRemaining();
-        void calcStateOfCharge(const BatteryData_t &batteryData, int mode);
+        void calcStateOfCharge(BatteryData_t batteryData, int mode);
 
     private:
         StateOfCharge_t socData;
