@@ -1,3 +1,4 @@
+#include "soc_estimation.hpp"
 #include "system_manager.hpp"
 #include "zp_params.hpp"
 
