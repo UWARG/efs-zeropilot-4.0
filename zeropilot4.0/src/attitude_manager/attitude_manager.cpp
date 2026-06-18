@@ -31,9 +31,9 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
-    profilerId(0),
     lastTimestamp(0),
     haveLastImuTimestamp(false),
+    profilerId(0),
     paramSetup(this){
 
     paramSetup.loadAllParams();
@@ -87,7 +87,7 @@ void AttitudeManager::amUpdate() {
     droneState.yaw = attitude.yaw;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); // Send the last packed of IMU data
+        if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {

@@ -24,9 +24,9 @@ private:
 
 	static constexpr uint8_t PACKET_SIZE = 16;
 	static constexpr uint8_t MAX_PACKETS = 128;
-	static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1; // Each packet size is 14 bytes
-	volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE];							  // Only first bit register addr to read sensor data, rest 0
-	volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE];							  // First byte is dummy, next 14 bytes are data received
+	static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1; 
+	volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE];							  // First bit should be 1 for register read
+	volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE];							  // First byte is dummy, rest are data received
 
 	uint8_t currRegisterBank = 5; // Invalid initial state
 	typedef enum
@@ -37,10 +37,10 @@ private:
 	volatile RxStates_e rxFlag = COUNT;
 	volatile bool dmaDone = true;
 
-	Imu_t rawData[MAX_PACKETS] = {};
-	ImuBatch_t rawImuDataBatch = {};
-	Imu_t scaledData[MAX_PACKETS] = {};
-	ImuBatch_t scaledImuDataBatch = {};
+	RawImu_t rawData[MAX_PACKETS] = {};
+	RawImuBatch_t rawImuDataBatch = {};
+	ScaledImu_t scaledData[MAX_PACKETS] = {};
+	ScaledImuBatch_t scaledImuDataBatch = {};
 
 	uint16_t fifoSize = 0;
 
@@ -100,9 +100,9 @@ public:
 	int init() override;
 
 	// Data reading, First read returns all 0s, subsequent reads return latest data
-	ImuBatch_t readRawData() override; // non-blocking
+	RawImuBatch_t readRawData() override; // non-blocking
 
-	ImuBatch_t scaleIMUData(const ImuBatch_t &rawDataBatch) override;
+	ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override;
 
 	// Called in HAL_SPI_TxRxCpltCallback
 	void txRxCallback();
