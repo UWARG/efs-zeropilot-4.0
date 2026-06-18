@@ -102,7 +102,6 @@ class SITL_TELEM : public ITelemLink {
                     telemLogCallback(oss.str(), 1);
                 }
             }
-        }
         return ZP_ERROR_OK;
     }
 
@@ -133,10 +132,7 @@ class SITL_TELEM : public ITelemLink {
                 }
             } else {
                 received_size = 0;
-                return ZP_ERROR_FAIL;
+                return ZP_ERROR_RESOURCE_UNAVAILABLE;
             }
-        } else {
-            return ZP_ERROR_RESOURCE_UNAVAILABLE;
-        }
-    };
+    }
 }
