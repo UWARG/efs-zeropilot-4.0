@@ -29,8 +29,7 @@ IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
     memset((void*)imuTxBuffer, 0, RX_BUFFER_SIZE);
     memset((void*)imuRxBuffer, 0, RX_BUFFER_SIZE);
 
-    // only setting first bit, rest should be 0
-    // imuTxBuffer[0] = UB0_REG_TEMP_DATA1 | 0b10000000; // set 8-th bit to 1 for read, page 53
+    // Bit 15 (R/W) should be 1 for register read
     imuTxBuffer[0] = UB0_FIFO_DATA | 0b10000000;
 }
 
@@ -66,7 +65,7 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t
         return status;
     }
     
-    uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // set 8-th bit to 1 for read, page 53
+    uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // Set 8-th bit to 1 for read, page 53
     uint8_t rx[2] = {0, 0};
 
     csLow();
@@ -96,16 +95,14 @@ void IMU::setLowNoiseMode() {
     writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
 }
 
-
 void IMU::reset() {
     setBank(0);
     writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
-    HAL_Delay(1); // need one ms delay after reset, 
+    HAL_Delay(1); // Need one ms delay after reset, 
 }
 
 void IMU::flushFIFO() {
     writeRegister(0, UB0_SIGNAL_PATH_RESET, 0b00000010);
-    // HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
 }
 
 
@@ -134,7 +131,7 @@ int IMU::init() {
     reset();
     uint8_t address = whoAmI();
     setLowNoiseMode();
-    HAL_Delay(60); // wait after sensors are turned on
+    HAL_Delay(60); // Wait after sensors are turned on
     setFIFO();
     flushFIFO();
 
@@ -166,16 +163,6 @@ void IMU::dmaTransfer() {
 }
 
 RawImuBatch_t IMU::readRawData() {
-    
-    // if (spi_tx_rxFlag) {
-        //     spi_tx_rxFlag = 0;
-        
-        //     processRawData();
-        
-        //     csLow();
-        //     HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, RX_BUFFER_SIZE);
-        // }
-        
     // Dont start another dma transaction when last dma is not done
     if (!dmaDone) {
         return rawImuDataBatch;
@@ -211,31 +198,8 @@ void IMU::txRxCallback() {
 }
 
 void IMU::processRawData() {
-    // int16_t raw[7];
-
-    // for (int i = 0; i < 7; i++)
-    //     raw[i] = ((int16_t)imuRxBuffer[i*2+1] << 8) | imuRxBuffer[i*2+2];
-
-    // // NED
-    // rawImuDataBatch.xacc = raw[1];
-    // rawImuDataBatch.yacc = -raw[2];
-    // rawImuDataBatch.zacc = raw[3];
-    // rawImuDataBatch.xgyro = -raw[4];
-    // rawImuDataBatch.ygyro = raw[5];
-    // rawImuDataBatch.zgyro = -raw[6];
-
-    // int16_t raw[7 * MAX_PACKETS];
-
     for (int k = 0; k < fifoSize; k++) {
-        uint16_t base = 1 + k * PACKET_SIZE; // skip the dummy byte
-        
-        // int16_t ax = (int16_t)((imuRxBuffer[base+1]  << 8) | imuRxBuffer[base+2]);
-        // int16_t ay = (int16_t)((imuRxBuffer[base+3]  << 8) | imuRxBuffer[base+4]);
-        // int16_t az = (int16_t)((imuRxBuffer[base+5]  << 8) | imuRxBuffer[base+6]);
-        // int16_t gx = (int16_t)((imuRxBuffer[base+7]  << 8) | imuRxBuffer[base+8]);
-        // int16_t gy = (int16_t)((imuRxBuffer[base+9]  << 8) | imuRxBuffer[base+10]);
-        // int16_t gz = (int16_t)((imuRxBuffer[base+11] << 8) | imuRxBuffer[base+12]);
-        // uint16_t timestamp = (int16_t)((imuRxBuffer[base+14] << 8) | imuRxBuffer[base+15]);
+        uint16_t base = 1 + k * PACKET_SIZE; // +1 to skip the dummy byte
 
         rawData[k].xacc = (int16_t)((imuRxBuffer[base+1] << 8) | imuRxBuffer[base+2]);
         rawData[k].yacc = -(int16_t)((imuRxBuffer[base+3] << 8) | imuRxBuffer[base+4]);
