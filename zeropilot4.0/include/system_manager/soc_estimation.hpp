@@ -1,9 +1,9 @@
 #pragma once
 
-#include "system_manager.hpp"
-
 #define SOC_IDLE_MODE 0
 #define SOC_CHARGE_DISCHARGE_MODE 1
+
+struct BatteryData_t;
 
 typedef struct {
     float voltage;
@@ -44,10 +44,10 @@ constexpr size_t SOC_LUT_SIZE = sizeof(SOC_LUT) / sizeof(SOC_LUT[0]);
 
 class SocEstimator {
     public:
-        SocEstimator(BatteryData_t batteryData);
+        SocEstimator(const BatteryData_t &batteryData);
         uint8_t getSocPercentage();
         int32_t getTimeRemaining();
-        void calcStateOfCharge(BatteryData_t batteryData, int mode);
+        void calcStateOfCharge(const BatteryData_t &batteryData, int mode);
 
     private:
         StateOfCharge_t socData;
