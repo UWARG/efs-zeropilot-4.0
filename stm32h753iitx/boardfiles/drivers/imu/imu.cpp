@@ -1,5 +1,4 @@
 // IMU.cpp
-
 #include "imu.hpp"
 #include <string.h>
 
@@ -29,7 +28,7 @@ IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin) :
 }
 
 int IMU::init() {
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
+    // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
     csHigh();
     reset();
     uint8_t address = whoAmI();
@@ -55,11 +54,14 @@ RawImuBatch_t IMU::readRawData() {
     // Process previous data batch    
     processRawData(); 
 
-    // Start another batch transfer
-    setBank(0);
-    dmaDone = false;
-    rxFlag = COUNT;
-    dmaTransfer();
+    if (busFree) {
+        // Start another batch transfer
+        busFree = false;
+        setBank(0);
+        dmaDone = false;
+        rxFlag = COUNT;
+        dmaTransfer();
+    }
 
     return rawImuDataBatch;
 }
@@ -84,12 +86,15 @@ void IMU::txRxCallback() {
     csHigh();
     switch (rxFlag) {
         case COUNT:
+            // Keeps the bus owned
             rxFlag = DATA;
             dmaTransfer(); // Read actual data after getting num of packets
             break;
         case DATA:
+            // Free the bus as fifo read is completed 
             rxFlag = COUNT;
             dmaDone = true;
+            busFree = true;
             break;
         default:
             break;
