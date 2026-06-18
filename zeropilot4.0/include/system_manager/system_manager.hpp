@@ -11,6 +11,7 @@
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
 #include "sm_param_setup.hpp"
+#include "soc_estimation.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -18,10 +19,6 @@
 #define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
-
-#define BATTERY_NCELLS 3
-#define SOC_IDLE_MODE 0
-#define SOC_CHARGE_DISCHARGE_MODE 1
 
 // RC Arm threshold
 static constexpr float SM_RC_ARM_THRESHOLD = 50.0f;
@@ -35,43 +32,6 @@ static constexpr float SM_FLIGHTMODE2_MAX = 36.0f; // (1295 + 1425) / 2 = 1360 -
 static constexpr float SM_FLIGHTMODE3_MAX = 49.0f; // (1425 + 1555) / 2 = 1490 -> scaled/offset to 49.0
 static constexpr float SM_FLIGHTMODE4_MAX = 62.0f; // (1555 + 1685) / 2 = 1620 -> scaled/offset to 62.0
 static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -> scaled/offset to 75.0
-
-typedef struct {
-    float voltage;
-    float soc;
-} VoltageToSoc_t;
-
-static constexpr VoltageToSoc_t SOC_LUT[] = {
-    {4.20f, 100.0f},
-    {4.15f, 95.0f},
-    {4.11f, 90.0f},
-    {4.08f, 85.0f},
-    {4.02f, 80.0f},
-    {3.98f, 75.0f},
-    {3.95f, 70.0f},
-    {3.91f, 65.0f},
-    {3.87f, 60.0f},
-    {3.85f, 55.0f},
-    {3.84f, 50.0f},
-    {3.82f, 45.0f},
-    {3.80f, 40.0f},
-    {3.79f, 35.0f},
-    {3.77f, 30.0f},
-    {3.75f, 25.0f},
-    {3.73f, 20.0f},
-    {3.71f, 15.0f},
-    {3.69f, 10.0f},
-    {3.61f, 5.0f},
-    {3.50f, 0.0f}
-};
-
-static constexpr float V_MAX = 4.20f;
-static constexpr float V_MIN = 3.50f;
-
-typedef struct {
-    uint8_t socPercentage;
-    int32_t timeRemaining;
-} StateOfCharge_t;
 
 typedef struct{
     PMData_t pmData;
@@ -119,9 +79,7 @@ class SystemManager {
         
         BatteryData_t batteryData;
         bool updateBatteryFSM();
-
-        StateOfCharge_t socData;
-        void calcStateOfCharge(int mode);
+        SocEstimator socEstimator;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);

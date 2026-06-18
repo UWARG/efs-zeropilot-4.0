@@ -1,6 +1,7 @@
 #include "system_manager.hpp"
 #include "zp_params.hpp"
 #include "flightmode.hpp"
+#include "soc_estimation.hpp"
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
@@ -28,14 +29,12 @@ SystemManager::SystemManager(
         oldDataCount(0),
         rcConnected(false),
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
+        socEstimator(batteryData),
         profilerId(0),
         paramSetup(this)
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
-
-    calcStateOfCharge(SOC_IDLE_MODE);
-
     systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
@@ -101,7 +100,7 @@ void SystemManager::smUpdate() {
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
     if (updateBatteryFSM()) {
-        calcStateOfCharge(SOC_CHARGE_DISCHARGE_MODE);
+        socEstimator.calcStateOfCharge(batteryData, SOC_CHARGE_DISCHARGE_MODE);
         if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
             sendBatteryDataToTelemetryManager(batteryData, 0);
         }
@@ -207,46 +206,6 @@ bool SystemManager::updateBatteryFSM() {
     return true;
 }
 
-void SystemManager::calcStateOfCharge(int mode) {
-    float currVoltage = batteryData.pmData.busVoltage;            
-    float batteryCharge = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY) * 3.6f; // mA to C
-    float remainingCharge = batteryCharge - batteryData.pmData.charge;
-
-    // Calibrate SOC
-    if (currVoltage <= V_MIN*BATTERY_NCELLS) socData.socPercentage = 0;
-    else if (currVoltage >= V_MAX*BATTERY_NCELLS) socData.socPercentage = 100;
-    
-    // Calculate SOC
-    else {
-        // State 1: Interpolate
-        if (mode == SOC_IDLE_MODE){
-            // linear search to find points to linearly interpolate
-            uint8_t i = 0;
-            while (i < sizeof(SOC_LUT) && SOC_LUT[i].voltage*BATTERY_NCELLS < currVoltage) i += 1;
-            
-            // linear interpolation
-            if (i == sizeof(SOC_LUT)) socData.socPercentage = 100; // Assume 100% SOC
-            else if (i == 0) socData.socPercentage = 0; // Assume 0% SOC
-            else{
-                VoltageToSoc_t pointA = SOC_LUT[i-1], pointB = SOC_LUT[i];
-                socData.socPercentage = static_cast<uint8_t>((pointB.soc - pointA.soc)/(pointB.voltage-pointA.voltage)*(currVoltage-pointA.voltage)+pointA.soc);
-            }
-        }
-
-        // State 2: Charge Cycle
-        if (mode == SOC_CHARGE_DISCHARGE_MODE) {    
-            // Charge Method - Non-iterative, Uses accumulated board charge
-            float socPercentage = (remainingCharge / batteryCharge) * 100.0f;
-            socData.socPercentage = static_cast<uint8_t>((socPercentage > 100.0f) ? 100.0f : (socPercentage < 0.0f) ? 0.0f : socPercentage);
-        } 
-    }
-
-    // Calculate Time Remaining
-    if (batteryData.pmData.current > 0.5f) {
-        socData.timeRemaining = static_cast<int32_t>(remainingCharge / batteryData.pmData.current);
-    }
-}
-
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
     tmQueue->push(&rcDataMsg);
@@ -285,8 +244,8 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
         batteryData.pmData.current,
         batteryData.pmData.charge,
         batteryData.pmData.energy,
-        socData.socPercentage,
-        socData.timeRemaining,
+        socEstimator.getSocPercentage(),
+        socEstimator.getTimeRemaining(),
         batteryData.chargeState
     );
     tmQueue->push(&batteryDataMsg);
