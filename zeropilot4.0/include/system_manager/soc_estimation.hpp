@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include "driver_ifaces/power_module_iface.hpp"
+#include "mavlink.h"
+
 #define SOC_IDLE_MODE 0
 #define SOC_CHARGE_DISCHARGE_MODE 1
 
