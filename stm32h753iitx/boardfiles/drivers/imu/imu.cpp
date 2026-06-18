@@ -14,15 +14,17 @@
 #define UB0_FIFO_COUNTH       0x2E
 #define UB0_SIGNAL_PATH_RESET 0x4B
 
-IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
-    : _spi(spiHandle), _csPort(csPort), _csPin(csPin),
-      _alpha(0.1f)
-{
-    _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
+IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin) : 
+    _spi(spiHandle), 
+    _csPort(csPort), 
+    _csPin(csPin),
+    _alpha(0.1f) {
 
+    _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
     memset((void*)imuTxBuffer, 0, RX_BUFFER_SIZE);
     memset((void*)imuRxBuffer, 0, RX_BUFFER_SIZE);
-
+    
+    // First bit should be 1 for register read
     imuTxBuffer[0] = UB0_FIFO_DATA | 0b10000000;
 }
 
