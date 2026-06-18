@@ -68,7 +68,7 @@ ZP_ERROR_e TelemetryManager::processParamTx() {
 
 ZP_ERROR_e TelemetryManager::processTXMsgQueue() {
     ZP_ERROR_e result = ZP_ERROR_OK;
-    uint16_t count = 0;
+    int count = 0;
 
     tmTXQueueDriver->count(count);
 
