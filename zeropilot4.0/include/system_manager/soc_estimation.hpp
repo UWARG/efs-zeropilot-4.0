@@ -7,13 +7,13 @@
 #define SOC_IDLE_MODE 0
 #define SOC_CHARGE_DISCHARGE_MODE 1
 
-struct BatteryData_t {
+typedef struct {
     PMData_t pmData;
     MAV_BATTERY_CHARGE_STATE chargeState;
     uint32_t batteryLowCounterMs;
     uint32_t batteryCritcounterMs;
     bool isValid;
-};
+} BatteryData_t;
 
 typedef struct {
     float voltage;
