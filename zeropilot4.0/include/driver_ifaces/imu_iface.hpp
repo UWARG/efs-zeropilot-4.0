@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-
 #include "imu_datatypes.hpp"
+#include "zp_error.h"
 
 class IIMU {
 protected:

@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "imu_datatypes.hpp"
+#include "zp_error.h"
 
 class IMU : public IIMU {
 private:
@@ -31,18 +32,18 @@ private:
 
 	
 	// Utility functions
-	HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data); // blocking
-	HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data); // blocking
+	ZP_ERROR_e writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data); // blocking
+	ZP_ERROR_e readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data); // blocking
 	
 	void csLow();
 	void csHigh();
-	HAL_StatusTypeDef setBank(uint8_t bank);
-	void reset();
-	uint8_t whoAmI();
-	void processRawData(); // process data in imu_rx_buffer and store in raw_imu_data, NED frame
+	ZP_ERROR_e setBank(uint8_t bank);
+	ZP_ERROR_e reset();
+	ZP_ERROR_e whoAmI(uint8_t& identity);
+	ZP_ERROR_e processRawData(); // process data in imu_rx_buffer and store in raw_imu_data, NED frame
 
 	// Configuration
-	void setLowNoiseMode();
+	ZP_ERROR_e setLowNoiseMode();
 
 	// Filtering
 	float lowPassFilter(float raw_value, int select);
@@ -79,13 +80,13 @@ public:
 	IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin);
 
 	// Initialization
-	int init() override;
+	ZP_ERROR_e init() override;
 
 	// Data reading
 	// First read returns all 0s, subsequent reads return latest data
-	RawImu_t readRawData() override; // non-blocking
+	ZP_ERROR_e readRawData(RawImu_t &data) override; // non-blocking
 
-	ScaledImu_t scaleIMUData(const RawImu_t &rawData) override;
+	ZP_ERROR_e scaleIMUData(const RawImu_t &rawData, ScaledImu_t &data) override;
 
 	// put this in void HAL_SPI_TxRxCpltCallback (SPI_HandleTypeDef * hspi)
 	void txRxCallback();

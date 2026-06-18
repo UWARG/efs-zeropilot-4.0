@@ -7,44 +7,31 @@
 
 template <typename T>
 class MessageQueue : public IMessageQueue<T> {
-   private:
-      osMessageQueueId_t * const queueId;
-      
-   public: 
-      MessageQueue(osMessageQueueId_t *queueId) : queueId{queueId} {
-        // blank
-      }
+private:
+    osMessageQueueId_t queueId;
 
-      /**
-       * @brief Gets top element of queue
-       * @param message variable to receive data
-       * @retval status code
-       */
-      int get(T *message) override {
-         return osMessageQueueGet(*queueId, message, 0, timeToTicks(100));
-      }
+public:
+    explicit MessageQueue(osMessageQueueId_t handle) : queueId(handle) {}
 
-      /**
-       * @brief pushes message to the back of the queue
-       * @param message data to be transmitted
-       * @retval status code
-       */
-      int push(T *message) override {
-         return osMessageQueuePut(*queueId, message, 0, timeToTicks(100));
-      }
+    ZP_ERROR_e get(T *message) override {
+        if (message == nullptr) return ZP_ERROR_NULLPTR;
+        osStatus_t status = osMessageQueueGet(queueId, message, NULL, timeToTicks(100));
+        return (status == osOK) ? ZP_ERROR_OK : ZP_ERROR_FAIL;
+    }
 
-      /**
-       * @brief returns the number of messages in the queue
-       */
-      int count() override {
-         return osMessageQueueGetCount(*queueId);
-      }
+    ZP_ERROR_e push(T *message) override {
+        if (message == nullptr) return ZP_ERROR_NULLPTR;
+        osStatus_t status = osMessageQueuePut(queueId, message, 0, timeToTicks(100));
+        return (status == osOK) ? ZP_ERROR_OK : ZP_ERROR_FAIL;
+    }
 
-      /**
-       * @brief Returns remaining space left in the queue
-       * @retval number of available slots for messages
-       */
-      int remainingCapacity() override {
-         return osMessageQueueGetSpace(*queueId);
-      }
+    ZP_ERROR_e count(int &count_value) override {
+        count_value = static_cast<int>(osMessageQueueGetCount(queueId));
+        return ZP_ERROR_OK;
+    }
+
+    ZP_ERROR_e remainingCapacity(int &capacity) override {
+        capacity = static_cast<int>(osMessageQueueGetSpace(queueId));
+        return ZP_ERROR_OK;
+    }
 };

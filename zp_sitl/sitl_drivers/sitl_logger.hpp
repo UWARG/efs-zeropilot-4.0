@@ -36,23 +36,23 @@ public:
         }
     }
     
-    ZP_ERROR_e log(const char message[100]) override {
+    int log(const char message[100]) override {
         if (logFile.is_open()) {
             logFile << message << std::endl;
             logFile.flush();
-            return ZP_ERROR_OK;
+            return 0;
         }
-        return ZP_ERROR_FAIL;
+        return -1;
     }
     
-    ZP_ERROR_e log(const char message[][100], int count) override {
+    int log(const char message[][100], int count) override {
         if (logFile.is_open()) {
             for (int i = 0; i < count; i++) {
                 logFile << message[i] << std::endl;
             }
             logFile.flush();
-            return ZP_ERROR_OK;
+            return 0;
         }
-        return ZP_ERROR_FAIL;
+        return -1;
     }
 };

@@ -29,112 +29,146 @@ void IMU::csLow() {
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
 }
 
-
 void IMU::csHigh() {
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 }
 
-
-HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
-    if (curr_register_bank == bank) {
-        return HAL_OK;
-    }
-    uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
-    csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
-    csHigh();
-
-    curr_register_bank = bank;
-    return status;
-}
-
-
-HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
+ZP_ERROR_e IMU::setBank(uint8_t bank) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
-    }
-    
-    uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // set 8-th bit to 1 for read, page 53
-    uint8_t rx[2] = {0, 0};
-
-    csLow();
-    status = HAL_SPI_TransmitReceive(_spi, tx, rx, 2, HAL_MAX_DELAY);
-    csHigh();
-
-    *data = rx[1];
-
-    return status;
-}
-
-
-HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
-    
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
-    }
-    uint8_t tx_buf[2] = {register_addr, data};
-    csLow();
-    status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
-    csHigh();
-    return status;
-}
-
-
-RawImu_t IMU::readRawData() {
-    setBank(0);
-
-    if (spi_tx_rx_flag) {
-        spi_tx_rx_flag = 0;
-
-        processRawData();
-
+    if (curr_register_bank != bank) {
+        uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
         csLow();
-        HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
+        HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+        csHigh();
+        
+        if (status != HAL_OK) {
+            result = ZP_ERROR_FAIL;
+        } else {
+            curr_register_bank = bank;
+        }
     }
-
-    return raw_imu_data;
+    
+    return result;
 }
 
-
-void IMU::setLowNoiseMode() {
-    writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+ZP_ERROR_e IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
+    ZP_ERROR_e result = setBank(bank);
+    
+    if (result == ZP_ERROR_OK) {
+        uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0};
+        uint8_t rx[2] = {0, 0};
+        
+        csLow();
+        HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(_spi, tx, rx, 2, HAL_MAX_DELAY);
+        csHigh();
+        
+        if (status == HAL_OK) {
+            *data = rx[1];
+        } else {
+            result = ZP_ERROR_FAIL;
+        }
+    } else {
+        result = ZP_ERROR_FAIL;
+    }
+    
+    return result;
 }
 
-
-void IMU::reset() {
-    setBank(0);
-    writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
-    HAL_Delay(1); // need one ms delay after reset, 
+ZP_ERROR_e IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
+    ZP_ERROR_e result = setBank(bank);
+    
+    if (result == ZP_ERROR_OK) {
+        uint8_t tx_buf[2] = {register_addr, data};
+        csLow();
+        HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+        csHigh();
+        
+        if (status != HAL_OK) {
+            result = ZP_ERROR_FAIL;
+        }
+    } else {
+        result = ZP_ERROR_FAIL;
+    }
+    
+    return result;
 }
 
+ZP_ERROR_e IMU::readRawData(RawImu_t& data) {
+    ZP_ERROR_e result = setBank(0);
+    
+    if (result == ZP_ERROR_OK) {
+        if (spi_tx_rx_flag) {
+            spi_tx_rx_flag = 0;
+            processRawData();
+            csLow();
+            HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
+            if (status != HAL_OK) {
+                csHigh();
+                result = ZP_ERROR_FAIL;
+            }
+        }
+        data = raw_imu_data;
+    } else {
+        result = ZP_ERROR_BUSY;
+    }
+    
+    return result;
+}
 
-uint8_t IMU::whoAmI() {
+ZP_ERROR_e IMU::setLowNoiseMode() {
+    ZP_ERROR_e result = writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+    return result;
+}
+
+ZP_ERROR_e IMU::reset() {
+    ZP_ERROR_e result = setBank(0);
+    
+    if (result == ZP_ERROR_OK) {
+        result = writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
+        
+        if (result == ZP_ERROR_OK) {
+            HAL_Delay(1);  // need one ms delay after reset
+        }
+    }
+    
+    return result;
+}
+
+ZP_ERROR_e IMU::whoAmI(uint8_t& identity) {
     uint8_t buffer;
-    readRegister(0, UB0_REG_WHO_AM_I, &buffer);
-    return buffer;
+    ZP_ERROR_e result = readRegister(0, UB0_REG_WHO_AM_I, &buffer);
+    if (result == ZP_ERROR_OK) {
+        identity = buffer;
+    }   
+    return result;
 }
-
 
 float IMU::lowPassFilter(float raw_value, int select) {
     _filteredGyro[select] = _alpha * raw_value + (1 - _alpha) * _filteredGyro[select];
     return _filteredGyro[select];
 }
 
-
-int IMU::init() {
+ZP_ERROR_e IMU::init() {
     csHigh();
-    reset();
-    uint8_t address = whoAmI();
-    setLowNoiseMode();
-    // TODO: enable and test below configurations
-    // setAccelFS(0b01101001);
-    // configureNotchFilter();
-	// setAntiAliasFilter(213, true, true);
-    // calibrateGyro();
-    return address;
+    ZP_ERROR_e result = reset();
+    
+    if (result == ZP_ERROR_OK) {
+        uint8_t address = 0;
+        result = whoAmI(address);
+        
+        if (result == ZP_ERROR_OK) {
+            result = setLowNoiseMode();
+            
+            // TODO: enable and test below configurations
+            // setAccelFS(0b01101001);
+            // configureNotchFilter();
+            // setAntiAliasFilter(213, true, true);
+            // calibrateGyro();
+        }
+    }
+    
+    return result;
 }
 
 void IMU::txRxCallback() {
@@ -142,52 +176,34 @@ void IMU::txRxCallback() {
     spi_tx_rx_flag = 1;
 }
 
-void IMU::processRawData() {
-    int16_t raw[7];
-
-    for (int i = 0; i < 7; i++)
+ZP_ERROR_e IMU::processRawData() {
+    int16_t raw[7] = {0};
+    
+    for (int i = 0; i < 7; i++) {
         raw[i] = ((int16_t)imu_rx_buffer[i*2+1] << 8) | imu_rx_buffer[i*2+2];
-
-    // NED
+    }
+    
+    // NED coordinate system
     raw_imu_data.xacc = raw[2];
     raw_imu_data.yacc = raw[1];
     raw_imu_data.zacc = raw[3];
     raw_imu_data.xgyro = -raw[5];
     raw_imu_data.ygyro = -raw[4];
     raw_imu_data.zgyro = -raw[6];
-
-
-    // float acc_temp[3];
-    // float gyr_temp[3];
-
-    // acc_temp[0] = (float)raw[1] / 2048.0f * 9.81f;
-    // acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f;
-    // acc_temp[2] = (float)raw[3] / 2048.0f * 9.81f;
-
-    // gyr_temp[0] = lowPassFilter((float)raw[4] / 16.4f, 0);
-    // gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
-    // gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
-
-    // // NED
-    // raw_imu_data.xacc = (float)acc_temp[1];
-    // raw_imu_data.yacc = (float)acc_temp[0];
-    // raw_imu_data.zacc = ((float)acc_temp[2]);
-    // raw_imu_data.xgyro = ((float)-gyr_temp[1]);
-    // raw_imu_data.ygyro = ((float)-gyr_temp[0]);
-    // raw_imu_data.zgyro = ((float)-gyr_temp[2]);
+    return ZP_ERROR_OK;
 }
 
-ScaledImu_t IMU::scaleIMUData(const RawImu_t &rawData) {
-    ScaledImu_t scaledData;
-
+ZP_ERROR_e IMU::scaleIMUData(const RawImu_t& rawData, ScaledImu_t& scaledData) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
+    
     scaledData.xacc = (float)rawData.xacc / ACCEL_SEN_SCALE_FACTOR;
     scaledData.yacc = (float)rawData.yacc / ACCEL_SEN_SCALE_FACTOR;
     scaledData.zacc = (float)rawData.zacc / ACCEL_SEN_SCALE_FACTOR;
     scaledData.xgyro = lowPassFilter((float)rawData.xgyro / GYRO_SEN_SCALE_FACTOR, 0);
     scaledData.ygyro = lowPassFilter((float)rawData.ygyro / GYRO_SEN_SCALE_FACTOR, 1);
     scaledData.zgyro = lowPassFilter((float)rawData.zgyro / GYRO_SEN_SCALE_FACTOR, 2);
-
-    return scaledData;
+    
+    return result;
 }
 
 
