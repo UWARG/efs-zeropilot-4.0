@@ -33,6 +33,7 @@ zeropilot = Extension(
         f'{zeropilot_root}/include/thread_msgs',
         f'{zeropilot_root}/include/driver_ifaces',
         f'{zeropilot_root}/include/zp_param',
+        f'{zeropilot_root}/include/zp_error',
         '../external/c_library_v2',
         '../external/c_library_v2/common',
     ],

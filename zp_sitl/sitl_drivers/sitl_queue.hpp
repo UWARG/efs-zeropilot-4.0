@@ -11,24 +11,26 @@ private:
 public:
     SITL_Queue(size_t max = 100) : maxSize(max) {}
     
-    int get(T *message) override {
-        if (q.empty()) return -1;
+    ZP_ERROR_e get(T *message) override {
+        if (q.empty()) return ZP_ERROR_FAIL;
         *message = q.front();
         q.pop();
-        return 0;
+        return ZP_ERROR_OK;
     }
     
-    int push(T *message) override {
-        if (q.size() >= maxSize) return -1;
+    ZP_ERROR_e push(T *message) override {
+        if (q.size() >= maxSize) return ZP_ERROR_MEMORY_OVERFLOW;
         q.push(*message);
-        return 0;
+        return ZP_ERROR_OK;
     }
     
-    int count() override {
-        return (int)q.size();
+    ZP_ERROR_e count(int &count_value) override {
+        count_value = (int)q.size();
+        return ZP_ERROR_OK;
     }
     
-    int remainingCapacity() override {
-        return (int)(maxSize - q.size());
+    ZP_ERROR_e remainingCapacity(int &capacity) override {
+        capacity = (int)(maxSize - q.size());
+        return ZP_ERROR_OK;
     }
 };

@@ -22,7 +22,8 @@ public:
         gpsData.numSatellites = Config::NUM_SATELLITES;
     }
     
-    GpsData_t readData() override {
-        return gpsData;
+    ZP_ERROR_e readData(GpsData_t & data) override {
+        data = gpsData;
+        return ZP_ERROR_OK;
     }
 };
