@@ -32,12 +32,12 @@ typedef struct {
 
 typedef struct {
     RawImu_t *data;
-    uint8_t count;
-    uint16_t readTime;
+    uint16_t count;
+    uint32_t readTime; // Time the fifo(last data packet) was read, in us
 } RawImuBatch_t;
 
 typedef struct {
     ScaledImu_t *data;
-    uint8_t count;
-    uint16_t readTime;
+    uint16_t count;
+    uint32_t readTime; // Time the fifo(last data packet) was read, in us
 } ScaledImuBatch_t;

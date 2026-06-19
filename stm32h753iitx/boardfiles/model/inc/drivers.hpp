@@ -27,7 +27,7 @@ extern IMotorControl *motorHandles[8];
 
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
-extern IMU *imuHandle;
+extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
 
