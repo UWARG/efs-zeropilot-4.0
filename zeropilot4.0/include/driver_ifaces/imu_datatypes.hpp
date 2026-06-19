@@ -33,9 +33,11 @@ typedef struct {
 typedef struct {
     RawImu_t *data;
     uint8_t count;
+    uint16_t readTime;
 } RawImuBatch_t;
 
 typedef struct {
     ScaledImu_t *data;
     uint8_t count;
+    uint16_t readTime;
 } ScaledImuBatch_t;

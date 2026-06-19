@@ -16,6 +16,7 @@
 #include "imu.hpp"
 #include "power_module.hpp"
 #include "dshot.hpp"
+#include "fused_imu.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -26,7 +27,7 @@ extern IMotorControl *motorHandles[8];
 
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
-extern IMU *imuHandle[2];
+extern IMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
 

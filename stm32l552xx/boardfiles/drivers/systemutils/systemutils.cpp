@@ -1,6 +1,5 @@
 #include "cmsis_os.h"
 #include "systemutils.hpp"
-#include "stm32l5xx_hal.h"
 
 struct TaskEntry {
     const char* name;
@@ -18,13 +17,6 @@ void SystemUtils::delayMs(uint32_t delay_ms) {
 
 uint32_t SystemUtils::getCurrentTimestampMs() {
     return (osKernelGetTickCount() * 1000) / osKernelGetTickFreq();
-}
-
-
-void SystemUtils::dwtInit() {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CYCCNT = 0;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 }
 
 void SystemUtils::profilerRegister(const char* name, uint8_t* outId) {

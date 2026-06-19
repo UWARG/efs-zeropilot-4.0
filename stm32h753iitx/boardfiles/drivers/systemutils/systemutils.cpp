@@ -20,13 +20,6 @@ uint32_t SystemUtils::getCurrentTimestampMs() {
     return (osKernelGetTickCount() * 1000) / osKernelGetTickFreq();
 }
 
-
-void SystemUtils::dwtInit() {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CYCCNT = 0;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-}
-
 void SystemUtils::profilerRegister(const char* name, uint8_t* outId) {
     if (taskCount == 0) dwtInit();
     if (taskCount >= MAX_PROFILED_TASKS) {

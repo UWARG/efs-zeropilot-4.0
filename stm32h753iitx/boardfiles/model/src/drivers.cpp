@@ -32,7 +32,7 @@ IMotorControl *motorHandles[8] = {0};
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
-IMU *imuHandle[2] = {0};
+IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -96,8 +96,9 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    imuHandle[0] = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
-    imuHandle[1] = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
+    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
+    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
+    imuHandle = new FusedIMU(imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
 
     // Queues
