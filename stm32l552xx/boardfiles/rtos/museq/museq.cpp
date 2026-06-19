@@ -2,6 +2,7 @@
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
 #include "mavlink.h"
+#include "zp_error.h"
 
 /* --- mutexes --- */
 /* define mutexes begin */

@@ -36,9 +36,9 @@ public:
         pmData.energy = pmData.charge * Config::V_NOMINAL; // Estimate of total energy consumed in Joules
     }
     
-    bool readData(PMData_t *data) override {
-        if (!data) return false;
+    ZP_ERROR_e readData(PMData_t *data) override {
+        if (!data) return ZP_ERROR_NULLPTR;
         *data = pmData;
-        return true;
+        return ZP_ERROR_OK;
     }
 };

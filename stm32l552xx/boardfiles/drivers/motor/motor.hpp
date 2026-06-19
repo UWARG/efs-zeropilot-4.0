@@ -2,6 +2,7 @@
 
 #include "motor_iface.hpp"
 #include "stm32l5xx_hal.h"
+#include "zp_error.h"
 
 class MotorControl : public IMotorControl {
     public:
@@ -11,12 +12,12 @@ class MotorControl : public IMotorControl {
          * @brief sets PWM motor output
          * @param percent PWM value 0-100
          */
-        void set(uint32_t percent) override;
+        ZP_ERROR_e set(uint32_t percent) override;
 
         /**
          * @brief starts PWM output
          */
-        void init() override;
+        ZP_ERROR_e init() override;
 
     private:
         TIM_HandleTypeDef * const timer;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 class IMotorControl {
     protected: 
@@ -12,10 +13,10 @@ class IMotorControl {
         virtual ~IMotorControl() = default;
 
         // Set pwm percentage of servo motors
-        virtual void set(uint32_t percent) = 0;
+        virtual ZP_ERROR_e set(uint32_t percent) = 0;
 
         // Initialize/start motor output
-        virtual void init() = 0;
+        virtual ZP_ERROR_e init() = 0;
 
         // Set arm flag
         virtual void setArm(bool arm) { armFlag = arm; };

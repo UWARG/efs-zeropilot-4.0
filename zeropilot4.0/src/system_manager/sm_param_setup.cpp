@@ -5,36 +5,45 @@
 
 SMParamSetup::SMParamSetup(SystemManager* sm) : sm(sm) {}
 
-void SMParamSetup::loadAllParams() {
+ZP_ERROR_e SMParamSetup::loadAllParams() {
+    ZP_ERROR_e result = ZP_ERROR_OK;
     static constexpr ZP_PARAM_ID FLTMODE_PARAMS[SM_FLIGHTMODE_COUNT] = {
         ZP_PARAM_ID::FLTMODE1, ZP_PARAM_ID::FLTMODE2, ZP_PARAM_ID::FLTMODE3,
         ZP_PARAM_ID::FLTMODE4, ZP_PARAM_ID::FLTMODE5, ZP_PARAM_ID::FLTMODE6
     };
     for (uint8_t i = 0; i < SM_FLIGHTMODE_COUNT; i++) {
-        sm->flightModes[i] = static_cast<PlaneFlightMode_e>(
-            static_cast<uint32_t>(ZP_PARAM::get(FLTMODE_PARAMS[i])));
+        float val = 0.0f;
+        result |= ZP_PARAM::get(FLTMODE_PARAMS[i], val);
+        if (result == ZP_ERROR_OK) {
+            sm->flightModes[i] = static_cast<PlaneFlightMode_e>(
+                static_cast<uint32_t>(val));
+        }
     }
+    return result;
 }
 
-void SMParamSetup::bindAllParamCallbacks() {
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE1, sm, updateFltMode1);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE2, sm, updateFltMode2);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE3, sm, updateFltMode3);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE4, sm, updateFltMode4);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE5, sm, updateFltMode5);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE6, sm, updateFltMode6);
+ZP_ERROR_e SMParamSetup::bindAllParamCallbacks() {
+    ZP_ERROR_e result = ZP_ERROR_OK;
+    result |= ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE1, sm, updateFltMode1);
+    result |= ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE2, sm, updateFltMode2);
+    result |= ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE3, sm, updateFltMode3);
+    result |= ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE4, sm, updateFltMode4);
+    result |= ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE5, sm, updateFltMode5);
+    result |= ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE6, sm, updateFltMode6);
+    return result;
 }
 
-bool SMParamSetup::setFltMode(SystemManager* ctx, uint8_t idx, float val) {
+ZP_ERROR_e SMParamSetup::setFltMode(SystemManager* ctx, uint8_t idx, float val) {
     uint32_t mode = static_cast<uint32_t>(val);
-    if (!isValidPlaneFlightMode(mode)) return false;
+    if (!isValidPlaneFlightMode(mode)) return ZP_ERROR_INVALID_PARAM;
     ctx->flightModes[idx] = static_cast<PlaneFlightMode_e>(mode);
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool SMParamSetup::updateFltMode1(SystemManager* ctx, float val) { return setFltMode(ctx, 0, val); }
-bool SMParamSetup::updateFltMode2(SystemManager* ctx, float val) { return setFltMode(ctx, 1, val); }
-bool SMParamSetup::updateFltMode3(SystemManager* ctx, float val) { return setFltMode(ctx, 2, val); }
-bool SMParamSetup::updateFltMode4(SystemManager* ctx, float val) { return setFltMode(ctx, 3, val); }
-bool SMParamSetup::updateFltMode5(SystemManager* ctx, float val) { return setFltMode(ctx, 4, val); }
-bool SMParamSetup::updateFltMode6(SystemManager* ctx, float val) { return setFltMode(ctx, 5, val); }
+// Flightmode param callbacks
+ZP_ERROR_e SMParamSetup::updateFltMode1(SystemManager* ctx, float val) { return setFltMode(ctx, 0, val); }
+ZP_ERROR_e SMParamSetup::updateFltMode2(SystemManager* ctx, float val) { return setFltMode(ctx, 1, val); }
+ZP_ERROR_e SMParamSetup::updateFltMode3(SystemManager* ctx, float val) { return setFltMode(ctx, 2, val); }
+ZP_ERROR_e SMParamSetup::updateFltMode4(SystemManager* ctx, float val) { return setFltMode(ctx, 3, val); }
+ZP_ERROR_e SMParamSetup::updateFltMode5(SystemManager* ctx, float val) { return setFltMode(ctx, 4, val); }
+ZP_ERROR_e SMParamSetup::updateFltMode6(SystemManager* ctx, float val) { return setFltMode(ctx, 5, val); }

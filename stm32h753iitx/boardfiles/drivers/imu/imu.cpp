@@ -24,111 +24,119 @@ IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
     imu_tx_buffer[0] = UB0_REG_TEMP_DATA1 | 0b10000000; // set 8-th bit to 1 for read, page 53
 }
 
-
 void IMU::csLow() {
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
 }
-
 
 void IMU::csHigh() {
     HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 }
 
-
-HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
-    if (curr_register_bank == bank) {
-        return HAL_OK;
+ZP_ERROR_e IMU::setBank(uint8_t bank) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
+    if (curr_register_bank != bank) {
+        uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
+        csLow();
+        HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+        csHigh();
+        if (status != HAL_OK) {
+            result = ZP_ERROR_FAIL;
+        } else {
+            curr_register_bank = bank;
+        }
     }
-    uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
-    csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
-    csHigh();
-
-    curr_register_bank = bank;
-    return status;
+    return result;
 }
 
-
-HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
+ZP_ERROR_e IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
     
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
+    ZP_ERROR_e result = setBank(bank);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     
     uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // set 8-th bit to 1 for read, page 53
     uint8_t rx[2] = {0, 0};
 
     csLow();
-    status = HAL_SPI_TransmitReceive(_spi, tx, rx, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(_spi, tx, rx, 2, HAL_MAX_DELAY);
     csHigh();
+    
+    if (status != HAL_OK) {
+        result |= ZP_ERROR_FAIL;
+    }
 
     *data = rx[1];
 
-    return status;
+    return result;
 }
 
-
-HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
+ZP_ERROR_e IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
     
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
+    ZP_ERROR_e result = setBank(bank);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     uint8_t tx_buf[2] = {register_addr, data};
     csLow();
-    status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
     csHigh();
-    return status;
-}
 
-
-RawImu_t IMU::readRawData() {
-    setBank(0);
-
-    if (spi_tx_rx_flag) {
-        spi_tx_rx_flag = 0;
-
-        processRawData();
-
-        csLow();
-        HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imu_tx_buffer, (uint8_t*)imu_rx_buffer, RX_BUFFER_SIZE);
+    if (status != HAL_OK) {
+        result |= ZP_ERROR_FAIL;
     }
 
-    return raw_imu_data;
+    return result;
 }
 
+ZP_ERROR_e IMU::readRawData(RawImu_t &data) {
+    ZP_ERROR_e result = setBank(0);
 
-void IMU::setLowNoiseMode() {
-    writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+    if (spi_tx_rx_flag && result == ZP_ERROR_OK) {
+        spi_tx_rx_flag = 0;
+        result |= processRawData();
+        csLow();
+        if (result == ZP_ERROR_OK) {
+            HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imu_tx_buffer, (uint8_t*)imu_rx_buffer, RX_BUFFER_SIZE);
+            if (status != HAL_OK) {
+                result = ZP_ERROR_FAIL;
+            }
+        }
+    } else {
+        result = ZP_ERROR_NOT_READY;
+    }
+    data = raw_imu_data;
+    return result;
 }
 
+ZP_ERROR_e IMU::setLowNoiseMode() {
+    ZP_ERROR_e result = writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+    return result;
+}
 
-void IMU::reset() {
-    setBank(0);
-    writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
+ZP_ERROR_e IMU::reset() {
+    ZP_ERROR_e result = setBank(0);
+    result |= writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
     HAL_Delay(1); // need one ms delay after reset, 
+    return result;
 }
 
-
-uint8_t IMU::whoAmI() {
-    uint8_t buffer;
-    readRegister(0, UB0_REG_WHO_AM_I, &buffer);
-    return buffer;
+ZP_ERROR_e IMU::whoAmI(uint8_t& identity) {
+    ZP_ERROR_e result = readRegister(0, UB0_REG_WHO_AM_I, &identity);
+    return result;
 }
-
 
 float IMU::lowPassFilter(float raw_value, int select) {
     _filteredGyro[select] = _alpha * raw_value + (1 - _alpha) * _filteredGyro[select];
     return _filteredGyro[select];
 }
 
-
 int IMU::init() {
 	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_5, GPIO_PIN_SET);
     csHigh();
-    reset();
-    uint8_t address = whoAmI();
+    ZP_ERROR_e result = reset();
+    uint8_t address = 0;
+    result |= whoAmI(address);
     setLowNoiseMode();
     // TODO: enable and test below configurations
     // setAccelFS(0b01101001);
@@ -143,7 +151,7 @@ void IMU::txRxCallback() {
     spi_tx_rx_flag = 1;
 }
 
-void IMU::processRawData() {
+ZP_ERROR_e IMU::processRawData() {
     int16_t raw[7];
 
     for (int i = 0; i < 7; i++)
@@ -176,9 +184,11 @@ void IMU::processRawData() {
     // raw_imu_data.xgyro = ((float)-gyr_temp[1]);
     // raw_imu_data.ygyro = ((float)-gyr_temp[0]);
     // raw_imu_data.zgyro = ((float)-gyr_temp[2]);
+
+    return ZP_ERROR_OK;
 }
 
-ScaledImu_t IMU::scaleIMUData(const RawImu_t &rawData) {
+ZP_ERROR_e IMU::scaleIMUData(const RawImu_t &rawData, ScaledImu_t &data) {
     ScaledImu_t scaledData;
 
     scaledData.xacc = (float)rawData.xacc / ACCEL_SEN_SCALE_FACTOR;
@@ -188,13 +198,13 @@ ScaledImu_t IMU::scaleIMUData(const RawImu_t &rawData) {
     scaledData.ygyro = lowPassFilter((float)rawData.ygyro / GYRO_SEN_SCALE_FACTOR, 1);
     scaledData.zgyro = lowPassFilter((float)rawData.zgyro / GYRO_SEN_SCALE_FACTOR, 2);
 
-    return scaledData;
+    data = scaledData;
+    return ZP_ERROR_OK;
 }
 
 SPI_HandleTypeDef* IMU::getSPI() {
     return _spi;
 }
-
 
 // TODO: verify correctness of below functions
 /*

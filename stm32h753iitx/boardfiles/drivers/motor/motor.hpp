@@ -2,6 +2,7 @@
 
 #include "motor_iface.hpp"
 #include "stm32h7xx_hal.h"
+#include "zp_error.h"
 
 class MotorControl : public IMotorControl {
     public:
@@ -11,12 +12,12 @@ class MotorControl : public IMotorControl {
          * @brief sets PWM motor output
          * @param percent PWM value 0-100
          */
-        void set(uint32_t percent) override;
+        ZP_ERROR_e set(uint32_t percent) override;
 
         /**
          * @brief starts PWM output
          */
-        void init() override;
+        ZP_ERROR_e init() override;
 
         /**
          * @brief enables servo output
@@ -28,7 +29,7 @@ class MotorControl : public IMotorControl {
          * @brief enables servo switch
          * @param 
          */
-        static void enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi);
+        static ZP_ERROR_e enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi);
 
     private:
         TIM_HandleTypeDef * const timer;

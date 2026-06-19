@@ -15,8 +15,8 @@ public:
         return timeoutCounter < Config::WATCHDOG_TIMEOUT_MS;
     }
 
-    bool refreshWatchdog() override { 
+    ZP_ERROR_e refreshWatchdog() override { 
         timeoutCounter = 0; 
-        return true;
+        return ZP_ERROR_OK;
     }
 };

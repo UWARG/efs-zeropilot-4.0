@@ -1,5 +1,6 @@
 #pragma once
 
+#include "zp_error.h"
 #include "systemutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
@@ -37,4 +38,4 @@ extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
 extern MotorGroupInstance_t mainMotorGroup;
 
-void initDrivers();
+ZP_ERROR_e initDrivers();

@@ -12,48 +12,69 @@ RFD::~RFD() {
     instance = nullptr;
 }
 
-void RFD::transmit(const uint8_t* data, uint16_t size) {
+ZP_ERROR_e RFD::transmit(const uint8_t* data, uint16_t size) {
     if (huart) {
-        HAL_UART_Transmit_DMA(huart, data, size);
+        if (HAL_UART_Transmit_DMA(huart, data, size) == HAL_OK) {
+            return ZP_ERROR_OK;
+        } else {
+            return ZP_ERROR_FAIL;
+        }
     }
+    return ZP_ERROR_RESOURCE_UNAVAILABLE;
 }
 
-uint16_t RFD::getRXTransferSize(uint16_t idx) {
+ZP_ERROR_e RFD::getRXTransferSize(uint16_t idx, uint16_t& output) {
 	if (idx > lastIdx) {
-		return (uint16_t)(idx - lastIdx);
+		output = (uint16_t)(idx - lastIdx);
 	} else {
-		return (uint16_t)(BUFFER_SIZE - lastIdx + idx);
+		output = (uint16_t)(BUFFER_SIZE - lastIdx + idx);
 	}
+    return ZP_ERROR_OK;
 }
 
-void RFD::init() {
+ZP_ERROR_e RFD::init() {
     if (huart) {
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
+        if (HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE) == HAL_OK) {
+            return ZP_ERROR_OK;
+        } else {
+            return ZP_ERROR_FAIL;
+        }
     }
+    return ZP_ERROR_RESOURCE_UNAVAILABLE;
 }
 
-void RFD::receiveCallback(uint16_t writeIdx) {
+ZP_ERROR_e RFD::receiveCallback(uint16_t writeIdx) {
+    ZP_ERROR_e result = ZP_ERROR_OK;
+
+    // 1. Entry Check
     if (HAL_UARTEx_GetRxEventType(huart) == HAL_UART_RXEVENT_HT) {
-		return;
-	}
+        result = ZP_ERROR_OK; 
+    } else {
+        // 2. State Calculation
+        writeIndex = writeIdx % BUFFER_SIZE;
+        uint16_t transferSize = 0;
+        result |= getRXTransferSize(writeIndex, transferSize);
 
-    writeIndex = writeIdx % BUFFER_SIZE;
-
-	uint16_t transferSize = getRXTransferSize(writeIndex);
-	currentSize += transferSize;
-
-    if (currentSize > (BUFFER_SIZE - 1)) {
-        readIndex += currentSize - (BUFFER_SIZE - 1);
-        readIndex %= BUFFER_SIZE;
-        currentSize = BUFFER_SIZE - 1;
+        // 3. Overflow Logic
+        if ((currentSize + transferSize) > BUFFER_SIZE) {
+            readIndex = (readIndex + ((currentSize + transferSize) - BUFFER_SIZE)) % BUFFER_SIZE;
+            currentSize = BUFFER_SIZE;
+            result = ZP_ERROR_MEMORY_OVERFLOW;
+        } else {
+            // 4. Standard Update
+            currentSize += transferSize;
+            lastIdx = writeIdx;
+            result = ZP_ERROR_OK;
+        }
     }
 
-	lastIdx = writeIdx;
+    // 5. Single Exit Point
+    return result;
 }
 
-uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
+ZP_ERROR_e RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_size) {
     if (readIndex == writeIndex) {
-        return 0;
+        return ZP_ERROR_FAIL;
     }
 
     int dataRead = 0;
@@ -73,7 +94,8 @@ uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
 
     readIndex = (readIndex + dataRead) % BUFFER_SIZE;
     currentSize -= dataRead;
-    return dataRead;
+    received_size = dataRead;
+    return ZP_ERROR_OK;
 }
 
 UART_HandleTypeDef* RFD::getHUART() const {

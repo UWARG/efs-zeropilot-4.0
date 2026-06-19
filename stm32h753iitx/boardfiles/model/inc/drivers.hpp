@@ -16,6 +16,7 @@
 #include "imu.hpp"
 #include "power_module.hpp"
 #include "dshot.hpp"
+#include "zp_error.h"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -37,4 +38,4 @@ extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
 extern MotorGroupInstance_t mainMotorGroup;
 
-void initDrivers();
+ZP_ERROR_e initDrivers();

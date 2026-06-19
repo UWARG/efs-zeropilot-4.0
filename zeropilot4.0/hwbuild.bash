@@ -70,7 +70,7 @@ if [[ ! -f "CMakeCache.txt" ]]; then
     echo "generating cmake..."
     echo "generator: $generator"
     echo "toolchain: $tc_file"
-    cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" "$script_dir"
+    cmake -G "$generator" -DCMAKE_C_FLAGS="-Werror" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" "$script_dir"
 fi
 
 echo && echo "building..."

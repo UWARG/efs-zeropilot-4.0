@@ -1,4 +1,5 @@
 #pragma once
+#include "zp_error.h"
 
 class IIndependentWatchdog {
     protected:
@@ -8,5 +9,5 @@ class IIndependentWatchdog {
         virtual ~IIndependentWatchdog() = default;
 
         // reset watchdog timer
-        virtual bool refreshWatchdog() = 0;
+        virtual ZP_ERROR_e refreshWatchdog() = 0;
 };

@@ -1037,9 +1037,18 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  /* 1. Disable interrupts to stop flight control loop */
   __disable_irq();
-  while (1)
-  {
+
+  /* 2. Optional: Log the error to Backup SRAM or RTC register */
+  // This allows you to check what caused the reset after the reboot
+  // Example: BKP_REG_ERROR_CODE = (uint32_t)error;
+
+  /* 3. Perform soft reset */
+  NVIC_SystemReset();
+
+  /* Infinite loop to ensure we never return from here */
+  while (1) {
   }
   /* USER CODE END Error_Handler_Debug */
 }

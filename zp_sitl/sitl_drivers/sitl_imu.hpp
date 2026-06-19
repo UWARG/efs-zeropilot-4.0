@@ -49,26 +49,25 @@ public:
         rawData.zgyro = (int16_t)(r_deg_s * Config::GYRO_SCALE);
     }
     
-    RawImu_t readRawData() override {
-        return rawData;
+    ZP_ERROR_e readRawData(RawImu_t &data) override {
+        data = rawData;
+        return ZP_ERROR_OK;
     }
     
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
-    ScaledImu_t scaleIMUData(const RawImu_t &raw) override {
-        ScaledImu_t scaled;
-
+    ZP_ERROR_e scaleIMUData(const RawImu_t &raw, ScaledImu_t &data) override {
         // Convert LSB back to m/s^2: (Raw / Scale) * 9.81
-        scaled.xacc = ((float)raw.xacc / Config::ACCEL_SCALE) * Config::GRAVITY;
-        scaled.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
-        scaled.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
+        data.xacc = ((float)raw.xacc / Config::ACCEL_SCALE) * Config::GRAVITY;
+        data.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
+        data.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
         // Convert LSB back to rad/s: (Raw / Scale) -> deg/s -> rad/s
-        scaled.xgyro = ((float)raw.xgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-        scaled.ygyro = ((float)raw.ygyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-        scaled.zgyro = ((float)raw.zgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
+        data.xgyro = ((float)raw.xgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
+        data.ygyro = ((float)raw.ygyro / Config::GYRO_SCALE) * DEG_TO_RAD;
+        data.zgyro = ((float)raw.zgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
 
-        return scaled;
+        return ZP_ERROR_OK;
     }
 };

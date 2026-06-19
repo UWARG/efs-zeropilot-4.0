@@ -11,6 +11,7 @@
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
 #include "sm_param_setup.hpp"
+#include "zp_error.h"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -55,7 +56,7 @@ class SystemManager {
             IMessageQueue<char[100]> *smLoggerQueue
         );
 
-        void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
+        ZP_ERROR_e smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
 
     private:
         ISystemUtils *systemUtilsDriver; // System utilities instance
@@ -77,17 +78,17 @@ class SystemManager {
         bool rcConnected;
         
         BatteryData_t batteryData;
-        bool updateBatteryFSM();
+        ZP_ERROR_e updateBatteryFSM();
 
-        void sendRCDataToAttitudeManager(const RCControl &rcData);
-        void sendRCDataToTelemetryManager(const RCControl &rcData);
-        void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
-        void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
+        ZP_ERROR_e sendRCDataToAttitudeManager(const RCControl &rcData);
+        ZP_ERROR_e sendRCDataToTelemetryManager(const RCControl &rcData);
+        ZP_ERROR_e sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
+        ZP_ERROR_e sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
+        ZP_ERROR_e sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 
-        PlaneFlightMode_e decodeRawFlightMode(float flightModeRawValue);
+        ZP_ERROR_e decodeRawFlightMode(float flightModeRawValue, PlaneFlightMode_e& flightMode);
 
-        void sendMessagesToLogger();
+        ZP_ERROR_e sendMessagesToLogger();
 
         uint8_t profilerId;
 

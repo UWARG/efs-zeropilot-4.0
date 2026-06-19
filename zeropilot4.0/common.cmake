@@ -38,6 +38,10 @@ set(ZP_PARAM_INC
     "include/zp_param/"
 )
 
+set(ZP_ERROR_INC
+    "include/zp_error/"
+)
+
 # external library files (does not apply compiler warnings)
 set(EXTERNAL_INC
     "../external/c_library_v2/all/"
@@ -57,4 +61,5 @@ set(ZP_INC
     ${SM_INC}
     ${TM_INC}
     ${ZP_PARAM_INC}
+    ${ZP_ERROR_INC}
 )

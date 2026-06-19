@@ -1,4 +1,5 @@
 #pragma once
+#include "zp_error.h"
 
 template <typename T>
 class IMessageQueue {
@@ -7,9 +8,9 @@ class IMessageQueue {
         
     public: 
         virtual ~IMessageQueue() = default;
-        
-        virtual int get(T *message) = 0;
-        virtual int push(T *message) = 0;
-        virtual int count() = 0;
-        virtual int remainingCapacity() = 0;
+
+        virtual ZP_ERROR_e get(T *message) = 0;
+        virtual ZP_ERROR_e push(T *message) = 0;
+        virtual ZP_ERROR_e count(int &count_value) = 0;
+        virtual ZP_ERROR_e remainingCapacity(int &capacity) = 0;
 };

@@ -8,21 +8,30 @@ CRSFReceiver::CRSFReceiver(UART_HandleTypeDef* uart) : uart_(uart) {
     memset(crsfRxBuffer_, 0, CRSF_PACKET_SIZE);
 }
 
-RCControl CRSFReceiver::getRCData() {
+ZP_ERROR_e CRSFReceiver::getRCData(RCControl &data) {
     RCControl tmp = rcData_;
     rcData_.isDataNew = false;
-    return tmp;
+    data = tmp;
+    return ZP_ERROR_OK;
 }
 
-void CRSFReceiver::init() {
+ZP_ERROR_e CRSFReceiver::init() {
     // start circular DMA
     rcData_.isDataNew = false;
-    HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_PACKET_SIZE);
+    if (HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_PACKET_SIZE) == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else {
+        return ZP_ERROR_FAIL;
+    }
 }
 
-void CRSFReceiver::startDMA() {
+ZP_ERROR_e CRSFReceiver::startDMA() {
     // start circular DMA
-    HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_PACKET_SIZE);
+    if (HAL_UARTEx_ReceiveToIdle_DMA(uart_, crsfRxBuffer_, CRSF_PACKET_SIZE) == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else {
+        return ZP_ERROR_FAIL;
+    }
 }
 
 // Polynomial used in CRSF: 0xD5
@@ -40,13 +49,13 @@ static uint8_t crsf_crc8(const uint8_t *data, uint8_t len) {
     return crc;
 }
 
-void CRSFReceiver::parse() {
+ZP_ERROR_e CRSFReceiver::parse() {
 
     uint8_t *buf = crsfRxBuffer_;
 
     // Validate sync byte and frame type
    if (buf[0] != CRSF_SYNC_BYTE || buf[2] != CRSF_FRAMETYPE_RC_CHANNELS_PACKED) {
-       return;
+       return ZP_ERROR_FAIL;
    }
 
     uint8_t length = buf[1];
@@ -58,7 +67,7 @@ void CRSFReceiver::parse() {
     const uint8_t crcCalc = crsf_crc8(&buf[2], length - 1); // TYPE+PAYLOAD
     
     if (crcFromPacket != crcCalc) {
-        return; // corrupted frame, ignore
+        return ZP_ERROR_CRC; // corrupted frame, ignore
     }
 
     // Decode channels
@@ -81,6 +90,7 @@ void CRSFReceiver::parse() {
     }
 
     rcData_.isDataNew = true;
+    return  ZP_ERROR_OK;
 }
 
 UART_HandleTypeDef * CRSFReceiver::getHUART() {

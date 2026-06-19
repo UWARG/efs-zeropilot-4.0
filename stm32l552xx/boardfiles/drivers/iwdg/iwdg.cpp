@@ -4,10 +4,12 @@ IndependentWatchdog::IndependentWatchdog(IWDG_HandleTypeDef *hiwdg) : watchdog_(
     // empty
 }
 
-bool IndependentWatchdog::refreshWatchdog() {
+ZP_ERROR_e IndependentWatchdog::refreshWatchdog() {
     if (this->watchdog_ == nullptr) {
-        return false;
+        return ZP_ERROR_NULLPTR;
     }
 
-    return (HAL_IWDG_Refresh(this->watchdog_) == HAL_OK);
+    if (HAL_IWDG_Refresh(this->watchdog_) == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else return ZP_ERROR_FAIL;
 }
