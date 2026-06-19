@@ -1,3 +1,4 @@
 #pragma once
+#include "zp_error.h"
 
-void initModel();
+ZP_ERROR_e initModel();

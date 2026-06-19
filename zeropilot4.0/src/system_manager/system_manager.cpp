@@ -226,8 +226,7 @@ ZP_ERROR_e SystemManager::updateBatteryFSM() {
 ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t rcDataMsg;
-    uint32_t currentTime = 0;
-    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
     result |= rcDataPack(rcDataMsg, currentTime, rcData.controlSignals, INPUT_CHANNELS);
     
     if (result == ZP_ERROR_OK) {
@@ -239,8 +238,7 @@ ZP_ERROR_e SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) 
 ZP_ERROR_e SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
     ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t hbDataMsg;
-    uint32_t currentTime = 0;
-    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
     result |= heartbeatPack(hbDataMsg, currentTime, baseMode, customMode, systemStatus);
     
     if (result == ZP_ERROR_OK) {
@@ -288,8 +286,7 @@ ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t 
         }
 
         TMMessage_t batteryDataMsg;
-        uint32_t currentTime = 0;
-        result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+        uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
         result |= batteryDataPack(batteryDataMsg, currentTime, BATTERY_ID, 
                                   INT16_MAX, voltages, VOLTAGE_LEN, batteryData.pmData.current, 
                                   static_cast<int32_t>(batteryData.pmData.charge), 
@@ -306,8 +303,7 @@ ZP_ERROR_e SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t 
 ZP_ERROR_e SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
     ZP_ERROR_e result = ZP_ERROR_OK;
     TMMessage_t statusTextMsg;
-    uint32_t currentTime = 0;
-    result |= systemUtilsDriver->getCurrentTimestampMs(currentTime);
+    uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
     result |= statusTextPack(statusTextMsg, currentTime, severity, text, id, chunk_seq);
     
     if (result == ZP_ERROR_OK) {

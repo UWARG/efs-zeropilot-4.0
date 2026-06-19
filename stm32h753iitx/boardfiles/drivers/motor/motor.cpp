@@ -7,7 +7,7 @@ MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint
     maxCCR(maxDutyCycle / 100.0 * timer->Init.Period),
     servoIdx(servoIdx) {}
 
-void MotorControl::set(uint32_t percent) {
+ZP_ERROR_e MotorControl::set(uint32_t percent) {
     percent = percent > 100 ? 100 : percent;
     
     uint32_t ticks = 0;
@@ -15,23 +15,34 @@ void MotorControl::set(uint32_t percent) {
         ticks = ((percent / 100.0) * (maxCCR - minCCR)) + minCCR;
     }
 
-    __HAL_TIM_SET_COMPARE(timer, timerChannel, ticks);
+    if (__HAL_TIM_SET_COMPARE(timer, timerChannel, ticks) == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else {
+        return ZP_ERROR_FAIL;
+    };
 }
 
-void MotorControl::init() {
+ZP_ERROR_e MotorControl::init() {
     __HAL_TIM_SET_COMPARE(timer, timerChannel, minCCR);
     HAL_TIM_PWM_Start(timer, timerChannel);
+    return ZP_ERROR_OK;
 }
 
 void MotorControl::enableServo(GPIO_TypeDef* enGpioBase, uint16_t enGpioNum) {
     HAL_GPIO_WritePin(enGpioBase, enGpioNum, GPIO_PIN_SET);
 }
 
-void MotorControl::enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi) {
+ZP_ERROR_e MotorControl::enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi) {
     uint8_t rx[2];
     static constexpr uint8_t tx[2] = {0xFF, 0xAC};
 
     HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_SET);
+
+    if (status == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else {
+        return ZP_ERROR_FAIL;
+    }
 }

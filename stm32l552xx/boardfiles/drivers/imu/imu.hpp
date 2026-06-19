@@ -80,7 +80,7 @@ public:
 	IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin);
 
 	// Initialization
-	ZP_ERROR_e init() override;
+	int init() override;
 
 	// Data reading
 	// First read returns all 0s, subsequent reads return latest data

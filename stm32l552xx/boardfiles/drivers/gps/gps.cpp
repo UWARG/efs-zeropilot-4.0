@@ -91,9 +91,9 @@ ZP_ERROR_e GPS::readData(GpsData_t& out_data) {
         tempData.isNew = true;
         validData = tempData;
         validData.isNew = false;
-        out_data = validData;
     }
 
+    out_data = tempData;
     // Re-enable DMA
     __HAL_DMA_ENABLE_IT(huart->hdmarx, DMA_IT_TC);
 

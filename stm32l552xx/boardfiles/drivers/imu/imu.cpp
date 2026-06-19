@@ -136,39 +136,32 @@ ZP_ERROR_e IMU::reset() {
 }
 
 ZP_ERROR_e IMU::whoAmI(uint8_t& identity) {
-    uint8_t buffer;
-    ZP_ERROR_e result = readRegister(0, UB0_REG_WHO_AM_I, &buffer);
-    if (result == ZP_ERROR_OK) {
-        identity = buffer;
-    }   
+    ZP_ERROR_e result = readRegister(0, UB0_REG_WHO_AM_I, &identity);
     return result;
 }
+
 
 float IMU::lowPassFilter(float raw_value, int select) {
     _filteredGyro[select] = _alpha * raw_value + (1 - _alpha) * _filteredGyro[select];
     return _filteredGyro[select];
 }
 
-ZP_ERROR_e IMU::init() {
+int IMU::init() {
+    uint8_t address = 0;
     csHigh();
     ZP_ERROR_e result = reset();
-    
+    result = whoAmI(address);
     if (result == ZP_ERROR_OK) {
-        uint8_t address = 0;
-        result = whoAmI(address);
+        result = setLowNoiseMode();
         
-        if (result == ZP_ERROR_OK) {
-            result = setLowNoiseMode();
-            
-            // TODO: enable and test below configurations
-            // setAccelFS(0b01101001);
-            // configureNotchFilter();
-            // setAntiAliasFilter(213, true, true);
-            // calibrateGyro();
-        }
+        // TODO: enable and test below configurations
+        // setAccelFS(0b01101001);
+        // configureNotchFilter();
+        // setAntiAliasFilter(213, true, true);
+        // calibrateGyro();
     }
     
-    return result;
+    return address;
 }
 
 void IMU::txRxCallback() {

@@ -12,34 +12,48 @@ RFD::~RFD() {
     instance = nullptr;
 }
 
-void RFD::transmit(const uint8_t* data, uint16_t size) {
+ZP_ERROR_e RFD::transmit(const uint8_t* data, uint16_t size) {
     if (huart) {
-        HAL_UART_Transmit_DMA(huart, data, size);
+        if (HAL_UART_Transmit_DMA(huart, data, size) == HAL_OK) {
+            return ZP_ERROR_OK;
+        } else {
+            return ZP_ERROR_FAIL;
+        }
     }
+
+    return ZP_ERROR_FAIL;
 }
 
-uint16_t RFD::getRXTransferSize(uint16_t idx) {
+ZP_ERROR_e RFD::getRXTransferSize(uint16_t idx, uint16_t& output) {
 	if (idx > lastIdx) {
-		return (uint16_t)(idx - lastIdx);
+		output = (uint16_t)(idx - lastIdx);
 	} else {
-		return (uint16_t)(BUFFER_SIZE - lastIdx + idx);
+		output = (uint16_t)(BUFFER_SIZE - lastIdx + idx);
 	}
+    return ZP_ERROR_OK;
 }
 
-void RFD::init() {
+ZP_ERROR_e RFD::init() {
     if (huart) {
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
+        if (HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE) == HAL_OK) {
+            return ZP_ERROR_OK;
+        } else {
+            return ZP_ERROR_FAIL;
+        }
     }
+
+    return ZP_ERROR_FAIL;
 }
 
-void RFD::receiveCallback(uint16_t writeIdx) {
+ZP_ERROR_e RFD::receiveCallback(uint16_t writeIdx) {
     if (HAL_UARTEx_GetRxEventType(huart) == HAL_UART_RXEVENT_HT) {
-		return;
+		return ZP_ERROR_FAIL;
 	}
 
     writeIndex = writeIdx % BUFFER_SIZE;
 
-	uint16_t transferSize = getRXTransferSize(writeIndex);
+	uint16_t transferSize = 0;
+    ZP_ERROR_e result = getRXTransferSize(writeIndex, transferSize);
 	currentSize += transferSize;
 
     if (currentSize > (BUFFER_SIZE - 1)) {
@@ -49,11 +63,13 @@ void RFD::receiveCallback(uint16_t writeIdx) {
     }
 
 	lastIdx = writeIdx;
+
+    return result;
 }
 
-uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
+ZP_ERROR_e RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_size) {
     if (readIndex == writeIndex) {
-        return 0;
+        return ZP_ERROR_FAIL;
     }
 
     int dataRead = 0;
@@ -73,7 +89,8 @@ uint16_t RFD::receive(uint8_t* buffer, uint16_t bufferSize) {
 
     readIndex = (readIndex + dataRead) % BUFFER_SIZE;
     currentSize -= dataRead;
-    return dataRead;
+    received_size = dataRead;
+    return ZP_ERROR_OK;
 }
 
 UART_HandleTypeDef* RFD::getHUART() const {

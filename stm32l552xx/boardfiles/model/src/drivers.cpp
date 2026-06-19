@@ -113,7 +113,7 @@ ZP_ERROR_e initDrivers()
 
     if ((status = rcHandle->init()) != ZP_ERROR_OK) Error_Handler();
     if ((status = gpsHandle->init()) != ZP_ERROR_OK) Error_Handler();
-    if ((status = imuHandle->init()) != ZP_ERROR_OK) Error_Handler();
+    imuHandle->init();
     if ((status = pmHandle->init()) != ZP_ERROR_OK) Error_Handler();
     if ((status = telemLinkHandle->init()) != ZP_ERROR_OK) Error_Handler();
 

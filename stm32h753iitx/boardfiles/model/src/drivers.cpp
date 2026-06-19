@@ -66,7 +66,7 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 // Initialization 
 // ----------------------------------------------------------------------------
-void initDrivers()
+ZP_ERROR_e initDrivers()
 {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
@@ -74,9 +74,18 @@ void initDrivers()
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
-    uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
+    float val = 0.0f;
+    ZP_ERROR_e status = ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE, val);
+    if (status != ZP_ERROR_OK) Error_Handler();
+    uint32_t servoType = static_cast<uint32_t>(val);
+
     for (int i = 0; i < 8; i++) {
-        bool isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        float funcVal = 0.0f;
+        status = ZP_PARAM::get(SERVO_FUNC[i], funcVal);
+        if (status != ZP_ERROR_OK) Error_Handler();
+
+        MotorFunction_e func = static_cast<MotorFunction_e>(static_cast<int>(funcVal));
+        bool isMotor = (func == MotorFunction_e::THROTTLE);
         if (isMotor) {
             switch (servoType) {
                 case MOT_TYPE_DSHOT: // DShot
@@ -106,16 +115,19 @@ void initDrivers()
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
-    for (int i = 0; i < 8; i++) {
-        motorHandles[i]->init();
+   for (int i = 0; i < 8; i++) {
+        status = motorHandles[i]->init();
+        if (status != ZP_ERROR_OK) Error_Handler();
     }
+
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
 
-    rcHandle->init();
-    gpsHandle->init();
+
+    if ((status = rcHandle->init()) != ZP_ERROR_OK) Error_Handler();
+    if ((status = gpsHandle->init()) != ZP_ERROR_OK) Error_Handler();
     imuHandle->init();
-    telemLinkHandle->init();
+    if ((status = telemLinkHandle->init()) != ZP_ERROR_OK) Error_Handler();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {
@@ -123,4 +135,6 @@ void initDrivers()
     }
 
     mainMotorGroup = {motorInstances, 8};
+
+    return ZP_ERROR_OK;
 }
