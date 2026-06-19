@@ -136,9 +136,8 @@ ZP_ERROR_e PowerModule::readData(PMData_t *data) {
     return result;
 }
 
-ZP_ERROR_e PowerModule::getI2C(I2C_HandleTypeDef*& out_hi2c) {
-    out_hi2c = hi2c;
-    return ZP_ERROR_OK;
+I2C_HandleTypeDef* PowerModule::getI2C() {
+    return hi2c;
 }
 
 

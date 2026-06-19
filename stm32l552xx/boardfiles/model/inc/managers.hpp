@@ -9,4 +9,4 @@ extern AttitudeManager *amHandle;
 extern SystemManager *smHandle;
 extern TelemetryManager *tmHandle;
 
-void initManagers();
+ZP_ERROR_e initManagers();

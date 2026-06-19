@@ -4,13 +4,8 @@
 
 GPS::GPS(UART_HandleTypeDef* huart) : huart(huart) {}
 
-ZP_ERROR_e GPS::getHUART(UART_HandleTypeDef*& out_huart) {
-    if (huart == nullptr) {
-        return ZP_ERROR_RESOURCE_UNAVAILABLE;
-    }
-    
-    out_huart = huart;
-    return ZP_ERROR_OK;
+UART_HandleTypeDef* GPS::getHUART() {
+    return huart;
 }
 
 ZP_ERROR_e GPS::init() {
@@ -30,14 +25,13 @@ ZP_ERROR_e GPS::init() {
     // Enable IDLE interrupt
     __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
 
-    HAL_StatusTypeDef status;
     // Enable UBX velocity messages
-    result |= enableMessage(0x01, 0x11, status);
+    result |= enableMessage(0x01, 0x11);
 
     return result;
 }
 
-ZP_ERROR_e GPS::enableMessage(uint8_t msgClass, uint8_t msgId, HAL_StatusTypeDef &status) {
+ZP_ERROR_e GPS::enableMessage(uint8_t msgClass, uint8_t msgId) {
     uint8_t cfgMsg[] = {
         0xB5, 0x62,         //sync chars
         0x06, 0x01,         //class and id
@@ -47,7 +41,7 @@ ZP_ERROR_e GPS::enableMessage(uint8_t msgClass, uint8_t msgId, HAL_StatusTypeDef
         0x00, 0x00          //placeholder for checksum
     };
 
-    ZP_ERROR_e result = sendUBX(cfgMsg, sizeof(cfgMsg), status);
+    ZP_ERROR_e result = sendUBX(cfgMsg, sizeof(cfgMsg));
     return result;
 }
 
@@ -63,15 +57,16 @@ ZP_ERROR_e GPS::calcChecksum(uint8_t *msg, uint16_t len) {
     }
     msg[len - 2] = ckA;
     msg[len - 1] = ckB;
+    return ZP_ERROR_OK;
 }
 
-ZP_ERROR_e GPS::sendUBX(uint8_t *msg, uint16_t len, HAL_StatusTypeDef &status) {
+ZP_ERROR_e GPS::sendUBX(uint8_t *msg, uint16_t len) {
     ZP_ERROR_e result = calcChecksum(msg, len);
     if (result != ZP_ERROR_OK) {
         return result;
     }
 
-    status = HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY);
     if (status != HAL_OK) {
         return ZP_ERROR_FAIL;
     }

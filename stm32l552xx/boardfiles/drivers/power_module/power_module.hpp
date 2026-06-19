@@ -50,7 +50,7 @@ class PowerModule : public IPowerModule {
         ZP_ERROR_e init();
         ZP_ERROR_e readData(PMData_t *data);
         ZP_ERROR_e I2C_MemRxCpltCallback();
-        ZP_ERROR_e getI2C(I2C_HandleTypeDef*& out_hi2c);
+        I2C_HandleTypeDef* getI2C();
 
     private:
         PMData_t processedData;

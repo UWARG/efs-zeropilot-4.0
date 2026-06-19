@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 typedef struct PMData {
     // Instantaneous results

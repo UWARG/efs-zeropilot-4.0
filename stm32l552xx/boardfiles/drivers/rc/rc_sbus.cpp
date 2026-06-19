@@ -59,9 +59,8 @@ SBUSReceiver::SBUSReceiver(UART_HandleTypeDef* uart) : uart(uart) {
 }
 
 
-ZP_ERROR_e SBUSReceiver::getHUART(UART_HandleTypeDef*& value) {
-    value = uart;
-    return ZP_ERROR_OK;
+UART_HandleTypeDef* SBUSReceiver::getHUART() {
+    return uart;    
 }
 
 ZP_ERROR_e SBUSReceiver::getRCData(RCControl &data) {

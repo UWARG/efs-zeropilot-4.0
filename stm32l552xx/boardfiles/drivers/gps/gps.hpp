@@ -18,7 +18,7 @@ public:
     ZP_ERROR_e readData(GpsData_t& out_data) override;
     ZP_ERROR_e processGPSData();
 
-    ZP_ERROR_e getHUART(UART_HandleTypeDef*& value);
+    UART_HandleTypeDef* getHUART();
 
 private:
     GpsData_t validData;
@@ -28,8 +28,8 @@ private:
     uint8_t processBuffer[MAX_NMEA_DATA_LENGTH];
     UART_HandleTypeDef *huart;
 
-    ZP_ERROR_e enableMessage(uint8_t msgClass, uint8_t msgId, HAL_StatusTypeDef& status);
-    ZP_ERROR_e sendUBX(uint8_t *msg, uint16_t len, HAL_StatusTypeDef& status);
+    ZP_ERROR_e enableMessage(uint8_t msgClass, uint8_t msgId);
+    ZP_ERROR_e sendUBX(uint8_t *msg, uint16_t len);
     ZP_ERROR_e calcChecksum(uint8_t *msg, uint16_t len);
 
     ZP_ERROR_e parseRMC();

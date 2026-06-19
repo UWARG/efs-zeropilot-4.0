@@ -34,7 +34,7 @@ ZP_ERROR_e SystemUtils::profilerRegister(const char* name, uint8_t* outId) {
     if (taskCount == 0) dwtInit();
     if (taskCount >= MAX_PROFILED_TASKS) {
         *outId = -1;
-        return;
+        return ZP_ERROR_OUT_OF_MEMORY;
     }
     uint8_t id = taskCount++;
     registry[id] = { name, 0, 0, 0 };

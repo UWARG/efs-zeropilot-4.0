@@ -165,17 +165,14 @@ namespace ZP_PARAM {
     }
 
     ZP_ERROR_e get(ZP_PARAM_ID id, float& out_value) {
-        ZP_ERROR_e result = ZP_ERROR_OK;
         uint16_t index = static_cast<uint16_t>(id);
 
         if (index >= static_cast<uint16_t>(ZP_PARAM_ID::PARAM_COUNT)) {
             out_value = 0.0f;
-            result |= ZP_ERROR_INVALID_PARAM;
-        } else {
-            out_value = params[index].paramValue;
+            return ZP_ERROR_INVALID_PARAM;
         }
-        
-        return result;
+        out_value = params[index].paramValue;
+        return ZP_ERROR_OK;
     }
 
     ZP_ERROR_e setParamById(const char* paramId, float new_value) {

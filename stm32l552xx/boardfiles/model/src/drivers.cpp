@@ -63,60 +63,65 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 // Initialization (no heap allocations)
 // ----------------------------------------------------------------------------
-void initDrivers()
+ZP_ERROR_e initDrivers()
 {
-    // Core utilities
+    // 1. Core utilities
     systemUtilsHandle = new SystemUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
-    loggerHandle = new Logger(); // Initialized later in RTOS task
+    loggerHandle = new Logger();
 
-    // Motors (servo index matches SERVOx param)
-    uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
+    // 2. Motors (Fail-fast on parameter read)
+    float val = 0.0f;
+    ZP_ERROR_e status = ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE, val);
+    if (status != ZP_ERROR_OK) Error_Handler();
+    
+    uint32_t servoType = static_cast<uint32_t>(val);
+    
     for (int i = 0; i < 8; i++) {
-        bool isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
-        if (isMotor) {
-            switch (servoType) {
-                case MOT_TYPE_DSHOT: // DShot
-                    motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
-                    break;
-                case MOT_TYPE_PWM: // PWM
-                default:
-                    motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
-                    break;
-            }
+        float funcVal = 0.0f;
+        status = ZP_PARAM::get(SERVO_FUNC[i], funcVal);
+        if (status != ZP_ERROR_OK) Error_Handler();
+
+        MotorFunction_e func = static_cast<MotorFunction_e>(static_cast<int>(funcVal));
+        bool isMotor = (func == MotorFunction_e::THROTTLE);
+
+        if (isMotor && servoType == MOT_TYPE_DSHOT) {
+            motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
         } else {
             motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
 
-    // Peripherals
+    // 3. Peripheral allocation
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart3);
     imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0);
     pmHandle = new PowerModule(&hi2c1);
 
-    // Queues
+    // 4. Queue allocation
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
     smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
-    // Initialize hardware components
+    // 5. Hardware Initialization (Fail-Fast)
     for (int i = 0; i < 8; i++) {
-        motorHandles[i]->init();
+        status = motorHandles[i]->init();
+        if (status != ZP_ERROR_OK) Error_Handler();
     }
 
-    rcHandle->init();
-    gpsHandle->init();
-    imuHandle->init();
-    pmHandle->init();
-    telemLinkHandle->init();
+    if ((status = rcHandle->init()) != ZP_ERROR_OK) Error_Handler();
+    if ((status = gpsHandle->init()) != ZP_ERROR_OK) Error_Handler();
+    if ((status = imuHandle->init()) != ZP_ERROR_OK) Error_Handler();
+    if ((status = pmHandle->init()) != ZP_ERROR_OK) Error_Handler();
+    if ((status = telemLinkHandle->init()) != ZP_ERROR_OK) Error_Handler();
 
-    // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
+    // 6. Finalize structure
     for (int i = 0; i < 8; i++) {
         motorInstances[i] = {motorHandles[i]};
     }
-
     mainMotorGroup = {motorInstances, 8};
+
+    return ZP_ERROR_OK;
 }
