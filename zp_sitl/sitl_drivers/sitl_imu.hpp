@@ -14,7 +14,7 @@ private:
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
 public:
-    ZP_ERROR_e init() override { return ZP_ERROR_OK; }
+    int init() override { return 0; }
     
     /**
      * Simulates the IMU readings based on the physics engine (Plant)
