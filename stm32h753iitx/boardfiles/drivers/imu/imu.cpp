@@ -271,12 +271,12 @@ void IMU::processRawData()
         rawData[k].xgyro = -(int16_t)((imuRxBuffer[base + 7] << 8) | imuRxBuffer[base + 8]);
         rawData[k].ygyro = (int16_t)((imuRxBuffer[base + 9] << 8) | imuRxBuffer[base + 10]);
         rawData[k].zgyro = -(int16_t)((imuRxBuffer[base + 11] << 8) | imuRxBuffer[base + 12]);
-        rawData[k].timestamp = (int16_t)((imuRxBuffer[base + 14] << 8) | imuRxBuffer[base + 15]);
+        rawData[k].timestamp = (uint16_t)((imuRxBuffer[base + 14] << 8) | imuRxBuffer[base + 15]);
     }
 
     rawImuDataBatch.data = rawData;
     rawImuDataBatch.count = fifoSize;
-    rawImuDataBatch.readTime = DWT->CYCCNT / (SystemCoreClock / 100000);
+    rawImuDataBatch.readTime = DWT->CYCCNT / (SystemCoreClock / 1000000); // DWT converted to microseconds
 
     // float acc_temp[3];
     // float gyr_temp[3];

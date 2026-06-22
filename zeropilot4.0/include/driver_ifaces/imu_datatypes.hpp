@@ -10,7 +10,7 @@ typedef struct {
     int16_t xgyro;
     int16_t ygyro;
     int16_t zgyro;
-    uint16_t timestamp;
+    uint32_t timestamp;
 } RawImu_t;
 
 typedef struct {
@@ -20,7 +20,7 @@ typedef struct {
     float xgyro;
     float ygyro;
     float zgyro;
-    uint16_t timestamp;
+    uint32_t timestamp;
 } ScaledImu_t;
 
 // Attitude in radians

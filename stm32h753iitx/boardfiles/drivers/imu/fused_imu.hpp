@@ -29,6 +29,7 @@ class FusedIMU : public IIMU {
         volatile uint8_t active_imu;
 
         RawImuBatch_t rawImuBatch[NUM_IMU] = {};
+        ScaledImuBatch_t scaledImuBatch[NUM_IMU] = {};
 
         RawImu_t rawFusedImuData[MAX_FUSED_PACKET_SIZE] = {};
 		RawImuBatch_t rawFusedImuBatch = {};
