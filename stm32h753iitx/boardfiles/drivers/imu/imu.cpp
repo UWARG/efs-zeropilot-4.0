@@ -276,7 +276,7 @@ void IMU::processRawData()
 
     rawImuDataBatch.data = rawData;
     rawImuDataBatch.count = fifoSize;
-    rawImuDataBatch.readTime = DWT->CYCCNT / (SystemCoreClock / 1000000); // DWT converted to microseconds
+    rawImuDataBatch.readTime = SystemUtils::getDWTMicroSec();
 
     // float acc_temp[3];
     // float gyr_temp[3];

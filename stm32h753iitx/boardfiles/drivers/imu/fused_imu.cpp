@@ -42,7 +42,7 @@ RawImuBatch_t FusedIMU::readRawData() {
             for (int j = count - 2; j >= 0; j--) {
                 uint16_t currentHwTS = rawFusedImuData[offset + j].timestamp;
                 elapsed += (uint16_t)(prevHwTS - currentHwTS); // Cast to uin16_t so if delta > 65,536(2^16, hw timstamp limit), it wraps around
-                rawFusedImuData[offset + j].timestamp = batchReadTime - elapsed; // Both DWT and hw timestamp are both in microseconds
+                rawFusedImuData[offset + j].timestamp = batchReadTime - elapsed; // Both DWT and hw timestamp are in microseconds
                 prevHwTS = currentHwTS;
             }
 

@@ -21,4 +21,6 @@ class SystemUtils : public ISystemUtils {
             DWT->CYCCNT = 0;
             DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
         }
+
+        static uint32_t getDWTMicroSec();
 };
