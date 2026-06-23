@@ -13,6 +13,10 @@
 #define UB0_REG_FIFO_DATA 0x30
 #define UB0_REG_FIFO_COUNTH 0x2E
 #define UB0_REG_SIGNAL_PATH_RESET 0x4B
+#define FIFO_HEADER_MSG_BIT 0x80
+#define FIFO_HEADER_ACCEL_BIT 0x40
+#define FIFO_HEADER_GYRO_BIT 0x20
+
 
 IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin) : 
     spi(spiHandle),
@@ -231,9 +235,10 @@ void IMU::dmaTransfer()
     }
     case DATA: {
         fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
-        if (fifoSize > MAX_PACKETS)
-        {
-            fifoSize = MAX_PACKETS;
+        if (fifoSize == 0 || fifoSize > FIFO_HW_MAX_PACKETS) { // FifoSize > 128 means the transaction for reading COUNT register was corrupted
+            fifoSize = 0; // Skip the read
+        } else if (fifoSize > MAX_PACKETS) {
+            fifoSize = MAX_PACKETS; // Read what fits in the user defined limit
         }
 
         imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
@@ -261,9 +266,16 @@ void IMU::setFIFO()
 
 void IMU::processRawData()
 {
+    uint16_t validData = 0;
     for (int k = 0; k < fifoSize; k++)
     {
         uint16_t base = 1 + k * PACKET_SIZE; // +1 to skip the dummy byte
+
+        uint8_t header = imuRxBuffer[base];
+        // Dont read data if the packet is empty or if doesnt include acceleration or gyro data
+        if ((header & FIFO_HEADER_MSG_BIT) || !(header & FIFO_HEADER_ACCEL_BIT) || !(header & FIFO_HEADER_GYRO_BIT)) {
+            break;
+        }
 
         rawData[k].xacc = (int16_t)((imuRxBuffer[base + 1] << 8) | imuRxBuffer[base + 2]);
         rawData[k].yacc = -(int16_t)((imuRxBuffer[base + 3] << 8) | imuRxBuffer[base + 4]);
@@ -272,10 +284,11 @@ void IMU::processRawData()
         rawData[k].ygyro = (int16_t)((imuRxBuffer[base + 9] << 8) | imuRxBuffer[base + 10]);
         rawData[k].zgyro = -(int16_t)((imuRxBuffer[base + 11] << 8) | imuRxBuffer[base + 12]);
         rawData[k].timestamp = (uint16_t)((imuRxBuffer[base + 14] << 8) | imuRxBuffer[base + 15]);
+        validData++;
     }
 
     rawImuDataBatch.data = rawData;
-    rawImuDataBatch.count = fifoSize;
+    rawImuDataBatch.count = validData;
     rawImuDataBatch.readTime = SystemUtils::getDWTMicroSec();
 
     // float acc_temp[3];

@@ -7,6 +7,7 @@
 #include "imu_datatypes.hpp"
 
 #define MAX_PACKETS 128
+#define FIFO_HW_MAX_PACKETS 128
 
 class IMU : public IIMU {
 	public:
