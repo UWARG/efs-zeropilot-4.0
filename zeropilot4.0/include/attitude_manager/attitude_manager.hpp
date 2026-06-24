@@ -60,10 +60,11 @@ class AttitudeManager {
         MotorGroupInstance_t *mainMotorGroup;
 
         bool armedFlag;
+        bool setArmFlag;
 
         uint16_t lastServoOutputs[16];
 
-        uint8_t amSchedulingCounter;
+        uint16_t amSchedulingCounter;
 
         int noDataCount;
         bool failsafeTriggered;
