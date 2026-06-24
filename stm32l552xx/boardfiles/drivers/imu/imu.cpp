@@ -3,60 +3,121 @@
 #include "imu.hpp"
 #include <string.h>
 
-
 #define REG_BANK_SEL          0x76
 #define UB0_REG_WHO_AM_I      0x75
 #define UB0_REG_DEVICE_CONFIG 0x11
 #define UB0_REG_PWR_MGMT0     0x4E
-#define UB0_REG_TEMP_DATA1    0x1D
+#define UB0_REG_FIFO_CONFIG       0x16
+#define UB0_REG_FIFO_CONFIG1      0x5F
+#define UB0_REG_INTF_CONFIG0      0x4C
+#define UB0_REG_FIFO_DATA         0x30
+#define UB0_REG_FIFO_COUNTH       0x2E
+#define UB0_REG_SIGNAL_PATH_RESET 0x4B
 
+IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin) : 
+    _spi(spiHandle), 
+    _csPort(csPort), 
+    _csPin(csPin),
+    _alpha(0.1f) {
 
-IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
-    : _spi(spiHandle), _csPort(csPort), _csPin(csPin),
-      _alpha(0.1f)
-{
     _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
-
-    memset(imu_tx_buffer, 0, RX_BUFFER_SIZE);
-    memset(imu_rx_buffer, 0, RX_BUFFER_SIZE);
-
-    // only setting first bit, rest should be 0
-    imu_tx_buffer[0] = UB0_REG_TEMP_DATA1 | 0b10000000; // set 8-th bit to 1 for read, page 53
+    memset((void*)imuTxBuffer, 0, RX_BUFFER_SIZE);
+    memset((void*)imuRxBuffer, 0, RX_BUFFER_SIZE);
+    
+    // First bit should be 1 for register read
+    imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
 }
 
-
-void IMU::csLow() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
-}
-
-
-void IMU::csHigh() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
-}
-
-
-HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
-    if (curr_register_bank == bank) {
-        return HAL_OK;
-    }
-    uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
-    csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+int IMU::init() {
     csHigh();
+    reset();
+    uint8_t address = whoAmI();
+    setLowNoiseMode();
+    HAL_Delay(60); // Wait after sensors are turned on
+    setFIFO();
+    flushFIFO();
 
-    curr_register_bank = bank;
+    // TODO: enable and test below configurations
+    // setAccelFS(0b01101001);
+    // configureNotchFilter();
+    // setAntiAliasFilter(213, true, true);
+    // calibrateGyro();
+    return address;
+}
+
+RawImuBatch_t IMU::readRawData() {
+    // Dont start another dma transaction when in the middle of one transaction
+    if (!dmaDone) {
+        return rawImuDataBatch;
+    }
+    
+    // Process previous data batch    
+    processRawData(); 
+
+    // Start another batch transfer
+    setBank(0);
+    dmaDone = false;
+    rxFlag = COUNT;
+    dmaTransfer();
+
+    return rawImuDataBatch;
+}
+
+ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
+    for (int i = 0; i < rawDataBatch.count; i++) {
+        scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
+        scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
+        scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
+        scaledData[i].xgyro = lowPassFilter((float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR, 0);
+        scaledData[i].ygyro = lowPassFilter((float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR, 1);
+        scaledData[i].zgyro = lowPassFilter((float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR, 2);
+        scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
+    }
+    scaledImuDataBatch.count = rawDataBatch.count;
+    scaledImuDataBatch.data = scaledData;
+
+    return scaledImuDataBatch;
+}
+
+void IMU::txRxCallback() {
+    csHigh();
+    switch (rxFlag) {
+        case COUNT:
+            rxFlag = DATA;
+            dmaTransfer(); // Read actual data after getting num of packets
+            break;
+        case DATA:
+            rxFlag = COUNT;
+            dmaDone = true;
+            break;
+        default:
+            break;
+    }
+}
+
+SPI_HandleTypeDef* IMU::getSPI() {
+    return _spi;
+}
+
+HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
+    HAL_StatusTypeDef status = setBank(bank);
+    if (status != HAL_OK) {
+        return status;
+    }
+    uint8_t txBuf[2] = {registerAddr, data};
+    csLow();
+    status = HAL_SPI_Transmit(_spi, txBuf, 2, HAL_MAX_DELAY);
+    csHigh();
     return status;
 }
 
-
-HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
-    
+HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data) {
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
         return status;
     }
     
-    uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // set 8-th bit to 1 for read, page 53
+    uint8_t tx[2] = {(uint8_t)(registerAddr | 0b10000000), 0}; // Set 8-th bit to 1 for read, page 53
     uint8_t rx[2] = {0, 0};
 
     csLow();
@@ -68,48 +129,31 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t
     return status;
 }
 
-
-HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
-    
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
+HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
+    if (currRegisterBank == bank) {
+        return HAL_OK;
     }
-    uint8_t tx_buf[2] = {register_addr, data};
+    uint8_t txBuf[2] = {REG_BANK_SEL, bank};
     csLow();
-    status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
+
+    currRegisterBank = bank;
     return status;
 }
 
-
-RawImu_t IMU::readRawData() {
-    setBank(0);
-
-    if (spi_tx_rx_flag) {
-        spi_tx_rx_flag = 0;
-
-        processRawData();
-
-        csLow();
-        HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
-    }
-
-    return raw_imu_data;
+void IMU::csLow() {
+    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
 }
 
-
-void IMU::setLowNoiseMode() {
-    writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+void IMU::csHigh() {
+    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
 }
-
 
 void IMU::reset() {
-    setBank(0);
     writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
-    HAL_Delay(1); // need one ms delay after reset, 
+    HAL_Delay(1); // Need one ms delay after reset, 
 }
-
 
 uint8_t IMU::whoAmI() {
     uint8_t buffer;
@@ -117,45 +161,56 @@ uint8_t IMU::whoAmI() {
     return buffer;
 }
 
-
-float IMU::lowPassFilter(float raw_value, int select) {
-    _filteredGyro[select] = _alpha * raw_value + (1 - _alpha) * _filteredGyro[select];
-    return _filteredGyro[select];
+void IMU::flushFIFO() {
+    writeRegister(0, UB0_REG_SIGNAL_PATH_RESET, 0b00000010);
 }
 
+void IMU::dmaTransfer() {
+    csLow();
+    switch (rxFlag) {
+        case COUNT:
+            imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
+            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+            break;
+        case DATA:
+            fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
+            if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
 
-int IMU::init() {
-    csHigh();
-    reset();
-    uint8_t address = whoAmI();
-    setLowNoiseMode();
-    // TODO: enable and test below configurations
-    // setAccelFS(0b01101001);
-    // configureNotchFilter();
-	// setAntiAliasFilter(213, true, true);
-    // calibrateGyro();
-    return address;
+            imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
+            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
+            break;
+        default:
+            break;
+    }
 }
 
-void IMU::txRxCallback() {
-    csHigh();
-    spi_tx_rx_flag = 1;
+void IMU::setLowNoiseMode() {
+    // Starts accelerometer and gyro in low noise mode
+    writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+}
+
+void IMU::setFIFO() {
+    // change to 0x later
+    writeRegister(0, UB0_REG_FIFO_CONFIG, 0b01000000); // Stream to fifo mode
+    writeRegister(0, UB0_REG_FIFO_CONFIG1, 0b01100011); // Partial fifo read enabled, trigger watermark interrupt on every odr if count > watermark, no fsync, no temp data, yes gyro, yes accel
+    writeRegister(0, UB0_REG_INTF_CONFIG0, 0b11110000); // Invalid data not put into fifo, fifo count is in num of packets
 }
 
 void IMU::processRawData() {
-    int16_t raw[7];
+    for (int k = 0; k < fifoSize; k++) {
+        uint16_t base = 1 + k * PACKET_SIZE; // +1 to skip the dummy byte
 
-    for (int i = 0; i < 7; i++)
-        raw[i] = ((int16_t)imu_rx_buffer[i*2+1] << 8) | imu_rx_buffer[i*2+2];
+        rawData[k].xacc = (int16_t)((imuRxBuffer[base+1] << 8) | imuRxBuffer[base+2]);
+        rawData[k].yacc = -(int16_t)((imuRxBuffer[base+3] << 8) | imuRxBuffer[base+4]);
+        rawData[k].zacc = (int16_t)((imuRxBuffer[base+5] << 8) | imuRxBuffer[base+6]);
+        rawData[k].xgyro = -(int16_t)((imuRxBuffer[base+7] << 8) | imuRxBuffer[base+8]);
+        rawData[k].ygyro = (int16_t)((imuRxBuffer[base+9] << 8) | imuRxBuffer[base+10]);
+        rawData[k].zgyro = -(int16_t)((imuRxBuffer[base+11] << 8) | imuRxBuffer[base+12]);
+        rawData[k].timestamp = (int16_t)((imuRxBuffer[base+14] << 8) | imuRxBuffer[base+15]);
+    }
 
-    // NED
-    raw_imu_data.xacc = raw[2];
-    raw_imu_data.yacc = raw[1];
-    raw_imu_data.zacc = raw[3];
-    raw_imu_data.xgyro = -raw[5];
-    raw_imu_data.ygyro = -raw[4];
-    raw_imu_data.zgyro = -raw[6];
-
+    rawImuDataBatch.data = rawData;
+    rawImuDataBatch.count = fifoSize;
 
     // float acc_temp[3];
     // float gyr_temp[3];
@@ -169,27 +224,18 @@ void IMU::processRawData() {
     // gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
 
     // // NED
-    // raw_imu_data.xacc = (float)acc_temp[1];
-    // raw_imu_data.yacc = (float)acc_temp[0];
-    // raw_imu_data.zacc = ((float)acc_temp[2]);
-    // raw_imu_data.xgyro = ((float)-gyr_temp[1]);
-    // raw_imu_data.ygyro = ((float)-gyr_temp[0]);
-    // raw_imu_data.zgyro = ((float)-gyr_temp[2]);
+    // rawImuDataBatch.xacc = (float)acc_temp[1];
+    // rawImuDataBatch.yacc = (float)acc_temp[0];
+    // rawImuDataBatch.zacc = ((float)acc_temp[2]);
+    // rawImuDataBatch.xgyro = ((float)-gyr_temp[1]);
+    // rawImuDataBatch.ygyro = ((float)-gyr_temp[0]);
+    // rawImuDataBatch.zgyro = ((float)-gyr_temp[2]);
 }
 
-ScaledImu_t IMU::scaleIMUData(const RawImu_t &rawData) {
-    ScaledImu_t scaledData;
-
-    scaledData.xacc = (float)rawData.xacc / ACCEL_SEN_SCALE_FACTOR;
-    scaledData.yacc = (float)rawData.yacc / ACCEL_SEN_SCALE_FACTOR;
-    scaledData.zacc = (float)rawData.zacc / ACCEL_SEN_SCALE_FACTOR;
-    scaledData.xgyro = lowPassFilter((float)rawData.xgyro / GYRO_SEN_SCALE_FACTOR, 0);
-    scaledData.ygyro = lowPassFilter((float)rawData.ygyro / GYRO_SEN_SCALE_FACTOR, 1);
-    scaledData.zgyro = lowPassFilter((float)rawData.zgyro / GYRO_SEN_SCALE_FACTOR, 2);
-
-    return scaledData;
+float IMU::lowPassFilter(float rawValue, int select) {
+    _filteredGyro[select] = _alpha * rawValue + (1 - _alpha) * _filteredGyro[select];
+    return _filteredGyro[select];
 }
-
 
 // TODO: verify correctness of below functions
 /*

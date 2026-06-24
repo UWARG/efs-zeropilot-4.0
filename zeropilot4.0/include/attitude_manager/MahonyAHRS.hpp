@@ -35,7 +35,7 @@ public:
 	Mahony();
 	void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
 
-	void updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
+	void updateIMU(float gx, float gy, float gz, float ax, float ay, float az, float dt);
 
 	Attitude_t getAttitude() {
 		return {roll * 57.29578f, pitch * 57.29578f, yaw * 57.29578f + 180.0f};
