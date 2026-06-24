@@ -38,4 +38,7 @@ class FusedIMU : public IIMU {
 
         volatile bool imuFilled[NUM_IMU] = {};
 
+        uint32_t lastEmittedTimestamp = 0;
+        bool haveEmitted = false;
+
 };

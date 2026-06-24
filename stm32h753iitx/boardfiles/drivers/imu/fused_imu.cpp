@@ -48,7 +48,7 @@ RawImuBatch_t FusedIMU::readRawData() {
 
             offset += count;
         } 
-    }
+    } 
     // Start FIFO read for the active IMU if has not been started yet
     if (!imuFilled[active_imu] && imu[active_imu]->getDmaFlag()) {
         imu[active_imu]->beginRead();
@@ -61,6 +61,11 @@ RawImuBatch_t FusedIMU::readRawData() {
 }
 
 ScaledImuBatch_t FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
+    // Guard to prevent recalculations when IMUs not filled with new data
+    if (rawDataBatch.count == 0) {
+        scaledFusedImuBatch.count = 0;
+        return scaledFusedImuBatch;
+    }
     // Scale IMU data
     RawImuBatch_t temp; 
     uint16_t offset = 0;
@@ -77,33 +82,40 @@ ScaledImuBatch_t FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         offset += count;
     }
 
-    // Sort batches from different imus into a unified timeline
-    int i = 0;
-    int j = 0;
-    int k = 0;
-    while (i < scaledImuBatch[0].count && j < scaledImuBatch[1].count) {
-        if (scaledImuBatch[0].data[i].timestamp < scaledImuBatch[1].data[j].timestamp) {
-            scaledFusedImuData[k] = scaledImuBatch[0].data[i];
-            i++;
-        } else {
-            scaledFusedImuData[k] = scaledImuBatch[1].data[j];
-            j++;
+    uint16_t idx[NUM_IMU] = {}; // idx[i] = how far consumed IMU i is
+    uint16_t k = 0; // Index for scaledFusedImuData
+    while (true) {
+        int smallestIMU = -1;
+        uint32_t smallestTimestamp = 0;
+        for (int i = 0; i < NUM_IMU; i++) {
+            if (idx[i] >= scaledImuBatch[i].count) {continue; } // This IMU is all merged
+            uint32_t timestamp = scaledImuBatch[i].data[idx[i]].timestamp;
+            if (smallestIMU == -1 || (int32_t)(timestamp - smallestTimestamp) < 0 ) { // First iteration or a smaller one
+                smallestIMU = i;
+                smallestTimestamp = timestamp;
+            }
         }
+        if (smallestIMU == -1) {break;} // All IMU has been merged, done
+        scaledFusedImuData[k] = scaledImuBatch[smallestIMU].data[idx[smallestIMU]];
         k++;
+        idx[smallestIMU]++;
     }
-    while (i < scaledImuBatch[0].count) {
-        scaledFusedImuData[k] = scaledImuBatch[0].data[i];
-        k++;
-        i++;
+
+    // Disregard the data that are earlier than the last data consumed from last call
+    int start = 0;
+    if (haveEmitted) {
+        // merged array is sorted, so the stale samples are a contiguous prefix
+        while (start < k && (int32_t)(scaledFusedImuData[start].timestamp - lastEmittedTimestamp) <= 0) {
+            start++;   // drop: already covered by a previous round
+        }
     }
-    while (j < scaledImuBatch[1].count) {
-        scaledFusedImuData[k] = scaledImuBatch[1].data[j];
-        k++;
-        j++;
+    if (k > start) {
+        lastEmittedTimestamp = scaledFusedImuData[k - 1].timestamp;
+        haveEmitted = true;
     }
     
-    scaledFusedImuBatch.data = scaledFusedImuData;
-    scaledFusedImuBatch.count = k;
+    scaledFusedImuBatch.data = scaledFusedImuData + start;
+    scaledFusedImuBatch.count = k - start;
     return scaledFusedImuBatch;
 }
 
