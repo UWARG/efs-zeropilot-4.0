@@ -16,6 +16,12 @@ extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
+extern FDCAN_HandleTypeDef hfdcan1;
+
+// ----------------------------------------------------------------------------
+// Static storage for CAN controller (placement new)
+// ----------------------------------------------------------------------------
+alignas(CANController) static uint8_t canControllerStorage[sizeof(CANController)];
 
 // ----------------------------------------------------------------------------
 // Global handles
@@ -26,6 +32,7 @@ Logger *loggerHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
+CANController *canControllerHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
@@ -88,6 +95,23 @@ void initDrivers()
             motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
+
+
+    canControllerHandle = new (&canControllerStorage) CANController(&hfdcan1);
+
+    FDCAN_FilterTypeDef sFilterConfig;
+    sFilterConfig.IdType = FDCAN_EXTENDED_ID;
+    sFilterConfig.FilterIndex = 0;
+    sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+    sFilterConfig.FilterID1 = 0x000;
+    sFilterConfig.FilterID2 = 0x000;  // mask=0 accepts everything
+    HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
+
+    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
+  		Error_Handler();
+  	}
+    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
 
     // Peripherals
     gpsHandle = new GPS(&huart2);
