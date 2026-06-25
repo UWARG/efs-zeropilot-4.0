@@ -21,7 +21,7 @@ extern I2C_HandleTypeDef hi2c1;
 // ----------------------------------------------------------------------------
 alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
 alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
-alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
+alignas(SDFileSystem) static uint8_t sdFileSystemStorage[sizeof(SDFileSystem)];
 
 alignas(MotorControl) static uint8_t leftAileronMotorStorage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t rightAileronMotorStorage[sizeof(MotorControl)];
@@ -39,16 +39,18 @@ alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
 alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
-alignas(MessageQueue<char[100]>) static uint8_t smLoggerQueueStorage[sizeof(MessageQueue<char[100]>)];
 alignas(MessageQueue<TMMessage_t>) static uint8_t tmQueueStorage[sizeof(MessageQueue<TMMessage_t>)];
 alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[sizeof(MessageQueue<mavlink_message_t>)];
+alignas(MessageQueue<FatFSReqMsg>) static uint8_t sdRequestQueueStorage[sizeof(MessageQueue<FatFSReqMsg>)];
+alignas(MessageQueue<FatFSReqBuff>) static uint8_t sdBufferQueueStorage[sizeof(MessageQueue<FatFSReqBuff>)];
+alignas(MessageQueue<PollResult>) static uint8_t sdResponseQueuesStorage[static_cast<size_t>(ManId::COUNT)][sizeof(MessageQueue<PollResult>)];
 
 // ----------------------------------------------------------------------------
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
+SDFileSystem *sdFileSystemHandle = nullptr;
 
 MotorControl *leftAileronMotorHandle = nullptr;
 MotorControl *rightAileronMotorHandle = nullptr;
@@ -66,9 +68,12 @@ IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
-MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
+
+MessageQueue<FatFSReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<FatFSReqBuff> *sdBufferQueueHandle = nullptr;
+MessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & groups
@@ -100,7 +105,6 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
     iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg1);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
 
     // Motors
     leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10);
@@ -121,9 +125,16 @@ void initDrivers()
 
     // Queues
     amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
+    sdRequestQueueHandle = new (&sdRequestQueueStorage) MessageQueue<FatFSReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new (&sdBufferQueueStorage) MessageQueue<FatFSReqBuff>(&sdBufferQueueId);
+    for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
+        sdResponseQueuesHandle[i] = new (&sdResponseQueuesStorage[i]) MessageQueue<PollResult>(&sdResponseQueueId[i]);
+    }
+
+    // File system
+    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // Initialize hardware components
     leftAileronMotorHandle->init();
@@ -141,6 +152,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     telemLinkHandle->init();
+    sdFileSystemHandle->init();
 
     // Motor instance bindings
     leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
