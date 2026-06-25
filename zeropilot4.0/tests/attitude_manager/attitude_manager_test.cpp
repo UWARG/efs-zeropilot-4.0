@@ -44,7 +44,7 @@ protected:
     }; // Remaining fields overwritten by AMParamSetup::loadAllParams() from ZP_PARAM
     
     MotorGroupInstance_t motorGroup{motorInstances, 6};
-    
+
     void SetUp() override {
         ZP_PARAM::init();
 
@@ -91,8 +91,8 @@ protected:
             static_cast<int>(((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;
 
         ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Return(1000));
-        ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImu_t{0, 0, 0, 0, 0, 0}));
-        ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImu_t{0, 0, 0, 0, 0, 0}));
+        ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImuBatch_t{}));      // empty batch, count 0
+        ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImuBatch_t{})); // empty batch, count 0
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
@@ -266,7 +266,7 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper) {
 }
 
 TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
-    RawImu_t rawImu;
+    RawImu_t rawImu{};
     rawImu.xacc = 100;
     rawImu.yacc = -200;
     rawImu.zacc = 1000;
@@ -274,7 +274,8 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
     rawImu.ygyro = -50;
     rawImu.zgyro = 25;
 
-    EXPECT_CALL(mockIMU, readRawData()).WillRepeatedly(Return(rawImu));
+    RawImuBatch_t rawImuBatch{&rawImu, 1};
+    EXPECT_CALL(mockIMU, readRawData()).WillRepeatedly(Return(rawImuBatch));
     
     int rawImuCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
@@ -295,7 +296,7 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
 }
 
 TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
-    ScaledImu_t scaledImu;
+    ScaledImu_t scaledImu{};
     scaledImu.xacc = 0.1f;
     scaledImu.yacc = -0.2f;
     scaledImu.zacc = 1.0f;
@@ -303,7 +304,8 @@ TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
     scaledImu.ygyro = -0.05f;
     scaledImu.zgyro = 0.025f;
 
-    EXPECT_CALL(mockIMU, scaleIMUData(_)).WillRepeatedly(Return(scaledImu));
+    ScaledImuBatch_t scaledImuBatch{&scaledImu, 1};
+    EXPECT_CALL(mockIMU, scaleIMUData(_)).WillRepeatedly(Return(scaledImuBatch));
     
     int attitudeCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
