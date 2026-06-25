@@ -105,6 +105,7 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     BATT_CRT_VOLT,
     BATT_CAPACITY,
     BATT_LOW_TIMER,
+    BATT_N_CELLS,
     PARAM_COUNT
 };
 
