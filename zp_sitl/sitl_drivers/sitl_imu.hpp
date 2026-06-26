@@ -53,7 +53,7 @@ public:
     }
     
     RawImuBatch_t readRawData() override {
-        return rawBatch; // Single-sample batch backed by rawData
+        return rawBatch;
     }
 
     /**
