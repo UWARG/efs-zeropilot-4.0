@@ -38,8 +38,7 @@ class AMParamSetup : public IParamSetup {
     static bool updatePIDYawKd(AttitudeManager* ctx, float val);
     static bool updatePIDYawTau(AttitudeManager* ctx, float val);
     static bool updatePIDYawIMax(AttitudeManager* ctx, float val);
-    static bool updateRollLimitRate(AttitudeManager* ctx, float val);
-    static bool updatePitchLimitRate(AttitudeManager* ctx, float val);
+    static bool updateRollPitchLimitRate(AttitudeManager* ctx, float val);
     static bool updateYawLimitRate(AttitudeManager* ctx, float val);
     #endif
 

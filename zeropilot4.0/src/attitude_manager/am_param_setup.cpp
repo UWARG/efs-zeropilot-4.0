@@ -34,29 +34,29 @@ void AMParamSetup::loadAllParams() {
     #ifdef QUADCOPTER
     // ACRO params
     am->acroCLAW.setRollPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_RLL_P),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_RLL_I),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_RLL_D),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_RLL_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_RLL_IMAX)
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_RLL_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_RLL_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_RLL_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_RLL_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_RLL_IMAX)
     );
     am->acroCLAW.setPitchPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_PTCH_P),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_PTCH_I),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_PTCH_D),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_PTCH_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_PTCH_IMAX)
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_PIT_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_PIT_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_PIT_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_PIT_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_PIT_IMAX)
     );
     am->acroCLAW.setYawPIDConstants(
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_YAW_P),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_YAW_I),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_YAW_D),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_YAW_TAU),
-        ZP_PARAM::get(ZP_PARAM_ID::ATC_RATE_YAW_IMAX)
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_P),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_I),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_D),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_IMAX)
     );
-    am->acroCLAW.setRollLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_RATE));
-    am->acroCLAW.setPitchLimitRate(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIMIT_RATE));
-    am->acroCLAW.setYawLimitRate(ZP_PARAM::get(ZP_PARAM_ID::YAW_LIMIT_RATE));
+    am->acroCLAW.setRollLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ACRO_RP_RATE));
+    am->acroCLAW.setPitchLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ACRO_RP_RATE));
+    am->acroCLAW.setYawLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ACRO_Y_RATE));
     #endif
 
     // Servo params
@@ -110,24 +110,23 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, am, updatePitchLimMinDeg);
     #endif
     #ifdef QUADCOPTER
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_RLL_P,        am, updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_RLL_I,        am, updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_RLL_D,        am, updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_RLL_TAU,      am, updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_RLL_IMAX,     am, updatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_PTCH_P,       am, updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_PTCH_I,       am, updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_PTCH_D,       am, updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_PTCH_TAU,     am, updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_PTCH_IMAX,    am, updatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_YAW_P,       am, updatePIDYawKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_YAW_I,       am, updatePIDYawKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_YAW_D,       am, updatePIDYawKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_YAW_TAU,     am, updatePIDYawTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RATE_YAW_IMAX,    am, updatePIDYawIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_RATE,   am, updateRollLimitRate);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIMIT_RATE,   am, updatePitchLimitRate);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::YAW_LIMIT_RATE,   am, updateYawLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_P,        am, updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_I,        am, updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_D,        am, updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_TAU,      am, updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_IMAX,     am, updatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_P,       am, updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_I,       am, updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_D,       am, updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_TAU,     am, updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_IMAX,    am, updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_P,       am, updatePIDYawKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_I,       am, updatePIDYawKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_D,       am, updatePIDYawKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_TAU,     am, updatePIDYawTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_IMAX,    am, updatePIDYawIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_RP_RATE,   am, updateRollPitchLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_Y_RATE,   am, updateYawLimitRate);
     #endif
 
     // Servo params: each AM_PARAM_SETUP_BIND_SERVO_CB expands to 5 bindCallback calls
@@ -303,13 +302,9 @@ bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
     ctx->acroCLAW.getYawPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     return true;
 }
-bool AMParamSetup::updateRollLimitRate(AttitudeManager* ctx, float val) {
+bool AMParamSetup::updateRollPitchLimitRate(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 6.28318f) return false;
     ctx->acroCLAW.setRollLimitRate(val);
-    return true;
-}
-bool AMParamSetup::updatePitchLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 6.28318f) return false;
     ctx->acroCLAW.setPitchLimitRate(val);
     return true;
 }
