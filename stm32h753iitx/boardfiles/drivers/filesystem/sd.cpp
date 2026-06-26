@@ -4,6 +4,16 @@
 #include <cstdio>
 #include <cstdarg>
 
+#ifdef SWO_LOGGING
+// Push raw bytes straight to SWO/ITM via the existing mutex-protected _write
+// retarget (override.cpp). Avoids newlib vfprintf, which has a large stack
+// frame and mallocs a stdout buffer -- both unsafe on the small manager stacks.
+extern "C" int _write(int file, char *ptr, int len);
+static inline void swoWrite(const char* data, uint32_t len) {
+    _write(0, const_cast<char*>(data), static_cast<int>(len));
+}
+#endif
+
 SDFileSystem::SDFileSystem(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]) 
     : mounted(false), requestQueue(reqQueue), bufferQueue(buffQueue), responseQueues(respQueues) {
     std::memset(&fsObj, 0, sizeof(FATFS));
@@ -75,7 +85,7 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
     if (!fp || !buff) return FILE_STATUS_ERROR;
     
 #ifdef SWO_LOGGING
-    ::printf("%.*s", btw, (const char*)buff);
+    swoWrite((const char*)buff, btw);
 #endif
 
     if (!mounted) return FILE_STATUS_ERROR;
@@ -125,7 +135,7 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
     if (!fp || !buff || options == ReqOptions::SYNC) return FILE_STATUS_ERROR;
 
 #ifdef SWO_LOGGING
-    ::printf("%.*s", ofs, btw, (const char*)buff);
+    swoWrite((const char*)buff, btw);
 #endif
 
     if (!mounted) return FILE_STATUS_ERROR;
@@ -166,11 +176,11 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
     if (!fp || !buff || options == ReqOptions::SYNC) return FILE_STATUS_ERROR;
 
 #ifdef SWO_LOGGING
-    ::printf("%.*s", btw, (const char*)buff);
+    swoWrite((const char*)buff, btw);
 #endif
 
     if (!mounted) return FILE_STATUS_ERROR;
-    
+
     FatFSReqMsg req;
     req.id = id;
     req.type = ReqType::WRITE_SYNC;
@@ -305,7 +315,7 @@ int SDFileSystem::printf(ManId id, File* fp, ReqOptions options, const char* str
         return EOF; // Encoding error
     }
 #ifdef SWO_LOGGING
-    ::printf("%.*s", len, printBuff);
+    swoWrite(printBuff, static_cast<uint32_t>(len));
 #endif
 
     if (!fp || !mounted) return EOF;

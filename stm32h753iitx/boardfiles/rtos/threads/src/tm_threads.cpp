@@ -14,6 +14,7 @@ void tmMainLoopWrapper(void *arg)
 {
   while(true)
   {
+    UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     tmHandle->tmUpdate();
     osDelay(timeToTicks(TM_UPDATE_LOOP_DELAY_MS));
   }
