@@ -182,11 +182,11 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
 }
 
 void IMU::csLow() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 }
 
 void IMU::csHigh() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
 }
 
 void IMU::reset() {
@@ -209,14 +209,14 @@ void IMU::dmaTransfer() {
     switch (rxFlag) {
         case COUNT:
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
-            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+            HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
             break;
         case DATA:
             fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
             if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
 
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
-            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
+            HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
             break;
         default:
             break;
