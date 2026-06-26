@@ -71,7 +71,7 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
-        PlaneFlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
+        FlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
 
         int oldDataCount;
         bool rcConnected;
@@ -85,7 +85,7 @@ class SystemManager {
         void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
         void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 
-        PlaneFlightMode_e decodeRawFlightMode(float flightModeRawValue);
+        FlightMode_e decodeRawFlightMode(float flightModeRawValue);
 
         void sendMessagesToLogger();
 

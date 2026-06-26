@@ -5,11 +5,24 @@ project(gtestzeropilot4.0)
 
 # attitude manager test files
 set(AM_TSRC
-    attitude_manager/attitude_manager_test.cpp
+    attitude_manager/attitude_manager_telemetry_test.cpp
     attitude_manager/pid_test.cpp
-    attitude_manager/direct_mapping_test.cpp
-    attitude_manager/fbwa_mapping_test.cpp
 )
+
+if(FIXED_WING_BUILD)
+    list(APPEND AM_TSRC
+        attitude_manager/attitude_manager_fw_test.cpp
+        attitude_manager/direct_mapping_test.cpp
+        attitude_manager/fbwa_mapping_test.cpp
+
+    )
+endif()
+if(QUADCOPTER_BUILD)
+    list(APPEND AM_TSRC
+        attitude_manager/attitude_manager_quad_test.cpp
+        attitude_manager/acro_mapping_test.cpp
+    )
+endif()
 
 # system manager test files
 set(SM_TSRC
@@ -77,3 +90,10 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RELATIVE_EXTERNAL_IN
 target_link_libraries(${PROJECT_NAME} GTest::gmock_main)
 
 gtest_discover_tests(${PROJECT_NAME})
+
+if(FIXED_WING_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE FIXED_WING)
+endif()
+if(QUADCOPTER_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE QUADCOPTER)
+endif()

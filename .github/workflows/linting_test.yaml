@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  linting_test:
+  linting_test_fixed_wing:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,15 +24,45 @@ jobs:
     - name: Build main 
       working-directory: ./zeropilot4.0
       run: |
-        bash ./hwbuild.bash -c l552
+        bash ./hwbuild.bash -c l552 -v fw
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
       working-directory: ./zeropilot4.0/tests
       run: |
-        bash ./testbuild.bash -c l552
+        bash ./testbuild.bash -c -v fw
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
       working-directory: ./zeropilot4.0
-      run: bash ./lint.bash  
+      run: bash ./lint.bash -v fw
+
+  linting_test_quad:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-none-eabi libgtest-dev libgmock-dev clang-tidy g++ build-essential
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build main 
+      working-directory: ./zeropilot4.0
+      run: |
+        bash ./hwbuild.bash -c -v quad -b l552 
+        # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+    - name: Build tests
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        bash ./testbuild.bash -c -v quad
+        # Same assumption for testbuild.bash
+
+    - name: Run clang-tidy lint script
+      working-directory: ./zeropilot4.0
+      run: bash ./lint.bash -v quad

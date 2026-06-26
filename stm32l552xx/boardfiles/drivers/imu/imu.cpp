@@ -223,7 +223,7 @@ void IMU::processRawData() {
     // gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
     // gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
 
-    // // NED
+    // NED
     // rawImuDataBatch.xacc = (float)acc_temp[1];
     // rawImuDataBatch.yacc = (float)acc_temp[0];
     // rawImuDataBatch.zacc = ((float)acc_temp[2]);

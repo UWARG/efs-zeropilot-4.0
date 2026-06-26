@@ -3,20 +3,26 @@
 set -e
 
 script_dir=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
+vehicle_type="fw"
 clean="false"
 board="h753iit"
 
 usage() {
-    echo "Usage: $0 [-c] [-b] <board>"
+    echo "Usage: $0 [-c] [-v] <vehicle_type> [-b] <board>"
     exit 1
 }
 
 # parse args
-while getopts "b:c" opt; do
+while getopts "b:v:c" opt; do
     case "${opt}" in
         b)
             if [[ "$OPTARG" == "l552" || "$OPTARG" == "h753iit" ]]; then
                 board="$OPTARG"
+            fi
+            ;;
+        v)
+            if [[ "$OPTARG" == "quad" || "$OPTARG" == "fw" ]]; then
+                vehicle_type="$OPTARG"
             fi
             ;;
         c)
@@ -29,10 +35,14 @@ while getopts "b:c" opt; do
 done
 
 # set build dir
-if [[ "$board" == "l552" ]]; then
-    build_dir="${script_dir}/build/l552"
-elif [[ "$board" == "h753iit" ]]; then
-    build_dir="${script_dir}/build/h753iit"
+if [[ "$board" == "h753iit" && "$vehicle_type" == "fw" ]]; then
+    build_dir="${script_dir}/build/h753iit-fw"
+elif [[ "$board" == "h753iit" && "$vehicle_type" == "quad" ]]; then
+    build_dir="${script_dir}/build/h753iit-quad"
+elif [[  "$board" == "l552" && "$vehicle_type" == "fw" ]]; then
+    build_dir="${script_dir}/build/l552-fw"
+elif [[ "$board" == "l552"  && "$vehicle_type" == "quad" ]]; then
+    build_dir="${script_dir}/build/l552-quad"
 fi
 
 # clean if requested and setup
@@ -70,7 +80,11 @@ if [[ ! -f "CMakeCache.txt" ]]; then
     echo "generating cmake..."
     echo "generator: $generator"
     echo "toolchain: $tc_file"
-    cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" "$script_dir"
+    if [[ "$vehicle_type" == "fw" ]]; then
+        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DFIXED_WING_BUILD=ON "$script_dir"
+    elif [[ "$vehicle_type" == "quad" ]]; then
+        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DQUADCOPTER_BUILD=ON "$script_dir"
+    fi
 fi
 
 echo && echo "building..."

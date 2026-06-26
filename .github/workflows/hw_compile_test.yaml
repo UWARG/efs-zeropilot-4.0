@@ -12,10 +12,14 @@ jobs:
     strategy:
       matrix:
         target: 
-          - { name: "stm32h753iitx", config: "Debug" }
-          - { name: "stm32h753iitx", config: "Release" }
-          - { name: "stm32l552xx", config: "Debug" }
-          - { name: "stm32l552xx", config: "Release" }
+          - { name: "stm32h753iitx", config: "Debug-fw" }
+          - { name: "stm32h753iitx", config: "Release-fw" }
+          - { name: "stm32l552xx", config: "Debug-fw" }
+          - { name: "stm32l552xx", config: "Release-fw" }
+          - { name: "stm32h753iitx", config: "Debug-quad" }
+          - { name: "stm32h753iitx", config: "Release-quad" }
+          - { name: "stm32l552xx", config: "Debug-quad" }
+          - { name: "stm32l552xx", config: "Release-quad" }
 
     steps:
     - name: Checkout repo

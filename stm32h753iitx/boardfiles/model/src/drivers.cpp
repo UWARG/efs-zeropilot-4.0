@@ -76,7 +76,16 @@ void initDrivers()
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
     for (int i = 0; i < 8; i++) {
-        bool isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        bool isMotor;
+        #ifdef FIXED_WING
+        isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        #endif
+        #ifdef QUADCOPTER
+        isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
+        #endif
         if (isMotor) {
             switch (servoType) {
                 case MOT_TYPE_DSHOT: // DShot
