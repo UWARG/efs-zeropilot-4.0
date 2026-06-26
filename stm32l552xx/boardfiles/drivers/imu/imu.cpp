@@ -106,7 +106,7 @@ HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t
     }
     uint8_t txBuf[2] = {registerAddr, data};
     csLow();
-    status = HALspi_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
+    status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
     return status;
 }
@@ -121,7 +121,7 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t*
     uint8_t rx[2] = {0, 0};
 
     csLow();
-    status = HALspi_TransmitReceive(spi, tx, rx, 2, HAL_MAX_DELAY);
+    status = HAL_SPI_TransmitReceive(spi, tx, rx, 2, HAL_MAX_DELAY);
     csHigh();
 
     *data = rx[1];
@@ -135,7 +135,7 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
     }
     uint8_t txBuf[2] = {REG_BANK_SEL, bank};
     csLow();
-    HAL_StatusTypeDef status = HALspi_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
 
     currRegisterBank = bank;
@@ -170,14 +170,14 @@ void IMU::dmaTransfer() {
     switch (rxFlag) {
         case COUNT:
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
-            HALspi_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+            HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
             break;
         case DATA:
             fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
             if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
 
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
-            HALspi_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
+            HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
             break;
         default:
             break;
