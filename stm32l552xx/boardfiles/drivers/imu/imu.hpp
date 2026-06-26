@@ -22,9 +22,9 @@ class IMU : public IIMU {
 		SPI_HandleTypeDef *getSPI();
 
 	private:
-		SPI_HandleTypeDef *_spi;
-		GPIO_TypeDef *_csPort;
-		uint16_t _csPin;
+		SPI_HandleTypeDef *spi;
+		GPIO_TypeDef *csPort;
+		uint16_t csPin;
 
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
@@ -72,8 +72,8 @@ class IMU : public IIMU {
 		float lowPassFilter(float rawValue, int select);
 
 		// Internal variables
-		float _alpha;
-		float _filteredGyro[3];
+		float alpha;
+		float filteredGyro[3];
 
 		// TODO: below code needs to be tested and verified
 		/*

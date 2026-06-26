@@ -1,6 +1,7 @@
 #pragma once
 
 #include "systemutils_iface.hpp"
+#include "stm32h7xx_hal.h"
 #include <stdint.h>
 
 class SystemUtils : public ISystemUtils {
@@ -14,6 +15,12 @@ class SystemUtils : public ISystemUtils {
         void profilerBegin(uint8_t id) override;
         void profilerEnd(uint8_t id) override;
 
-    private:
-        void dwtInit();
+        static void dwtInit() {
+            if (DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk) return; // DWT is already running
+            CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+            DWT->CYCCNT = 0;
+            DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+        }
+
+        static uint32_t getDWTMicroSec();
 };

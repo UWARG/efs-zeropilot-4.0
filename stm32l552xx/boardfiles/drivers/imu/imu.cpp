@@ -15,12 +15,12 @@
 #define UB0_REG_SIGNAL_PATH_RESET 0x4B
 
 IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin) : 
-    _spi(spiHandle), 
-    _csPort(csPort), 
-    _csPin(csPin),
-    _alpha(0.1f) {
+    spi(spiHandle), 
+    csPort(csPort), 
+    csPin(csPin),
+    alpha(0.1f) {
 
-    _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
+    filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
     memset((void*)imuTxBuffer, 0, RX_BUFFER_SIZE);
     memset((void*)imuRxBuffer, 0, RX_BUFFER_SIZE);
     
@@ -96,7 +96,7 @@ void IMU::txRxCallback() {
 }
 
 SPI_HandleTypeDef* IMU::getSPI() {
-    return _spi;
+    return spi;
 }
 
 HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
@@ -106,7 +106,7 @@ HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t
     }
     uint8_t txBuf[2] = {registerAddr, data};
     csLow();
-    status = HAL_SPI_Transmit(_spi, txBuf, 2, HAL_MAX_DELAY);
+    status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
     return status;
 }
@@ -121,7 +121,7 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t*
     uint8_t rx[2] = {0, 0};
 
     csLow();
-    status = HAL_SPI_TransmitReceive(_spi, tx, rx, 2, HAL_MAX_DELAY);
+    status = HAL_SPI_TransmitReceive(spi, tx, rx, 2, HAL_MAX_DELAY);
     csHigh();
 
     *data = rx[1];
@@ -135,7 +135,7 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
     }
     uint8_t txBuf[2] = {REG_BANK_SEL, bank};
     csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, txBuf, 2, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
     csHigh();
 
     currRegisterBank = bank;
@@ -143,11 +143,11 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
 }
 
 void IMU::csLow() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
 }
 
 void IMU::csHigh() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
 }
 
 void IMU::reset() {
@@ -170,14 +170,14 @@ void IMU::dmaTransfer() {
     switch (rxFlag) {
         case COUNT:
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
-            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+            HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
             break;
         case DATA:
             fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
             if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
 
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
-            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
+            HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
             break;
         default:
             break;
@@ -233,20 +233,20 @@ void IMU::processRawData() {
 }
 
 float IMU::lowPassFilter(float rawValue, int select) {
-    _filteredGyro[select] = _alpha * rawValue + (1 - _alpha) * _filteredGyro[select];
-    return _filteredGyro[select];
+    filteredGyro[select] = alpha * rawValue + (1 - alpha) * filteredGyro[select];
+    return filteredGyro[select];
 }
 
 // TODO: verify correctness of below functions
 /*
 IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
-    : _spi(spiHandle), _csPort(csPort), _csPin(csPin),
+    : spi(spiHandle), csPort(csPort), csPin(csPin),
       _gyroScale(0), _accelScale(0), _gyroFS(0), _accelFS(0),
-      _alpha(0.1f)
+      alpha(0.1f)
 {
     _gyrB[0] = _gyrB[1] = _gyrB[2] = 0.0f;
     _accB[0] = _accB[1] = _accB[2] = 0.0f;
-    _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
+    filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
 }
 
 

@@ -60,7 +60,7 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
-        uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp; // Unsigned calculation wraps around, so ellapsed ticks stay correct even when new timestamp overflows
+        uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp; 
         lastTimestamp = scaledImuData.data[i].timestamp;
 
         // Make lastTimestamp hold a real timestamp the first iteration
