@@ -6,9 +6,6 @@
 #include <cstdint>
 #include "imu_datatypes.hpp"
 
-#define MAX_PACKETS 128
-#define FIFO_HW_MAX_PACKETS 128
-
 class IMU : public IIMU {
 	public:
 		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
@@ -30,6 +27,7 @@ class IMU : public IIMU {
 		
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
+		static constexpr uint8_t MAX_PACKETS = 128; // User defined max packet reads per batch, has to be <= FIFO_HW_MAX_PACKETS
 		
 	private:
 		SPI_HandleTypeDef *spi;
@@ -37,7 +35,8 @@ class IMU : public IIMU {
 		uint16_t csPin;
 		
 		static constexpr uint8_t PACKET_SIZE = 16;
-		static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1; 
+		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit
+		static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1;
 
 		typedef enum
 		{

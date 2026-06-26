@@ -63,17 +63,6 @@ RawImuBatch_t IMU::readRawData()
     RawImuBatch_t batch = getBatch();
     beginRead();
     return batch;
-
-    // // Process previous data batch
-    // processRawData();
-
-    // // Start another batch transfer
-    // setBank(0);
-    // dmaDone = false;
-    // rxFlag = COUNT;
-    // dmaTransfer();
-
-    // return rawImuDataBatch;
 }
 
 ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch)
@@ -230,19 +219,19 @@ void IMU::dmaTransfer()
     {
     case COUNT: {
         imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
-        HAL_StatusTypeDef count_state = HAL_SPI_TransmitReceive_DMA(spi, (uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+        HAL_SPI_TransmitReceive_DMA(spi, (uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
         break;
     }
     case DATA: {
         fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
-        if (fifoSize == 0 || fifoSize > FIFO_HW_MAX_PACKETS) { // FifoSize > 128 means the transaction for reading COUNT register was corrupted
+        if (fifoSize == 0 || fifoSize > FIFO_HW_MAX_PACKETS) { // FifoSize > 128(hw limit) means the transaction for reading COUNT register was corrupted
             fifoSize = 0; // Skip the read
         } else if (fifoSize > MAX_PACKETS) {
             fifoSize = MAX_PACKETS; // Read what fits in the user defined limit
         }
 
         imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
-        HAL_StatusTypeDef data_state = HAL_SPI_TransmitReceive_DMA(spi, (uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
+        HAL_SPI_TransmitReceive_DMA(spi, (uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
         break;
     }
     default:
@@ -258,7 +247,6 @@ void IMU::setLowNoiseMode()
 
 void IMU::setFIFO()
 {
-    // change to 0x later
     writeRegister(0, UB0_REG_FIFO_CONFIG, 0b01000000);  // Stream to fifo mode
     writeRegister(0, UB0_REG_FIFO_CONFIG1, 0b01100011); // Partial fifo read enabled, trigger watermark interrupt on every odr if count > watermark, no fsync, no temp data, yes gyro, yes accel
     writeRegister(0, UB0_REG_INTF_CONFIG0, 0b11110000); // Invalid data not put into fifo, fifo count is in num of packets

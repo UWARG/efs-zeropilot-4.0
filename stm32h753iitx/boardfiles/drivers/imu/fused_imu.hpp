@@ -22,7 +22,7 @@ class FusedIMU : public IIMU {
         SPI_HandleTypeDef *spiBus;
 
         static constexpr uint8_t NUM_IMU = 2;
-        static constexpr uint16_t MAX_FUSED_PACKET_SIZE = MAX_PACKETS * NUM_IMU; 
+        static constexpr uint16_t MAX_FUSED_PACKET_SIZE = IMU::MAX_PACKETS * NUM_IMU;
 
         IMU *imu[NUM_IMU] = {};
 
@@ -34,7 +34,7 @@ class FusedIMU : public IIMU {
         RawImu_t rawFusedImuData[MAX_FUSED_PACKET_SIZE] = {};
 		RawImuBatch_t rawFusedImuBatch = {};
 		ScaledImu_t scaledFusedImuData[MAX_FUSED_PACKET_SIZE] = {};
-		ScaledImuBatch_t scaledFusedImuBatch = {};
+        ScaledImuBatch_t scaledFusedImuBatch = {};
 
         volatile bool imuFilled[NUM_IMU] = {};
 

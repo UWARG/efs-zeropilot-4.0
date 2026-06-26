@@ -25,13 +25,12 @@ RawImuBatch_t FusedIMU::readRawData() {
     uint16_t offset = 0;
     if (allImuFilled) {
         for (int i = 0; i < NUM_IMU; i++) {
-            // Reset imuFilled
             imuFilled[i] = false;
 
             uint16_t count = rawImuBatch[i].count;
             if (count == 0) {continue;};
             
-            // Concatonate the batches based on imu order, sort the exact order in scaleIMUData
+            // Concatonate the batches based on imu order, sort the exact order later in scaleIMUData
             memcpy(rawFusedImuData + offset, rawImuBatch[i].data, sizeof(RawImu_t) * count );
             
             // Normalize IMU hardware timstamps to DWT ticks, cant compare hardware ticks between IMUs
@@ -41,7 +40,7 @@ RawImuBatch_t FusedIMU::readRawData() {
             rawFusedImuData[offset + (count - 1)].timestamp = batchReadTime;
             for (int j = count - 2; j >= 0; j--) {
                 uint16_t currentHwTS = rawFusedImuData[offset + j].timestamp;
-                elapsed += (uint16_t)(prevHwTS - currentHwTS); // Cast to uin16_t so if delta > 65,536(2^16, hw timstamp limit), it wraps around
+                elapsed += (uint16_t)(prevHwTS - currentHwTS); // Cast to uin16_t so if delta > 65,536(2^16, hw timstamp limit) it wraps around
                 rawFusedImuData[offset + j].timestamp = batchReadTime - elapsed; // Both DWT and hw timestamp are in microseconds
                 prevHwTS = currentHwTS;
             }
@@ -49,6 +48,7 @@ RawImuBatch_t FusedIMU::readRawData() {
             offset += count;
         } 
     } 
+
     // Start FIFO read for the active IMU if has not been started yet
     if (!imuFilled[active_imu] && imu[active_imu]->getDmaFlag()) {
         imu[active_imu]->beginRead();
@@ -56,7 +56,6 @@ RawImuBatch_t FusedIMU::readRawData() {
     
     rawFusedImuBatch.data = rawFusedImuData;
     rawFusedImuBatch.count = offset;
-
     return rawFusedImuBatch;
 }
 

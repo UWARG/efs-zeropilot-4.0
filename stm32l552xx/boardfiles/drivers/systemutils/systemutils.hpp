@@ -16,7 +16,7 @@ class SystemUtils : public ISystemUtils {
         void profilerEnd(uint8_t id) override;
 
         static void dwtInit() {
-            if (DWT->CYCCNT & DWT_CTRL_CYCCNTENA_Msk) return; // DWT is already running
+            if (DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk) return; // DWT is already running
             CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
             DWT->CYCCNT = 0;
             DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
