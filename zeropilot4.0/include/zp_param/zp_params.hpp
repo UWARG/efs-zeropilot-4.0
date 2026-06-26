@@ -100,17 +100,17 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     ATC_RAT_RLL_P,
     ATC_RAT_RLL_I,
     ATC_RAT_RLL_D,
-    ATC_RAT_RLL_TAU, //
+    ATC_RAT_RLL_TAU,
     ATC_RAT_RLL_IMAX,
     ATC_RAT_PIT_P,
     ATC_RAT_PIT_I,
     ATC_RAT_PIT_D,
-    ATC_RAT_PIT_TAU, //
+    ATC_RAT_PIT_TAU,
     ATC_RAT_PIT_IMAX,
     ATC_RAT_YAW_P,
     ATC_RAT_YAW_I,
     ATC_RAT_YAW_D,
-    ATC_RAT_YAW_TAU, //
+    ATC_RAT_YAW_TAU,
     ATC_RAT_YAW_IMAX,
     ACRO_RP_RATE,
     ACRO_Y_RATE,
