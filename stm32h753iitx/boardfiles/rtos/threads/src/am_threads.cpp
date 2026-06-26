@@ -6,7 +6,7 @@ osThreadId_t amMainHandle;
 
 static const osThreadAttr_t amMainLoopAttr = {
     .name = "amMain",
-    .stack_size = 2048,
+    .stack_size = 4096,
     .priority = (osPriority_t) osPriorityNormal
 };
 
@@ -15,6 +15,7 @@ void amMainLoopWrapper(void *arg)
   uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
+    UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     amHandle->amUpdate();
     nextWakeUp += timeToTicks(AM_UPDATE_LOOP_DELAY_MS);
     osDelayUntil(nextWakeUp);

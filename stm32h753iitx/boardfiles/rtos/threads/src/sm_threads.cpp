@@ -6,7 +6,7 @@ osThreadId_t smMainHandle;
 
 static const osThreadAttr_t smMainLoopAttr = {
     .name = "smMain",
-    .stack_size = 2048,
+    .stack_size = 4096,
     .priority = (osPriority_t) osPriorityNormal
 };
 
@@ -15,6 +15,7 @@ void smMainLoopWrapper(void *arg)
   uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
+    UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     smHandle->smUpdate();
     nextWakeUp += timeToTicks(SM_UPDATE_LOOP_DELAY_MS);
     osDelayUntil(nextWakeUp);

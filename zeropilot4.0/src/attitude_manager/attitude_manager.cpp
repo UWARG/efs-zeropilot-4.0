@@ -116,8 +116,7 @@ void AttitudeManager::amUpdate() {
             outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
-              char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
+              Logger::log("Failsafe triggered", LogLevel::LOG_WARN);
               failsafeTriggered = true;
             }
 
@@ -127,8 +126,7 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
+          Logger::log("Motor control restored", LogLevel::LOG_INFO);
           failsafeTriggered = false;
         }
     }

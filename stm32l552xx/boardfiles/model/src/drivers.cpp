@@ -22,7 +22,7 @@ extern I2C_HandleTypeDef hi2c1;
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
+SDFileSystem *sdFileSystemHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -33,9 +33,12 @@ IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
-MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
+
+MessageQueue<FatFSReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<FatFSReqBuff> *sdBufferQueueHandle = nullptr;
+MessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & group
@@ -68,7 +71,6 @@ void initDrivers()
     // Core utilities
     systemUtilsHandle = new SystemUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
-    loggerHandle = new Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
@@ -101,6 +103,14 @@ void initDrivers()
     smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
+    sdRequestQueueHandle = new MessageQueue<FatFSReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new MessageQueue<FatFSReqBuff>(&sdBufferQueueId);
+    for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
+        sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
+    }
+
+    // File system
+    sdFileSystemHandle = new (&sdFileSystemStorage) SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // Initialize hardware components
     for (int i = 0; i < 8; i++) {
@@ -112,7 +122,8 @@ void initDrivers()
     imuHandle->init();
     pmHandle->init();
     telemLinkHandle->init();
-
+    sdFileSystemHandle->init();
+    
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {
         motorInstances[i] = {motorHandles[i]};

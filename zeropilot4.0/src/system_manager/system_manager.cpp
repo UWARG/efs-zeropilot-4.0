@@ -9,20 +9,18 @@
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
+    IFileSystem *fileSystemDriver,
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<TMMessage_t> *tmQueue):
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
+        fileSystemDriver(fileSystemDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
-        smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         flightModes{},
         oldDataCount(0),
@@ -33,10 +31,12 @@ SystemManager::SystemManager(
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
+    Logger::init(fileSystemDriver, systemUtilsDriver);
     systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
 void SystemManager::smUpdate() {
+    Logger::log("SM Loop Test", LogLevel::LOG_DEBUG);
 
     systemUtilsDriver->profilerBegin(profilerId);
 
@@ -52,7 +52,7 @@ void SystemManager::smUpdate() {
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
-            // loggerDriver->log("RC Connected"); (TODO: Uncomment after rearchitecture)
+            Logger::log("RC Connected", LogLevel::LOG_INFO);
             rcConnected = true;
         }
     } else {
@@ -60,7 +60,7 @@ void SystemManager::smUpdate() {
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > (ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000)) && rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
-            // loggerDriver->log("RC Disconnected"); (TODO: Uncomment after rearchitecture)
+            Logger::log("RC Disconnected", LogLevel::LOG_INFO);
             rcConnected = false;
         }
     }
@@ -201,6 +201,10 @@ bool SystemManager::updateBatteryFSM() {
     }
 
     return true;
+}
+
+SystemManager::~SystemManager() {
+    Logger::shutdown();
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {

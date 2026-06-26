@@ -33,16 +33,14 @@
 /* USER CODE BEGIN DECL */
 
 /* Includes ------------------------------------------------------------------*/
-#include <string.h>
-#include "ff_gen_drv.h"
+#include "user_diskio.h"
+#include "user_diskio_sdmmc.h"
+#include "user_diskio_spi.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-/* Disk status */
-static volatile DSTATUS Stat = STA_NOINIT;
-
 /* USER CODE END DECL */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -81,8 +79,11 @@ DSTATUS USER_initialize (
 )
 {
   /* USER CODE BEGIN INIT */
-    Stat = STA_NOINIT;
-    return Stat;
+#ifdef SDMMC_INTERFACE
+  return USER_SDMMC_initialize(pdrv);
+#elif defined(SPI_INTERFACE)
+  return USER_SPI_initialize(pdrv);
+#endif
   /* USER CODE END INIT */
 }
 
@@ -96,8 +97,11 @@ DSTATUS USER_status (
 )
 {
   /* USER CODE BEGIN STATUS */
-    Stat = STA_NOINIT;
-    return Stat;
+#ifdef SDMMC_INTERFACE
+  return USER_SDMMC_status(pdrv);
+#elif defined(SPI_INTERFACE)
+  return USER_SPI_status(pdrv);
+#endif
   /* USER CODE END STATUS */
 }
 
@@ -117,7 +121,11 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
-    return RES_OK;
+#ifdef SDMMC_INTERFACE
+  return USER_SDMMC_read(pdrv, buff, sector, count);
+#elif defined(SPI_INTERFACE)
+  return USER_SPI_read(pdrv, buff, sector, count);
+#endif
   /* USER CODE END READ */
 }
 
@@ -139,7 +147,11 @@ DRESULT USER_write (
 {
   /* USER CODE BEGIN WRITE */
   /* USER CODE HERE */
-    return RES_OK;
+#ifdef SDMMC_INTERFACE
+  return USER_SDMMC_write(pdrv, buff, sector, count);
+#elif defined(SPI_INTERFACE)
+  return USER_SPI_write(pdrv, buff, sector, count);
+#endif
   /* USER CODE END WRITE */
 }
 #endif /* _USE_WRITE == 1 */
@@ -159,8 +171,11 @@ DRESULT USER_ioctl (
 )
 {
   /* USER CODE BEGIN IOCTL */
-    DRESULT res = RES_ERROR;
-    return res;
+#ifdef SDMMC_INTERFACE
+  return USER_SDMMC_ioctl(pdrv, cmd, buff);
+#elif defined(SPI_INTERFACE)
+  return USER_SPI_ioctl(pdrv, cmd, buff);
+#endif
   /* USER CODE END IOCTL */
 }
 #endif /* _USE_IOCTL == 1 */
