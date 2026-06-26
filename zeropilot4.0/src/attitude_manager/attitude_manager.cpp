@@ -100,9 +100,10 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
-    droneState.rollRate = scaledImuData.xgyro * DEG_TO_RAD;
-    droneState.pitchRate = scaledImuData.ygyro * DEG_TO_RAD;
-    droneState.yawRate = scaledImuData.zgyro * DEG_TO_RAD;
+    uint8_t scaledImuCount = scaledImuData.count;
+    droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * DEG_TO_RAD;
+    droneState.pitchRate = scaledImuData.data[scaledImuCount - 1].ygyro * DEG_TO_RAD;
+    droneState.yawRate = scaledImuData.data[scaledImuCount - 1].zgyro * DEG_TO_RAD;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 

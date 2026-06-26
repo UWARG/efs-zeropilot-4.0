@@ -68,10 +68,10 @@ public:
             scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
             scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-        // Convert LSB back to deg/s (consistent with hardware IMU driver)
-        scaled.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
-        scaled.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
-        scaled.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
+            // Convert LSB back to deg/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
 
             scaledData.timestamp = raw.timestamp;
         }
