@@ -11,6 +11,6 @@ protected:
 public:
     virtual ~IIMU() = default;
 	virtual int init() = 0;
-	virtual RawImu_t readRawData() = 0;
-	virtual ScaledImu_t scaleIMUData(const RawImu_t &rawData) = 0;
+	virtual RawImuBatch_t readRawData() = 0;
+	virtual ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) = 0;
 };

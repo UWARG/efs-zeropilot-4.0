@@ -1,13 +1,13 @@
 #include "pid.hpp"
 
 // Constructor
-PID::PID(float kp, float ki, float kd,
-         float tau, float outputMinLim, float outputMaxLim,
-         float integralMinLim, float integralMaxLim, float t) noexcept : 
+PID::PID(float kp, float ki, float kd, float tau,
+         float outputMinLim, float outputMaxLim, uint8_t integralMaxPct,
+         float t) noexcept : 
             kp(kp), ki(ki), kd(kd), tau(tau), t(t),
             outputMinLim(outputMinLim), outputMaxLim(outputMaxLim),
-            integralMinLim(integralMinLim), integralMaxLim(integralMaxLim)
-{}
+            integralMinLim((integralMaxPct / 100.0f) * outputMinLim),
+            integralMaxLim((integralMaxPct / 100.0f) * outputMaxLim) {}
 
 // Initialization method - Can be used as resetter
 void PID::pidInitState() noexcept {
@@ -17,12 +17,21 @@ void PID::pidInitState() noexcept {
     prevMeasurement = 0.0f;
 }
 
-void PID::setConstants(float newKp, float newKi, float newKd, float newTau) noexcept {
+void PID::setConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
     kp = newKp;
     ki = newKi;
     kd = newKd;
     tau = newTau;
+    setIntegralMinLimPct(newIMaxPct);
+    setIntegralMaxLimPct(newIMaxPct);
 }
+
+void PID::setKp(float newKp) noexcept { kp = newKp; }
+void PID::setKi(float newKi) noexcept { ki = newKi; }
+void PID::setKd(float newKd) noexcept { kd = newKd; }
+void PID::setTau(float newTau) noexcept { tau = newTau; }
+void PID::setIntegralMinLimPct(uint8_t pct) noexcept { integralMinLim = (pct / 100.0f) * outputMinLim; }
+void PID::setIntegralMaxLimPct(uint8_t pct) noexcept { integralMaxLim = (pct / 100.0f) * outputMaxLim; }
 
 // Update method
 float PID::pidOutput(float setpoint, float measurement) noexcept {

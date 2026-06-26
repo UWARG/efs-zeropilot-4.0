@@ -3,10 +3,14 @@
 
 class SITL_Motor : public IMotorControl {
 public:
+    SITL_Motor() = default;
+
     void set(uint32_t percent) override {
         currentPercent = percent;
     }
-    
+
+    void init() override {}
+
     uint32_t get() {
         return currentPercent;
     }

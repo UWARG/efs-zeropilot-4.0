@@ -22,12 +22,18 @@ public:
 
         // Linear interpolation for 4S Voltage
         pmData.busVoltage = Config::V_EMPTY + (capacityRatio * (Config::V_FULL - Config::V_EMPTY));
-        
-        // Dynamic stats
-        pmData.current = rpm / 100.0f + 3.0f; // Simulate current draw based on RPM
-        pmData.power = pmData.busVoltage * pmData.current;
-        pmData.charge = capacityRatio * Config::MAX_BATTERY_CAPACITY_AH;
-        pmData.energy = pmData.charge * Config::V_NOMINAL;
+
+        // Simulate current draw in Amps based on RPM
+        pmData.current = (rpm * Config::CURRENT_DRAW_PER_RPM) + Config::CURRENT_DRAW_IDLE;
+
+        // Simulate voltage drop due to internal resistance
+        pmData.busVoltage -= pmData.current * Config::BATTERY_INTERNAL_RESISTANCE_OHMS;
+        pmData.busVoltage = std::max(pmData.busVoltage, Config::V_EMPTY); // Ensure voltage doesn't drop below empty voltage
+
+        // Calculate power, charge, and energy
+        pmData.power = pmData.busVoltage * pmData.current; // in Joules per second (Watts)
+        pmData.charge = (1 - capacityRatio) * Config::MAX_BATTERY_CAPACITY_MAH * 3.6f; // Convert mAh to Coulombs
+        pmData.energy = pmData.charge * Config::V_NOMINAL; // Estimate of total energy consumed in Joules
     }
     
     bool readData(PMData_t *data) override {

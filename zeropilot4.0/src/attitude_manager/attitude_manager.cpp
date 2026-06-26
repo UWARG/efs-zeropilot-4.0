@@ -1,6 +1,7 @@
 #include "attitude_manager.hpp"
 #include "rc_motor_control.hpp"
-#include "logger.hpp"
+#include "zp_params.hpp"
+#include "motor_functions.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -8,53 +9,85 @@ AttitudeManager::AttitudeManager(
     IIMU *imuDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    MotorGroupInstance_t *rollMotors,
-    MotorGroupInstance_t *pitchMotors,
-    MotorGroupInstance_t *yawMotors,
-    MotorGroupInstance_t *throttleMotors,
-    MotorGroupInstance_t *flapMotors,
-    MotorGroupInstance_t *steeringMotors
+    IMessageQueue<char[100]> *smLoggerQueue,
+    MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
-    controlAlgorithm(),
-    controlMsg({50, 50, 50, 0, 0, 0}),
+    smLoggerQueue(smLoggerQueue),
+    activeCLAW(&manualCLAW),
+    manualCLAW(),
+    fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
     droneState(DRONE_STATE_DEFAULT),
-    rollMotors(rollMotors),
-    pitchMotors(pitchMotors),
-    yawMotors(yawMotors),
-    throttleMotors(throttleMotors),
-    flapMotors(flapMotors),
-    steeringMotors(steeringMotors),
+    currentFlightMode(PlaneFlightMode_e::MANUAL),
+    mainMotorGroup(mainMotorGroup),
+    armedFlag(false),
+    setArmFlag(false),
+    lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
-    failsafeTriggered(false) {}
+    failsafeTriggered(false),
+    lastTimestamp(0),
+    haveLastImuTimestamp(false),
+    profilerId(0),
+    paramSetup(this){
+
+    paramSetup.loadAllParams();
+    paramSetup.bindAllParamCallbacks();
+
+    // Activate the activeCLAW
+    activeCLAW->activateFlightMode();
+
+    systemUtilsDriver->profilerRegister("AM", &profilerId);
+}
 
 void AttitudeManager::amUpdate() {
 
+    systemUtilsDriver->profilerBegin(profilerId);
+
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 
+    // Send servo output raw data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
+        sendServoOutputRawToTelemetryManager();
+    }
+
     // Send IMU raw data to telemetry manager
-    RawImu_t imuData = imuDriver->readRawData();
-    ScaledImu_t scaledImuData = imuDriver->scaleIMUData(imuData);
-    mahonyFilter.updateIMU(
-        scaledImuData.xgyro,
-        scaledImuData.ygyro,
-        scaledImuData.zgyro,
-        scaledImuData.xacc,
-        scaledImuData.yacc,
-        scaledImuData.zacc
-    );
+    RawImuBatch_t imuData = imuDriver->readRawData();
+    ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
+    for (int i = 0; i < scaledImuData.count; i++) {
+        uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp; // Unsigned calculation wraps around, so ellapsed ticks stay correct even when new timestamp overflows
+        lastTimestamp = scaledImuData.data[i].timestamp;
+
+        // Make lastTimestamp hold a real timestamp the first iteration
+        if (!haveLastImuTimestamp) {
+            haveLastImuTimestamp = true;
+            continue;
+        }
+
+        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+
+        mahonyFilter.updateIMU(
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro,
+            scaledImuData.data[i].xacc,
+            scaledImuData.data[i].yacc,
+            scaledImuData.data[i].zacc,
+            dt
+        );
+    }
     Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        sendRawIMUDataToTelemetryManager(imuData);
+        if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
@@ -73,21 +106,22 @@ void AttitudeManager::amUpdate() {
     if (controlRes != true) {
         ++noDataCount;
 
-        if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > AM_FAILSAFE_TIMEOUT_MS) {
-            outputToMotor(YAW, 50);
-            outputToMotor(PITCH, 50);
-            outputToMotor(ROLL, 50);
-            outputToMotor(THROTTLE, 0);
-            outputToMotor(FLAP_ANGLE, 0);
-            outputToMotor(STEERING, 50);
+        if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
+            RCMotorControlMessage_t motorOutputs{0};
+            motorOutputs.roll = 50;
+            motorOutputs.pitch = 50;
+            motorOutputs.yaw = 50;
+            motorOutputs.throttle = 0;
+            motorOutputs.flapAngle = 0;
+            outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
               Logger::log("Failsafe triggered", LogLevel::LOG_WARN);
               failsafeTriggered = true;
             }
-        }
 
-        return;
+            return;
+        }
     } else {
         noDataCount = 0;
 
@@ -97,20 +131,42 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Disarm
-    if (controlMsg.arm == 0) {
-        controlMsg.throttle = 0;
+    // Update armedFlag and activateFlightMode() on rising edge
+    if (controlMsg.arm != armedFlag) {
+        setArmFlag = true;
+        armedFlag = controlMsg.arm;
+        if (armedFlag) {
+            activeCLAW->activateFlightMode();
+        }
     }
 
+    // Update current flightmode if changed
+    if (controlMsg.flightMode != currentFlightMode) {
+        switch (controlMsg.flightMode) {
+            case PlaneFlightMode_e::MANUAL:
+                activeCLAW = &manualCLAW;
+                break;
+            case PlaneFlightMode_e::FBWA:
+                activeCLAW = &fbwaCLAW;
+                break;
+        }
+        activeCLAW->activateFlightMode();
+        currentFlightMode = controlMsg.flightMode;
+    }
 
-    RCMotorControlMessage_t motorOutputs = controlAlgorithm.runControl(controlMsg, droneState);
+    // Run the active control law
+    RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
 
-    outputToMotor(YAW, motorOutputs.yaw);
-    outputToMotor(PITCH, motorOutputs.pitch);
-    outputToMotor(ROLL, motorOutputs.roll);
-    outputToMotor(THROTTLE, motorOutputs.throttle);
-    outputToMotor(FLAP_ANGLE, motorOutputs.flapAngle);
-    outputToMotor(STEERING, motorOutputs.yaw);
+    // Disarm logic
+    if (!armedFlag) {
+        motorOutputs.throttle = 0;
+    }
+
+    // Output to motors
+    outputToMotors(motorOutputs);
+
+    setArmFlag = false;
+    systemUtilsDriver->profilerEnd(profilerId);
 }
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
@@ -122,36 +178,45 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
-    MotorGroupInstance_t *motorGroup = nullptr;
+void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        // Get current motor
+        MotorInstance_t *motor = (mainMotorGroup->motors + i);
 
-    switch (axis) {
-        case ROLL:
-            motorGroup = rollMotors;
-            break;
-        case PITCH:
-            motorGroup = pitchMotors;
-            break;
-        case YAW:
-            motorGroup = yawMotors;
-            break;
-        case THROTTLE:
-            motorGroup = throttleMotors;
-            break;
-        case FLAP_ANGLE:
-            motorGroup = flapMotors;
-            break;
-        case STEERING:
-            motorGroup = steeringMotors;
-            break;
-        default:
-            return;
-    }
+        // Extract percentage based on function
+        float percent = 0.0f;
+        switch (motor->function) {
+            case MotorFunction_e::AILERON:
+                percent = outputControlMsg.roll;
+                break;
+            case MotorFunction_e::ELEVATOR:
+                percent = outputControlMsg.pitch;
+                break;
+            case MotorFunction_e::RUDDER:
+                percent = outputControlMsg.yaw;
+                break;
+            case MotorFunction_e::THROTTLE:
+                percent = outputControlMsg.throttle;
+                break;
+            case MotorFunction_e::FLAP:
+                percent = outputControlMsg.flapAngle;
+                break;
+            case MotorFunction_e::GROUND_STEERING:
+                percent = outputControlMsg.yaw;
+                break;
+            default:
+                continue;
+        }
 
-    for (uint8_t i = 0; i < motorGroup->motorCount; i++) {
-        MotorInstance_t *motor = (motorGroup->motors + i);
-
-        int32_t cmd = (int32_t)percent + motor->trim;
+        // Set cmd based on percent and trim, min, max
+        uint32_t cmd = 0;
+        if (percent <= 50.0f) {
+            // Scale [0, 50] to [min, trim]
+            cmd = motor->min + (percent / 50.0f) * (motor->trim - motor->min);
+        } else {
+            // Scale [50, 100] to [trim, max]
+            cmd = motor->trim + ((percent - 50.0f) / 50.0f) * (motor->max - motor->trim);
+        }
 
         // Clamp cmd to [0, 100]
         if (cmd > 100) {
@@ -165,6 +230,16 @@ void AttitudeManager::outputToMotor(ControlAxis_t axis, uint8_t percent) {
             cmd = 100 - cmd;
         }
 
+        // Store for telemetry output
+        lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
+
+        // Set arm flag for throttle motors, only on arm/disarm edges
+        if (setArmFlag) {
+            bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
+            motor->motorInstance->setArm(armed);
+        }
+
+        // Send command to motor
         motor->motorInstance->set(cmd);
     }
 }
@@ -181,7 +256,7 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     
     uint16_t velCmS = static_cast<uint16_t>(gpsData.groundSpeed);
     
-    uint16_t cogCDeg = 65535;
+    uint16_t cogCDeg = UINT16_MAX;
     if (gpsData.trackAngle != INVALID_TRACK_ANGLE) {
         float normalizedAngle = gpsData.trackAngle;
         while (normalizedAngle < 0) normalizedAngle += 360.0f;
@@ -194,8 +269,8 @@ void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
         latE7,
         lonE7,
         altMM,
-        65535,  // eph: UINT16_MAX if unknown
-        65535,  // epv: UINT16_MAX if unknown
+        UINT16_MAX,  // eph: UINT16_MAX if unknown
+        UINT16_MAX,  // epv: UINT16_MAX if unknown
         velCmS,
         cogCDeg,
         gpsData.numSatellites
@@ -227,4 +302,14 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     );
 
     tmQueue->push(&attitudeDataMsg);
+}
+
+void AttitudeManager::sendServoOutputRawToTelemetryManager() {
+    TMMessage_t servoOutputMsg = servoOutputRawPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        0, // port hardcoded to 0 since we are using MAVLink2 with 16 servo outputs in one message
+        lastServoOutputs
+    );
+
+    tmQueue->push(&servoOutputMsg);
 }

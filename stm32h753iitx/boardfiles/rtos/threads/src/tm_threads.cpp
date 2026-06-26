@@ -6,17 +6,19 @@ osThreadId_t tmMainHandle;
 
 static const osThreadAttr_t tmMainLoopAttr = {
     .name = "tmMain",
-    .stack_size = 2048,
+    .stack_size = 4096,
     .priority = (osPriority_t) osPriorityNormal
 };
 
 void tmMainLoopWrapper(void *arg)
 {
+  uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
     UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     tmHandle->tmUpdate();
-    osDelay(timeToTicks(TM_UPDATE_LOOP_DELAY_MS));
+    nextWakeUp += timeToTicks(TM_UPDATE_LOOP_DELAY_MS);
+    osDelayUntil(nextWakeUp);
   }
 }
 

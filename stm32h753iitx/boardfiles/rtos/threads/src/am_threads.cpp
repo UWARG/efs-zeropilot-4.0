@@ -12,11 +12,13 @@ static const osThreadAttr_t amMainLoopAttr = {
 
 void amMainLoopWrapper(void *arg)
 {
+  uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
     UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     amHandle->amUpdate();
-    osDelay(timeToTicks(AM_UPDATE_LOOP_DELAY_MS));
+    nextWakeUp += timeToTicks(AM_UPDATE_LOOP_DELAY_MS);
+    osDelayUntil(nextWakeUp);
   }
 }
 

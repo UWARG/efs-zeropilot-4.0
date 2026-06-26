@@ -19,4 +19,12 @@ public:
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
         return static_cast<uint32_t>(duration.count());
     }
+
+    void profilerRegister(const char* name, uint8_t* outId) override { return; }
+
+    void profilerBegin(uint8_t id) override { return; }
+
+    void profilerEnd(uint8_t id) override { return; }
+
+    void profilerGetAll(TaskProfile* out, uint8_t* count) override { return; }
 };
