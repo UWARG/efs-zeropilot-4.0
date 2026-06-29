@@ -6,9 +6,9 @@
 class MotorMixing{
     public:
         #ifdef FIXED_WING
-        static void fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        static void fixedWingMoterMixer(const RCMotorControlMessage_t outputControlMsg, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
         #endif
         #ifdef QUADCOPTER
-        static void quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        static void quadMotorMixer(const RCMotorControlMessage_t outputControlMsg, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
         #endif
 };

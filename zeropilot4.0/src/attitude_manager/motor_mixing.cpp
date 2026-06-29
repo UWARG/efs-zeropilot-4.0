@@ -32,19 +32,20 @@ void MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTR
 
 #ifdef QUADCOPTER
 void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {   
+    static constexpr uint8_t NUM_MOTORS = 4;
+    // Each motor arm sits at 45° in the X-configuration, so its contribution to the roll/pitch axes is cos(45°) = sin(45°) = sqrt(2)/2
+    static constexpr float ARM_AXIS_PROJECTION = 0.7071067811865476f;
+    static constexpr float ROLL_FACTOR[NUM_MOTORS] = { -ARM_AXIS_PROJECTION, ARM_AXIS_PROJECTION, ARM_AXIS_PROJECTION, -ARM_AXIS_PROJECTION};
+    static constexpr float PITCH_FACTOR[NUM_MOTORS] = { ARM_AXIS_PROJECTION, -ARM_AXIS_PROJECTION, ARM_AXIS_PROJECTION, -ARM_AXIS_PROJECTION};
+    static constexpr float YAW_FACTOR[NUM_MOTORS] = { 1, 1, -1, -1};
+    static constexpr float YAW_HEADROOM = 0.2f;
+
     // Roll, pitch, yaw in range [-1, 1], throttle in [0,1]
     float roll = OUTPUT_CONTROL_MSG.roll;
     float pitch = OUTPUT_CONTROL_MSG.pitch;
     float yaw = OUTPUT_CONTROL_MSG.yaw;
     float throttle = OUTPUT_CONTROL_MSG.throttle; 
-    static constexpr float F = 0.7071067811865476f;
-    static constexpr float ROLL_SIGN[4] = { -F, F, F, -F};
-    static constexpr float PITCH_SIGN[4] = { F, -F, F, -F};
-    static constexpr float YAW_SIGN[4] = { 1, 1, -1, -1};
-   
-    float mixed[4] = {0};
-    static constexpr uint8_t NUM_MOTORS = 4;
-    static constexpr float YAW_HEADROOM = 0.2f;
+    float mixed[NUM_MOTORS] = {0};
 
     // Ensure the maximum average throttle across the 4 motors are at least the throttle commanded and never exceeds the set max
     float throttleAvgMax = throttle;
@@ -56,10 +57,10 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
     // Add roll and pitch, while finding the yaw allowed at the same time
     float yawAllowed = 1.0f;
     for (int i = 0; i < NUM_MOTORS; i++) {
-        mixed[i] = roll * ROLL_SIGN[i] + pitch * PITCH_SIGN[i];
+        mixed[i] = roll * ROLL_FACTOR[i] + pitch * PITCH_FACTOR[i];
 
         float predictedMotorThrust = idealThrottle + mixed[i]; 
-        float motorRoom = (yaw * YAW_SIGN[i] >= 0) 
+        float motorRoom = (yaw * YAW_FACTOR[i] >= 0) 
                             ? 1.0f - predictedMotorThrust // Yaw is added to overall thrust
                             : predictedMotorThrust; // Yaw is subtracted from overall thrust
         yawAllowed = fminf(yawAllowed, fmaxf(motorRoom, 0)); // fmaxf(motorRoom, 0) so motorRoom being negative means 0 yaw allowed
@@ -75,7 +76,7 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
     float rpyMax = 0.0f;
     float rpyMin = 1.0f;
     for (int i = 0; i < NUM_MOTORS; i++) {
-        mixed[i] += yaw * YAW_SIGN[i];
+        mixed[i] += yaw * YAW_FACTOR[i];
         rpyMax = fmaxf(rpyMax, mixed[i]);
         rpyMin = fminf(rpyMin, mixed[i]);
     }

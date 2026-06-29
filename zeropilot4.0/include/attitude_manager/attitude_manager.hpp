@@ -61,8 +61,8 @@ class AttitudeManager {
         ACROMapping acroCLAW;
         #endif
         RCMotorControlMessage_t controlMsg;
-        DroneState_t droneState;
         FlightMode_e currentFlightMode;
+        DroneState_t droneState;
 
         MotorGroupInstance_t *mainMotorGroup;
 

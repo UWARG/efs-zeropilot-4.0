@@ -2,6 +2,7 @@
 #include "attitude_manager.hpp"
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
+#include "unit_conversions.hpp"
 
 static inline int usToPercent(float us) {
     return static_cast<int>((us - 1000.0f) / 10.0f);
@@ -115,18 +116,18 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_D,        am, updatePIDRollKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_TAU,      am, updatePIDRollTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_IMAX,     am, updatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_P,       am, updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_I,       am, updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_D,       am, updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_TAU,     am, updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_IMAX,    am, updatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_P,       am, updatePIDYawKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_I,       am, updatePIDYawKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_D,       am, updatePIDYawKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_TAU,     am, updatePIDYawTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_IMAX,    am, updatePIDYawIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_RP_RATE,   am, updateRollPitchLimitRate);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_Y_RATE,   am, updateYawLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_P,        am, updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_I,        am, updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_D,        am, updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_TAU,      am, updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_IMAX,     am, updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_P,        am, updatePIDYawKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_I,        am, updatePIDYawKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_D,        am, updatePIDYawKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_TAU,      am, updatePIDYawTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_IMAX,     am, updatePIDYawIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_RP_RATE,         am, updateRollPitchLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_Y_RATE,          am, updateYawLimitRate);
     #endif
 
     // Servo params: each AM_PARAM_SETUP_BIND_SERVO_CB expands to 5 bindCallback calls
@@ -303,13 +304,13 @@ bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
     return true;
 }
 bool AMParamSetup::updateRollPitchLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 6.28318f) return false;
+    if (val < 0.0f || val > ZP_UNITS::PI * 2) return false;
     ctx->acroCLAW.setRollLimitRate(val);
     ctx->acroCLAW.setPitchLimitRate(val);
     return true;
 }
 bool AMParamSetup::updateYawLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 6.28318f) return false;
+    if (val < 0.0f || val > ZP_UNITS::PI * 2) return false;
     ctx->acroCLAW.setYawLimitRate(val);
     return true;
 }
