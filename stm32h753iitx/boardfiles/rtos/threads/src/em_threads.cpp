@@ -1,6 +1,8 @@
 #include "em_threads.hpp"
 #include "managers.hpp"
 #include "utils.h"
+#include "museq.hpp"
+#include "cmsis_os.h"
 
 osThreadId_t emMainHandle;
 
@@ -14,7 +16,10 @@ void emMainLoopWrapper(void *arg)
 {
   while(true)
   {
-    emHandle->run();
+    ExMemReqMsg reqMsg;
+    if (osMessageQueueGet(sdRequestQueueId, &reqMsg, NULL, osWaitForever) == osOK) {
+      emHandle->emUpdate(reqMsg);
+    }
   }
 }
 

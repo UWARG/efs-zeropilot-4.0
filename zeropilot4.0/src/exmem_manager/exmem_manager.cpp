@@ -16,14 +16,16 @@ ExMemManager::ExMemManager(
        systemUtilsDriver->profilerRegister("EM", &profilerId);
 }
 
-void ExMemManager::run() {
+void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
     systemUtilsDriver->profilerBegin(profilerId);
 
-    int count = requestQueue->count();
+    bool firstMsgRead = false;
+
+    int count = requestQueue->count() + 1; // +1 for the reqMsg passed in
 
     while (count-- > 0) {
-        ExMemReqMsg reqMsg;
-        requestQueue->get(&reqMsg);
+        if (firstMsgRead) requestQueue->get(&reqMsg);
+        firstMsgRead = true;
         PollResult respMsg;
         respMsg.type = reqMsg.type;
 

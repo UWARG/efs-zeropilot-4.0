@@ -19,7 +19,7 @@ class ExMemManager {
             IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]
         );
 
-        void run();
+        void emUpdate(ExMemReqMsg reqMsg);
 
     private:
         ISystemUtils *systemUtilsDriver;
