@@ -229,7 +229,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
+void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId) {   
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
 
@@ -251,7 +251,7 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
     // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
-        BATTERY_ID,
+        batteryId,
         INT16_MAX,
         voltages,
         VOLTAGE_LEN,

@@ -1,26 +1,26 @@
 #include "motor_mixing.hpp"
 
 #ifdef FIXED_WING
-void MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
+void MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t outputControlMsg,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         switch (mainMotorGroup->motors[i].function) {
             case MotorFunction_e::AILERON: 
-                motorPercent[i] = OUTPUT_CONTROL_MSG.roll;
+                motorPercent[i] = outputControlMsg.roll;
                 break;
             case MotorFunction_e::ELEVATOR:
-                motorPercent[i] = OUTPUT_CONTROL_MSG.pitch;
+                motorPercent[i] = outputControlMsg.pitch;
                 break;
             case MotorFunction_e::RUDDER:
-                motorPercent[i] = OUTPUT_CONTROL_MSG.yaw;
+                motorPercent[i] = outputControlMsg.yaw;
                 break;
             case MotorFunction_e::THROTTLE:
-                motorPercent[i] = OUTPUT_CONTROL_MSG.throttle;
+                motorPercent[i] = outputControlMsg.throttle;
                 break;
             case MotorFunction_e::FLAP:
-                motorPercent[i] = OUTPUT_CONTROL_MSG.flapAngle;
+                motorPercent[i] = outputControlMsg.flapAngle;
                 break;
             case MotorFunction_e::GROUND_STEERING: 
-                motorPercent[i] = OUTPUT_CONTROL_MSG.yaw;
+                motorPercent[i] = outputControlMsg.yaw;
                 break;
             default: 
                 motorPercent[i] = 0.0f;
@@ -31,7 +31,7 @@ void MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t OUTPUT_CONTR
 #endif
 
 #ifdef QUADCOPTER
-void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {   
+void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t outputControlMsg,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {   
     static constexpr uint8_t NUM_MOTORS = 4;
     // Each motor arm sits at 45° in the X-configuration, so its contribution to the roll/pitch axes is cos(45°) = sin(45°) = sqrt(2)/2
     static constexpr float ARM_AXIS_PROJECTION = 0.7071067811865476f;
@@ -41,10 +41,10 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t OUTPUT_CONTROL_MS
     static constexpr float YAW_HEADROOM = 0.2f;
 
     // Roll, pitch, yaw in range [-1, 1], throttle in [0,1]
-    float roll = OUTPUT_CONTROL_MSG.roll;
-    float pitch = OUTPUT_CONTROL_MSG.pitch;
-    float yaw = OUTPUT_CONTROL_MSG.yaw;
-    float throttle = OUTPUT_CONTROL_MSG.throttle; 
+    float roll = outputControlMsg.roll;
+    float pitch = outputControlMsg.pitch;
+    float yaw = outputControlMsg.yaw;
+    float throttle = outputControlMsg.throttle; 
     float mixed[NUM_MOTORS] = {0};
 
     // Ensure the maximum average throttle across the 4 motors are at least the throttle commanded and never exceeds the set max
