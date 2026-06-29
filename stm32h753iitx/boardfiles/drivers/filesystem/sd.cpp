@@ -14,7 +14,7 @@ static inline void swoWrite(const char* data, uint32_t len) {
 }
 #endif
 
-SDFileSystem::SDFileSystem(MessageQueue<FatFSReqMsg> *reqQueue, MessageQueue<FatFSReqBuff> *buffQueue, MessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]) 
+SDFileSystem::SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuff> *buffQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)])
     : mounted(false), requestQueue(reqQueue), bufferQueue(buffQueue), responseQueues(respQueues) {
     std::memset(&fsObj, 0, sizeof(FATFS));
 }
@@ -62,7 +62,6 @@ FileStatus SDFileSystem::open(File* fp, const char* path, const char* mode) {
     FIL* fil = new (&fp->_storage[0]) FIL; // Placement new to construct FIL in File's storage
     BYTE fatfs_mode = modeStringToFatfsFlags(mode);
     FRESULT res = f_open(fil, path, fatfs_mode);
-    UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     return fresultToStatus(res);
 }
 
@@ -99,14 +98,14 @@ FileStatus SDFileSystem::write(ManId id, File* fp, const void* buff, uint32_t bt
         res = (res == FR_OK) ? f_sync(reinterpret_cast<FIL*>(&fp->_storage[0])) : res; // Sync only if write was successful
         return fresultToStatus(res);
     } else {
-        FatFSReqMsg req;
+        ExMemReqMsg req;
         req.id = id;
         req.type = ReqType::WRITE;
-        req.fp = reinterpret_cast<FIL*>(&fp->_storage[0]);
+        req.fp = fp;
         req.total_size = btw;
         req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
-        FatFSReqBuff writeBuffMsg;
+        ExMemReqBuff writeBuffMsg;
         while (btw > 0) {
             writeBuffMsg.id = id;
             writeBuffMsg.type = ReqType::WRITE;
@@ -140,15 +139,15 @@ FileStatus SDFileSystem::seek_and_write(ManId id, File* fp, const void* buff, ui
 
     if (!mounted) return FILE_STATUS_ERROR;
     
-    FatFSReqMsg req;
+    ExMemReqMsg req;
     req.id = id;
     req.type = ReqType::WRITE_SEEK;
-    req.fp = reinterpret_cast<FIL*>(&fp->_storage[0]);
+    req.fp = fp;
     req.total_size = btw;
     req.offset = ofs;
     req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
-    FatFSReqBuff writeBuffMsg;
+    ExMemReqBuff writeBuffMsg;
     while (btw > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType::WRITE_SEEK;
@@ -181,14 +180,14 @@ FileStatus SDFileSystem::write_and_sync(ManId id, File* fp, const void* buff, ui
 
     if (!mounted) return FILE_STATUS_ERROR;
 
-    FatFSReqMsg req;
+    ExMemReqMsg req;
     req.id = id;
     req.type = ReqType::WRITE_SYNC;
-    req.fp = reinterpret_cast<FIL*>(&fp->_storage[0]);
+    req.fp = fp;
     req.total_size = btw;
     req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
-    FatFSReqBuff writeBuffMsg;
+    ExMemReqBuff writeBuffMsg;
     while (btw > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType::WRITE_SYNC;
@@ -219,10 +218,10 @@ FileStatus SDFileSystem::lseek(ManId id, File* fp, uint64_t ofs, ReqOptions opti
         FRESULT res = f_lseek(reinterpret_cast<FIL*>(&fp->_storage[0]), static_cast<FSIZE_t>(ofs));
         return fresultToStatus(res);
     } else {
-        FatFSReqMsg req;
+        ExMemReqMsg req;
         req.id = id;
         req.type = ReqType::LSEEK;
-        req.fp = reinterpret_cast<FIL*>(&fp->_storage[0]);
+        req.fp = fp;
         req.offset = ofs;
 
         if (requestQueue->push(&req) != osOK) {
@@ -248,10 +247,10 @@ FileStatus SDFileSystem::tell(ManId id, File* fp, uint64_t* position, ReqOptions
         if (options == ReqOptions::ASYNC_NO_RESP) {
             return FILE_STATUS_ERROR; // TELL operation requires a response to return the position, so ASYNC_NO_RESP is not valid here
         }
-        FatFSReqMsg req;
+        ExMemReqMsg req;
         req.id = id;
         req.type = ReqType::TELL;
-        req.fp = reinterpret_cast<FIL*>(&fp->_storage[0]);
+        req.fp = fp;
 
         if (requestQueue->push(&req) != osOK) {
             return FILE_STATUS_ERROR; // Failed to send request
@@ -267,10 +266,10 @@ FileStatus SDFileSystem::sync(ManId id, File* fp, ReqOptions options) {
         FRESULT res = f_sync(reinterpret_cast<FIL*>(&fp->_storage[0]));
         return fresultToStatus(res);
     } else {
-        FatFSReqMsg req;
+        ExMemReqMsg req;
         req.id = id;
         req.type = ReqType::SYNC;
-        req.fp = reinterpret_cast<FIL*>(&fp->_storage[0]);
+        req.fp = fp;
         req.sendResp = (options != ReqOptions::ASYNC_NO_RESP);
 
         if (requestQueue->push(&req) != osOK) {

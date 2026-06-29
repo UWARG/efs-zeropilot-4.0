@@ -4,7 +4,7 @@
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
-#define LOG_TIMING 0
+#define LOG_TIMING 1
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
@@ -13,26 +13,26 @@ SystemManager::SystemManager(
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue):
-        systemUtilsDriver(systemUtilsDriver),
-        iwdgDriver(iwdgDriver),
-        fileSystemDriver(fileSystemDriver),
-        rcDriver(rcDriver),
-        pmDriver(pmDriver),
-        amRCQueue(amRCQueue),
-        tmQueue(tmQueue),
-        smSchedulingCounter(0),
-        flightModes{},
-        oldDataCount(0),
-        rcConnected(false),
-        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
-        profilerId(0),
-        paramSetup(this)
-{
-    paramSetup.loadAllParams();
-    paramSetup.bindAllParamCallbacks();
-    Logger::init(fileSystemDriver, systemUtilsDriver);
-    systemUtilsDriver->profilerRegister("SM", &profilerId);
+    IMessageQueue<TMMessage_t> *tmQueue
+) :
+    systemUtilsDriver(systemUtilsDriver),
+    iwdgDriver(iwdgDriver),
+    fileSystemDriver(fileSystemDriver),
+    rcDriver(rcDriver),
+    pmDriver(pmDriver),
+    amRCQueue(amRCQueue),
+    tmQueue(tmQueue),
+    smSchedulingCounter(0),
+    flightModes{},
+    oldDataCount(0),
+    rcConnected(false),
+    batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
+    profilerId(0),
+    paramSetup(this) {
+        paramSetup.loadAllParams();
+        paramSetup.bindAllParamCallbacks();
+        Logger::init(fileSystemDriver, systemUtilsDriver);
+        systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
 void SystemManager::smUpdate() {
@@ -42,7 +42,6 @@ void SystemManager::smUpdate() {
 
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
-
 
     // Get RC data from the RC receiver and passthrough to AM if new
     RCControl rcData = rcDriver->getRCData();
@@ -101,11 +100,6 @@ void SystemManager::smUpdate() {
         if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
             sendBatteryDataToTelemetryManager(batteryData, 0);
         }
-    }
-
-    // Log if new messages
-    if (smLoggerQueue->count() > 0) {
-        sendMessagesToLogger();
     }
 
     // Send profiler stats at 1Hz
@@ -290,16 +284,4 @@ PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     } else {
         return flightModes[5];
     }
-}
-
-void SystemManager::sendMessagesToLogger() {
-    static char messages[16][100];
-    int msgCount = 0;
-
-    while (smLoggerQueue->count() > 0) {
-        smLoggerQueue->get(&messages[msgCount]);
-        msgCount++;
-    }
-
-    // loggerDriver->log(messages, msgCount); (TODO: Uncomment after rearchitecture)
 }

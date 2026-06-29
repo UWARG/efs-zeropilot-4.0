@@ -1,19 +1,18 @@
 #pragma once
 
-#include "filesystem_iface.hpp"
-#include "fatfs.h"
+#include "filesystem_datatypes.hpp"
 
-struct FatFSReqMsg {
+struct ExMemReqMsg {
     ManId id;
     ReqType type;
-    FIL* fp = nullptr;
+    File* fp = nullptr;
     uint32_t total_size; // For write operations
     uint64_t offset;     // For lseek operation
-    BYTE mode_flags = 0;
+    uint8_t mode_flags = 0;
     bool sendResp = true;
 };
 
-struct FatFSReqBuff {
+struct ExMemReqBuff {
     ManId id;
     ReqType type;
     char buff[MAX_RW_BUFFER_SIZE];

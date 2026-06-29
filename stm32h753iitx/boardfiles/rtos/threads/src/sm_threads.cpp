@@ -15,7 +15,6 @@ void smMainLoopWrapper(void *arg)
   uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
-    UBaseType_t freeWords = uxTaskGetStackHighWaterMark(NULL);
     smHandle->smUpdate();
     nextWakeUp += timeToTicks(SM_UPDATE_LOOP_DELAY_MS);
     osDelayUntil(nextWakeUp);

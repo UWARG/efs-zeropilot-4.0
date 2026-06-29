@@ -31,6 +31,14 @@ set(TM_INC
     "include/thread_msgs/"
 )
 
+# external memory manager files
+set(EXMEM_SRC
+    "src/exmem_manager/exmem_manager.cpp"
+)
+set(EXMEM_INC
+    "include/exmem_manager/"
+)
+
 # zp param files
 set(ZP_PARAM_SRC
     "src/zp_param/zp_params.cpp"
@@ -49,6 +57,7 @@ set(ZP_SRC
     ${AM_SRC}
     ${SM_SRC}
     ${TM_SRC}
+    ${EXMEM_SRC}
     ${ZP_PARAM_SRC}
 )
 set(ZP_INC
@@ -57,5 +66,6 @@ set(ZP_INC
     ${AM_INC}
     ${SM_INC}
     ${TM_INC}
+    ${EXMEM_INC}
     ${ZP_PARAM_INC}
 )

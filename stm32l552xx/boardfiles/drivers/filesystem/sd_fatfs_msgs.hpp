@@ -1,7 +1,7 @@
 #pragma once
 
 #include "filesystem_iface.hpp"
-#include "app_fatfs.h"
+#include "fatfs.h"
 
 struct FatFSReqMsg {
     ManId id;

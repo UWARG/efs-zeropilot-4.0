@@ -26,6 +26,7 @@ extern I2C_HandleTypeDef hi2c1;
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 SDFileSystem *sdFileSystemHandle = nullptr;
+FatFsBackend *fatFsBackendHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -39,9 +40,9 @@ MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
-MessageQueue<FatFSReqMsg> *sdRequestQueueHandle = nullptr;
-MessageQueue<FatFSReqBuff> *sdBufferQueueHandle = nullptr;
-MessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)] = {nullptr};
+MessageQueue<ExMemReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<ExMemReqBuff> *sdBufferQueueHandle = nullptr;
+IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & group
@@ -103,17 +104,17 @@ void initDrivers()
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
-    sdRequestQueueHandle = new MessageQueue<FatFSReqMsg>(&sdRequestQueueId);
-    sdBufferQueueHandle = new MessageQueue<FatFSReqBuff>(&sdBufferQueueId);
+    sdRequestQueueHandle = new MessageQueue<ExMemReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new MessageQueue<ExMemReqBuff>(&sdBufferQueueId);
     for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
         sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
     }
 
     // File system
     sdFileSystemHandle = new SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
+    fatFsBackendHandle = new FatFsBackend();
 
     // Initialize hardware components
     for (int i = 0; i < 8; i++) {

@@ -11,6 +11,7 @@
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
 #include "sm_param_setup.hpp"
+#include "logger.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -92,7 +93,6 @@ class SystemManager {
         uint8_t profilerId;
 
         SMParamSetup paramSetup;
-
 
         uint8_t profilerBuf[256];
         TaskProfile profiles[MAX_PROFILED_TASKS];
