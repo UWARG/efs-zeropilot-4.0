@@ -93,6 +93,10 @@ void ExMemManager::run() {
                 }
                 break;
             }
+            case ReqType::SYNC: {
+                respMsg.status = backend->syncFile(reqMsg.fp);
+                break;
+            }
             default: {
                 respMsg.status = FILE_STATUS_UNKNOWN; // Unknown request type
                 break;

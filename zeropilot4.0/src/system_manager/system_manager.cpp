@@ -36,7 +36,8 @@ SystemManager::SystemManager(
 }
 
 void SystemManager::smUpdate() {
-    Logger::log("SM Loop Test", LogLevel::LOG_DEBUG);
+    // Logger::log("SM Loop Test", LogLevel::LOG_DEBUG);
+    Logger::sync();
 
     systemUtilsDriver->profilerBegin(profilerId);
 

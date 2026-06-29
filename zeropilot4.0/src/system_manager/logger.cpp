@@ -3,10 +3,13 @@
 namespace Logger {
     static constexpr const char* LOG_FILE = "logs/system.log";
     static constexpr size_t BUFFER_SIZE = 256;
+    static constexpr uint32_t SYNC_PERIOD = 400; // 400ms, write_with_sync takes 40ms
     static IFileSystem* fileSystem = nullptr;
     static ISystemUtils* systemUtils = nullptr;
     static File logFile = {};
-    static int lastSync = 0;
+    static uint32_t lastSyncCount = 0;
+    static uint32_t lastSyncTime = 0;
+    static bool newWrite = false;
 
     void init(IFileSystem* fs, ISystemUtils* sysUtils) {
         fileSystem = fs;
@@ -72,19 +75,23 @@ namespace Logger {
         }
         buffer[totalLen] = '\n';
         buffer[totalLen + 1] = '\0';
-        
-        if (level == LogLevel::LOG_CRITICAL || lastSync >= 10) { // Sync every 10 writes automatically, or immediately for critical logs
+
+        // fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
+        if (level == LogLevel::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
             fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
-            lastSync = 0;
+            lastSyncCount = 0;
         } else {
             fileSystem->write(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions::ASYNC_NO_RESP);
-            lastSync++;
+            lastSyncCount++;
         }
+        newWrite = true;
     }
 
     void sync() {
-        if (fileSystem) {
+        if (fileSystem && newWrite && systemUtils->getCurrentTimestampMs() - lastSyncTime >= SYNC_PERIOD) {
             fileSystem->sync(ManId::SYSTEM, &logFile, ReqOptions::ASYNC_NO_RESP);
+            lastSyncTime = systemUtils->getCurrentTimestampMs();
+            newWrite = false;
         }
     }
 } // namespace Logger
