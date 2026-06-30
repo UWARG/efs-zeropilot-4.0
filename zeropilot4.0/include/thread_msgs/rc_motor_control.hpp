@@ -17,16 +17,13 @@ inline bool isValidFlightMode(uint32_t val) {
         #ifdef FIXED_WING
         case FlightMode_e::MANUAL:
         case FlightMode_e::FBWA:
-            return true;
-        default:
-            return false;
         #endif
         #ifdef QUADCOPTER
         case FlightMode_e::ACRO:
+        #endif
             return true;
         default:
             return false;
-        #endif
     }
 }
 

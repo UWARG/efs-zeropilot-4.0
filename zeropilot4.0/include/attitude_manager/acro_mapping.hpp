@@ -41,7 +41,6 @@ class ACROMapping : public Flightmode{
         // Destructor
         ~ACROMapping() noexcept override = default;
 
-
     private: 
          // Roll, pitch and yaw PID class objects
         PID rollPID;

@@ -41,6 +41,10 @@ class AttitudeManager {
         void amUpdate();
 
     private:
+        static constexpr uint16_t MAX_TIMESTAMP = 65535;
+        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
+        static constexpr uint8_t NUM_MOTORS = 8;
+
         ISystemUtils *systemUtilsDriver;
 
         IGPS *gpsDriver;
@@ -76,8 +80,6 @@ class AttitudeManager {
         int noDataCount;
         bool failsafeTriggered;
 
-        static constexpr uint16_t MAX_TIMESTAMP = 65535;
-        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default timestamp resolution 1us
         uint16_t lastTimestamp;
         bool haveLastImuTimestamp;
 
@@ -91,8 +93,6 @@ class AttitudeManager {
         void sendServoOutputRawToTelemetryManager();
         
         uint8_t profilerId;
-        
-        static constexpr uint8_t NUM_MOTORS = 8;
         
         // Motor mixer output for each motor 
         float motorPercent[NUM_MOTORS];
