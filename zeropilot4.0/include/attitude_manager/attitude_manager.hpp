@@ -58,7 +58,7 @@ class AttitudeManager {
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
-        #ifdef FIXED_WING
+        #ifdef PLANE
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         #endif
         #ifdef QUADCOPTER

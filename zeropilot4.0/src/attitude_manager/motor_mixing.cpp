@@ -1,6 +1,6 @@
 #include "motor_mixing.hpp"
 
-#ifdef FIXED_WING
+#ifdef PLANE
 void MotorMixing::fixedWingMoterMixer(const RCMotorControlMessage_t outputControlMsg,  MotorGroupInstance_t *mainMotorGroup, float* motorPercent) {
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         switch (mainMotorGroup->motors[i].function) {

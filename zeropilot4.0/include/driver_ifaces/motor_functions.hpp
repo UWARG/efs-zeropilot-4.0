@@ -5,7 +5,7 @@
 enum class MotorFunction_e : int16_t {
     GPIO            = -1,
     DISABLED        = 0,
-    #ifdef FIXED_WING
+    #ifdef PLANE
     FLAP            = 2,
     AILERON         = 4,
     ELEVATOR        = 19,

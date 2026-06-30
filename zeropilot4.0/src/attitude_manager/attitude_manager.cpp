@@ -19,7 +19,7 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
-    #ifdef FIXED_WING
+    #ifdef PLANE
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
@@ -124,7 +124,7 @@ void AttitudeManager::amUpdate() {
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
             RCMotorControlMessage_t motorOutputs{0};
 
-            #ifdef FIXED_WING
+            #ifdef PLANE
             motorOutputs.roll = 50;
             motorOutputs.pitch = 50;
             motorOutputs.yaw = 50;
@@ -172,7 +172,7 @@ void AttitudeManager::amUpdate() {
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
 
-            #ifdef FIXED_WING
+            #ifdef PLANE
             case FlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
                 break;
@@ -226,7 +226,7 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
 
 void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg) {
 
-    #ifdef FIXED_WING
+    #ifdef PLANE
         MotorMixing::fixedWingMoterMixer(outputControlMsg, mainMotorGroup, motorPercent);
     #endif
 
@@ -252,7 +252,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
 
         uint32_t cmd = 0;
 
-        #ifdef FIXED_WING
+        #ifdef PLANE
         // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
             // Scale [0, 50] to [min, trim]
@@ -287,7 +287,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         // Set arm flag for throttle motors, only on arm/disarm edges
         if (setArmFlag) {
 
-            #ifdef FIXED_WING
+            #ifdef PLANE
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
             #endif
             

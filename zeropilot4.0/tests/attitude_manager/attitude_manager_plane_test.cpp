@@ -16,7 +16,7 @@ using ::testing::AtLeast;
 using ::testing::Invoke;
 using ::testing::NiceMock;
 
-class AttitudeManagerFWTest : public ::testing::Test {
+class AttitudeManagerPlaneTest : public ::testing::Test {
 protected:
     int AM_RC_FAILSAFE_ITERATIONS;
 
@@ -99,7 +99,7 @@ protected:
     }
 };
 
-TEST_F(AttitudeManagerFWTest, MotorOutputTest) {
+TEST_F(AttitudeManagerPlaneTest, MotorOutputTest) {
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 60.0f;
     rcMsg.pitch = 70.0f;
@@ -124,7 +124,7 @@ TEST_F(AttitudeManagerFWTest, MotorOutputTest) {
     am.amUpdate();
 }
 
-TEST_F(AttitudeManagerFWTest, DisarmThrottleZero) {
+TEST_F(AttitudeManagerPlaneTest, DisarmThrottleZero) {
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
@@ -144,7 +144,7 @@ TEST_F(AttitudeManagerFWTest, DisarmThrottleZero) {
     am.amUpdate();
 }
 
-TEST_F(AttitudeManagerFWTest, FailsafeTriggered) {
+TEST_F(AttitudeManagerPlaneTest, FailsafeTriggered) {
     EXPECT_CALL(mockAMQueue, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockLogQueue, push(_)).Times(1);
 
@@ -162,7 +162,7 @@ TEST_F(AttitudeManagerFWTest, FailsafeTriggered) {
     }
 }
 
-TEST_F(AttitudeManagerFWTest, FailsafeRecovery) {
+TEST_F(AttitudeManagerPlaneTest, FailsafeRecovery) {
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
@@ -195,7 +195,7 @@ TEST_F(AttitudeManagerFWTest, FailsafeRecovery) {
     am.amUpdate();
 }
 
-TEST_F(AttitudeManagerFWTest, MotorTrimApplied) {
+TEST_F(AttitudeManagerPlaneTest, MotorTrimApplied) {
     ZP_PARAM::setParamById("SERVO1_TRIM", 1550);  // 1550 us -> 55%
 
     RCMotorControlMessage_t rcMsg;
@@ -220,7 +220,7 @@ TEST_F(AttitudeManagerFWTest, MotorTrimApplied) {
     EXPECT_GT(rollValue, 50);
 }
 
-TEST_F(AttitudeManagerFWTest, MotorInverted) {
+TEST_F(AttitudeManagerPlaneTest, MotorInverted) {
     ZP_PARAM::setParamById("SERVO1_REVERSED", 1);
 
     RCMotorControlMessage_t rcMsg;
@@ -245,7 +245,7 @@ TEST_F(AttitudeManagerFWTest, MotorInverted) {
     EXPECT_GT(rollValue, 50);
 }
 
-TEST_F(AttitudeManagerFWTest, MotorClampingUpper) {
+TEST_F(AttitudeManagerPlaneTest, MotorClampingUpper) {
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 150.0f;
     rcMsg.pitch = 50.0f;

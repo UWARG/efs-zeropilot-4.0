@@ -23,7 +23,7 @@ jobs:
 
     - name: Build tests
       working-directory: ./zeropilot4.0/tests
-      run: bash ./testbuild.bash -c -v fw
+      run: bash ./testbuild.bash -c -v plane
     
     - name: Run tests
       working-directory: ./zeropilot4.0/tests

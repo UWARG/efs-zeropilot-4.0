@@ -3,7 +3,7 @@
 
 // Flight modes: numbering aligns to ArduPilot's MAVLink mapping for MissionPlanner compatibility
 enum class FlightMode_e : uint32_t {
-    #ifdef FIXED_WING
+    #ifdef PLANE
     MANUAL  = 0,
     FBWA    = 5
     #endif
@@ -14,7 +14,7 @@ enum class FlightMode_e : uint32_t {
 
 inline bool isValidFlightMode(uint32_t val) {
     switch (static_cast<FlightMode_e>(val)) {
-        #ifdef FIXED_WING
+        #ifdef PLANE
         case FlightMode_e::MANUAL:
         case FlightMode_e::FBWA:
         #endif
@@ -33,7 +33,7 @@ typedef struct {
     float yaw;
     float throttle;
     bool arm;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     float flapAngle;
     #endif
     FlightMode_e flightMode;

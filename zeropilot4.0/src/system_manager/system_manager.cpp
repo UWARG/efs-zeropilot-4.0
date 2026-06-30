@@ -221,7 +221,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
     #endif
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);

@@ -26,7 +26,7 @@ class AMParamSetup : public IParamSetup {
     static bool updatePIDPitchKd(AttitudeManager* ctx, float val);
     static bool updatePIDPitchTau(AttitudeManager* ctx, float val);
     static bool updatePIDPitchIMax(AttitudeManager* ctx, float val);
-    #ifdef FIXED_WING
+    #ifdef PLANE
     static bool updateKffRddrmix(AttitudeManager* ctx, float val);
     static bool updateRollLimitDeg(AttitudeManager* ctx, float val);
     static bool updatePitchLimMaxDeg(AttitudeManager* ctx, float val);

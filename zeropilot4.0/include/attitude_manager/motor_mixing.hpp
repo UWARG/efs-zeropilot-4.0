@@ -5,7 +5,7 @@
 
 class MotorMixing{
     public:
-        #ifdef FIXED_WING
+        #ifdef PLANE
         static void fixedWingMoterMixer(const RCMotorControlMessage_t outputControlMsg, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
         #endif
         #ifdef QUADCOPTER

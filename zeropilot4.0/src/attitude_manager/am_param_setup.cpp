@@ -11,7 +11,7 @@ static inline int usToPercent(float us) {
 AMParamSetup::AMParamSetup(AttitudeManager* am) : am(am) {}
 
 void AMParamSetup::loadAllParams() {
-    #ifdef FIXED_WING
+    #ifdef PLANE
     // FBWA params
     am->fbwaCLAW.setRollPIDConstants(
         ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
@@ -94,7 +94,7 @@ void AMParamSetup::loadAllParams() {
 
 void AMParamSetup::bindAllParamCallbacks() {
     // FBWA
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P,        am, updatePIDRollKp);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I,        am, updatePIDRollKi);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D,        am, updatePIDRollKd);
@@ -151,7 +151,7 @@ void AMParamSetup::bindAllParamCallbacks() {
 
 bool AMParamSetup::updatePIDRollKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getRollPID()->setKp(val);
     #endif
     #ifdef QUADCOPTER
@@ -161,7 +161,7 @@ bool AMParamSetup::updatePIDRollKp(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDRollKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getRollPID()->setKi(val);
     #endif
     #ifdef QUADCOPTER
@@ -171,7 +171,7 @@ bool AMParamSetup::updatePIDRollKi(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDRollKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getRollPID()->setKd(val);
     #endif
     #ifdef QUADCOPTER
@@ -181,7 +181,7 @@ bool AMParamSetup::updatePIDRollKd(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDRollTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getRollPID()->setTau(val);
     #endif
     #ifdef QUADCOPTER
@@ -191,7 +191,7 @@ bool AMParamSetup::updatePIDRollTau(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDRollIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     #endif
@@ -203,7 +203,7 @@ bool AMParamSetup::updatePIDRollIMax(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDPitchKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getPitchPID()->setKp(val);
     #endif
     #ifdef QUADCOPTER
@@ -213,7 +213,7 @@ bool AMParamSetup::updatePIDPitchKp(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDPitchKi(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getPitchPID()->setKi(val);
     #endif
     #ifdef QUADCOPTER
@@ -223,7 +223,7 @@ bool AMParamSetup::updatePIDPitchKi(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDPitchKd(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getPitchPID()->setKd(val);
     #endif
     #ifdef QUADCOPTER
@@ -233,7 +233,7 @@ bool AMParamSetup::updatePIDPitchKd(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDPitchTau(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getPitchPID()->setTau(val);
     #endif
     #ifdef QUADCOPTER
@@ -243,7 +243,7 @@ bool AMParamSetup::updatePIDPitchTau(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
-    #ifdef FIXED_WING
+    #ifdef PLANE
     ctx->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     return true;
@@ -254,7 +254,7 @@ bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     return true;
     #endif
 }
-#ifdef FIXED_WING
+#ifdef PLANE
 bool AMParamSetup::updateKffRddrmix(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 1.0f) return false;
     ctx->fbwaCLAW.setYawRudderMixingConstant(val);

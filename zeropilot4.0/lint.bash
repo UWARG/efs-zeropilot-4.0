@@ -3,17 +3,17 @@ set -e
 
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-vehicle_type="fw"
+vehicle_type="plane"
 
 usage() {
-    echo "Usage: $0 [-v <fw|quad>]"
+    echo "Usage: $0 [-v <plane|quad>]"
     exit 1
 }
 
 while getopts "v:" opt; do
     case "${opt}" in
         v)
-            if [[ "$OPTARG" == "fw" || "$OPTARG" == "quad" ]]; then
+            if [[ "$OPTARG" == "plane" || "$OPTARG" == "quad" ]]; then
                 vehicle_type="$OPTARG"
             else
                 usage
@@ -38,8 +38,8 @@ mkdir -p "$build_dir"
 # Run native cmake config with compile_commands export
 cd "$build_dir"
 echo "==> Running native CMake configure..."
-if [[ "$vehicle_type" == "fw" ]]; then
-    cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DFIXED_WING_BUILD=ON "$script_dir"
+if [[ "$vehicle_type" == "plane" ]]; then
+    cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPLANE_BUILD=ON "$script_dir"
 else
     cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DQUADCOPTER_BUILD=ON "$script_dir"
 fi

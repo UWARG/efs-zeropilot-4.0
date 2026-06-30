@@ -80,7 +80,7 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     SERVO12_REVERSED,
     SERVO12_FUNCTION,
     MOT_PWM_TYPE,
-    #ifdef FIXED_WING
+    #ifdef PLANE
     RLL2SRV_P,
     RLL2SRV_I,
     RLL2SRV_D,

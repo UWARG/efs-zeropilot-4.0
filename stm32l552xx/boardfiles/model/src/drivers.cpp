@@ -74,7 +74,7 @@ void initDrivers()
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
     for (int i = 0; i < 8; i++) {
         bool isMotor = false;
-        #ifdef FIXED_WING
+        #ifdef PLANE
         isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
         #endif
         #ifdef QUADCOPTER
