@@ -12,7 +12,7 @@ import math
 SITL_RATE_HZ = 1000
 
 class ZP_QUAD_SITL_AIRSIM:
-    def __init__(self):
+    def __init__(self, ip="127.0.0.1", port=14550):
         # Input Setup (Joysticks)
         pygame.init()
         pygame.joystick.init()
@@ -27,7 +27,7 @@ class ZP_QUAD_SITL_AIRSIM:
         self.client.armDisarm(True)
         
         # State setup 
-        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ)
+        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ, ip=ip, port=port)
         self.running = True
         self.armed = False
         self.paused = True 
@@ -54,10 +54,6 @@ class ZP_QUAD_SITL_AIRSIM:
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
-                        # if event.button == 1:
-                        #     self.reset_to_air()
-                        # if event.button == 2:
-                        #     self.armed = True
                         if event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
@@ -145,7 +141,10 @@ class ZP_QUAD_SITL_AIRSIM:
 
 
 if __name__ == '__main__':
-    sitl = ZP_QUAD_SITL_AIRSIM()
+    TARGET_IP = "127.0.0.1"
+    TARGET_PORT = 14550
+    
+    sitl = ZP_QUAD_SITL_AIRSIM(ip=TARGET_IP, port=TARGET_PORT)
     
     os.system('cls' if os.name == 'nt' else 'clear')
     threading.Thread(target=sitl.update_joystick, daemon=True).start()
@@ -159,4 +158,4 @@ if __name__ == '__main__':
                 sitl.print_state(); last_print = time.perf_counter()
             next_step += target_dt
     except KeyboardInterrupt:
-        if os.path.exists(sitl.fg_out_file): os.remove(sitl.fg_out_file)
+        print("\nExiting Sim.")
