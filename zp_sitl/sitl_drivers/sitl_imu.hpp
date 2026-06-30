@@ -17,7 +17,10 @@ private:
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
 public:
-    int init() override { return 0; }
+    int init() override {
+        rawData.timestamp = 0; // Initialize timestamp
+        return 0; // Success
+    }
     
     /**
      * Simulates the IMU readings based on the physics engine (Plant)
@@ -50,6 +53,8 @@ public:
         rawData.xgyro = (int16_t)(p_deg_s * Config::GYRO_SCALE);
         rawData.ygyro = (int16_t)(q_deg_s * Config::GYRO_SCALE);
         rawData.zgyro = (int16_t)(r_deg_s * Config::GYRO_SCALE);
+
+        rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
     }
     
     RawImuBatch_t readRawData() override {
