@@ -81,7 +81,8 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
     controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
     controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
-    controlInputs.throttle /= 100.0f; 
+
+    controlInputs.throttle /= 100.0f; // Throttle remains in [0, 1]
 
     return controlInputs;
 }
