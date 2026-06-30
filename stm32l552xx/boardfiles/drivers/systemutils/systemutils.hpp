@@ -1,7 +1,7 @@
 #pragma once
 
 #include "systemutils_iface.hpp"
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 #include <stdint.h>
 
 class SystemUtils : public ISystemUtils {
