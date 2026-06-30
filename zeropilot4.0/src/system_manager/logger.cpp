@@ -28,14 +28,14 @@ namespace Logger {
         FileInfo_t fno;
         uint32_t fileNum = 0;
         for (uint32_t i = 0; i < 255; i++) {
-            snprintf(filename, sizeof(filename), "logs/system%u.log", i);
+            snprintf(filename, sizeof(filename), "logs/system%lu.log", i);
             if (fileSystem->stat(filename, &fno) != FILE_STATUS_OK) {
                 fileNum = i;
                 break;
             }
         }
         
-        snprintf(filename, sizeof(filename), "logs/system%u.log", fileNum);
+        snprintf(filename, sizeof(filename), "logs/system%lu.log", fileNum);
         fileSystem->open(&logFile, filename, "a");
     }
 
@@ -47,7 +47,7 @@ namespace Logger {
         
         // Add timestamp
         uint32_t ts = systemUtils->getCurrentTimestampMs() / 1000;
-        int tsLen = snprintf(buffer, 10, "%us ", ts);
+        int tsLen = snprintf(buffer, 10, "%lus ", ts);
         
         // Add log level
         const char* levelStr = "";
@@ -66,7 +66,7 @@ namespace Logger {
         va_end(args);
         
         int totalLen = tsLen + levelLen + msgLen;
-        if (totalLen > BUFFER_SIZE - 2) {
+        if (totalLen > static_cast<int>(BUFFER_SIZE) - 2) {
             totalLen = BUFFER_SIZE - 2; // Truncate if message exceeds buffer
         }
         buffer[totalLen] = '\n';

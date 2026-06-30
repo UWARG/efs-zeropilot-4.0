@@ -128,7 +128,7 @@ void SystemManager::smUpdate() {
                 }
             }
             #if LOG_TIMING
-            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %u us      %u hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profilerBuf);
             #endif
         }

@@ -30,6 +30,7 @@ zeropilot = Extension(
         f'{zeropilot_root}/include/attitude_manager',
         f'{zeropilot_root}/include/system_manager',
         f'{zeropilot_root}/include/telemetry_manager',
+        f'{zeropilot_root}/include/exmem_manager',
         f'{zeropilot_root}/include/thread_msgs',
         f'{zeropilot_root}/include/driver_ifaces',
         f'{zeropilot_root}/include/zp_param',
