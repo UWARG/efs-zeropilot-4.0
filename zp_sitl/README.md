@@ -5,6 +5,7 @@ Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dyna
 ## Structure
 
 - `sitl_plane_jsbsim.py` - Python simulation loop integrating JSBSim with ZeroPilot for PLANE build
+- `sitl_plane_fgfs.py` - Python simulation loop integrating FlightGear with ZeroPilot for PLANE build
 - `sitl_quad_airsim.py` - Python simulation loop integrating AirSim with ZeroPilot for QUADCOPTER build
 - `zeropilot_wrapper.cpp` - Python C extension wrapping ZeroPilot managers
 - `sitl_drivers/` - Software-in-the-Loop driver implementations
@@ -51,8 +52,8 @@ If you install [FlightGear](https://www.flightgear.org/) you can visualize the s
 
 Run the FGFS SITL target via:
 ```bash
-./scripts/build_sitl.sh
-python sitl_plane_fgfs.py
+./scripts/build_sitl.sh PLANE
+python sitl_fgfs.py
 ```
 
 Launch FGFS via `./scripts/start_fgfs.sh` (requires having fgfs in your $PATH):
