@@ -56,7 +56,7 @@ Software-in-the-Loop simulation with JSBSim flight dynamics:
 cd zp_sitl
 pip install -r requirements.txt
 ./build_sitl.sh
-python sitl_main.py
+python sitl_plane_jsbsim.py
 ```
 
 Open `http://localhost:8080` for web UI. MAVLink streams to `udp://127.0.0.1:14550` (connect MissionPlanner/QGroundControl).

@@ -43,7 +43,7 @@ jobs:
     - name: Test SITL runs
       run: |
         cd zp_sitl
-        timeout 10s python sitl_main.py || [ $? -eq 124 ]
+        timeout 10s python sitl_plane_jsbsim.py || [ $? -eq 124 ]
 
   sitl_build_quad:
     runs-on: ubuntu-latest
