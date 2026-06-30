@@ -7,6 +7,7 @@
 class SystemUtils : public ISystemUtils {
     public:
         SystemUtils() = default;
+        
         void delayMs(uint32_t delay_ms) override;
         uint32_t getCurrentTimestampMs() override;
 
@@ -15,12 +16,6 @@ class SystemUtils : public ISystemUtils {
         void profilerBegin(uint8_t id) override;
         void profilerEnd(uint8_t id) override;
 
-        static void dwtInit() {
-            if (DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk) return; // DWT is already running
-            CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-            DWT->CYCCNT = 0;
-            DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-        }
-
+        static void dwtInit();
         static uint32_t getDWTMicroSec();
 };
