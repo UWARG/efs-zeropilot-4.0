@@ -1,12 +1,13 @@
 #pragma once
 
 #include "systemutils_iface.hpp"
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx_hal.h"
 #include <stdint.h>
 
 class SystemUtils : public ISystemUtils {
     public:
         SystemUtils() = default;
+        
         void delayMs(uint32_t delay_ms) override;
         uint32_t getCurrentTimestampMs() override;
 
@@ -16,4 +17,5 @@ class SystemUtils : public ISystemUtils {
         void profilerEnd(uint8_t id) override;
 
         static void dwtInit();
+        static uint32_t getDWTMicroSec();
 };
