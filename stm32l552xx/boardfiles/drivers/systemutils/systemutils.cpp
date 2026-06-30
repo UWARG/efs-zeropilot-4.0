@@ -19,7 +19,7 @@ uint32_t SystemUtils::getCurrentTimestampMs() {
     return (osKernelGetTickCount() * 1000) / osKernelGetTickFreq();
 }
 
-void dwtInit() {
+void SystemUtils::dwtInit() {
     if (DWT->CTRL & DWT_CTRL_CYCCNTENA_Msk) return; // DWT is already running
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     DWT->CYCCNT = 0;
