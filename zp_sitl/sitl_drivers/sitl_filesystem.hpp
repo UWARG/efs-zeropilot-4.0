@@ -46,6 +46,68 @@ public:
         return FILE_STATUS_OK;
     }
 
+    FileStatus_e write(ManId_e id, File* fp, const void* buff, uint32_t btw,
+                       uint32_t* bw, ReqOptions_e options = ReqOptions_e::ASYNC) override {
+        (void)id;
+        (void)options;
+        if (!fp || !buff) return FILE_STATUS_ERROR;
+        FileHandle* file = getFileHandle(fp);
+        if (!file) return FILE_STATUS_ERROR;
+
+        size_t bytes_written = std::fwrite(buff, 1, btw, file);
+        if (bw) *bw = static_cast<uint32_t>(bytes_written);
+
+        if (std::ferror(file)) return FILE_STATUS_ERROR;
+        return FILE_STATUS_OK;
+    }
+
+    FileStatus_e writeAndSync(ManId_e id, File* fp, const void* buff, uint32_t btw,
+                              ReqOptions_e options = ReqOptions_e::ASYNC) override {
+        FileStatus_e status = write(id, fp, buff, btw, nullptr, options);
+        if (status != FILE_STATUS_OK) return status;
+        return sync(id, fp, options);
+    }
+
+    FileStatus_e sync(ManId_e id, File* fp,
+                      ReqOptions_e options = ReqOptions_e::ASYNC) override {
+        (void)id;
+        (void)options;
+        if (!fp) return FILE_STATUS_ERROR;
+        FileHandle* file = getFileHandle(fp);
+        if (!file) return FILE_STATUS_ERROR;
+
+        if (std::fflush(file) != 0) return FILE_STATUS_ERROR;
+        return FILE_STATUS_OK;
+    }
+
+    FileStatus_e mkdir(const char* path) override {
+        if (!path) return FILE_STATUS_ERROR;
+        if (PLATFORM_MKDIR(path) != 0) return FILE_STATUS_ERROR;
+        return FILE_STATUS_OK;
+    }
+
+    FileStatus_e stat(const char* path, FileInfo_t* fno) override {
+        if (!path || !fno) return FILE_STATUS_ERROR;
+
+        struct stat st;
+        if (::stat(path, &st) != 0) return FILE_STATUS_ERROR;
+
+        fno->size = static_cast<uint64_t>(st.st_size);
+        fno->isDir = S_ISDIR(st.st_mode) ? 1 : 0;
+        std::strncpy(fno->name, path, 255);
+        fno->name[255] = '\0';
+
+        return FILE_STATUS_OK;
+    }
+
+    bool available() override {
+        // The host filesystem is always mounted/usable in SITL.
+        return true;
+    }
+
+    // ---- SITL-only helpers (not part of IFileSystem) ------------------------
+
+    /* TODO: Verify for later PR
     FileStatus_e close(File* fp) override {
         if (!fp) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
@@ -63,18 +125,6 @@ public:
         
         size_t bytes_read = std::fread(buff, 1, btr, file);
         if (br) *br = static_cast<uint32_t>(bytes_read);
-        
-        if (std::ferror(file)) return FILE_STATUS_ERROR;
-        return FILE_STATUS_OK;
-    }
-
-    FileStatus_e write(File* fp, const void* buff, uint32_t btw, uint32_t* bw) override {
-        if (!fp || !buff) return FILE_STATUS_ERROR;
-        FileHandle* file = getFileHandle(fp);
-        if (!file) return FILE_STATUS_ERROR;
-        
-        size_t bytes_written = std::fwrite(buff, 1, btw, file);
-        if (bw) *bw = static_cast<uint32_t>(bytes_written);
         
         if (std::ferror(file)) return FILE_STATUS_ERROR;
         return FILE_STATUS_OK;
@@ -124,21 +174,6 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus_e sync(File* fp) override {
-        if (!fp) return FILE_STATUS_ERROR;
-        FileHandle* file = getFileHandle(fp);
-        if (!file) return FILE_STATUS_ERROR;
-        
-        if (std::fflush(file) != 0) return FILE_STATUS_ERROR;
-        return FILE_STATUS_OK;
-    }
-
-    FileStatus_e mkdir(const char* path) override {
-        if (!path) return FILE_STATUS_ERROR;
-        if (PLATFORM_MKDIR(path) != 0) return FILE_STATUS_ERROR;
-        return FILE_STATUS_OK;
-    }
-
     FileStatus_e unlink(const char* path) override {
         if (!path) return FILE_STATUS_ERROR;
         if (std::remove(path) != 0) return FILE_STATUS_ERROR;
@@ -148,20 +183,6 @@ public:
     FileStatus_e rename(const char* path_old, const char* path_new) override {
         if (!path_old || !path_new) return FILE_STATUS_ERROR;
         if (std::rename(path_old, path_new) != 0) return FILE_STATUS_ERROR;
-        return FILE_STATUS_OK;
-    }
-
-    FileStatus_e stat(const char* path, FileInfo_t* fno) override {
-        if (!path || !fno) return FILE_STATUS_ERROR;
-        
-        struct stat st;
-        if (::stat(path, &st) != 0) return FILE_STATUS_ERROR;
-        
-        fno->size = static_cast<uint64_t>(st.st_size);
-        fno->isDir = S_ISDIR(st.st_mode) ? 1 : 0;
-        std::strncpy(fno->name, path, 255);
-        fno->name[255] = '\0';
-        
         return FILE_STATUS_OK;
     }
 
@@ -197,4 +218,5 @@ public:
         if (!file) return nullptr;
         return std::fgets(buff, len, file);
     }
+    */
 };
