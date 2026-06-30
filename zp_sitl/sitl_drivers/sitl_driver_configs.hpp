@@ -2,6 +2,8 @@
 #include <cstdint>
 
 namespace SITL_Driver_Configs {
+    static constexpr uint32_t SITL_DRIVER_UPDATE_RATE_HZ = 1000; // 1 kHz update rate for all SITL drivers
+
     struct SITL_GPS_Config {
         static constexpr uint8_t NUM_SATELLITES = 12; // Number of satellites in view
     };
