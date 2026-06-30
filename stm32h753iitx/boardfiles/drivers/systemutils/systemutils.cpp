@@ -64,8 +64,14 @@ void SystemUtils::profilerGetAll(TaskProfile* out, uint8_t* count) {
 // So flip the order here, divided then mod instead of mod then divide
 // Calculate the cycle count in 64 bits (big enough so DWT dont wrap in 32 bits), divide to make it in microsec, then let uint32_t cast it, so the us value wraps at 2^32 = 71 mins
 uint32_t SystemUtils::getDWTMicroSec() {
+    const uint32_t PRIMASK = __get_PRIMASK();
+    __disable_irq();
+
     uint32_t now = DWT->CYCCNT;
     microSecAccumCyc += (uint32_t)(now - microSecLastCyc);
     microSecLastCyc = now;
+
+    __set_PRIMASK(PRIMASK);
+
     return (uint32_t)(microSecAccumCyc / (SystemCoreClock / 1000000U));
 }

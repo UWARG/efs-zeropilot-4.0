@@ -13,8 +13,7 @@ class FusedIMU : public IIMU {
 
         ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override;
         
-        // Called in HAL_SPI_TxRxCpltCallback
-        void txRxCallback();
+        void txRxCallback(); // Called in HAL_SPI_TxRxCpltCallback
 
         SPI_HandleTypeDef *getSPI();
 
