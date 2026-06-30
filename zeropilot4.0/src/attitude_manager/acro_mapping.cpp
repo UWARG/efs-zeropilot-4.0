@@ -77,7 +77,7 @@ RCMotorControlMessage_t ACROMapping::runControl(RCMotorControlMessage_t controlI
     float pitchRateMeasured = droneState.pitchRate;
     float yawRateMeasured = droneState.yawRate;
 
-    // // Run PID, outputs control effort in [-1,1]
+    // Run PID, outputs control effort in [-1,1]
     controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
     controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
     controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
