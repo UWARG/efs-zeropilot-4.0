@@ -20,17 +20,23 @@ class IMU : public IIMU {
 		void txRxCallback(); // Called in HAL_SPI_TxRxCpltCallback
 	
 		SPI_HandleTypeDef *getSPI();
+		bool getDmaFlag();
 
+		void beginRead();
+		RawImuBatch_t getBatch();
+		
+		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
+		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
+		static constexpr uint8_t MAX_PACKETS = 128; // User defined max packet reads per batch, has to be <= FIFO_HW_MAX_PACKETS
+		
 	private:
 		SPI_HandleTypeDef *spi;
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
-
-		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
-		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
+		
 		static constexpr uint8_t PACKET_SIZE = 16;
-		static constexpr uint8_t MAX_PACKETS = 128;
-		static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1; 
+		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit
+		static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1;
 
 		typedef enum
 		{
@@ -38,8 +44,8 @@ class IMU : public IIMU {
 			DATA
 		} RxStates_e;
 
-		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE];							  // First bit should be 1 for register read
-		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE];							  // First byte is dummy, rest are data received
+		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE]; // First bit should be 1 for register read
+		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE]; // First byte is dummy, rest are data received
 		volatile RxStates_e rxFlag = COUNT;
 		volatile bool dmaDone = true; // True so can kick off first transfer
 		uint8_t currRegisterBank = 5; // Invalid initial state
@@ -62,7 +68,6 @@ class IMU : public IIMU {
 		void flushFIFO();
 		void dmaTransfer();
 		
-		
 		// Configuration
 		void setLowNoiseMode();
 		void setFIFO();
@@ -74,27 +79,4 @@ class IMU : public IIMU {
 		// Internal variables
 		float alpha;
 		float filteredGyro[3];
-
-		// TODO: below code needs to be tested and verified
-		/*
-		// Calibration
-		void calibrateGyro();
-		void calibrateAccel();
-
-		// Configuration
-		void setAccelFS(uint8_t fssel);
-		void setGyroFS(uint8_t fssel);
-
-		// Filtering
-		void configureNotchFilter();
-		void setAntiAliasFilter(uint16_t bandwidth_hz, bool accel_enable, bool gyro_enable);
-
-		// Internal variables
-		float _gyroScale;
-		float _accelScale;
-		uint8_t _gyroFS;
-		uint8_t _accelFS;
-		float _gyrB[3]; // Currently not used to correct readings
-		float _accB[3]; // Currently not used to correct readings
-		*/
 };

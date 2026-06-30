@@ -39,5 +39,4 @@ class FusedIMU : public IIMU {
 
         uint32_t lastEmittedTimestamp = 0;
         bool haveEmitted = false;
-
 };

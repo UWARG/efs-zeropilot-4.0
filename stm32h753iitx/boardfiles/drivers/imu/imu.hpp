@@ -44,8 +44,8 @@ class IMU : public IIMU {
 			DATA
 		} RxStates_e;
 
-		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE];							  // First bit should be 1 for register read
-		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE];							  // First byte is dummy, rest are data received
+		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE]; // First bit should be 1 for register read
+		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE]; // First byte is dummy, rest are data received
 		volatile RxStates_e rxFlag = COUNT;
 		volatile bool dmaDone = true; // True so can kick off first transfer
 		uint8_t currRegisterBank = 5; // Invalid initial state
@@ -74,32 +74,9 @@ class IMU : public IIMU {
 		
 		// Processing and filtering
 		void processRawData();
-		float lowPassFilter(float rawValue, int select);		
+		float lowPassFilter(float rawValue, int select);
 
 		// Internal variables
 		float alpha;
 		float filteredGyro[3];
-
-		// TODO: below code needs to be tested and verified
-		/*
-		// Calibration
-		void calibrateGyro();
-		void calibrateAccel();
-
-		// Configuration
-		void setAccelFS(uint8_t fssel);
-		void setGyroFS(uint8_t fssel);
-
-		// Filtering
-		void configureNotchFilter();
-		void setAntiAliasFilter(uint16_t bandwidth_hz, bool accel_enable, bool gyro_enable);
-
-		// Internal variables
-		float _gyroScale;
-		float _accelScale;
-		uint8_t _gyroFS;
-		uint8_t _accelFS;
-		float _gyrB[3]; // Currently not used to correct readings
-		float _accB[3]; // Currently not used to correct readings
-		*/
 };
