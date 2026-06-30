@@ -105,7 +105,7 @@ void testFileSystemWrite(SITL_FileSystem* fs) {
 
     FileInfo_t info = {};
     fs->stat(testFile, &info);
-    printf("[TEST_WRITE] File size: %llu, isDir: %d\n", info.size, info.isDir);
+    printf("[TEST_WRITE] File size: %lu, isDir: %d\n", info.size, info.isDir);
 }
 
 /* TODO: Verify for later PR
@@ -306,7 +306,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->am = new AttitudeManager(
             self->sysUtils, self->gps, self->imu,
-            self->amQueue, self->tmQueue, self->logQueue,
+            self->amQueue, self->tmQueue,
             &self->motorGroup
         );
         
