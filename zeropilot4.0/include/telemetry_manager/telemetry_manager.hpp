@@ -26,7 +26,7 @@ class TelemetryManager {
   private:
     ISystemUtils *systemUtilsDriver;                        // System Utils Driver
     ITelemLink *telemLinkDriver;                            // Driver used to actually send mavlink messages
-    ITelemLink *telemLinkUsbDriver;                         // usbDriver used to actually send mavlink messages
+    ITelemLink *telemLinkVirtualComDriver;                         // usbDriver used to actually send mavlink messages
     IMessageQueue<TMMessage_t> *tmTXQueueDriver;            // Driver that receives messages from other managers
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;   // Driver that currently is only used to set arm/disarm
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
@@ -49,7 +49,7 @@ class TelemetryManager {
     uint8_t profilerId;
     
   public:
-    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, ITelemLink *telemLinkUsbDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
+    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, ITelemLink *telemLinkVirtualComDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();
 
     void tmUpdate();

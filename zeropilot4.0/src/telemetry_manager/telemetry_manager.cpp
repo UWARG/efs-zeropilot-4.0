@@ -7,14 +7,14 @@
 TelemetryManager::TelemetryManager(
     ISystemUtils *systemUtilsDriver,
     ITelemLink *telemLinkDriver,
-    ITelemLink *telemLinkUsbDriver,
+    ITelemLink *telemLinkVirtualComDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
-    telemLinkUsbDriver(telemLinkUsbDriver),
+    telemLinkVirtualComDriver(telemLinkVirtualComDriver),
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
@@ -174,7 +174,7 @@ void TelemetryManager::transmit() {
     }
 
     telemLinkDriver->transmit(txBuffer, txBufIdx);
-    telemLinkUsbDriver->transmit(txBuffer, txBufIdx);
+    telemLinkVirtualComDriver->transmit(txBuffer, txBufIdx);
 }
 
 void TelemetryManager::receive() {
