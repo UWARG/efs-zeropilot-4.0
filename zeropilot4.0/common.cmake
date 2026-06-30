@@ -14,6 +14,7 @@ set(AM_INC
 # system manager files
 set(SM_SRC
     "src/system_manager/system_manager.cpp"
+    "src/system_manager/logger.cpp"
     "src/system_manager/sm_param_setup.cpp"
 )
 set(SM_INC
@@ -28,6 +29,14 @@ set(TM_SRC
 set(TM_INC
     "include/telemetry_manager/"
     "include/thread_msgs/"
+)
+
+# external memory manager files
+set(EXMEM_SRC
+    "src/exmem_manager/exmem_manager.cpp"
+)
+set(EXMEM_INC
+    "include/exmem_manager/"
 )
 
 # zp param files
@@ -48,6 +57,7 @@ set(ZP_SRC
     ${AM_SRC}
     ${SM_SRC}
     ${TM_SRC}
+    ${EXMEM_SRC}
     ${ZP_PARAM_SRC}
 )
 set(ZP_INC
@@ -56,5 +66,6 @@ set(ZP_INC
     ${AM_INC}
     ${SM_INC}
     ${TM_INC}
+    ${EXMEM_INC}
     ${ZP_PARAM_INC}
 )

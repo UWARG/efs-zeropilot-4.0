@@ -5,14 +5,13 @@
 #include "attitude_manager.hpp"
 #include "sitl_drivers/sitl_systemutils.hpp"
 #include "sitl_drivers/sitl_iwdg.hpp"
-#include "sitl_drivers/sitl_logger.hpp"
+#include "sitl_drivers/sitl_filesystem.hpp"
 #include "sitl_drivers/sitl_rc.hpp"
 #include "sitl_drivers/sitl_powermodule.hpp"
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
-#include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
 #include <functional>
 #include <string>
@@ -50,11 +49,10 @@ typedef struct {
     SITL_SystemUtils* sysUtils;
     SITL_Queue<RCMotorControlMessage_t>* amQueue;
     SITL_Queue<TMMessage_t>* tmQueue;
-    SITL_LogQueue* logQueue;
     SITL_Queue<mavlink_message_t>* mavlinkQueue;
     
     SITL_IWDG* iwdg;
-    SITL_Logger* logger;
+    SITL_FileSystem* fileSystem;
     SITL_RC* rc;
     SITL_PowerModule* pm;
     SITL_TELEM* telem;
@@ -78,10 +76,9 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->sysUtils;
     delete self->amQueue;
     delete self->tmQueue;
-    delete self->logQueue;
     delete self->mavlinkQueue;
     delete self->iwdg;
-    delete self->logger;
+    delete self->fileSystem;
     delete self->rc;
     delete self->pm;
     delete self->telem;
@@ -90,6 +87,135 @@ static void ZP_dealloc(ZPObject* self) {
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
+
+// Filesystem tests
+#include <cstdio>
+
+void testFileSystemWrite(SITL_FileSystem* fs) {
+    const char* testDir = "test_fs_1";
+    const char* testFile = "test_fs_1/test.txt";
+
+    fs->mkdir(testDir);
+
+    File testFp = {};
+    fs->open(&testFp, testFile, "w");
+    fs->write(ManId_e::SYSTEM, &testFp, "Hello World\n", 12, nullptr);
+    fs->write(ManId_e::SYSTEM, &testFp, "Line 2\n", 7, nullptr);
+    fs->sync(ManId_e::SYSTEM, &testFp);
+
+    FileInfo_t info = {};
+    fs->stat(testFile, &info);
+    printf("[TEST_WRITE] File size: %lu, isDir: %d\n", info.size, info.isDir);
+}
+
+/* TODO: Verify for later PR
+void testFileSystemRead(SITL_FileSystem* fs) {
+    const char* testFile = "test_fs_1/test.txt";
+
+    File testFp = {};
+    fs->open(&testFp, testFile, "r");
+    uint32_t bytesRead = 0;
+    char buffer[256] = {};
+    fs->read(&testFp, buffer, 256, &bytesRead);
+    printf("[TEST_READ] Read %u bytes: %s", bytesRead, buffer);
+    fs->close(&testFp);
+}
+void testFileSystemSeekTell(IFileSystem* fs) {
+    const char* testDir = "test_fs_2";
+    const char* testFile = "test_fs_2/test.txt";
+    
+    fs->mkdir(testDir);
+    
+    File testFp = {};
+    fs->open(&testFp, testFile, "w");
+    fs->write(&testFp, "Hello World\n", 12, nullptr);
+    fs->close(&testFp);
+    
+    fs->open(&testFp, testFile, "r+");
+    uint64_t pos = 0;
+    fs->tell(&testFp, &pos);
+    printf("[TEST_SEEK_TELL] Initial position: %llu\n", pos);
+    
+    fs->lseek(&testFp, 6);
+    fs->tell(&testFp, &pos);
+    printf("[TEST_SEEK_TELL] Position after lseek(6): %llu\n", pos);
+    
+    fs->rewind(&testFp);
+    fs->tell(&testFp, &pos);
+    printf("[TEST_SEEK_TELL] Position after rewind: %llu\n", pos);
+    
+    fs->close(&testFp);
+}
+void testFileSystemStringIO(IFileSystem* fs) {
+    const char* testDir = "test_fs_3";
+    const char* testFile = "test_fs_3/test.txt";
+    
+    fs->mkdir(testDir);
+    
+    File testFp = {};
+    fs->open(&testFp, testFile, "w");
+    fs->putc('A', &testFp);
+    fs->puts(" test string\n", &testFp);
+    fs->printf(&testFp, "Printf test: %d\n", 42);
+    fs->close(&testFp);
+    
+    fs->open(&testFp, testFile, "r");
+    char lineBuf[256] = {};
+    fs->gets(lineBuf, 256, &testFp);
+    printf("[TEST_STRING_IO] Got line: %s", lineBuf);
+    fs->gets(lineBuf, 256, &testFp);
+    printf("[TEST_STRING_IO] Got line: %s", lineBuf);
+    fs->close(&testFp);
+}
+void testFileSystemRenameTruncate(IFileSystem* fs) {
+    const char* testDir = "test_fs_4";
+    const char* testFile = "test_fs_4/test.txt";
+    const char* testFileRenamed = "test_fs_4/test_renamed.txt";
+    
+    fs->mkdir(testDir);
+    
+    File testFp = {};
+    fs->open(&testFp, testFile, "w");
+    fs->write(&testFp, "Hello World Test Data\n", 22, nullptr);
+    fs->close(&testFp);
+    
+    FileInfo_t info = {};
+    fs->stat(testFile, &info);
+    printf("[TEST_RENAME_TRUNC] Original file size: %llu\n", info.size);
+    
+    fs->rename(testFile, testFileRenamed);
+    
+    fs->open(&testFp, testFileRenamed, "r+");
+    fs->lseek(&testFp, 5);
+    fs->truncate(&testFp);
+    fs->close(&testFp);
+    
+    fs->stat(testFileRenamed, &info);
+    printf("[TEST_RENAME_TRUNC] After truncate at 5: %llu\n", info.size);
+}
+void testFileSystemUnlink(IFileSystem* fs) {
+    const char* testDir = "test_fs_5";
+    const char* testFile = "test_fs_5/test.txt";
+    
+    fs->mkdir(testDir);
+    
+    File testFp = {};
+    fs->open(&testFp, testFile, "w");
+    fs->write(&testFp, "Data to delete\n", 15, nullptr);
+    fs->close(&testFp);
+    
+    FileInfo_t info = {};
+    fs->stat(testFile, &info);
+    printf("[TEST_UNLINK] Created file with size: %llu\n", info.size);
+    
+    fs->unlink(testFile);
+    printf("[TEST_UNLINK] File deleted\n");
+    
+    fs->unlink(testDir);
+    printf("[TEST_UNLINK] Directory deleted\n");
+}
+*/
+
 
 static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
     const char* ip = nullptr;
@@ -109,11 +235,10 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->sysUtils = new SITL_SystemUtils();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
         self->tmQueue = new SITL_Queue<TMMessage_t>();
-        self->logQueue = new SITL_LogQueue();
         self->mavlinkQueue = new SITL_Queue<mavlink_message_t>();
         
         self->iwdg = new SITL_IWDG();
-        self->logger = new SITL_Logger();
+        self->fileSystem = new SITL_FileSystem();
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
@@ -171,8 +296,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
-            self->amQueue, self->tmQueue, self->logQueue
+            self->sysUtils, self->iwdg, self->fileSystem, self->rc, self->pm,
+            self->amQueue, self->tmQueue
         );
         
         self->tm = new TelemetryManager(
@@ -181,7 +306,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->am = new AttitudeManager(
             self->sysUtils, self->gps, self->imu,
-            self->amQueue, self->tmQueue, self->logQueue,
+            self->amQueue, self->tmQueue,
             &self->motorGroup
         );
         
@@ -189,6 +314,14 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->smCounter = 0;
         self->tmCounter = 0;
         self->amCounter = 0;
+
+        testFileSystemWrite(self->fileSystem);
+        // TODO: Verify for later PR
+        // testFileSystemRead(self->fileSystem);
+        // testFileSystemSeekTell(self->fileSystem);
+        // testFileSystemStringIO(self->fileSystem);
+        // testFileSystemRenameTruncate(self->fileSystem);
+        // testFileSystemUnlink(self->fileSystem);
     }
     return (PyObject*)self;
 }

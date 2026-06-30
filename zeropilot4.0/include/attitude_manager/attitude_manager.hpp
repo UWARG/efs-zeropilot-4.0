@@ -32,7 +32,6 @@ class AttitudeManager {
             IIMU *imuDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue,
             MotorGroupInstance_t *mainMotorGroup
         );
 
@@ -48,7 +47,6 @@ class AttitudeManager {
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
         IMessageQueue<TMMessage_t> *tmQueue;
-        IMessageQueue<char[100]> *smLoggerQueue;
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)

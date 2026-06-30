@@ -2,6 +2,7 @@
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
+#include "logger.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -9,7 +10,6 @@ AttitudeManager::AttitudeManager(
     IIMU *imuDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue,
     MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
@@ -17,7 +17,6 @@ AttitudeManager::AttitudeManager(
     imuDriver(imuDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
-    smLoggerQueue(smLoggerQueue),
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
@@ -35,18 +34,16 @@ AttitudeManager::AttitudeManager(
     haveLastImuTimestamp(false),
     profilerId(0),
     paramSetup(this){
+        paramSetup.loadAllParams();
+        paramSetup.bindAllParamCallbacks();
 
-    paramSetup.loadAllParams();
-    paramSetup.bindAllParamCallbacks();
+        // Activate the activeCLAW
+        activeCLAW->activateFlightMode();
 
-    // Activate the activeCLAW
-    activeCLAW->activateFlightMode();
-
-    systemUtilsDriver->profilerRegister("AM", &profilerId);
+        systemUtilsDriver->profilerRegister("AM", &profilerId);
 }
 
 void AttitudeManager::amUpdate() {
-
     systemUtilsDriver->profilerBegin(profilerId);
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
@@ -116,8 +113,7 @@ void AttitudeManager::amUpdate() {
             outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
-              char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
+              Logger::log("Failsafe triggered", LogLevel_e::LOG_WARN);
               failsafeTriggered = true;
             }
 
@@ -127,8 +123,7 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
+          Logger::log("Motor control restored", LogLevel_e::LOG_INFO);
           failsafeTriggered = false;
         }
     }
