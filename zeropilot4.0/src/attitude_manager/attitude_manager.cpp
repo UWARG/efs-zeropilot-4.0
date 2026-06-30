@@ -113,7 +113,7 @@ void AttitudeManager::amUpdate() {
             outputToMotors(motorOutputs);
 
             if (!failsafeTriggered) {
-              Logger::log("Failsafe triggered", LogLevel::LOG_WARN);
+              Logger::log("Failsafe triggered", LogLevel_e::LOG_WARN);
               failsafeTriggered = true;
             }
 
@@ -123,7 +123,7 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          Logger::log("Motor control restored", LogLevel::LOG_INFO);
+          Logger::log("Motor control restored", LogLevel_e::LOG_INFO);
           failsafeTriggered = false;
         }
     }

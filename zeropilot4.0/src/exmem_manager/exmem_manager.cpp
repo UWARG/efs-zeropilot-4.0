@@ -5,7 +5,7 @@ ExMemManager::ExMemManager(
     IFileSystemBackend *backend,
     IMessageQueue<ExMemReqMsg> *reqQueue,
     IMessageQueue<ExMemReqBuff> *buffQueue,
-    IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]
+    IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId_e::COUNT)]
 ) :
     systemUtilsDriver(systemUtilsDriver),
     backend(backend),
@@ -30,10 +30,10 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
         respMsg.type = reqMsg.type;
 
         switch (reqMsg.type) {
-            case ReqType::WRITE:
-            case ReqType::WRITE_SYNC: {
+            case ReqType_e::WRITE:
+            case ReqType_e::WRITE_SYNC: {
                 ExMemReqBuff writeBuffMsg;
-                int totalSize = reqMsg.total_size;
+                int totalSize = reqMsg.totalSize;
                 while (totalSize > 0) {
                     if (bufferQueue->count() == 0) {
                         respMsg.status = FILE_STATUS_ERROR; // No buffer available for write operation
@@ -48,29 +48,29 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                     totalSize -= bytesWritten;
                 }
                 respMsg.status = (respMsg.status == FILE_STATUS_OK && totalSize <= 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
-                respMsg.data.bytes_transferred = reqMsg.total_size - totalSize;
-                if (respMsg.status == FILE_STATUS_OK && reqMsg.type == ReqType::WRITE_SYNC) {
+                respMsg.data.bytesTransferred = reqMsg.totalSize - totalSize;
+                if (respMsg.status == FILE_STATUS_OK && reqMsg.type == ReqType_e::WRITE_SYNC) {
                     respMsg.status = backend->syncFile(reqMsg.fp);
                 }
                 break;
             }
-            case ReqType::SYNC: {
+            case ReqType_e::SYNC: {
                 respMsg.status = backend->syncFile(reqMsg.fp);
                 break;
             }
             /* TODO: Verify in later PR
-            case ReqType::LSEEK: {
+            case ReqType_e::LSEEK: {
                 respMsg.status = backend->seekFile(reqMsg.fp, reqMsg.offset);
                 break;
             }
-            case ReqType::TELL: {
+            case ReqType_e::TELL: {
                 respMsg.data.position = backend->tellFile(reqMsg.fp);
                 respMsg.status = FILE_STATUS_OK; // tell doesn't return a result code
                 break;
             }
-            case ReqType::WRITE_SEEK: {
+            case ReqType_e::WRITE_SEEK: {
                 respMsg.status = backend->seekFile(reqMsg.fp, reqMsg.offset);
-                int totalSize = reqMsg.total_size;
+                int totalSize = reqMsg.totalSize;
                 if (respMsg.status == FILE_STATUS_OK) {
                     ExMemReqBuff writeBuffMsg;
                     while (totalSize > 0) {
@@ -87,7 +87,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                         totalSize -= bytesWritten;
                     }
                     respMsg.status = (respMsg.status == FILE_STATUS_OK && totalSize <= 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
-                    respMsg.data.bytes_transferred = reqMsg.total_size - totalSize;
+                    respMsg.data.bytesTransferred = reqMsg.totalSize - totalSize;
                 } else {
                     while (totalSize > 0) {
                         if (bufferQueue->count() == 0) {

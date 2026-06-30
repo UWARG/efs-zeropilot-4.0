@@ -23,20 +23,20 @@ private:
     // Helper to get FILE* from File struct
     static FileHandle* getFileHandle(File* fp) {
         if (!fp) return nullptr;
-        return *reinterpret_cast<FileHandle**>(&fp->_storage[0]);
+        return *reinterpret_cast<FileHandle**>(&fp->storage[0]);
     }
     
     // Helper to set FILE* in File struct
     static void setFileHandle(File* fp, FileHandle* handle) {
         if (!fp) return;
-        *reinterpret_cast<FileHandle**>(&fp->_storage[0]) = handle;
+        *reinterpret_cast<FileHandle**>(&fp->storage[0]) = handle;
     }
 
 public:
     SITL_FileSystem() = default;
     ~SITL_FileSystem() = default;
 
-    FileStatus open(File* fp, const char* path, const char* mode) override {
+    FileStatus_e open(File* fp, const char* path, const char* mode) override {
         if (!fp || !path || !mode) return FILE_STATUS_ERROR;
         
         FileHandle* file = std::fopen(path, mode);
@@ -46,7 +46,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus close(File* fp) override {
+    FileStatus_e close(File* fp) override {
         if (!fp) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -56,7 +56,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus read(File* fp, void* buff, uint32_t btr, uint32_t* br) override {
+    FileStatus_e read(File* fp, void* buff, uint32_t btr, uint32_t* br) override {
         if (!fp || !buff) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -68,7 +68,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus write(File* fp, const void* buff, uint32_t btw, uint32_t* bw) override {
+    FileStatus_e write(File* fp, const void* buff, uint32_t btw, uint32_t* bw) override {
         if (!fp || !buff) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -80,7 +80,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus lseek(File* fp, uint64_t ofs) override {
+    FileStatus_e lseek(File* fp, uint64_t ofs) override {
         if (!fp) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -91,7 +91,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus truncate(File* fp) override {
+    FileStatus_e truncate(File* fp) override {
         if (!fp) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -103,7 +103,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus rewind(File* fp) override {
+    FileStatus_e rewind(File* fp) override {
         if (!fp) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -112,7 +112,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus tell(File* fp, uint64_t* position) override {
+    FileStatus_e tell(File* fp, uint64_t* position) override {
         if (!fp || !position) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -124,7 +124,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus sync(File* fp) override {
+    FileStatus_e sync(File* fp) override {
         if (!fp) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
@@ -133,25 +133,25 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus mkdir(const char* path) override {
+    FileStatus_e mkdir(const char* path) override {
         if (!path) return FILE_STATUS_ERROR;
         if (PLATFORM_MKDIR(path) != 0) return FILE_STATUS_ERROR;
         return FILE_STATUS_OK;
     }
 
-    FileStatus unlink(const char* path) override {
+    FileStatus_e unlink(const char* path) override {
         if (!path) return FILE_STATUS_ERROR;
         if (std::remove(path) != 0) return FILE_STATUS_ERROR;
         return FILE_STATUS_OK;
     }
 
-    FileStatus rename(const char* path_old, const char* path_new) override {
+    FileStatus_e rename(const char* path_old, const char* path_new) override {
         if (!path_old || !path_new) return FILE_STATUS_ERROR;
         if (std::rename(path_old, path_new) != 0) return FILE_STATUS_ERROR;
         return FILE_STATUS_OK;
     }
 
-    FileStatus stat(const char* path, FileInfo* fno) override {
+    FileStatus_e stat(const char* path, FileInfo_t* fno) override {
         if (!path || !fno) return FILE_STATUS_ERROR;
         
         struct stat st;

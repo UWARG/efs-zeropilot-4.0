@@ -51,7 +51,7 @@ void SystemManager::smUpdate() {
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
-            Logger::log("RC Connected", LogLevel::LOG_INFO);
+            Logger::log("RC Connected", LogLevel_e::LOG_INFO);
             rcConnected = true;
         }
     } else {
@@ -59,7 +59,7 @@ void SystemManager::smUpdate() {
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > (ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000)) && rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
-            Logger::log("RC Disconnected", LogLevel::LOG_INFO);
+            Logger::log("RC Disconnected", LogLevel_e::LOG_INFO);
             rcConnected = false;
         }
     }
@@ -128,7 +128,7 @@ void SystemManager::smUpdate() {
                 }
             }
             #if LOG_TIMING
-            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %u us      %u hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profilerBuf);
             #endif
         }

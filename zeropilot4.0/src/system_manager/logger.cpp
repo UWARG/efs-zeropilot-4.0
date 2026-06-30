@@ -25,43 +25,43 @@ namespace Logger {
         
         // Find first available log file (0-255), default to 0 if all taken
         char filename[32];
-        FileInfo fno;
+        FileInfo_t fno;
         uint32_t fileNum = 0;
         for (uint32_t i = 0; i < 255; i++) {
-            snprintf(filename, sizeof(filename), "logs/system%lu.log", i);
+            snprintf(filename, sizeof(filename), "logs/system%u.log", i);
             if (fileSystem->stat(filename, &fno) != FILE_STATUS_OK) {
                 fileNum = i;
                 break;
             }
         }
         
-        snprintf(filename, sizeof(filename), "logs/system%lu.log", fileNum);
+        snprintf(filename, sizeof(filename), "logs/system%u.log", fileNum);
         fileSystem->open(&logFile, filename, "a");
     }
 
     
-    void log(const char* format, LogLevel level, ...) {
+    void log(const char* format, LogLevel_e level, ...) {
         if (!fileSystem || !systemUtils) return;
         
         char buffer[BUFFER_SIZE];
         
         // Add timestamp
         uint32_t ts = systemUtils->getCurrentTimestampMs() / 1000;
-        int tsLen = snprintf(buffer, 10, "%lus ", ts);
+        int tsLen = snprintf(buffer, 10, "%us ", ts);
         
         // Add log level
         const char* levelStr = "";
         switch (level) {
-            case LogLevel::LOG_DEBUG: levelStr = "DEBUG"; break;
-            case LogLevel::LOG_INFO: levelStr = "INFO"; break;
-            case LogLevel::LOG_WARN: levelStr = "WARN"; break;
-            case LogLevel::LOG_CRITICAL: levelStr = "CRITICAL"; break;
+            case LogLevel_e::LOG_DEBUG: levelStr = "DEBUG"; break;
+            case LogLevel_e::LOG_INFO: levelStr = "INFO"; break;
+            case LogLevel_e::LOG_WARN: levelStr = "WARN"; break;
+            case LogLevel_e::LOG_CRITICAL: levelStr = "CRITICAL"; break;
         }
         int levelLen = snprintf(buffer + tsLen, BUFFER_SIZE - tsLen - 1, "[%s] ", levelStr);
         
         // Add formatted message
         va_list args;
-        va_start(args, format);
+        va_start(args, level);
         int msgLen = vsnprintf(buffer + tsLen + levelLen, BUFFER_SIZE - tsLen - levelLen - 1, format, args);
         va_end(args);
         
@@ -72,12 +72,12 @@ namespace Logger {
         buffer[totalLen] = '\n';
         buffer[totalLen + 1] = '\0';
         
-        // fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
-        if (level == LogLevel::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
-            fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
+        // fileSystem->writeAndSync(ManId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
+        if (level == LogLevel_e::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
+            fileSystem->writeAndSync(ManId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount = 0;
         } else {
-            fileSystem->write(ManId::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions::ASYNC_NO_RESP);
+            fileSystem->write(ManId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount++;
         }
         newWrite = true;
@@ -85,7 +85,7 @@ namespace Logger {
     
     void sync() {
         if (fileSystem && newWrite && systemUtils->getCurrentTimestampMs() - lastSyncTime >= SYNC_PERIOD) {
-            fileSystem->sync(ManId::SYSTEM, &logFile, ReqOptions::ASYNC_NO_RESP);
+            fileSystem->sync(ManId_e::SYSTEM, &logFile, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncTime = systemUtils->getCurrentTimestampMs();
             newWrite = false;
         }

@@ -103,7 +103,7 @@ void testFileSystemWriteRead(IFileSystem* fs) {
     fs->write(&testFp, "Line 2\n", 7, nullptr);
     fs->close(&testFp);
     
-    FileInfo info = {};
+    FileInfo_t info = {};
     fs->stat(testFile, &info);
     printf("[TEST_WRITE_READ] File size: %llu, isDir: %d\n", info.size, info.isDir);
     
@@ -176,7 +176,7 @@ void testFileSystemRenameTruncate(IFileSystem* fs) {
     fs->write(&testFp, "Hello World Test Data\n", 22, nullptr);
     fs->close(&testFp);
     
-    FileInfo info = {};
+    FileInfo_t info = {};
     fs->stat(testFile, &info);
     printf("[TEST_RENAME_TRUNC] Original file size: %llu\n", info.size);
     
@@ -202,7 +202,7 @@ void testFileSystemUnlink(IFileSystem* fs) {
     fs->write(&testFp, "Data to delete\n", 15, nullptr);
     fs->close(&testFp);
     
-    FileInfo info = {};
+    FileInfo_t info = {};
     fs->stat(testFile, &info);
     printf("[TEST_UNLINK] Created file with size: %llu\n", info.size);
     

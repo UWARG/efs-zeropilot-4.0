@@ -18,30 +18,30 @@ class SDFileSystem : public IFileSystem {
         IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
 
     public:
-        SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuff> *buffQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]);
+        SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuff> *buffQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId_e::COUNT)]);
         ~SDFileSystem() override;
         
-        FileStatus init();
+        FileStatus_e init();
 
-        // Helper to convert FatFs result to FileStatus
-        static FileStatus fresultToStatus(FRESULT res);
+        // Helper to convert FatFs result to FileStatus_e
+        static FileStatus_e fresultToStatus(FRESULT res);
         
         // IFileSystem implementation
-        FileStatus open (File* fp, const char* path, const char* mode) override;
-        FileStatus mkdir (const char* path) override;
-        FileStatus write (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus write_and_sync (ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus sync (ManId id, File* fp, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus stat (const char* path, FileInfo* fno) override;					        
+        FileStatus_e open (File* fp, const char* path, const char* mode) override;
+        FileStatus_e mkdir (const char* path) override;
+        FileStatus_e write (ManId_e id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions_e options = ReqOptions_e::ASYNC) override;
+        FileStatus_e writeAndSync (ManId_e id, File* fp, const void* buff, uint32_t btw, ReqOptions_e options = ReqOptions_e::ASYNC) override;
+        FileStatus_e sync (ManId_e id, File* fp, ReqOptions_e options = ReqOptions_e::ASYNC) override;
+        FileStatus_e stat (const char* path, FileInfo_t* fno) override;					        
         bool available();									       
 
         /* TODO: Verify in later PR
-        FileStatus close (File* fp) override;
-        FileStatus read (File* fp, void* buff, uint32_t btr, uint32_t* br) override;
-        FileStatus seek_and_write (ManId id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus lseek (ManId id, File* fp, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus tell(ManId id, File* fp, uint64_t* position, ReqOptions options = ReqOptions::ASYNC) override;
-        int printf (ManId id, File* fp, ReqOptions options, const char* str, ...) override;
-        PollResult poll(ManId id, ReqType reqType) override;		
+        FileStatus_e close (File* fp) override;
+        FileStatus_e read (File* fp, void* buff, uint32_t btr, uint32_t* br) override;
+        FileStatus_e seek_and_write (ManId_e id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions_e options = ReqOptions_e::ASYNC) override;
+        FileStatus_e lseek (ManId_e id, File* fp, uint64_t ofs, ReqOptions_e options = ReqOptions_e::ASYNC) override;
+        FileStatus_e tell(ManId_e id, File* fp, uint64_t* position, ReqOptions_e options = ReqOptions_e::ASYNC) override;
+        int printf (ManId_e id, File* fp, ReqOptions_e options, const char* str, ...) override;
+        PollResult poll(ManId_e id, ReqType_e reqType) override;		
         */
 };

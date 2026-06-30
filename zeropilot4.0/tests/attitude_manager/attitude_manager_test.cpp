@@ -22,7 +22,7 @@ class AttitudeManagerTest : public ::testing::Test
 {
 protected:
     int AM_RC_FAILSAFE_ITERATIONS;
-    int logWrites = 0; // Counts Logger::log calls regardless of write or write_and_sync
+    int logWrites = 0; // Count Logger::log calls regardless of write or writeAndSync
 
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockGPS> mockGPS;
@@ -104,9 +104,9 @@ protected:
         Logger::init(&mockFileSystem, &mockSystemUtils);
 
         ON_CALL(mockFileSystem, write(_, _, _, _, _, _))
-            .WillByDefault([this](ManId, File*, const void*, uint32_t, uint32_t*, ReqOptions) { logWrites++; return FILE_STATUS_OK; });
-        ON_CALL(mockFileSystem, write_and_sync(_, _, _, _, _))
-            .WillByDefault([this](ManId, File*, const void*, uint32_t, ReqOptions) { logWrites++; return FILE_STATUS_OK; });
+            .WillByDefault([this](ManId_e, File*, const void*, uint32_t, uint32_t*, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
+        ON_CALL(mockFileSystem, writeAndSync(_, _, _, _, _))
+            .WillByDefault([this](ManId_e, File*, const void*, uint32_t, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
     }
 };
 

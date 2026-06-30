@@ -5,11 +5,11 @@
 
 class MockFileSystem : public IFileSystem {
 public:
-    MOCK_METHOD(FileStatus, open, (File* fp, const char* path, const char* mode), (override));
-    MOCK_METHOD(FileStatus, write, (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options), (override));
-    MOCK_METHOD(FileStatus, write_and_sync, (ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options), (override));
-    MOCK_METHOD(FileStatus, sync, (ManId id, File* fp, ReqOptions options), (override));
-    MOCK_METHOD(FileStatus, mkdir, (const char* path), (override));
-    MOCK_METHOD(FileStatus, stat, (const char* path, FileInfo* fno), (override));
+    MOCK_METHOD(FileStatus_e, open, (File* fp, const char* path, const char* mode), (override));
+    MOCK_METHOD(FileStatus_e, write, (ManId_e id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions_e options), (override));
+    MOCK_METHOD(FileStatus_e, writeAndSync, (ManId_e id, File* fp, const void* buff, uint32_t btw, ReqOptions_e options), (override));
+    MOCK_METHOD(FileStatus_e, sync, (ManId_e id, File* fp, ReqOptions_e options), (override));
+    MOCK_METHOD(FileStatus_e, mkdir, (const char* path), (override));
+    MOCK_METHOD(FileStatus_e, stat, (const char* path, FileInfo_t* fno), (override));
     MOCK_METHOD(bool, available, (), (override));
 };

@@ -39,7 +39,7 @@ MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
 MessageQueue<ExMemReqMsg> *sdRequestQueueHandle = nullptr;
 MessageQueue<ExMemReqBuff> *sdBufferQueueHandle = nullptr;
-IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)] = {nullptr};
+IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId_e::COUNT)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & group
@@ -105,7 +105,7 @@ void initDrivers()
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
     sdRequestQueueHandle = new MessageQueue<ExMemReqMsg>(&sdRequestQueueId);
     sdBufferQueueHandle = new MessageQueue<ExMemReqBuff>(&sdBufferQueueId);
-    for (int i = 0; i < static_cast<int>(ManId::COUNT); ++i) {
+    for (int i = 0; i < static_cast<int>(ManId_e::COUNT); ++i) {
         sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
     }
 

@@ -16,7 +16,7 @@ class ExMemManager {
             IFileSystemBackend *backend,
             IMessageQueue<ExMemReqMsg> *reqQueue,
             IMessageQueue<ExMemReqBuff> *buffQueue,
-            IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId::COUNT)]
+            IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId_e::COUNT)]
         );
 
         void emUpdate(ExMemReqMsg reqMsg);
@@ -28,7 +28,7 @@ class ExMemManager {
         IMessageQueue<ExMemReqBuff> *bufferQueue;
 
         IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
-        void clearBufferQueue(ManId id, ReqType type);
+        void clearBufferQueue(ManId_e id, ReqType_e type);
 
         uint8_t profilerId;
 };

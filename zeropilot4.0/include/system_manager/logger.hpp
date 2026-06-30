@@ -5,7 +5,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-enum class LogLevel : uint8_t {
+enum class LogLevel_e : uint8_t {
     LOG_DEBUG = 0,
     LOG_INFO,
     LOG_WARN,
@@ -15,6 +15,6 @@ enum class LogLevel : uint8_t {
 namespace Logger {
     void init(IFileSystem* fs, ISystemUtils* sysUtils);
     void shutdown();
-    void log(const char* format, LogLevel level, ...);
+    void log(const char* format, LogLevel_e level, ...);
     void sync();
 };

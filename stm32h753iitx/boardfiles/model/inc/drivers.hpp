@@ -41,7 +41,7 @@ extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
 extern MessageQueue<ExMemReqMsg> *sdRequestQueueHandle;
 extern MessageQueue<ExMemReqBuff> *sdBufferQueueHandle;
-extern IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId::COUNT)];
+extern IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId_e::COUNT)];
 
 extern MotorGroupInstance_t mainMotorGroup;
 
