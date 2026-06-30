@@ -25,25 +25,18 @@ namespace Logger {
         FileInfo fno;
         uint32_t fileNum = 0;
         for (uint32_t i = 0; i < 255; i++) {
-            snprintf(filename, sizeof(filename), "logs/system%u.log", i);
+            snprintf(filename, sizeof(filename), "logs/system%lu.log", i);
             if (fileSystem->stat(filename, &fno) != FILE_STATUS_OK) {
                 fileNum = i;
                 break;
             }
         }
         
-        snprintf(filename, sizeof(filename), "logs/system%u.log", fileNum);
+        snprintf(filename, sizeof(filename), "logs/system%lu.log", fileNum);
         fileSystem->open(&logFile, filename, "a");
     }
 
-    void shutdown() {
-        if (fileSystem) {
-            fileSystem->close(&logFile);
-        }
-        fileSystem = nullptr;
-        systemUtils = nullptr;
-    }
-
+    
     void log(const char* format, LogLevel level, ...) {
         if (!fileSystem || !systemUtils) return;
         
@@ -51,8 +44,8 @@ namespace Logger {
         
         // Add timestamp
         uint32_t ts = systemUtils->getCurrentTimestampMs() / 1000;
-        int tsLen = snprintf(buffer, 10, "%us ", ts);
-
+        int tsLen = snprintf(buffer, 10, "%lus ", ts);
+        
         // Add log level
         const char* levelStr = "";
         switch (level) {
@@ -75,7 +68,7 @@ namespace Logger {
         }
         buffer[totalLen] = '\n';
         buffer[totalLen + 1] = '\0';
-
+        
         // fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
         if (level == LogLevel::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
             fileSystem->write_and_sync(ManId::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions::ASYNC_NO_RESP);
@@ -86,7 +79,7 @@ namespace Logger {
         }
         newWrite = true;
     }
-
+    
     void sync() {
         if (fileSystem && newWrite && systemUtils->getCurrentTimestampMs() - lastSyncTime >= SYNC_PERIOD) {
             fileSystem->sync(ManId::SYSTEM, &logFile, ReqOptions::ASYNC_NO_RESP);
@@ -94,4 +87,15 @@ namespace Logger {
             newWrite = false;
         }
     }
+
+    /* TODO: Verify in later PR
+    void shutdown() {
+        if (fileSystem) {
+            fileSystem->close(&logFile);
+        }
+        fileSystem = nullptr;
+        systemUtils = nullptr;
+    }
+    */
+
 } // namespace Logger

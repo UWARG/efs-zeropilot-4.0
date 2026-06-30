@@ -2,4 +2,4 @@
 
 #include "cmsis_os2.h"
 
-void sdInitThreads();
+void emInitThreads();

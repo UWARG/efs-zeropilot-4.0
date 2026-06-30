@@ -8,6 +8,6 @@
 extern AttitudeManager *amHandle;
 extern SystemManager *smHandle;
 extern TelemetryManager *tmHandle;
-extern ExMemManager *emmHandle;
+extern ExMemManager *emHandle;
 
 void initManagers();

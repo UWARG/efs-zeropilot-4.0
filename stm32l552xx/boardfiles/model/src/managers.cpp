@@ -6,13 +6,13 @@
 alignas(AttitudeManager) static uint8_t amHandleStorage[sizeof(AttitudeManager)];
 alignas(SystemManager) static uint8_t smHandleStorage[sizeof(SystemManager)];
 alignas(TelemetryManager) static uint8_t tmHandleStorage[sizeof(TelemetryManager)];
-alignas(FatFSManager) static uint8_t ffmHandleStorage[sizeof(FatFSManager)];
+alignas(ExMemManager) static uint8_t emHandleStorage[sizeof(ExMemManager)];
 
 // Manager handles
 AttitudeManager *amHandle = nullptr;
 SystemManager *smHandle = nullptr;
 TelemetryManager *tmHandle = nullptr;
-FatFSManager *ffmHandle = nullptr;
+ExMemManager *emHandle = nullptr;
 
 void initManagers()
 {
@@ -21,9 +21,8 @@ void initManagers()
         systemUtilsHandle, 
         gpsHandle,
         imuHandle,
-        amRCQueueHandle, 
-        tmQueueHandle, 
-        smLoggerQueueHandle, 
+        amRCQueueHandle,
+        tmQueueHandle,
         &mainMotorGroup
     );
 
@@ -47,8 +46,10 @@ void initManagers()
         messageBufferHandle
     );
 
-    // FFM initialization
-    ffmHandle = new (&ffmHandleStorage) FatFSManager(
+    // EMM initialization
+    emHandle = new (&emHandleStorage) ExMemManager(
+        systemUtilsHandle,
+        fatFsBackendHandle,
         sdRequestQueueHandle,
         sdBufferQueueHandle,
         sdResponseQueuesHandle

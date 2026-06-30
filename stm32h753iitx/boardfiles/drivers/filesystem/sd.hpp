@@ -28,17 +28,20 @@ class SDFileSystem : public IFileSystem {
         
         // IFileSystem implementation
         FileStatus open (File* fp, const char* path, const char* mode) override;
+        FileStatus mkdir (const char* path) override;
+        FileStatus write (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options = ReqOptions::ASYNC) override;
+        FileStatus write_and_sync (ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options = ReqOptions::ASYNC) override;
+        FileStatus sync (ManId id, File* fp, ReqOptions options = ReqOptions::ASYNC) override;
+        FileStatus stat (const char* path, FileInfo* fno) override;					        
+        bool available();									       
+
+        /* TODO: Verify in later PR
         FileStatus close (File* fp) override;
         FileStatus read (File* fp, void* buff, uint32_t btr, uint32_t* br) override;
-        FileStatus write (ManId id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus seek_and_write (ManId id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus write_and_sync (ManId id, File* fp, const void* buff, uint32_t btw, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus lseek (ManId id, File* fp, uint64_t ofs, ReqOptions options = ReqOptions::ASYNC) override;
         FileStatus tell(ManId id, File* fp, uint64_t* position, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus sync (ManId id, File* fp, ReqOptions options = ReqOptions::ASYNC) override;
-        FileStatus mkdir (const char* path) override;
-        FileStatus stat (const char* path, FileInfo* fno) override;					        
         int printf (ManId id, File* fp, ReqOptions options, const char* str, ...) override;
         PollResult poll(ManId id, ReqType reqType) override;		
-        bool available();									       
+        */
 };

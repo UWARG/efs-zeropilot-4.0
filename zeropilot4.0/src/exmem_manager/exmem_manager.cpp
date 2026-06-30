@@ -54,6 +54,11 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                 }
                 break;
             }
+            case ReqType::SYNC: {
+                respMsg.status = backend->syncFile(reqMsg.fp);
+                break;
+            }
+            /* TODO: Verify in later PR
             case ReqType::LSEEK: {
                 respMsg.status = backend->seekFile(reqMsg.fp, reqMsg.offset);
                 break;
@@ -95,10 +100,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                 }
                 break;
             }
-            case ReqType::SYNC: {
-                respMsg.status = backend->syncFile(reqMsg.fp);
-                break;
-            }
+            */
             default: {
                 respMsg.status = FILE_STATUS_UNKNOWN; // Unknown request type
                 break;

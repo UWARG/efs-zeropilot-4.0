@@ -36,7 +36,6 @@ SystemManager::SystemManager(
 }
 
 void SystemManager::smUpdate() {
-    // Logger::log("SM Loop Test", LogLevel::LOG_DEBUG);
     Logger::sync();
 
     systemUtilsDriver->profilerBegin(profilerId);
@@ -199,7 +198,9 @@ bool SystemManager::updateBatteryFSM() {
 }
 
 SystemManager::~SystemManager() {
+    /* TODO: Verify in later PR
     Logger::shutdown();
+    */
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
