@@ -14,6 +14,9 @@ namespace Logger {
     void init(IFileSystem* fs, ISystemUtils* sysUtils) {
         fileSystem = fs;
         systemUtils = sysUtils;
+        lastSyncCount = 0;
+        lastSyncTime = 0;
+        newWrite = false;
         if (!fileSystem) return;
         if (!fileSystem->available()) return;
         
