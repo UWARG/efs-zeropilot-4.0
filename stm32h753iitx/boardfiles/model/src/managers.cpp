@@ -32,7 +32,7 @@ void initManagers()
         iwdgHandle,
         sdFileSystemHandle,
         rcHandle,
-		pmHandle,
+        pmHandle,
         amRCQueueHandle,
         tmQueueHandle
     );
