@@ -58,6 +58,7 @@ typedef struct {
     SITL_RC* rc;
     SITL_PowerModule* pm;
     SITL_TELEM* telem;
+    SITL_TELEM* telemVirtualCom;
     SITL_IMU* imu;
     SITL_GPS* gps;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
@@ -85,6 +86,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->rc;
     delete self->pm;
     delete self->telem;
+    delete self->telemVirtualCom;
     delete self->imu;
     delete self->gps;
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
@@ -117,6 +119,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
+        self->telemVirtualCom = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
@@ -176,7 +179,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->tm = new TelemetryManager(
-            self->sysUtils, self->telem, self->tmQueue, self->amQueue, self->mavlinkQueue
+            self->sysUtils, self->telem, self->telemVirtualCom, self->tmQueue, self->amQueue, self->mavlinkQueue
         );
         
         self->am = new AttitudeManager(
