@@ -88,7 +88,7 @@ void SystemManager::smUpdate() {
     }
 
     // Decode flight mode from raw value and include in custom mode for HEARTBEAT telemetry
-    PlaneFlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
+    FlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
@@ -221,13 +221,15 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.yaw = rcData.yaw;
     rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
+    #endif
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
+void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId) {   
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
 
@@ -249,7 +251,7 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
     // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
-        BATTERY_ID,
+        batteryId,
         INT16_MAX,
         voltages,
         VOLTAGE_LEN,
@@ -268,7 +270,7 @@ void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, cons
     tmQueue->push(&statusTextMsg);
 }
 
-PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
+FlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
         return flightModes[0];
     }
