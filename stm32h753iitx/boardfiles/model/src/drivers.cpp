@@ -108,6 +108,8 @@ void initDrivers()
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
+    telemLinkvirtualComHandle = new RFD(&huart8);
+    imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     pmHandle = new PowerModule(&hi2c1);
 
     // Queues
@@ -128,6 +130,7 @@ void initDrivers()
     imuHandle->init();
     telemLinkHandle->init();
     pmHandle->init();
+    if (telemLinkvirtualComHandle) telemLinkvirtualComHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {

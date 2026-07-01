@@ -9,10 +9,12 @@ TelemetryManager::TelemetryManager(
     ITelemLink *telemLinkDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
-    IMessageQueue<mavlink_message_t> *packedMsgBuffer
+    IMessageQueue<mavlink_message_t> *packedMsgBuffer,
+    ITelemLink *telemLinkVirtualComDriver
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
+    telemLinkVirtualComDriver(telemLinkVirtualComDriver),
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
     packedMsgBuffer(packedMsgBuffer),
@@ -192,6 +194,17 @@ void TelemetryManager::receive() {
             msgToRX = {};
         }
     }
+
+        // Also poll virtual COM link if present
+        if (telemLinkVirtualComDriver) {
+            const uint16_t RECEIVED_BYTES_VCOM = telemLinkVirtualComDriver->receive(rxBuffer, sizeof(rxBuffer));
+            for (uint16_t i = 0; i < RECEIVED_BYTES_VCOM; ++i) {
+                if (mavlink_parse_char(0, rxBuffer[i], &msgToRX, &status)) {
+                    processRxMsg(msgToRX);
+                    msgToRX = {};
+                }
+            }
+        }
 }
 
 void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
