@@ -98,7 +98,8 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    telemLinkvirtualComHandle = new RFD(&huart8);
+    // telemLinkvirtualComHandle = new RFD(&huart8);  // Temporarily disabled to test
+    telemLinkvirtualComHandle = nullptr;
     imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     pmHandle = new PowerModule(&hi2c1);
 
@@ -119,7 +120,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     telemLinkHandle->init();
-    telemLinkvirtualComHandle->init();
+    // telemLinkvirtualComHandle->init();  // Temporarily disabled
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {
