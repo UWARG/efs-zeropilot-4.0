@@ -192,8 +192,8 @@ void init() {
     #endif
     
     #ifdef QUADCOPTER
-    initParam(ZP_PARAM_ID::ACRO_RP_RATE, "ACRO_RP_RATE", 3.5f, MAV_PARAM_TYPE_REAL32);
-    initParam(ZP_PARAM_ID::ACRO_Y_RATE, "ACRO_Y_RATE", 3.5f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::ACRO_RP_RATE, "ACRO_RP_RATE", 200.0f, MAV_PARAM_TYPE_REAL32);
+    initParam(ZP_PARAM_ID::ACRO_Y_RATE, "ACRO_Y_RATE", 200.0f, MAV_PARAM_TYPE_REAL32);
 
     initParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(FlightMode_e::ACRO), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(FlightMode_e::ACRO), MAV_PARAM_TYPE_UINT32);

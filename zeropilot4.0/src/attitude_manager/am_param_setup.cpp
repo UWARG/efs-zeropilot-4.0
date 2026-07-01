@@ -55,9 +55,9 @@ void AMParamSetup::loadAllParams() {
         ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_TAU),
         ZP_PARAM::get(ZP_PARAM_ID::ATC_RAT_YAW_IMAX)
     );
-    am->acroCLAW.setRollLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ACRO_RP_RATE));
-    am->acroCLAW.setPitchLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ACRO_RP_RATE));
-    am->acroCLAW.setYawLimitRate(ZP_PARAM::get(ZP_PARAM_ID::ACRO_Y_RATE));
+    am->acroCLAW.setRollLimitRate(ZP_UNITS::deg2rad(ZP_PARAM::get(ZP_PARAM_ID::ACRO_RP_RATE)));
+    am->acroCLAW.setPitchLimitRate(ZP_UNITS::deg2rad(ZP_PARAM::get(ZP_PARAM_ID::ACRO_RP_RATE)));
+    am->acroCLAW.setYawLimitRate(ZP_UNITS::deg2rad(ZP_PARAM::get(ZP_PARAM_ID::ACRO_Y_RATE)));
     #endif
 
     // Servo params
@@ -304,14 +304,15 @@ bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
     return true;
 }
 bool AMParamSetup::updateRollPitchLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > ZP_UNITS::PI * 2) return false;
-    ctx->acroCLAW.setRollLimitRate(val);
-    ctx->acroCLAW.setPitchLimitRate(val);
+    if (val < 0.0f || val > 1080.0f) return false;
+    const float rateRadPerSec = ZP_UNITS::deg2rad(val);
+    ctx->acroCLAW.setRollLimitRate(rateRadPerSec);
+    ctx->acroCLAW.setPitchLimitRate(rateRadPerSec);
     return true;
 }
 bool AMParamSetup::updateYawLimitRate(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > ZP_UNITS::PI * 2) return false;
-    ctx->acroCLAW.setYawLimitRate(val);
+    if (val < 0.0f || val > 1080.0f) return false;
+    ctx->acroCLAW.setYawLimitRate(ZP_UNITS::deg2rad(val));
     return true;
 }
 #endif
