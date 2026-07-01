@@ -12,7 +12,7 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
-#include "rdf.hpp"
+#include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
 #include "dshot.hpp"
