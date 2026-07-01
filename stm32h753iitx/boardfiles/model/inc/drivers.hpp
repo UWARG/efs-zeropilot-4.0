@@ -28,6 +28,7 @@ extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern IMU *imuHandle;
 extern RFD *telemLinkHandle;
+extern RFD *telemLinkvirtualComHandle;
 extern PowerModule *pmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
