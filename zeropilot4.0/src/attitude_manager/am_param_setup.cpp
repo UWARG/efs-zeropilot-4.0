@@ -305,9 +305,9 @@ bool AMParamSetup::updatePIDYawIMax(AttitudeManager* ctx, float val) {
 }
 bool AMParamSetup::updateRollPitchLimitRate(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 1080.0f) return false;
-    const float rateRadPerSec = ZP_UNITS::deg2rad(val);
-    ctx->acroCLAW.setRollLimitRate(rateRadPerSec);
-    ctx->acroCLAW.setPitchLimitRate(rateRadPerSec);
+    const float RATE_RAD_PER_SEC = ZP_UNITS::deg2rad(val);
+    ctx->acroCLAW.setRollLimitRate(RATE_RAD_PER_SEC);
+    ctx->acroCLAW.setPitchLimitRate(RATE_RAD_PER_SEC);
     return true;
 }
 bool AMParamSetup::updateYawLimitRate(AttitudeManager* ctx, float val) {
