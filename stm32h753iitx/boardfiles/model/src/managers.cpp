@@ -43,6 +43,7 @@ void initManagers()
         telemLinkHandle,
         tmQueueHandle,
         amRCQueueHandle,
-        messageBufferHandle
+        messageBufferHandle,
+        telemLinkvirtualComHandle
     );
 }

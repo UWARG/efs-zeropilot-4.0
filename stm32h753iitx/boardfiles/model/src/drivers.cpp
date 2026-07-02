@@ -131,7 +131,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     telemLinkHandle->init();
-    pmHandle->init();
+    telemLinkvirtualComHandle->init();
     if (telemLinkvirtualComHandle) telemLinkvirtualComHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()

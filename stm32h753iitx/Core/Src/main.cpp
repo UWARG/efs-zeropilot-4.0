@@ -76,6 +76,8 @@ UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 UART_HandleTypeDef huart6;
 DMA_HandleTypeDef hdma_uart4_rx;
+DMA_HandleTypeDef hdma_uart8_rx;
+DMA_HandleTypeDef hdma_uart8_tx;
 DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
@@ -171,7 +173,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
   MX_FATFS_Init();
-  MX_IWDG1_Init();
+//  MX_IWDG1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
@@ -1206,6 +1208,12 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+  /* DMA2_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream4_IRQn);
+  /* DMA2_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream5_IRQn);
 
 }
 

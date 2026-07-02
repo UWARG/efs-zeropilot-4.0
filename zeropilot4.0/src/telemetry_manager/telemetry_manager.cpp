@@ -179,7 +179,8 @@ void TelemetryManager::transmit() {
         txBufIdx += MSG_LEN;
     }
 
-    telemLinkDriver->transmit(txBuffer, txBufIdx);
+//    telemLinkDriver->transmit(txBuffer, txBufIdx);
+    telemLinkVirtualComDriver->transmit(txBuffer, txBufIdx);
 }
 
 void TelemetryManager::receive() {

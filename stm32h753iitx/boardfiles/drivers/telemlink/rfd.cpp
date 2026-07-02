@@ -14,7 +14,8 @@ RFD::~RFD() {
 
 void RFD::transmit(const uint8_t* data, uint16_t size) {
     if (huart) {
-        HAL_UART_Transmit_DMA(huart, data, size);
+//        HAL_UART_Transmit_DMA(huart, data, size);
+    	HAL_UART_Transmit(huart, data, size, HAL_MAX_DELAY);
     }
 }
 
