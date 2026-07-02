@@ -162,9 +162,9 @@ inline TMMessage_t rcDataPack(uint32_t time_boot_ms, const float* controlSignals
     return TMMessage_t{TMMessage_t::RC_DATA, data, time_boot_ms};
 }
 
-inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, int16_t temperature, 
-                                    float *voltages, uint8_t voltage_len, int16_t current_instantaneous,
-                                    int32_t charge_accumulated, int32_t energy_consumed, int8_t battery_remaining, 
+inline TMMessage_t batteryDataPack(uint32_t time_boot_ms, uint8_t battery_id, float temperature, 
+                                    float *voltages, uint8_t voltage_len, float current_instantaneous,
+                                    float charge_accumulated, float energy_consumed, int8_t battery_remaining, 
                                     int32_t time_remaining, uint8_t charge_state) {
     
     int16_t scaledCurrentBattery = current_instantaneous * 100; // A -> cA
