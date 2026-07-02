@@ -78,7 +78,10 @@ void PowerModule::I2C_MemRxCpltCallback() {
         case 4: // read energy
             success = readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
             break;
-        case 5:
+        case 5: // read die temperature
+            readRegister(REG_DIETEMP.address, dietempData, REG_DIETEMP.byte_size, hi2c);
+            break;
+        case 6:
             callbackCount = 0;
             dataFilled = 1;
             break;
@@ -148,6 +151,10 @@ bool PowerModule::readData(PMData_t *data) {
                             ((uint64_t)energyData[2] << 16) | 
                             ((uint64_t)energyData[3] << 8) | 
                              (uint64_t)energyData[4]) * ENERGY_LSB;
+
+    // Parse die temperature from the raw data, which is a 16-bit signed value.
+    int16_t raw_dietemp = (dietempData[0] << 8) | dietempData[1];
+    processedData.temperature = raw_dietemp * DIETEMP_LSB;
 
     *data = processedData; // Copy the processed data to the output parameter
 
