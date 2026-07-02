@@ -170,15 +170,27 @@ void IMU::dmaTransfer() {
     switch (rxFlag) {
         case COUNT:
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
-            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3); // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+
+            // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+            if (HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3) != HAL_OK) {
+                csHigh();
+                dmaDone = true; // Allow next transfer to be attempted
+                rxFlag = COUNT; // Reset state to COUNT
+            }
             break;
+
         case DATA:
             fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
             if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
 
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
-            HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
+            if (HAL_SPI_TransmitReceive_DMA(_spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != HAL_OK) {
+                csHigh();
+                dmaDone = true; // Allow next transfer to be attempted
+                rxFlag = COUNT; // Reset state to COUNT
+            }
             break;
+
         default:
             break;
     }
