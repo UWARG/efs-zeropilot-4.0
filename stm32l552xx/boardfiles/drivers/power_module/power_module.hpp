@@ -12,7 +12,7 @@ struct RegInfo {
 };
 
 // INA228 I2C address (7-bit)
-static constexpr uint8_t INA228_ADDR = 0b1000101; // VS to VS
+static constexpr uint8_t INA228_ADDR = 0b1000101;
 
 // Register definitions for INA228
 static constexpr RegInfo REG_CONFIG = {0x00, 2, false}; // 16
