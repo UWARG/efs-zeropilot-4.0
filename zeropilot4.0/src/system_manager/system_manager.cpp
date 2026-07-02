@@ -251,7 +251,7 @@ void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batte
     // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
-        BATTERY_ID,
+        batteryId,
         batteryData.pmData.temperature,
         voltages,
         VOLTAGE_LEN,
