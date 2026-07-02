@@ -71,4 +71,5 @@ class PowerModule : public IPowerModule {
         uint8_t chargeData[5];
         uint8_t dietempData[2];
         volatile bool dataFilled = 0;
+        volatile bool dataInUse = 0;
 };

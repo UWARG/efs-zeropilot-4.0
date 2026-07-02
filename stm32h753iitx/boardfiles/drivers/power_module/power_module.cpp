@@ -1,4 +1,5 @@
 #include "power_module.hpp"
+#include <cstring>
 
 
 PowerModule::PowerModule(I2C_HandleTypeDef* hi2c) : hi2c(hi2c) {}
@@ -104,7 +105,7 @@ void PowerModule::I2C_ErrorCallback() {
 }
 
 void PowerModule::parse(I2C_HandleTypeDef *hi2c) {
-    if (dataFilled) return;
+    if (dataFilled || dataInUse) return;
     
     // Start the cycle
     callbackCount = 0;
@@ -118,23 +119,39 @@ bool PowerModule::readData(PMData_t *data) {
         return false;
     }
 
+    uint8_t vbus[3];
+    uint8_t current[3];
+    uint8_t power[3];
+    uint8_t energy[5];
+    uint8_t charge[5];
+    uint8_t dietemp[2];
+
+    dataInUse = true;
+    memcpy(vbus,    vbusData,    sizeof(vbus));
+    memcpy(current, currentData, sizeof(current));
+    memcpy(power,   powerData,   sizeof(power));
+    memcpy(energy,  energyData,  sizeof(energy));
+    memcpy(charge,  chargeData,  sizeof(charge));
+    memcpy(dietemp, dietempData, sizeof(dietemp));
+    dataInUse = false;
+
     // Parse VBUS from the raw data, which is a 24-bit unsigned value.
     // No sign extension or right-shift needed, since VBUS is unsigned.
-    processedData.busVoltage = (((vbusData[0] << 16) | (vbusData[1] << 8) | vbusData[2]) >> 4) * VBUS_LSB;
+    processedData.busVoltage = (((vbus[0] << 16) | (vbus[1] << 8) | vbus[2]) >> 4) * VBUS_LSB;
 
     // Parse current from the raw data, which is a 24-bit signed value.
     // Perform sign extension and right-shift to get the correct value.
-    int32_t raw_current = (currentData[0] << 24) | (currentData[1] << 16) | (currentData[2] << 8);
+    int32_t raw_current = (current[0] << 24) | (current[1] << 16) | (current[2] << 8);
     raw_current /= 256; // Arithmetic shift down to 24-bit, preserving sign
     processedData.current = (raw_current >> 4) * CURRENT_LSB;
 
     // Parse charge from the raw data, which is a 40-bit signed value.
     // Pack the 5 bytes into a 64-bit integer and perform sign extension if necessary.
-    int64_t raw_charge = (((uint64_t)chargeData[0] << 32) | 
-                          ((uint64_t)chargeData[1] << 24) |
-                          ((uint64_t)chargeData[2] << 16) | 
-                          ((uint64_t)chargeData[3] << 8) | 
-                           (uint64_t)chargeData[4]);
+    int64_t raw_charge = (((uint64_t)charge[0] << 32) | 
+                          ((uint64_t)charge[1] << 24) |
+                          ((uint64_t)charge[2] << 16) | 
+                          ((uint64_t)charge[3] << 8) | 
+                           (uint64_t)charge[4]);
     if (raw_charge & (1ULL << 39)) {
         raw_charge |= 0xFFFFFF0000000000ULL; 
     }
@@ -142,18 +159,18 @@ bool PowerModule::readData(PMData_t *data) {
 
     // Parse power from the raw data, which is a 24-bit unsigned value.
     // No sign extension or right-shift needed, since power is unsigned.
-    processedData.power = ((powerData[0] << 16) | (powerData[1] << 8) | powerData[2]) * POWER_LSB;
+    processedData.power = ((power[0] << 16) | (power[1] << 8) | power[2]) * POWER_LSB;
 
     // Parse energy from the raw data, which is a 40-bit unsigned value.
     // Pack the 5 bytes into a 64-bit integer. No sign extension needed since energy is unsigned.
-    processedData.energy = (((uint64_t)energyData[0] << 32) | 
-                            ((uint64_t)energyData[1] << 24) |
-                            ((uint64_t)energyData[2] << 16) | 
-                            ((uint64_t)energyData[3] << 8) | 
-                             (uint64_t)energyData[4]) * ENERGY_LSB;
+    processedData.energy = (((uint64_t)energy[0] << 32) | 
+                            ((uint64_t)energy[1] << 24) |
+                            ((uint64_t)energy[2] << 16) | 
+                            ((uint64_t)energy[3] << 8) | 
+                             (uint64_t)energy[4]) * ENERGY_LSB;
 
     // Parse die temperature from the raw data, which is a 16-bit signed value.
-    int16_t raw_dietemp = (dietempData[0] << 8) | dietempData[1];
+    int16_t raw_dietemp = (dietemp[0] << 8) | dietemp[1];
     processedData.temperature = raw_dietemp * DIETEMP_LSB;
 
     *data = processedData; // Copy the processed data to the output parameter
@@ -161,7 +178,7 @@ bool PowerModule::readData(PMData_t *data) {
     // Reset dataFilled flag and restart the parsing cycle
     dataFilled = 0;
     parse(hi2c);
-
+    
     return true;
 }
 
