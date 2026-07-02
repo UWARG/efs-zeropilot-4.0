@@ -33,7 +33,7 @@ bool PowerModule::init() {
     success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_SHUNT_CAL.address, I2C_MEMADD_SIZE_8BIT, pData, REG_SHUNT_CAL.byte_size, 100) == HAL_OK);
 
     // Start the DMA loop
-    if(success) {
+    if (success) {
         dataFilled = 0;
         parse(hi2c);
     }
