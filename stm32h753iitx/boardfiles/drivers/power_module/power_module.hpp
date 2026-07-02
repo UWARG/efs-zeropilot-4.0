@@ -49,6 +49,7 @@ class PowerModule : public IPowerModule {
         bool init();
         volatile uint8_t callbackCount;
         void I2C_MemRxCpltCallback();
+        void I2C_ErrorCallback();
         I2C_HandleTypeDef* getI2C();
 
 

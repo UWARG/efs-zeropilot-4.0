@@ -63,19 +63,20 @@ bool PowerModule::readRegister(
 
 void PowerModule::I2C_MemRxCpltCallback() {
     callbackCount++;
+    bool success = true;
 
     switch(callbackCount) {
         case 1: // read current
-            readRegister(REG_CURRENT.address, currentData, REG_CURRENT.byte_size, hi2c);
+            success = readRegister(REG_CURRENT.address, currentData, REG_CURRENT.byte_size, hi2c);
             break;
         case 2: // read power
-            readRegister(REG_POWER.address, powerData, REG_POWER.byte_size, hi2c);
+            success = readRegister(REG_POWER.address, powerData, REG_POWER.byte_size, hi2c);
             break;
         case 3: // read charge
-            readRegister(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size, hi2c);
+            success = readRegister(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size, hi2c);
             break;
         case 4: // read energy
-            readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
+            success = readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
             break;
         case 5:
             callbackCount = 0;
@@ -85,18 +86,35 @@ void PowerModule::I2C_MemRxCpltCallback() {
             break;
     }
 
+    // If one read failed to start, reset the chain, next readData() call restarts from VBUS
+    if (!success) {
+        callbackCount = 0;
+    }
+
     return;
 }
 
-
+void PowerModule::I2C_ErrorCallback() {
+    // HAL aborts the transfer before invoking this callback, so only the
+    // chain state needs resetting, the next readData() call restarts the cycle
+    callbackCount = 0;
+}
 
 void PowerModule::parse(I2C_HandleTypeDef *hi2c) {
-    // start the cycle
     if (dataFilled) return;
+    
+    // Start the cycle
+    callbackCount = 0;
     readRegister(REG_VBUS.address, vbusData, REG_VBUS.byte_size, hi2c);
 }
 
 bool PowerModule::readData(PMData_t *data) {
+    // No fresh sample set yet, kick off the cycle or restarting it if it stalled, and report no fresh data
+    if (!dataFilled) {
+        parse(hi2c);
+        return false;
+    }
+
     // Parse VBUS from the raw data, which is a 24-bit unsigned value.
     // No sign extension or right-shift needed, since VBUS is unsigned.
     processedData.busVoltage = (((vbusData[0] << 16) | (vbusData[1] << 8) | vbusData[2]) >> 4) * VBUS_LSB;
