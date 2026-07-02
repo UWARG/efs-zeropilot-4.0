@@ -24,17 +24,18 @@ static constexpr uint8_t INA228_ADDR = 0b1000101; // VS to VS
 
 //constants
 static constexpr float RSHUNT = 0.0005; 
-static constexpr float IMAX = 32.0f;  //I could make this 16A as well
-static constexpr float CURRENT_LSB = IMAX / (1 << 19);  
-static constexpr uint16_t SHUNT_CAL_VALUE = (13107.2e6 * CURRENT_LSB * RSHUNT);  
+static constexpr float IMAX = 90.0f;
+static constexpr float CURRENT_LSB = IMAX / (1 << 19);
+static constexpr uint16_t SHUNT_CAL_VALUE = (uint16_t)(13107.2e6 * CURRENT_LSB * RSHUNT);
 static constexpr float VBUS_LSB = 195.3125e-6f;  // 195.3125 uV per bit
 static constexpr float VSHUNT_LSB = 312.5e-9f;    // 312.5 nV per bit
-static constexpr float POWER_LSB = 3.2f * CURRENT_LSB;  
-static constexpr float ENERGY_LSB = 16 * 3.2 * CURRENT_LSB;  
-static constexpr float CHARGE_LSB = CURRENT_LSB;  
+static constexpr float POWER_LSB = 3.2f * CURRENT_LSB;
+static constexpr float ENERGY_LSB = 16 * 3.2 * CURRENT_LSB;
+static constexpr float CHARGE_LSB = CURRENT_LSB;
 
 //config values
-static constexpr uint16_t CONFIG_VALUE = 0x8000;  
+static constexpr uint16_t CONFIG_RESET = 0x8000;
+static constexpr uint16_t CONFIG_VALUE = 0x0000;
 static constexpr uint16_t ADC_CONFIG_VALUE = 0b1111000000000010; //0b 1111 000 000 000 010, continuous reading and 16 samples averaged
 
 
