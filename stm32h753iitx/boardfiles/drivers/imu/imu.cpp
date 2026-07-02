@@ -214,7 +214,7 @@ void IMU::setFIFO() {
 
 void IMU::setODR() {
     writeRegister(0, UB0_REG_GYRO_ODR, 0b00000100); // Configure gyro ODR to 4khz
-    writeRegister(0, UB0_REG_ACCEL_CONFIG0, 0b00000100) // Configure accelerometer ODR to 4khz
+    writeRegister(0, UB0_REG_ACCEL_CONFIG0, 0b00000100); // Configure accelerometer ODR to 4khz
 }
 
 void IMU::processRawData() {
