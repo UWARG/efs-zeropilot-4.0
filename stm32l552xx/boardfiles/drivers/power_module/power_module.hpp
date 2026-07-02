@@ -23,6 +23,7 @@ static constexpr RegInfo REG_CURRENT = {0x07, 3, true};  // 24
 static constexpr RegInfo REG_POWER = {0x08, 3, false}; // 24
 static constexpr RegInfo REG_ENERGY = {0x09, 5, false}; // 40
 static constexpr RegInfo REG_CHARGE = {0x0A, 5, true};  // 40
+static constexpr RegInfo REG_DIETEMP = {0x06, 2, true}; // 16
 
 // Physical constants
 static constexpr float RSHUNT = 0.0005; 
@@ -34,13 +35,15 @@ static constexpr float VSHUNT_LSB = 312.5e-9f;    // 312.5 nV per bit
 static constexpr float POWER_LSB = 3.2f * CURRENT_LSB;
 static constexpr float ENERGY_LSB = 16 * 3.2 * CURRENT_LSB;
 static constexpr float CHARGE_LSB = CURRENT_LSB;
+static constexpr float DIETEMP_LSB = 0.0078125f;
 
 // Config values
 static constexpr uint16_t CONFIG_RESET = 0x8000;
 static constexpr uint16_t CONFIG_VALUE = 0x0000;
 static constexpr uint16_t ADC_CONFIG_VALUE = 0b1111000000000010; //0b 1111 000 000 000 010, continuous reading and 16 samples averaged
 
-static constexpr uint8_t REGISTERS_TO_READ = 5;
+// Number of registers to read in the DMA loop (VBUS, Current, Power, Charge, Energy, DieTemp)
+static constexpr uint8_t REGISTERS_TO_READ = 6;
 
 class PowerModule : public IPowerModule {
     public:
@@ -49,6 +52,7 @@ class PowerModule : public IPowerModule {
         bool init();
         volatile uint8_t callbackCount;
         void I2C_MemRxCpltCallback();
+        void I2C_ErrorCallback();
         I2C_HandleTypeDef* getI2C();
 
 
@@ -65,5 +69,6 @@ class PowerModule : public IPowerModule {
         uint8_t powerData[3];
         uint8_t energyData[5];
         uint8_t chargeData[5];
+        uint8_t dietempData[2];
         volatile bool dataFilled = 0;
 };

@@ -31,6 +31,10 @@ namespace SITL_Driver_Configs {
 
         static constexpr float CURRENT_DRAW_IDLE = 3.0f; // Simulated current draw at idle in Amps
         static constexpr float CURRENT_DRAW_PER_RPM = 0.012f; // Simulated current draw per RPM in Amps
+
+        static constexpr float AMBIENT_TEMP_C = 25.0f; // Base ambient room temperature in °C
+        static constexpr float TEMP_RISE_PER_AMP = 0.3f; // Steady-state heating factor in °C per Ampere
+        static constexpr float TEMP_THERMAL_LAG_COEFF = 0.05f; // First-order filter coefficient (0.0 to 1.0) for thermal mass inertia
     };
 
     struct SITL_TELEM_Config {

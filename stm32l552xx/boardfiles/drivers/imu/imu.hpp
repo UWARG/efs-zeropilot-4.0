@@ -62,10 +62,10 @@ class IMU : public IIMU {
 		void flushFIFO();
 		void dmaTransfer();
 		
-		
 		// Configuration
 		void setLowNoiseMode();
 		void setFIFO();
+		void setODR();
 		
 		// Processing and filtering
 		void processRawData();
