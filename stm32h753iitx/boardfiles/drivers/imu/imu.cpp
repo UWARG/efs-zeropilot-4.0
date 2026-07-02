@@ -3,16 +3,18 @@
 #include "imu.hpp"
 #include <string.h>
 
-#define REG_BANK_SEL          0x76
-#define UB0_REG_WHO_AM_I      0x75
-#define UB0_REG_DEVICE_CONFIG 0x11
-#define UB0_REG_PWR_MGMT0     0x4E
+#define REG_BANK_SEL              0x76
+#define UB0_REG_WHO_AM_I          0x75
+#define UB0_REG_DEVICE_CONFIG     0x11
+#define UB0_REG_PWR_MGMT0         0x4E
 #define UB0_REG_FIFO_CONFIG       0x16
 #define UB0_REG_FIFO_CONFIG1      0x5F
 #define UB0_REG_INTF_CONFIG0      0x4C
 #define UB0_REG_FIFO_DATA         0x30
 #define UB0_REG_FIFO_COUNTH       0x2E
 #define UB0_REG_SIGNAL_PATH_RESET 0x4B
+#define UB0_REG_GYRO_ODR          0x4F
+#define UB0_REG_ACCEL_CONFIG0     0x50
 
 IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin) : 
     _spi(spiHandle), 
@@ -33,10 +35,11 @@ int IMU::init() {
     csHigh();
     reset();
     uint8_t address = whoAmI();
-    setLowNoiseMode();
-    HAL_Delay(60); // Wait after sensors are turned on
+    setODR();
     setFIFO();
     flushFIFO();
+    setLowNoiseMode();
+    HAL_Delay(60); // Wait after sensors are turned on
 
     // TODO: enable and test below configurations
     // setAccelFS(0b01101001);
@@ -207,6 +210,11 @@ void IMU::setFIFO() {
     writeRegister(0, UB0_REG_FIFO_CONFIG, 0b01000000); // Stream to fifo mode
     writeRegister(0, UB0_REG_FIFO_CONFIG1, 0b01100011); // Partial fifo read enabled, trigger watermark interrupt on every odr if count > watermark, no fsync, no temp data, yes gyro, yes accel
     writeRegister(0, UB0_REG_INTF_CONFIG0, 0b11110000); // Invalid data not put into fifo, fifo count is in num of packets
+}
+
+void IMU::setODR() {
+    writeRegister(0, UB0_REG_GYRO_ODR, 0b00000100); // Configure gyro ODR to 4khz
+    writeRegister(0, UB0_REG_ACCEL_CONFIG0, 0b00000100) // Configure accelerometer ODR to 4khz
 }
 
 void IMU::processRawData() {
