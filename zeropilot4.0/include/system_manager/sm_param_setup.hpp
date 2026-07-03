@@ -25,4 +25,10 @@ class SMParamSetup : public IParamSetup {
     static bool updateFltMode4(SystemManager* ctx, float val);
     static bool updateFltMode5(SystemManager* ctx, float val);
     static bool updateFltMode6(SystemManager* ctx, float val);
+
+    // Channel reverse callbacks
+    static bool setRC1Reversed(SystemManager* ctx, float val);
+    static bool setRC2Reversed(SystemManager* ctx, float val);
+    static bool setRC3Reversed(SystemManager* ctx, float val);
+    static bool setRC4Reversed(SystemManager* ctx, float val);
 };

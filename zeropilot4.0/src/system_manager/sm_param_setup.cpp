@@ -14,6 +14,10 @@ void SMParamSetup::loadAllParams() {
         sm->flightModes[i] = static_cast<PlaneFlightMode_e>(
             static_cast<uint32_t>(ZP_PARAM::get(FLTMODE_PARAMS[i])));
     }
+    setRC1Reversed(sm, ZP_PARAM::get(ZP_PARAM_ID::RC1_REVERSED));
+    setRC2Reversed(sm, ZP_PARAM::get(ZP_PARAM_ID::RC2_REVERSED));
+    setRC3Reversed(sm, ZP_PARAM::get(ZP_PARAM_ID::RC3_REVERSED));
+    setRC4Reversed(sm, ZP_PARAM::get(ZP_PARAM_ID::RC4_REVERSED));
 }
 
 void SMParamSetup::bindAllParamCallbacks() {
@@ -23,6 +27,11 @@ void SMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE4, sm, updateFltMode4);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE5, sm, updateFltMode5);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::FLTMODE6, sm, updateFltMode6);
+
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RC1_REVERSED, sm, setRC1Reversed);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RC2_REVERSED, sm, setRC2Reversed);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RC3_REVERSED, sm, setRC3Reversed);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RC4_REVERSED, sm, setRC4Reversed);
 }
 
 bool SMParamSetup::setFltMode(SystemManager* ctx, uint8_t idx, float val) {
@@ -38,3 +47,7 @@ bool SMParamSetup::updateFltMode3(SystemManager* ctx, float val) { return setFlt
 bool SMParamSetup::updateFltMode4(SystemManager* ctx, float val) { return setFltMode(ctx, 3, val); }
 bool SMParamSetup::updateFltMode5(SystemManager* ctx, float val) { return setFltMode(ctx, 4, val); }
 bool SMParamSetup::updateFltMode6(SystemManager* ctx, float val) { return setFltMode(ctx, 5, val); }
+bool SMParamSetup::setRC1Reversed(SystemManager* ctx, float val) { ctx->channelReversed[0] = (val != 0.0f); return true; }
+bool SMParamSetup::setRC2Reversed(SystemManager* ctx, float val) { ctx->channelReversed[1] = (val != 0.0f); return true; }
+bool SMParamSetup::setRC3Reversed(SystemManager* ctx, float val) { ctx->channelReversed[2] = (val != 0.0f); return true; }
+bool SMParamSetup::setRC4Reversed(SystemManager* ctx, float val) { ctx->channelReversed[3] =( val != 0.0f); return true; }

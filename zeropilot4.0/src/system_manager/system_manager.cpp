@@ -27,6 +27,7 @@ SystemManager::SystemManager(
         flightModes{},
         oldDataCount(0),
         rcConnected(false),
+        channelReversed{},
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
         profilerId(0),
         paramSetup(this)
@@ -216,10 +217,14 @@ void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32
 void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     RCMotorControlMessage_t rcDataMessage;
 
-    rcDataMessage.roll = rcData.roll;
-    rcDataMessage.pitch = rcData.pitch;
-    rcDataMessage.yaw = rcData.yaw;
-    rcDataMessage.throttle = rcData.throttle;
+    rcDataMessage.roll = channelReversed[0] ? 100.0f - rcData.roll : rcData.roll;
+    rcDataMessage.pitch = channelReversed[1] ? 100.0f - rcData.pitch : rcData.pitch;
+    rcDataMessage.throttle = channelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
+    rcDataMessage.yaw = channelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
+    // rcDataMessage.roll = rcData.roll;
+    // rcDataMessage.pitch = rcData.pitch;
+    // rcDataMessage.yaw = rcData.yaw;
+    // rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
