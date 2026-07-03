@@ -192,11 +192,8 @@ void IMU::dmaTransfer() {
     switch (rxFlag) {
         case COUNT: {
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
-            volatile HAL_DMA_StateTypeDef tx = HAL_DMA_GetState(spi->hdmatx);   // expect BUSY
-            volatile uint32_t pend = NVIC_GetPendingIRQ(DMA1_Stream7_IRQn);     // expect 1
             // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
-            HAL_StatusTypeDef status0 = HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3);
-            if ( status0 != HAL_OK) {
+            if (HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3) != HAL_OK) {
                 csHigh();
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
@@ -210,10 +207,7 @@ void IMU::dmaTransfer() {
             
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
 
-            volatile HAL_DMA_StateTypeDef tx = HAL_DMA_GetState(spi->hdmatx);   // expect BUSY
-            volatile uint32_t pend = NVIC_GetPendingIRQ(DMA1_Stream7_IRQn);     // expect 1
-            HAL_StatusTypeDef status1 = HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1);
-            if ( status1 != HAL_OK) {
+            if (HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != HAL_OK) {
                 csHigh();
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
