@@ -14,8 +14,8 @@ STABILIZEMapping::STABILIZEMapping(float stabilize_control_iter_period_s, float 
     acroCLAW(acroCLAW),
     decimationFactor(computeDecimation(stabilize_control_iter_period_s, acro_control_iter_period_s)),
     decimationCounter(0),
-    latchedRollCmd(ACRO_PID_OUTPUT_SHIFT),
-    latchedPitchCmd(ACRO_PID_OUTPUT_SHIFT) {
+    stabilizeRollCmd(ACRO_PID_OUTPUT_SHIFT),
+    stabilizePitchCmd(ACRO_PID_OUTPUT_SHIFT) {
         rollPID.pidInitState();
         pitchPID.pidInitState();
         acroCLAW.activateFlightMode();
@@ -36,8 +36,8 @@ void STABILIZEMapping::resetControlLoopState() noexcept {
     rollPID.pidInitState();
     pitchPID.pidInitState();
     decimationCounter = 0;
-    latchedRollCmd = ACRO_PID_OUTPUT_SHIFT;
-    latchedPitchCmd = ACRO_PID_OUTPUT_SHIFT;
+    stabilizeRollCmd = ACRO_PID_OUTPUT_SHIFT;
+    stabilizePitchCmd = ACRO_PID_OUTPUT_SHIFT;
 }
 
 // Setter for *rollLimitAngle* in rad
