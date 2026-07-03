@@ -1,6 +1,5 @@
 #include "cmsis_os.h"
 #include "systemutils.hpp"
-#include "stm32h7xx_hal.h"
 
 struct TaskEntry {
     const char* name;
