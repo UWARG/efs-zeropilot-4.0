@@ -139,7 +139,9 @@ void FusedIMU::txRxCallback() {
         active_imu++;
         if (active_imu > (NUM_IMU - 1)) {
             active_imu = 0; // One round of data collection is finished, dont kick off another transaction
-        } 
+        } else {
+            imu[active_imu]->beginRead();
+        }
     } 
 }
 
