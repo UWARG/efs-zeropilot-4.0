@@ -52,6 +52,7 @@ int IMU::init() {
 RawImuBatch_t IMU::readRawData() {
     // Dont start another dma transaction when in the middle of one transaction
     if (!dmaDone) {
+        rawImuDataBatch.count = 0;
         return rawImuDataBatch;
     }
     setBank(0);
@@ -197,6 +198,7 @@ void IMU::dmaTransfer() {
                 csHigh();
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
+                fifoSize = 0;
             }
             break;
         }
@@ -211,6 +213,7 @@ void IMU::dmaTransfer() {
                 csHigh();
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
+                fifoSize = 0;
             }
             break;
         }
