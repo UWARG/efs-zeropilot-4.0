@@ -55,7 +55,7 @@ class STABILIZEMapping : public Flightmode{
 
         static constexpr uint16_t computeDecimation(float stabilize_control_iter_period_s, float acro_control_iter_period_s) noexcept
         {
-            return (stabilize_control_iter_period_s != 0) ? (acro_control_iter_period_s / stabilize_control_iter_period_s) : 1;
+            return (acro_control_iter_period_s != 0) ? (stabilize_control_iter_period_s / acro_control_iter_period_s) : 1;
         }
 
         // Output limits (for control effort)

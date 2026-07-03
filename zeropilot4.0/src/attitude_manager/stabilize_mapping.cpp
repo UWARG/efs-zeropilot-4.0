@@ -11,14 +11,13 @@ STABILIZEMapping::STABILIZEMapping(float stabilize_control_iter_period_s, float 
             stabilize_control_iter_period_s),
     rollLimitAngle(0.0f),
     pitchLimitAngle(0.0f),
-    acroCLAW(acroCLAW),
+    acroCLAW(acro),
     decimationFactor(computeDecimation(stabilize_control_iter_period_s, acro_control_iter_period_s)),
     decimationCounter(0),
     stabilizeRollCmd(ACRO_PID_OUTPUT_SHIFT),
     stabilizePitchCmd(ACRO_PID_OUTPUT_SHIFT) {
         rollPID.pidInitState();
         pitchPID.pidInitState();
-        acroCLAW.activateFlightMode();
 }
 
 // Setter *roll* for PID consts
