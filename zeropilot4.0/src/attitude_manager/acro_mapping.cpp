@@ -52,7 +52,7 @@ void ACROMapping::setPitchLimitRate(float newPitchLimitRate) noexcept {
     pitchLimitRate = newPitchLimitRate;
 }
 
-// Setter for *rollLimitRate* in rad / s
+// Setter for *yawLimitRate* in rad / s
 void ACROMapping::setYawLimitRate(float newYawLimitRate) noexcept {
     yawLimitRate = newYawLimitRate;
 }
