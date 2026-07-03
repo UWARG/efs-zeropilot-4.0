@@ -80,7 +80,9 @@ class AttitudeManager {
         int noDataCount;
         bool failsafeTriggered;
 
-        uint16_t lastTimestamp;
+        static constexpr uint16_t MAX_TIMESTAMP = 65535;
+        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
+        uint32_t lastTimestamp;
         bool haveLastImuTimestamp;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
