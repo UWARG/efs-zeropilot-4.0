@@ -41,8 +41,6 @@ class AttitudeManager {
         void amUpdate();
 
     private:
-        static constexpr uint16_t MAX_TIMESTAMP = 65535;
-        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
         static constexpr uint8_t NUM_MOTORS = 8;
 
         ISystemUtils *systemUtilsDriver;
