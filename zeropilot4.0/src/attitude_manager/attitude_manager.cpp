@@ -30,7 +30,7 @@ AttitudeManager::AttitudeManager(
     #ifdef QUADCOPTER
     activeCLAW(&acroCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    stabilizeCLAW(AM_CONTROL_STABILIZE_PERIOD_S, acroCLAW),
+    stabilizeCLAW(AM_CONTROL_LOOP_PERIOD_S, AM_STABILIZE_RATE_HZ, acroCLAW),
     controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
     #endif
     droneState(DRONE_STATE_DEFAULT),
