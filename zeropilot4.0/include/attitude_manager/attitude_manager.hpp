@@ -55,12 +55,12 @@ class AttitudeManager {
         IMessageQueue<char[100]> *smLoggerQueue;
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
-        DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         #ifdef PLANE
+        DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         #endif
         #ifdef QUADCOPTER
-        ACROMapping acroCLAW;
+        ACROMapping acroCLAW;       // ACRO Control Law (Roll, Pitch, and Yaw Rates)
         #endif
         RCMotorControlMessage_t controlMsg;
         FlightMode_e currentFlightMode;
