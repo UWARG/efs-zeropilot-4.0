@@ -221,10 +221,6 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = channelReversed[1] ? 100.0f - rcData.pitch : rcData.pitch;
     rcDataMessage.throttle = channelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
     rcDataMessage.yaw = channelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
-    // rcDataMessage.roll = rcData.roll;
-    // rcDataMessage.pitch = rcData.pitch;
-    // rcDataMessage.yaw = rcData.yaw;
-    // rcDataMessage.throttle = rcData.throttle;
     rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
     rcDataMessage.flapAngle = rcData.aux2;
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
