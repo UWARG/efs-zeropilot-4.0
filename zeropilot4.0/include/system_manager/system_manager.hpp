@@ -76,7 +76,7 @@ class SystemManager {
         int oldDataCount;
         bool rcConnected;
 
-        bool channelReversed[4];
+        bool rcChannelReversed[4];
         
         BatteryData_t batteryData;
         bool updateBatteryFSM();

@@ -47,7 +47,7 @@ bool SMParamSetup::updateFltMode3(SystemManager* ctx, float val) { return setFlt
 bool SMParamSetup::updateFltMode4(SystemManager* ctx, float val) { return setFltMode(ctx, 3, val); }
 bool SMParamSetup::updateFltMode5(SystemManager* ctx, float val) { return setFltMode(ctx, 4, val); }
 bool SMParamSetup::updateFltMode6(SystemManager* ctx, float val) { return setFltMode(ctx, 5, val); }
-bool SMParamSetup::setRC1Reversed(SystemManager* ctx, float val) { ctx->channelReversed[0] = (val != 0.0f); return true; }
-bool SMParamSetup::setRC2Reversed(SystemManager* ctx, float val) { ctx->channelReversed[1] = (val != 0.0f); return true; }
-bool SMParamSetup::setRC3Reversed(SystemManager* ctx, float val) { ctx->channelReversed[2] = (val != 0.0f); return true; }
-bool SMParamSetup::setRC4Reversed(SystemManager* ctx, float val) { ctx->channelReversed[3] =( val != 0.0f); return true; }
+bool SMParamSetup::setRC1Reversed(SystemManager* ctx, float val) { ctx->rcChannelReversed[0] = (val != 0.0f); return true; }
+bool SMParamSetup::setRC2Reversed(SystemManager* ctx, float val) { ctx->rcChannelReversed[1] = (val != 0.0f); return true; }
+bool SMParamSetup::setRC3Reversed(SystemManager* ctx, float val) { ctx->rcChannelReversed[2] = (val != 0.0f); return true; }
+bool SMParamSetup::setRC4Reversed(SystemManager* ctx, float val) { ctx->rcChannelReversed[3] =( val != 0.0f); return true; }
