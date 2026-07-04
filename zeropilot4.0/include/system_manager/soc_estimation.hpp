@@ -61,5 +61,5 @@ class SocEstimator {
 
     private:
         StateOfCharge_t socData;
+        float initialSocPercentage = -1.0f;
 };
-
