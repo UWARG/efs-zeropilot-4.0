@@ -32,7 +32,7 @@ IMotorControl *motorHandles[8] = {0};
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
-IMU *imuHandle = nullptr;
+FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -96,7 +96,9 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
+    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
+    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
+    imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
 
     // Queues
@@ -116,6 +118,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     telemLinkHandle->init();
+    pmHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {

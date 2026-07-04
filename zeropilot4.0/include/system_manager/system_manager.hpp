@@ -68,6 +68,8 @@ class SystemManager {
 
         int oldDataCount;
         bool rcConnected;
+
+        bool rcChannelReversed[4];
         
         BatteryData_t batteryData;
         bool updateBatteryFSM();
@@ -86,7 +88,6 @@ class SystemManager {
         uint8_t profilerId;
 
         SMParamSetup paramSetup;
-
 
         uint8_t profilerBuf[256];
         TaskProfile profiles[MAX_PROFILED_TASKS];
