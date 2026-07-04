@@ -12,15 +12,16 @@ GPS::GPS(UART_HandleTypeDef* huart) : huart(huart) {}
 bool GPS::init() {
     HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
-		rxBuffer,
+		(uint8_t*)rxBuffer,
 		MAX_NMEA_DATA_LENGTH
     );
 
-    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
+   __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
 
     HAL_StatusTypeDef messagesuccess = enableMessage(0x01, 0x11); //enable ubx velecef messages
     
-    return (success == HAL_OK) & (messagesuccess == HAL_OK);
+     return (success == HAL_OK) & (messagesuccess == HAL_OK);
+//    return true;
 }
 
 HAL_StatusTypeDef GPS::enableMessage(uint8_t msgClass, uint8_t msgId) {
@@ -56,7 +57,7 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
 }
 
 GpsData_t GPS::readData() {
-    __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
+    // __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
 
     bool success = parseRMC() && parseGGA() && parseUBX();
     tempData.isNew = success;
@@ -64,20 +65,20 @@ GpsData_t GPS::readData() {
 
     validData.isNew = false;
 
-   __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
+//    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
 
     return tempData;
 }
 
 void GPS::rxCallback(uint16_t size) {
-    memcpy(processBuffer, rxBuffer, MAX_NMEA_DATA_LENGTH);
+	memcpy((uint8_t*)processBuffer, (uint8_t*)rxBuffer, size);
     HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
-		rxBuffer,
+		(uint8_t*)rxBuffer,
 		MAX_NMEA_DATA_LENGTH
     );
-    processBufferEnd = processBuffer + size;
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
+    processBufferEnd = (uint8_t*)processBuffer + size;
 }
 
 UART_HandleTypeDef* GPS::getHUART() {

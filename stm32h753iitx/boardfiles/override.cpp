@@ -77,6 +77,26 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 
     rcHandle->startDMA();
   }
+  else if (huart == gpsHandle->getHUART()) {
+	  uint32_t error = HAL_UART_GetError(huart);
+
+	  if (error & HAL_UART_ERROR_PE) {
+		__HAL_UART_CLEAR_PEFLAG(huart);
+	  }
+
+	  if (error & HAL_UART_ERROR_NE){
+		__HAL_UART_CLEAR_FEFLAG(huart);
+	  }
+
+	  if (error & HAL_UART_ERROR_FE){
+		__HAL_UART_CLEAR_NEFLAG(huart);
+	  }
+
+	  if (error & HAL_UART_ERROR_ORE){
+		__HAL_UART_CLEAR_OREFLAG(huart);
+	  }
+	  gpsHandle->rxCallback(1);
+  }
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
