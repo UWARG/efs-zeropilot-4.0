@@ -7,7 +7,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sitl_build_fixed_wing:
+  sitl_build_plane:
     runs-on: ubuntu-latest
 
     steps:

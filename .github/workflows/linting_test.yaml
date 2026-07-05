@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  linting_test_fixed_wing:
+  linting_test_plane:
     runs-on: ubuntu-latest
 
     steps:

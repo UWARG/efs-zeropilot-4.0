@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  unit_test_fixed_wing:
+  unit_test_plane:
     runs-on: ubuntu-latest
 
     steps:
