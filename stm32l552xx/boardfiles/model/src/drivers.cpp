@@ -97,17 +97,6 @@ void initDrivers()
             motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
-
-	#ifdef QUADCOPTER
-    motor1Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_1, false);
-    motor2Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_2, false);
-    motor3Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_3, false);
-    motor4Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_4, false);
-    motor5Handle = new MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
-    motor6Handle = new MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
-    motor7Handle = new MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
-    motor8Handle = new MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
-    #endif
     
     // Peripherals
     gpsHandle = new GPS(&huart2);
