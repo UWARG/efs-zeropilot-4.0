@@ -164,6 +164,10 @@ if __name__ == '__main__':
     try:
         while True:
             while time.perf_counter() < next_step: pass
+            if sitl.reset_requested:
+                sitl.reset_to_air()
+                sitl.reset_requested = False
+                next_step = time.perf_counter()
             sitl.step()
             if time.perf_counter() - last_print > 0.05:
                 sitl.print_state(); last_print = time.perf_counter()
