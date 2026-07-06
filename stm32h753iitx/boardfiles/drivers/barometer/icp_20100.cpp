@@ -433,7 +433,11 @@ bool Barometer::readData(BaroData_t &data)
 
 		data.temperatureData = (float)(((double)temp_signed * 65.0) / 262144.0 + 25.0);
 		data.pressureData = (float)(((double)press_signed * 40.0) / 131072.0 + 70.0);
+		data.altitude = ((data.temperatureData + 273.15f) / 0.0065f) *
+						 (1.0f - powf(data.pressureData / 101.325f, 0.190284f));
 		dataFilled = 0;
+		initiatedRead = true;
+		rxCallback();
 		return true;
 	}
 
