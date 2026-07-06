@@ -39,14 +39,9 @@ void STABILIZEMapping::resetControlLoopState() noexcept {
     stabilizePitchCmd = ACRO_PID_OUTPUT_SHIFT;
 }
 
-// Setter for *rollLimitAngle* in rad
-void STABILIZEMapping::setRollLimitAngle(float newRollLimitAngle) noexcept {
-    rollLimitAngle = newRollLimitAngle * ZP_UNITS::DEG_TO_RAD;
-}
-
-// Setter for *pitchLimitAngle* in rad
-void STABILIZEMapping::setPitchLimitAngle(float newPitchLimitAngle) noexcept {
-    pitchLimitAngle = newPitchLimitAngle * ZP_UNITS::DEG_TO_RAD;
+// Setter for *rollLimitAngle* and *pitchLimitAngle* in rad
+void STABILIZEMapping::setRollPitchLimitAngle(float newRollPitchLimitAngle) noexcept {
+    rollPitchLimitAngle = newRollPitchLimitAngle * ZP_UNITS::DEG_TO_RAD;
 }
 
 // Getter for PID objects
@@ -63,8 +58,8 @@ RCMotorControlMessage_t STABILIZEMapping::runControl(RCMotorControlMessage_t con
     // Outer angle loop runs once every decimationFactor calls
     if (decimationCounter == 0) {
         // Setpoints: Maps [0, 100] to [-limit, +limit]
-        float rollAngleSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitAngle;
-        float pitchAngleSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitAngle;
+        float rollAngleSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
+        float pitchAngleSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
 
         float rollAngleMeasured = droneState.roll;
         float pitchAngleMeasured = droneState.pitch;

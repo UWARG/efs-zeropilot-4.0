@@ -48,8 +48,7 @@ class AMParamSetup : public IParamSetup {
     static bool updateRatePIDYawKd(AttitudeManager* ctx, float val);
     static bool updateRatePIDYawTau(AttitudeManager* ctx, float val);
     static bool updateRatePIDYawIMax(AttitudeManager* ctx, float val);
-    static bool updateRollLimitRate(AttitudeManager* ctx, float val);
-    static bool updatePitchLimitRate(AttitudeManager* ctx, float val);
+    static bool updateRollPitchLimitRate(AttitudeManager* ctx, float val);
     static bool updateYawLimitRate(AttitudeManager* ctx, float val);
 
     static bool updateAngPIDRollKp(AttitudeManager* ctx, float val);
@@ -62,8 +61,7 @@ class AMParamSetup : public IParamSetup {
     static bool updateAngPIDPitchKd(AttitudeManager* ctx, float val);
     static bool updateAngPIDPitchTau(AttitudeManager* ctx, float val);
     static bool updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
-    static bool updateRollLimitAng(AttitudeManager* ctx, float val);
-    static bool updatePitchLimitAng(AttitudeManager* ctx, float val);
+    static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
     #endif
 
     // Servo param callback helpers
