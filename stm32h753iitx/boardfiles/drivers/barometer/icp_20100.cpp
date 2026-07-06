@@ -82,7 +82,7 @@ bool Barometer::init() {
     }
 
     if (version == VERSION_B) { 
-        return true;
+        return firWarmupPoll();
     }
 
 	// Step 4: Check boot up status from OTP_Status2 register. Check specifically bit 0.
@@ -95,7 +95,7 @@ bool Barometer::init() {
 	boot_status &= OTP_STATUS2_BOOT_STATUS_BM;
 
 	if(boot_status == OTP_STATUS2_BOOT_STATUS_VALID){ // Initialization done, barometer did not go through power cycle.
-		return true;
+		return firWarmupPoll();
 	}
 
 	// Step 5: Bring ASIC into power mode to get access to main registers
@@ -292,7 +292,7 @@ bool Barometer::init() {
 
 	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_STATUS2, boot_config)){ return false; }
 
-	return true;
+	return firWarmupPoll();
 }
 
 bool Barometer::firWarmupPoll()
