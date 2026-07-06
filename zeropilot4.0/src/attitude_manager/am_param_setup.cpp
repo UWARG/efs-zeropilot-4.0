@@ -401,11 +401,6 @@ bool AMParamSetup::updateRollPitchLimitAng(AttitudeManager* ctx, float val) {
     ctx->stabilizeCLAW.setRollPitchLimitAngle(val);
     return true;
 }
-bool AMParamSetup::updatePitchLimitAng(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 45.0f) return false;
-    ctx->stabilizeCLAW.setPitchLimitAngle(val);
-    return true;
-}
 #endif
 
 // Servo field helpers

@@ -26,7 +26,6 @@ inline bool isValidFlightMode(uint32_t val) {
             return true;
         default:
             return false;
-        #endif
     }
 }
 

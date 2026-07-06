@@ -44,10 +44,11 @@ AttitudeManager::AttitudeManager(
     lastTimestamp(0),
     haveLastImuTimestamp(false),
     profilerId(0),
-    paramSetup(this){
+    paramSetup(this) {
+
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
-
+        
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
 

@@ -19,12 +19,9 @@ class STABILIZEMapping : public Flightmode{
         // Setter for *pitch* PID consts
         void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
-        // Setter for *rollLimitAngle* in rad
-        void setRollLimitAngle(float newRollLimitAngle) noexcept;
+        // Setter for *rollLimitAngle* and *pitchLimitAngle* in rad
+        void setRollPitchLimitAngle(float newRollPitchLimitAngle) noexcept;
 
-        // Setter for *pitchLimitAngle* in rad
-        void setPitchLimitAngle(float newPitchLimitAngle) noexcept;
-        
         // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
         void resetControlLoopState() noexcept;
 
@@ -42,8 +39,7 @@ class STABILIZEMapping : public Flightmode{
         PID pitchPID;
 
         // Values for roll, and pitch limits
-        float rollLimitAngle;
-        float pitchLimitAngle;
+        float rollPitchLimitAngle;
 
         ACROMapping &acroCLAW;
 
