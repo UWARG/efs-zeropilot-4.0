@@ -23,7 +23,7 @@ static constexpr uint8_t ICP20100_OTP_COMMAND_READ_REQUEST = 0x10U;  // Bit 4 se
 
 // Register Definitions for Mikroe ICP-20100
 
-static constexpr uint16_t ICP20100_I2C_ADDR = (0x64U << 1); // Shift by 1 for HAL
+static constexpr uint16_t ICP20100_I2C_ADDR = (0x63U << 1); // Shift by 1 for HAL
 static constexpr uint8_t ICP20100_REG_MODE_SELECT = 0xC0U;
 static constexpr uint8_t ICP20100_DEVICE_ID = 0x0CU;
 static constexpr uint8_t ICP20100_MASTER_LOCK = 0xBEU;
@@ -486,14 +486,15 @@ void Barometer::computeAltitude(BaroData_t *data)
 
 static inline bool unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock) {
     uint8_t value = doLock ? LOCK_VALUE : UNLOCK_VALUE;
-    return HAL_I2C_Mem_Write(
+    HAL_StatusTypeDef status =  HAL_I2C_Mem_Write(
         hi2c,
         ICP20100_I2C_ADDR,
         ICP20100_MASTER_LOCK,
         I2C_MEMADD_SIZE_8BIT,
         &value,
         1,
-        HAL_MAX_DELAY) == HAL_OK;
+        HAL_MAX_DELAY);
+	return status == HAL_OK;
 }
 
 static inline bool readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t *pData, uint16_t size, uint32_t timeout) {
