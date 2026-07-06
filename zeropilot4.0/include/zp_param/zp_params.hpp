@@ -161,7 +161,7 @@ namespace ZP_PARAM {
     // Get current config value
     float get(ZP_PARAM_ID id);
 
-    // MAVLink/Telemetry interATCion
+    // MAVLink/Telemetry interaction
     bool setParamById(const char* paramId, float new_value);
     
     // Accessors

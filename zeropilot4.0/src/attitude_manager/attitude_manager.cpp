@@ -48,7 +48,7 @@ AttitudeManager::AttitudeManager(
 
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
-        
+
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
 
@@ -195,6 +195,7 @@ void AttitudeManager::amUpdate() {
                 activeCLAW = &stabilizeCLAW;
                 break;
             #endif
+            
         }
         activeCLAW->activateFlightMode();
         currentFlightMode = controlMsg.flightMode;

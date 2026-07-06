@@ -17,7 +17,7 @@ class MotorControl : public IMotorControl {
          * @brief starts PWM output
          */
         void init() override;
-        
+
     private:
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;

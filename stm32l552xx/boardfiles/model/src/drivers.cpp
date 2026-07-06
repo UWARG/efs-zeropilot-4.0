@@ -97,7 +97,7 @@ void initDrivers()
             motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
-    
+
     // Peripherals
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
