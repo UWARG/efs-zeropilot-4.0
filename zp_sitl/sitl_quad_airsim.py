@@ -35,12 +35,10 @@ class ZP_QUAD_SITL_AIRSIM:
         self.running = True
         self.armed = False
         self.paused = True 
-        # Reset is requested from the joystick thread but must run on the main
-        # thread: the AirSim RPC client is not safe to call from two threads.
         self.reset_requested = False
         self.commands = {'roll': 0, 'pitch': 0, 'yaw': 0, 'throttle': 0}
-        # setpoints RC driver expects for fltmode
         self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
+
         # Get fltmode on startup
         if self.joy:
             pygame.event.pump()
@@ -67,16 +65,13 @@ class ZP_QUAD_SITL_AIRSIM:
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
+                        if event.button == 2:
+                            self.reset_requested = True
                         if event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
-                        if event.axis == 4 and event.value > 0.5:  # ZL button
-                            self.fltmode_index = max(0, self.fltmode_index - 1)
-                        elif event.axis == 5 and event.value > 0.5:  # ZR button
-                            self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
-                    # elif event.type == pygame.JOYBUTTONUP:
-                    #     if event.button == 2:
-                    #          self.armed = False
+                        if event.axis == FLTMODE_AXIS:
+                            self.fltmode_index = self.axis_to_fltmode(event.value)
 
             time.sleep(0.01)
 
