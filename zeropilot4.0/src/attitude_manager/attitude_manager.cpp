@@ -2,6 +2,7 @@
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
+#include "unit_conversions.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -18,12 +19,20 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
+    #ifdef PLANE
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    controlMsg({50, 50, 50, 0, 0, 0, PlaneFlightMode_e::MANUAL}),
+    controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
+    currentFlightMode(FlightMode_e::MANUAL),
+    #endif
+    #ifdef QUADCOPTER
+    activeCLAW(&acroCLAW),
+    acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
+    currentFlightMode(FlightMode_e::ACRO),
+    #endif
     droneState(DRONE_STATE_DEFAULT),
-    currentFlightMode(PlaneFlightMode_e::MANUAL),
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     setArmFlag(false),
@@ -90,6 +99,12 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
+    uint8_t scaledImuCount = scaledImuData.count;
+    if (scaledImuCount > 0) { // Use most recent sample in the batch for rates
+        droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD;
+        droneState.pitchRate = scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD;
+        droneState.yawRate = scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD;
+    }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
@@ -113,18 +128,29 @@ void AttitudeManager::amUpdate() {
 
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
             RCMotorControlMessage_t motorOutputs{0};
+
+            #ifdef PLANE
             motorOutputs.roll = 50;
             motorOutputs.pitch = 50;
             motorOutputs.yaw = 50;
             motorOutputs.throttle = 0;
             motorOutputs.flapAngle = 0;
-            outputToMotors(motorOutputs);
+            #endif
 
+            #ifdef QUADCOPTER
+            motorOutputs.roll = 0;
+            motorOutputs.pitch = 0;
+            motorOutputs.yaw = 0;
+            motorOutputs.throttle = 0;      
+            #endif
+            
             if (!failsafeTriggered) {
-              char errorMsg[100] = "Failsafe triggered";
-              smLoggerQueue->push(&errorMsg);
-              failsafeTriggered = true;
+                char errorMsg[100] = "Failsafe triggered";
+                smLoggerQueue->push(&errorMsg);
+                failsafeTriggered = true;
             }
+            
+            outputToMotors(motorOutputs);
 
             return;
         }
@@ -150,12 +176,22 @@ void AttitudeManager::amUpdate() {
     // Update current flightmode if changed
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
-            case PlaneFlightMode_e::MANUAL:
+
+            #ifdef PLANE
+            case FlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
                 break;
-            case PlaneFlightMode_e::FBWA:
+            case FlightMode_e::FBWA:
                 activeCLAW = &fbwaCLAW;
                 break;
+            #endif
+            
+            #ifdef QUADCOPTER
+            case FlightMode_e::ACRO:
+                activeCLAW = &acroCLAW;
+                break;
+            #endif
+
         }
         activeCLAW->activateFlightMode();
         currentFlightMode = controlMsg.flightMode;
@@ -167,12 +203,20 @@ void AttitudeManager::amUpdate() {
     // Disarm logic
     if (!armedFlag) {
         motorOutputs.throttle = 0;
+
+        #ifdef QUADCOPTER
+        motorOutputs.pitch = 0;
+        motorOutputs.roll = 0;
+        motorOutputs.yaw = 0;
+        #endif
+
     }
 
     // Output to motors
     outputToMotors(motorOutputs);
 
     setArmFlag = false;
+    
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
@@ -185,38 +229,36 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
+void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg) {
+
+    #ifdef PLANE
+        MotorMixing::fixedWingMoterMixer(outputControlMsg, mainMotorGroup, motorPercent);
+    #endif
+
+    #ifdef QUADCOPTER
+        MotorMixing::quadMotorMixer(outputControlMsg, mainMotorGroup, motorPercent);
+    #endif
+
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
         // Get current motor
         MotorInstance_t *motor = (mainMotorGroup->motors + i);
 
-        // Extract percentage based on function
-        float percent = 0.0f;
-        switch (motor->function) {
-            case MotorFunction_e::AILERON:
-                percent = outputControlMsg.roll;
-                break;
-            case MotorFunction_e::ELEVATOR:
-                percent = outputControlMsg.pitch;
-                break;
-            case MotorFunction_e::RUDDER:
-                percent = outputControlMsg.yaw;
-                break;
-            case MotorFunction_e::THROTTLE:
-                percent = outputControlMsg.throttle;
-                break;
-            case MotorFunction_e::FLAP:
-                percent = outputControlMsg.flapAngle;
-                break;
-            case MotorFunction_e::GROUND_STEERING:
-                percent = outputControlMsg.yaw;
-                break;
-            default:
-                continue;
+        if (motor->function == MotorFunction_e::DISABLED || motor->function == MotorFunction_e::GPIO) {
+            continue;
         }
 
-        // Set cmd based on percent and trim, min, max
+        float percent = motorPercent[i];
+
+        #ifdef QUADCOPTER
+        if (!armedFlag || failsafeTriggered) {
+            percent = 0;
+        }
+        #endif
+
         uint32_t cmd = 0;
+
+        #ifdef PLANE
+        // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
             // Scale [0, 50] to [min, trim]
             cmd = motor->min + (percent / 50.0f) * (motor->trim - motor->min);
@@ -236,13 +278,29 @@ void AttitudeManager::outputToMotors(RCMotorControlMessage_t outputControlMsg) {
         if (motor->isInverted) {
             cmd = 100 - cmd;
         }
+        #endif
+
+        #ifdef QUADCOPTER
+        cmd = percent * 100;
+        if (cmd > 100.0f) cmd = 100.0f; 
+        else if (cmd < 0.0f) cmd = 0.0f; 
+        #endif
 
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
         // Set arm flag for throttle motors, only on arm/disarm edges
         if (setArmFlag) {
+
+            #ifdef PLANE
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
+            #endif
+            
+            #ifdef QUADCOPTER
+            bool armed = (motor->function == MotorFunction_e::MOTOR_1 || motor->function == MotorFunction_e::MOTOR_2 
+                || motor->function == MotorFunction_e::MOTOR_3 || motor->function == MotorFunction_e::MOTOR_4) ? armedFlag : true;  
+            #endif
+
             motor->motorInstance->setArm(armed);
         }
 

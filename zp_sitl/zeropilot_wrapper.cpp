@@ -131,37 +131,67 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO1_MIN", 1000);
         ZP_PARAM::setParamById("SERVO1_MAX", 2000);
         ZP_PARAM::setParamById("SERVO1_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::AILERON));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_1));
+        #endif
 
         ZP_PARAM::setParamById("SERVO2_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO2_MIN", 1000);
         ZP_PARAM::setParamById("SERVO2_MAX", 2000);
         ZP_PARAM::setParamById("SERVO2_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::ELEVATOR));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_2));
+        #endif
 
         ZP_PARAM::setParamById("SERVO3_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO3_MIN", 1000);
         ZP_PARAM::setParamById("SERVO3_MAX", 2000);
         ZP_PARAM::setParamById("SERVO3_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::THROTTLE));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_3));
+        #endif
 
         ZP_PARAM::setParamById("SERVO4_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO4_MIN", 1000);
         ZP_PARAM::setParamById("SERVO4_MAX", 2000);
         ZP_PARAM::setParamById("SERVO4_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::RUDDER));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_4));
+        #endif
 
         ZP_PARAM::setParamById("SERVO5_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO5_MIN", 1000);
         ZP_PARAM::setParamById("SERVO5_MAX", 2000);
         ZP_PARAM::setParamById("SERVO5_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::FLAP));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        #endif
 
         ZP_PARAM::setParamById("SERVO6_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO6_MIN", 1000);
         ZP_PARAM::setParamById("SERVO6_MAX", 2000);
         ZP_PARAM::setParamById("SERVO6_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::GROUND_STEERING));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        #endif
 
         ZP_PARAM::setParamById("SERVO7_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
         ZP_PARAM::setParamById("SERVO8_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
@@ -222,11 +252,21 @@ static PyObject* ZP_setBatteryCapacity(ZPObject* self, PyObject* args) {
 }
 
 static PyObject* ZP_setRC(ZPObject* self, PyObject* args) {
+    #ifdef PLANE
     float roll, pitch, yaw, throttle, arm, flap, fltmode;
     if (!PyArg_ParseTuple(args, "fffffff", &roll, &pitch, &yaw, &throttle, &arm, &flap, &fltmode))
         return NULL;
-    
+
     self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, flap, fltmode);
+    #endif
+    #ifdef QUADCOPTER
+    float roll, pitch, yaw, throttle, arm, fltmode;
+    if (!PyArg_ParseTuple(args, "ffffff", &roll, &pitch, &yaw, &throttle, &arm, &fltmode))
+        return NULL;
+
+    self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, 0.0f, fltmode);
+    #endif
+    
     Py_RETURN_NONE;
 }
 
@@ -256,14 +296,26 @@ static PyObject* ZP_update(ZPObject* self, PyObject* args) {
 
 static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
     // Motors indexed by servo param order: aileron, elevator, throttle, rudder, flap, steering
+
+    #ifdef PLANE 
     uint32_t roll = self->sitlMotors[0]->get();
     uint32_t pitch = self->sitlMotors[1]->get();
     uint32_t throttle = self->sitlMotors[2]->get();
     uint32_t yaw = self->sitlMotors[3]->get();
     uint32_t flap = self->sitlMotors[4]->get();
     uint32_t steer = self->sitlMotors[5]->get();
-    
+
     return Py_BuildValue("(iiiiii)", roll, pitch, yaw, throttle, flap, steer);
+    #endif
+
+    #ifdef QUADCOPTER
+    uint32_t motor_1 = self->sitlMotors[0]->get();
+    uint32_t motor_2 = self->sitlMotors[1]->get();
+    uint32_t motor_3 = self->sitlMotors[2]->get();
+    uint32_t motor_4 = self->sitlMotors[3]->get();
+
+    return Py_BuildValue("(iiii)", motor_1, motor_2, motor_3, motor_4);
+    #endif
 }
 
 static PyObject* ZP_getTelemMessages(ZPObject* self, PyObject* args) {

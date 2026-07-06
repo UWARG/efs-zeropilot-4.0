@@ -12,8 +12,10 @@
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
+#include "acro_mapping.hpp"
+#include "motor_mixing.hpp"
 
-#define AM_SCHEDULING_RATE_HZ 100
+#define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
@@ -39,6 +41,8 @@ class AttitudeManager {
         void amUpdate();
 
     private:
+        static constexpr uint8_t NUM_MOTORS = 8;
+
         ISystemUtils *systemUtilsDriver;
 
         IGPS *gpsDriver;
@@ -51,11 +55,16 @@ class AttitudeManager {
         IMessageQueue<char[100]> *smLoggerQueue;
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
+        #ifdef PLANE
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
+        #endif
+        #ifdef QUADCOPTER
+        ACROMapping acroCLAW;       // ACRO Control Law (Roll, Pitch, and Yaw Rates)
+        #endif
         RCMotorControlMessage_t controlMsg;
+        FlightMode_e currentFlightMode;
         DroneState_t droneState;
-        PlaneFlightMode_e currentFlightMode;
 
         MotorGroupInstance_t *mainMotorGroup;
 
@@ -85,6 +94,8 @@ class AttitudeManager {
         
         uint8_t profilerId;
         
-        AMParamSetup paramSetup;
+        // Motor mixer output for each motor 
+        float motorPercent[NUM_MOTORS];
 
+        AMParamSetup paramSetup;
 };

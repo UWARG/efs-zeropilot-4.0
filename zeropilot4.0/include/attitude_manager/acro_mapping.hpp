@@ -4,9 +4,9 @@
 #include "flightmode.hpp"
 #include "pid.hpp"
 
-class FBWAMapping : public Flightmode {
-    public:
-        FBWAMapping(float control_iter_period_s) noexcept;
+class ACROMapping : public Flightmode{
+    public: 
+        ACROMapping(float control_iter_period_s) noexcept;
 
         void activateFlightMode() override;
 
@@ -18,48 +18,47 @@ class FBWAMapping : public Flightmode {
         // Setter for *pitch* PID consts
         void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
-        // Setter for *yaw* rudder mixing const
-        void setYawRudderMixingConstant(float newMixingConst) noexcept;
+        // Setter for *yaw* PID consts
+        void setYawPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
-        // Setter for *rollLimitRad*
-        void setRollLimitDeg(float newRollLimitDeg) noexcept;
+        // Setter for *rollLimitRate* in rad / s
+        void setRollLimitRate(float newRollLimitRate) noexcept;
 
-        // Setter for *pitchLimitMaxRad*
-        void setPitchLimitMaxDeg(float newPitchLimitMaxDeg) noexcept;
+         // Setter for *pitchLimitRate* in rad / s
+        void setPitchLimitRate(float newPitchLimitRate) noexcept;
 
-        // Setter for *pitchLimitMinRad*
-        void setPitchLimitMinDeg(float newPitchLimitMinDeg) noexcept;
+         // Setter for *yawLimitRate* in rad / s
+        void setYawLimitRate(float newYawLimitRate) noexcept;
 
-        // Resetter for both roll and pitch PIDs (needed for unit testing)
+        // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
         void resetControlLoopState() noexcept;
 
         // Getter for PID objects
         PID *getRollPID() noexcept;
         PID *getPitchPID() noexcept;
+        PID *getYawPID() noexcept;
 
         // Destructor
-        ~FBWAMapping() noexcept override = default;
+        ~ACROMapping() noexcept override = default;
 
-    private:
-        // Roll and Pitch PID class objects
+    private: 
+         // Roll, pitch and yaw PID class objects
         PID rollPID;
         PID pitchPID;
+        PID yawPID;
 
-        // Yaw rudder mixing constant
-        float yawRudderMixingConst;
-
-        // Values for roll/pitch limits
-        float rollLimitRad;
-        float pitchLimitMaxRad;
-        float pitchLimitMinRad;
+        // Values for roll, pitch and yaw limits
+        float rollLimitRate;
+        float pitchLimitRate;
+        float yawLimitRate;
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
         static constexpr float OUTPUT_MAX = +1.0f;
 
         // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
-        static constexpr float FBWA_PID_OUTPUT_SCALE = 50.0f;
-        static constexpr float FBWA_PID_OUTPUT_SHIFT = 50.0f;
+        static constexpr float ACRO_PID_OUTPUT_SCALE = 50.0f;
+        static constexpr float ACRO_PID_OUTPUT_SHIFT = 50.0f;
 
         // Assumed normalized range of RC Input to be [0, 100]
         static constexpr float MAX_RC_INPUT_VAL = 100.0f;
