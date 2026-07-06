@@ -15,8 +15,9 @@ set(AM_INC
 
 # System manager files
 set(SM_SRC
-    "src/system_manager/sm_param_setup.cpp"
     "src/system_manager/system_manager.cpp"
+    "src/system_manager/sm_param_setup.cpp"
+    "src/system_manager/soc_estimation.cpp"
 )
 set(SM_INC
     "include/system_manager/"

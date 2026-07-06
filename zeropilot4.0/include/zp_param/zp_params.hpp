@@ -130,6 +130,7 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     RC2_REVERSED,
     RC3_REVERSED,
     RC4_REVERSED,
+    BATT_N_CELLS,
     PARAM_COUNT
 };
 

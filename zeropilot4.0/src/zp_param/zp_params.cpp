@@ -217,6 +217,8 @@ void init() {
     initParam(ZP_PARAM_ID::RC2_REVERSED, "RC2_REVERSED", 0, MAV_PARAM_TYPE_UINT8);
     initParam(ZP_PARAM_ID::RC3_REVERSED, "RC3_REVERSED", 0, MAV_PARAM_TYPE_UINT8);
     initParam(ZP_PARAM_ID::RC4_REVERSED, "RC4_REVERSED", 0, MAV_PARAM_TYPE_UINT8);
+
+    initParam(ZP_PARAM_ID::BATT_N_CELLS, "BATT_N_CELLS", 3, MAV_PARAM_TYPE_INT8);
 }
 
 void bindCallbackInternal(ZP_PARAM_ID id, void* context, ParamSetterCb_t setter) {
