@@ -16,7 +16,7 @@ class MotorControl : public IMotorControl {
         /**
          * @brief starts PWM output
          */
-        void init();
+        void init() override;
 
         /**
          * @brief enables servo output
@@ -29,11 +29,6 @@ class MotorControl : public IMotorControl {
          * @param 
          */
         static void enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi);
-
-        /**
-         * @brief sets arm flag
-         */
-        void setArm(bool arm) override;
 
     private:
         TIM_HandleTypeDef * const timer;

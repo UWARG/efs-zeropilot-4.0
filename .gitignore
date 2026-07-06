@@ -12,9 +12,9 @@ build/
 Debug/
 Release/
 *.launch
-Debug-fw/
+Debug-plane/
 Debug-quad/
-Release-fw/
+Release-plane/
 Release-quad/
 
 # remove build host

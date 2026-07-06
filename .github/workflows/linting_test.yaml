@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  linting_test_fixed_wing:
+  linting_test_plane:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,18 +24,18 @@ jobs:
     - name: Build main 
       working-directory: ./zeropilot4.0
       run: |
-        bash ./hwbuild.bash -c l552 -v fw
+        bash ./hwbuild.bash -c l552 -v plane
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
       working-directory: ./zeropilot4.0/tests
       run: |
-        bash ./testbuild.bash -c -v fw
+        bash ./testbuild.bash -c -v plane
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
       working-directory: ./zeropilot4.0
-      run: bash ./lint.bash -v fw
+      run: bash ./lint.bash -v plane
 
   linting_test_quad:
     runs-on: ubuntu-latest

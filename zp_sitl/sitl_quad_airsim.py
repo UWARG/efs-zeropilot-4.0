@@ -16,7 +16,7 @@ FLTMODE_AXIS = 6
 FLTMODE_AXIS_VALUES = [-0.8, -0.38, -0.12, 0.0, 0.29, 0.99]
 
 class ZP_QUAD_SITL_AIRSIM:
-    def __init__(self):
+    def __init__(self, ip="127.0.0.1", port=14550):
         # Input Setup (Joysticks)
         pygame.init()
         pygame.joystick.init()
@@ -31,10 +31,10 @@ class ZP_QUAD_SITL_AIRSIM:
         self.client.armDisarm(True)
         
         # State setup 
-        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ)
+        self.zp = zeropilot.ZeroPilot(sitl_rate_hz=SITL_RATE_HZ, ip=ip, port=port)
         self.running = True
         self.armed = False
-        self.paused = True
+        self.paused = True 
         # Reset is requested from the joystick thread but must run on the main
         # thread: the AirSim RPC client is not safe to call from two threads.
         self.reset_requested = False
@@ -67,13 +67,13 @@ class ZP_QUAD_SITL_AIRSIM:
                 
                 for event in pygame.event.get():
                     if event.type == pygame.JOYBUTTONDOWN:
-                        if event.button == 2:
-                            self.reset_requested = True
                         if event.button == 3:
                             self.paused = not self.paused
                     elif event.type == pygame.JOYAXISMOTION:
-                        if event.axis == FLTMODE_AXIS:
-                            self.fltmode_index = self.axis_to_fltmode(event.value)
+                        if event.axis == 4 and event.value > 0.5:  # ZL button
+                            self.fltmode_index = max(0, self.fltmode_index - 1)
+                        elif event.axis == 5 and event.value > 0.5:  # ZR button
+                            self.fltmode_index = min(len(self.fltmode_setpoints) - 1, self.fltmode_index + 1)
                     # elif event.type == pygame.JOYBUTTONUP:
                     #     if event.button == 2:
                     #          self.armed = False
@@ -150,8 +150,6 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Pos:  ({state.gps_location.latitude:.4f}, {state.gps_location.longitude:.4f})",
             "==============================================",
             f" M1: {m1:>7.3f} | M2: {m2:>7.3f} | M3: {m3:>7.3f} | M4: {m4:>7.3f}",
-            " [A] Arm | [B] Disarm | [BACK] Pause | [START] Reset",
-            " [L] Flaps Down | [R] Flaps Up | [Axis 6 switch] Flight Mode 1-6",
             "\033[K"
         ]
         sys.stdout.write("\n".join(dash) + "\n")
@@ -159,7 +157,10 @@ class ZP_QUAD_SITL_AIRSIM:
 
 
 if __name__ == '__main__':
-    sitl = ZP_QUAD_SITL_AIRSIM()
+    TARGET_IP = "127.0.0.1"
+    TARGET_PORT = 14550
+    
+    sitl = ZP_QUAD_SITL_AIRSIM(ip=TARGET_IP, port=TARGET_PORT)
     
     os.system('cls' if os.name == 'nt' else 'clear')
     threading.Thread(target=sitl.update_joystick, daemon=True).start()
@@ -168,13 +169,9 @@ if __name__ == '__main__':
     try:
         while True:
             while time.perf_counter() < next_step: pass
-            if sitl.reset_requested:
-                sitl.reset_to_air()
-                sitl.reset_requested = False
-                next_step = time.perf_counter()
             sitl.step()
             if time.perf_counter() - last_print > 0.05:
                 sitl.print_state(); last_print = time.perf_counter()
             next_step += target_dt
     except KeyboardInterrupt:
-        if os.path.exists(sitl.fg_out_file): os.remove(sitl.fg_out_file)
+        print("\nExiting Sim.")

@@ -7,14 +7,20 @@ class SITL_IMU : public IIMU {
 private:
     using Config = SITL_Driver_Configs::SITL_IMU_Config;
 
-    RawImu_t rawData = {0, 0, 0, 0, 0, 0};
-    
+    RawImu_t rawData = {};
+    ScaledImu_t scaledData = {};
+    RawImuBatch_t rawBatch = {&rawData, 1}; // Only returning 1 data packet for sitl
+    ScaledImuBatch_t scaledBatch = {&scaledData, 1}; // Only returning 1 data packet for sitl
+
     // Constants for internal conversions
     static constexpr float RAD_TO_DEG = 57.2957795f;
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
 public:
-    int init() override { return 0; }
+    int init() override {
+        rawData.timestamp = 0; // Initialize timestamp
+        return 0; // Success
+    }
     
     /**
      * Simulates the IMU readings based on the physics engine (Plant)
@@ -47,28 +53,33 @@ public:
         rawData.xgyro = (int16_t)(p_deg_s * Config::GYRO_SCALE);
         rawData.ygyro = (int16_t)(q_deg_s * Config::GYRO_SCALE);
         rawData.zgyro = (int16_t)(r_deg_s * Config::GYRO_SCALE);
+
+        rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
     }
     
-    RawImu_t readRawData() override {
-        return rawData;
+    RawImuBatch_t readRawData() override {
+        return rawBatch;
     }
-    
+
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
-    ScaledImu_t scaleIMUData(const RawImu_t &raw) override {
-        ScaledImu_t scaled;
+    ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override {
+        for (int i = 0; i < rawDataBatch.count; i++) {
+            const RawImu_t &raw = rawDataBatch.data[i];
 
-        // Convert LSB back to m/s^2: (Raw / Scale) * 9.81
-        scaled.xacc = ((float)raw.xacc / Config::ACCEL_SCALE) * Config::GRAVITY;
-        scaled.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
-        scaled.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
+            // Convert LSB back to m/s^2: (Raw / Scale) * 9.81
+            scaledData.xacc = ((float)raw.xacc / Config::ACCEL_SCALE) * Config::GRAVITY;
+            scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
+            scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-        // Convert LSB back to deg/s (consistent with hardware IMU driver)
-        scaled.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
-        scaled.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
-        scaled.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
+            // Convert LSB back to deg/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
 
-        return scaled;
+            scaledData.timestamp = raw.timestamp;
+        }
+        return scaledBatch; 
     }
 };

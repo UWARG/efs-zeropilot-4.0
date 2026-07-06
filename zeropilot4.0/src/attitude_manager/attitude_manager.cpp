@@ -2,9 +2,7 @@
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
-
-static constexpr float RAD_TO_DEG = 57.2957795f;
-static constexpr float DEG_TO_RAD = 0.0174532925f;
+#include "unit_conversions.hpp"
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -21,25 +19,21 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
-    #ifdef FIXED_WING
+    #ifdef PLANE
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
-    #endif
-    #ifdef QUADCOPTER
-    activeCLAW(&acroCLAW),
-    acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    stabilizeCLAW(STABILIZE_CONTROL_LOOP_PERIOD_S, AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
-    controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
-    #endif
-    droneState(DRONE_STATE_DEFAULT),
-    #ifdef FIXED_WING
     currentFlightMode(FlightMode_e::MANUAL),
     #endif
     #ifdef QUADCOPTER
-    currentFlightMode(FlightMode_e::ACRO),
+    activeCLAW(&stabilizeCLAW),
+    acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    stabilizeCLAW(STABILIZE_CONTROL_LOOP_PERIOD_S, AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
+    controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
+    currentFlightMode(FlightMode_e::STABILIZE),
     #endif
+    droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
     setArmFlag(false),
@@ -47,16 +41,17 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
+    lastTimestamp(0),
+    haveLastImuTimestamp(false),
     profilerId(0),
     paramSetup(this){
+        paramSetup.loadAllParams();
+        paramSetup.bindAllParamCallbacks();
 
-    paramSetup.loadAllParams();
-    paramSetup.bindAllParamCallbacks();
+        // Activate the activeCLAW
+        activeCLAW->activateFlightMode();
 
-    // Activate the activeCLAW
-    activeCLAW->activateFlightMode();
-
-    systemUtilsDriver->profilerRegister("AM", &profilerId);
+        systemUtilsDriver->profilerRegister("AM", &profilerId);
 }
 
 void AttitudeManager::amUpdate() {
@@ -71,27 +66,48 @@ void AttitudeManager::amUpdate() {
     }
 
     // Send IMU raw data to telemetry manager
-    RawImu_t imuData = imuDriver->readRawData();
-    ScaledImu_t scaledImuData = imuDriver->scaleIMUData(imuData);
-    mahonyFilter.updateIMU(
-        scaledImuData.xgyro,
-        scaledImuData.ygyro,
-        scaledImuData.zgyro,
-        scaledImuData.xacc,
-        scaledImuData.yacc,
-        scaledImuData.zacc
-    );
+    RawImuBatch_t imuData = imuDriver->readRawData();
+    ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
+    for (int i = 0; i < scaledImuData.count; i++) {
+        /**
+         * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
+         * and the delta for double IMU will be necessarily less than uint16_t max value.
+         */
+        uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp;
+
+        lastTimestamp = scaledImuData.data[i].timestamp;
+
+        // Make lastTimestamp hold a real timestamp the first iteration
+        if (!haveLastImuTimestamp) {
+            haveLastImuTimestamp = true;
+            continue;
+        }
+
+        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+
+        mahonyFilter.updateIMU(
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro,
+            scaledImuData.data[i].xacc,
+            scaledImuData.data[i].yacc,
+            scaledImuData.data[i].zacc,
+            dt
+        );
+    }
     Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
-    droneState.rollRate = scaledImuData.xgyro * DEG_TO_RAD;
-    droneState.pitchRate = scaledImuData.ygyro * DEG_TO_RAD;
-    droneState.yawRate = scaledImuData.zgyro * DEG_TO_RAD;
-
+    uint8_t scaledImuCount = scaledImuData.count;
+    if (scaledImuCount > 0) { // Use most recent sample in the batch for rates
+        droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD;
+        droneState.pitchRate = scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD;
+        droneState.yawRate = scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD;
+    }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        sendRawIMUDataToTelemetryManager(imuData);
+        if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
@@ -112,7 +128,8 @@ void AttitudeManager::amUpdate() {
 
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
             RCMotorControlMessage_t motorOutputs{0};
-            #ifdef FIXED_WING
+
+            #ifdef PLANE
             motorOutputs.roll = 50;
             motorOutputs.pitch = 50;
             motorOutputs.yaw = 50;
@@ -159,7 +176,8 @@ void AttitudeManager::amUpdate() {
     // Update current flightmode if changed
     if (controlMsg.flightMode != currentFlightMode) {
         switch (controlMsg.flightMode) {
-            #ifdef FIXED_WING
+
+            #ifdef PLANE
             case FlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
                 break;
@@ -174,6 +192,7 @@ void AttitudeManager::amUpdate() {
                 break;
             case FlightMode_e::STABILIZE:
                 activeCLAW = &stabilizeCLAW;
+                break;
             #endif
         }
         activeCLAW->activateFlightMode();
@@ -192,6 +211,7 @@ void AttitudeManager::amUpdate() {
         motorOutputs.roll = 0;
         motorOutputs.yaw = 0;
         #endif
+
     }
 
     // Output to motors
@@ -211,12 +231,14 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTROL_MSG) {
-    #ifdef FIXED_WING
-        MotorMixing::fixedWingMoterMixer(OUTPUT_CONTROL_MSG, mainMotorGroup, motorPercent);
+void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg) {
+
+    #ifdef PLANE
+        MotorMixing::fixedWingMoterMixer(outputControlMsg, mainMotorGroup, motorPercent);
     #endif
+
     #ifdef QUADCOPTER
-        MotorMixing::quadMotorMixer(OUTPUT_CONTROL_MSG, mainMotorGroup, motorPercent);
+        MotorMixing::quadMotorMixer(outputControlMsg, mainMotorGroup, motorPercent);
     #endif
 
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
@@ -230,13 +252,14 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTRO
         float percent = motorPercent[i];
 
         #ifdef QUADCOPTER
-        if(!armedFlag || failsafeTriggered) {
+        if (!armedFlag || failsafeTriggered) {
             percent = 0;
         }
         #endif
 
         uint32_t cmd = 0;
-        #ifdef FIXED_WING
+
+        #ifdef PLANE
         // Set cmd based on percent and trim, min, max
         if (percent <= 50.0f) {
             // Scale [0, 50] to [min, trim]
@@ -261,16 +284,17 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTRO
 
         #ifdef QUADCOPTER
         cmd = percent * 100;
-        if(cmd > 100.0f) { cmd = 100.0f; }
-        if(cmd < 0.0f) { cmd = 0.0f; }
+        if (cmd > 100.0f) cmd = 100.0f; 
+        else if (cmd < 0.0f) cmd = 0.0f; 
         #endif
 
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
         // Set arm flag for throttle motors, only on arm/disarm edges
-        if(setArmFlag) {
-            #ifdef FIXED_WING
+        if (setArmFlag) {
+
+            #ifdef PLANE
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
             #endif
             
@@ -278,6 +302,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t OUTPUT_CONTRO
             bool armed = (motor->function == MotorFunction_e::MOTOR_1 || motor->function == MotorFunction_e::MOTOR_2 
                 || motor->function == MotorFunction_e::MOTOR_3 || motor->function == MotorFunction_e::MOTOR_4) ? armedFlag : true;  
             #endif
+
             motor->motorInstance->setArm(armed);
         }
 

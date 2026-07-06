@@ -41,8 +41,8 @@ protected:
         ZP_PARAM::init();
 
         ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Return(1000));
-        ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImu_t{0, 0, 0, 0, 0, 0}));
-        ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImu_t{0, 0, 0, 0, 0, 0}));
+        ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImuBatch_t{}));      // Empty batch, count 0
+        ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImuBatch_t{})); // Empty batch, count 0
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
@@ -58,7 +58,8 @@ TEST_F(AttitudeManagerTelemetryTest, RawIMUTelemetrySent) {
     rawImu.ygyro = -50;
     rawImu.zgyro = 25;
 
-    EXPECT_CALL(mockIMU, readRawData()).WillRepeatedly(Return(rawImu));
+    RawImuBatch_t rawImuBatch{&rawImu, 1};
+    EXPECT_CALL(mockIMU, readRawData()).WillRepeatedly(Return(rawImuBatch));
 
     int rawImuCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
@@ -87,7 +88,8 @@ TEST_F(AttitudeManagerTelemetryTest, AttitudeTelemetrySent) {
     scaledImu.ygyro = -0.05f;
     scaledImu.zgyro = 0.025f;
 
-    EXPECT_CALL(mockIMU, scaleIMUData(_)).WillRepeatedly(Return(scaledImu));
+    ScaledImuBatch_t scaledImuBatch{&scaledImu, 1};
+    EXPECT_CALL(mockIMU, scaleIMUData(_)).WillRepeatedly(Return(scaledImuBatch));
 
     int attitudeCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))

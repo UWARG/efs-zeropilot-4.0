@@ -1,6 +1,10 @@
 #include "drivers.hpp"
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
+#include "zp_params.hpp"
+
+#define MOT_TYPE_PWM   0
+#define MOT_TYPE_DSHOT 5
 
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg;
@@ -20,27 +24,7 @@ SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
 
-#ifdef FIXED_WING
-MotorControl *motor1Handle = nullptr;
-MotorControl *motor2Handle = nullptr;
-MotorControl *motor3Handle = nullptr;
-MotorControl *motor4Handle = nullptr;
-MotorControl *motor5Handle = nullptr;
-MotorControl *motor6Handle = nullptr;
-MotorControl *motor7Handle = nullptr;
-MotorControl *motor8Handle = nullptr;
-#endif
-
-#ifdef QUADCOPTER
-DshotMotorControl *motor1Handle = nullptr;
-DshotMotorControl *motor2Handle = nullptr;
-DshotMotorControl *motor3Handle = nullptr;
-DshotMotorControl *motor4Handle = nullptr;
-MotorControl *motor5Handle = nullptr;
-MotorControl *motor6Handle = nullptr;
-MotorControl *motor7Handle = nullptr;
-MotorControl *motor8Handle = nullptr;
-#endif
+IMotorControl *motorHandles[8] = {0};
 
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
@@ -59,6 +43,23 @@ MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 MotorInstance_t motorInstances[8];
 MotorGroupInstance_t mainMotorGroup;
 
+typedef struct {
+    TIM_HandleTypeDef *timer;
+    uint32_t channel;
+} motorChannel_t;
+
+const motorChannel_t MOTOR_MAP[8] = {
+    {&htim3, TIM_CHANNEL_1}, {&htim3, TIM_CHANNEL_2}, {&htim3, TIM_CHANNEL_3}, {&htim3, TIM_CHANNEL_4},
+    {&htim4, TIM_CHANNEL_1}, {&htim1, TIM_CHANNEL_1}, {&htim1, TIM_CHANNEL_2}, {&htim1, TIM_CHANNEL_3},
+};
+
+const ZP_PARAM_ID SERVO_FUNC[8] = {
+    ZP_PARAM_ID::SERVO1_FUNCTION, ZP_PARAM_ID::SERVO2_FUNCTION,
+    ZP_PARAM_ID::SERVO3_FUNCTION, ZP_PARAM_ID::SERVO4_FUNCTION,
+    ZP_PARAM_ID::SERVO5_FUNCTION, ZP_PARAM_ID::SERVO6_FUNCTION,
+    ZP_PARAM_ID::SERVO7_FUNCTION, ZP_PARAM_ID::SERVO8_FUNCTION,
+};
+
 // ----------------------------------------------------------------------------
 // Initialization (no heap allocations)
 // ----------------------------------------------------------------------------
@@ -69,18 +70,33 @@ void initDrivers()
     iwdgHandle = new IndependentWatchdog(&hiwdg);
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
-
     // Motors (servo index matches SERVOx param)
-    #ifdef FIXED_WING
-    motor1Handle = new MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
-    motor2Handle = new MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 2);
-    motor3Handle = new MotorControl(&htim3, TIM_CHANNEL_3, 5, 10, 3);
-    motor4Handle = new MotorControl(&htim3, TIM_CHANNEL_4, 5, 10, 4);
-    motor5Handle = new MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 5);
-    motor6Handle = new MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
-    motor7Handle = new MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
-    motor8Handle = new MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
-	#endif
+    uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
+    for (int i = 0; i < 8; i++) {
+        bool isBLDC = false;
+        #ifdef PLANE
+        isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        #endif
+        #ifdef QUADCOPTER
+        isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
+        #endif
+        if (isBLDC) {
+            switch (servoType) {
+                case MOT_TYPE_DSHOT: // DShot
+                    motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
+                    break;
+                case MOT_TYPE_PWM: // PWM
+                default:
+                    motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
+                    break;
+            }
+        } else {
+            motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
+        }
+    }
 
 	#ifdef QUADCOPTER
     motor1Handle = new DshotMotorControl(&htim3, TIM_CHANNEL_1, false);
@@ -107,14 +123,9 @@ void initDrivers()
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
-    motor1Handle->init();
-    motor2Handle->init();
-    motor3Handle->init();
-    motor4Handle->init();
-    motor5Handle->init();
-    motor6Handle->init();
-    motor7Handle->init();
-    motor8Handle->init();
+    for (int i = 0; i < 8; i++) {
+        motorHandles[i]->init();
+    }
 
     rcHandle->init();
     gpsHandle->init();
@@ -123,14 +134,9 @@ void initDrivers()
     telemLinkHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
-    motorInstances[0] = {motor1Handle};
-    motorInstances[1] = {motor2Handle};
-    motorInstances[2] = {motor3Handle};
-    motorInstances[3] = {motor4Handle};
-    motorInstances[4] = {motor5Handle};
-    motorInstances[5] = {motor6Handle};
-    motorInstances[6] = {motor7Handle};
-    motorInstances[7] = {motor8Handle};
+    for (int i = 0; i < 8; i++) {
+        motorInstances[i] = {motorHandles[i]};
+    }
 
     mainMotorGroup = {motorInstances, 8};
 }

@@ -79,7 +79,8 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     SERVO12_MAX,
     SERVO12_REVERSED,
     SERVO12_FUNCTION,
-    #ifdef FIXED_WING
+    MOT_PWM_TYPE,
+    #ifdef PLANE
     RLL2SRV_P,
     RLL2SRV_I,
     RLL2SRV_D,
@@ -96,36 +97,34 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     PTCH_LIM_MIN_DEG,
     #endif
     #ifdef QUADCOPTER
-    ACT_RATE_RLL_P,
-    ACT_RATE_RLL_I,
-    ACT_RATE_RLL_D,
-    ACT_RATE_RLL_TAU,
-    ACT_RATE_RLL_IMAX,
-    ACT_RATE_PTCH_P,
-    ACT_RATE_PTCH_I,
-    ACT_RATE_PTCH_D,
-    ACT_RATE_PTCH_TAU,
-    ACT_RATE_PTCH_IMAX,
-    ACT_RATE_YAW_P,
-    ACT_RATE_YAW_I,
-    ACT_RATE_YAW_D,
-    ACT_RATE_YAW_TAU,
-    ACT_RATE_YAW_IMAX,
-    ROLL_LIMIT_RATE,
-    PTCH_LIMIT_RATE,
-    YAW_LIMIT_RATE,
-    ACT_ANG_RLL_P,
-    ACT_ANG_RLL_I,
-    ACT_ANG_RLL_D,
-    ACT_ANG_RLL_TAU,
-    ACT_ANG_RLL_IMAX,
-    ACT_ANG_PTCH_P,
-    ACT_ANG_PTCH_I,
-    ACT_ANG_PTCH_D,
-    ACT_ANG_PTCH_TAU,
-    ACT_ANG_PTCH_IMAX,
-    ROLL_LIMIT_ANG,
-    PTCH_LIMIT_ANG,
+    ATC_RAT_RLL_P,
+    ATC_RAT_RLL_I,
+    ATC_RAT_RLL_D,
+    ATC_RAT_RLL_TAU,
+    ATC_RAT_RLL_IMAX,
+    ATC_RAT_PIT_P,
+    ATC_RAT_PIT_I,
+    ATC_RAT_PIT_D,
+    ATC_RAT_PIT_TAU,
+    ATC_RAT_PIT_IMAX,
+    ATC_RAT_YAW_P,
+    ATC_RAT_YAW_I,
+    ATC_RAT_YAW_D,
+    ATC_RAT_YAW_TAU,
+    ATC_RAT_YAW_IMAX,
+    ACRO_RP_RATE,
+    ACRO_Y_RATE,
+    ATC_ANG_RLL_P,
+    ATC_ANG_RLL_I,
+    ATC_ANG_RLL_D,
+    ATC_ANG_RLL_TAU,
+    ATC_ANG_RLL_IMAX,
+    ATC_ANG_PTCH_P,
+    ATC_ANG_PTCH_I,
+    ATC_ANG_PTCH_D,
+    ATC_ANG_PTCH_TAU,
+    ATC_ANG_PTCH_IMAX,
+    ATC_ANGLE_MAX,
     #endif
     FLTMODE1,
     FLTMODE2,
@@ -138,10 +137,11 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     BATT_CRT_VOLT,
     BATT_CAPACITY,
     BATT_LOW_TIMER,
-
-  
-
-    
+    RC1_REVERSED,
+    RC2_REVERSED,
+    RC3_REVERSED,
+    RC4_REVERSED,
+    BATT_N_CELLS,
     PARAM_COUNT
 };
 
@@ -161,7 +161,7 @@ namespace ZP_PARAM {
     // Get current config value
     float get(ZP_PARAM_ID id);
 
-    // MAVLink/Telemetry interaction
+    // MAVLink/Telemetry interATCion
     bool setParamById(const char* paramId, float new_value);
     
     // Accessors

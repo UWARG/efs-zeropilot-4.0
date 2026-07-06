@@ -22,26 +22,7 @@ extern SystemUtils *systemUtilsHandle;
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
 
-#ifdef FIXED_WING
-extern MotorControl *motor1Handle;
-extern MotorControl *motor2Handle;
-extern MotorControl *motor3Handle;
-extern MotorControl *motor4Handle;
-extern MotorControl *motor5Handle;
-extern MotorControl *motor6Handle;
-extern MotorControl *motor7Handle;
-extern MotorControl *motor8Handle;
-#endif
-#ifdef QUADCOPTER
-extern DshotMotorControl *motor1Handle;
-extern DshotMotorControl *motor2Handle;
-extern DshotMotorControl *motor3Handle;
-extern DshotMotorControl *motor4Handle;
-extern MotorControl *motor5Handle;
-extern MotorControl *motor6Handle;
-extern MotorControl *motor7Handle;
-extern MotorControl *motor8Handle;
-#endif
+extern IMotorControl *motorHandles[8];
 
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;

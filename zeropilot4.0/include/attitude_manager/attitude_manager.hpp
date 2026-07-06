@@ -46,6 +46,8 @@ class AttitudeManager {
         void amUpdate();
 
     private:
+        static constexpr uint8_t NUM_MOTORS = 8;
+
         ISystemUtils *systemUtilsDriver;
 
         IGPS *gpsDriver;
@@ -58,6 +60,7 @@ class AttitudeManager {
         IMessageQueue<char[100]> *smLoggerQueue;
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
+        #ifdef PLANE
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         #ifdef FIXED_WING
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
@@ -67,8 +70,8 @@ class AttitudeManager {
         STABILIZEMapping stabilizeCLAW;
         #endif
         RCMotorControlMessage_t controlMsg;
-        DroneState_t droneState;
         FlightMode_e currentFlightMode;
+        DroneState_t droneState;
 
         MotorGroupInstance_t *mainMotorGroup;
 
@@ -82,6 +85,11 @@ class AttitudeManager {
         int noDataCount;
         bool failsafeTriggered;
 
+        static constexpr uint16_t MAX_TIMESTAMP = 65535;
+        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
+        uint32_t lastTimestamp;
+        bool haveLastImuTimestamp;
+
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
         void outputToMotors(RCMotorControlMessage_t outputControlMsg);
@@ -92,8 +100,6 @@ class AttitudeManager {
         void sendServoOutputRawToTelemetryManager();
         
         uint8_t profilerId;
-        
-        static constexpr uint8_t NUM_MOTORS = 8;
         
         // Motor mixer output for each motor 
         float motorPercent[NUM_MOTORS];

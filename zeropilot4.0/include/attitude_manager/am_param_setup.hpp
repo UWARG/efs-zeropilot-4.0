@@ -16,7 +16,7 @@ class AMParamSetup : public IParamSetup {
     AttitudeManager* am;
 
     // Flightmode param callbacks
-    #ifdef FIXED_WING
+    #ifdef PLANE
     static bool updatePIDRollKp(AttitudeManager* ctx, float val);
     static bool updatePIDRollKi(AttitudeManager* ctx, float val);
     static bool updatePIDRollKd(AttitudeManager* ctx, float val);

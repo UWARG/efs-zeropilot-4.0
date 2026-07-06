@@ -37,7 +37,7 @@ class RCControl {
 
         RCControl() {
             isDataNew   = false;
-            #ifdef FIXED_WING
+            #ifdef PLANE
             roll        = 50.0f;
             pitch       = 50.0f;
             throttle    = 0.0f;

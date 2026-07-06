@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  compile_test_fixed_wing:
+  compile_test_plane:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,7 @@ jobs:
 
     - name: Build project
       working-directory: ./zeropilot4.0
-      run: bash ./hwbuild.bash -c -v fw -b l552 
+      run: bash ./hwbuild.bash -c -v plane -b l552 
 
   compile_test_quad:
     runs-on: ubuntu-latest

@@ -5,10 +5,10 @@ import platform
 
 zeropilot_root = '../zeropilot4.0'
 
-# Vehicle type: set V=QUAD or V=FW (default: FIXED_WING)
-VEHICLE = os.environ.get('V', 'FIXED_WING').upper()
-if VEHICLE not in ('QUADCOPTER', 'FIXED_WING'):
-    raise ValueError(f"ZP_VEHICLE must be QUADCOPTER or FIXED_WING, got: {VEHICLE}")
+# Vehicle type: set V=QUAD or V=PLANE (default: PLANE)
+VEHICLE = os.environ.get('V', 'PLANE').upper()
+if VEHICLE not in ('QUADCOPTER', 'PLANE'):
+    raise ValueError(f"ZP_VEHICLE must be QUADCOPTER or PLANE, got: {VEHICLE}")
 
 # 1. Handle OS-specific compiler and linker settings
 if platform.system() == "Windows":

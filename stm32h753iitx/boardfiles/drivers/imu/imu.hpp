@@ -1,96 +1,83 @@
 // IMU.hpp
-
-#ifndef IMU_HPP
-#define IMU_HPP
+#pragma once
 
 #include "imu_iface.hpp"
 #include "stm32h7xx_hal.h"
 #include <cstdint>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
 #include "imu_datatypes.hpp"
 
 class IMU : public IIMU {
-private:
-	SPI_HandleTypeDef* _spi;
-	GPIO_TypeDef* _csPort;
-	uint16_t _csPin;
-
-	static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f; // determined by GYRO_FS_SEL, page 11
-	static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // determined by ACCEL_FS_SEL, page 12, scale to m/s^2
-
-	static constexpr int RX_BUFFER_SIZE = 15; // inline static constexpr so it doesn't pollute namespace
-	volatile uint8_t imu_tx_buffer[RX_BUFFER_SIZE]; // only first bit register addr to read sensor data, rest 0
-	volatile uint8_t imu_rx_buffer[RX_BUFFER_SIZE]; // first byte is dummy, next 14 bytes are data received
-
-	uint8_t curr_register_bank = 5; // invalid initial state
-	volatile uint8_t spi_tx_rx_flag = 1; // set to 1 to initiate first read
-	RawImu_t raw_imu_data = {}; // zero-initialize all floats, NED frame
-
+	public:
+		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
 	
-	// Utility functions
-	HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data); // blocking
-	HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data); // blocking
+		// Initialization
+		int init() override;
 	
-	void csLow();
-	void csHigh();
-	HAL_StatusTypeDef setBank(uint8_t bank);
-	void reset();
-	uint8_t whoAmI();
-	void processRawData(); // process data in imu_rx_buffer and store in raw_imu_data, NED frame
-
-	// Configuration
-	void setLowNoiseMode();
-
-	// Filtering
-	float lowPassFilter(float raw_value, int select);
+		// Data reading, first read returns all 0s, subsequent reads return latest data
+		RawImuBatch_t readRawData() override; // non-blocking
+		ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override;
 	
-	// Internal variables
-	float _alpha;
-	float _filteredGyro[3];
+		void txRxCallback(); // Called in HAL_SPI_TxRxCpltCallback
+	
+		SPI_HandleTypeDef *getSPI();
+		bool getDmaFlag();
 
-	// TODO: below code needs to be tested and verified
+		void beginRead();
+		RawImuBatch_t getBatch();
+		
+		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
+		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
+		static constexpr uint8_t MAX_PACKETS = 128; // User defined max packet reads per batch, has to be <= FIFO_HW_MAX_PACKETS
+		
+	private:
+		SPI_HandleTypeDef *spi;
+		GPIO_TypeDef *csPort;
+		uint16_t csPin;
+		
+		static constexpr uint8_t PACKET_SIZE = 16;
+		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit
+		static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1;
 
-	/*
-	// Calibration
-	void calibrateGyro();
-	void calibrateAccel();
+		typedef enum
+		{
+			COUNT,
+			DATA
+		} RxStates_e;
 
-	// Configuration
-	void setAccelFS(uint8_t fssel);
-	void setGyroFS(uint8_t fssel);
+		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE]; // First bit should be 1 for register read
+		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE]; // First byte is dummy, rest are data received
+		volatile RxStates_e rxFlag = COUNT;
+		volatile bool dmaDone = true; // True so can kick off first transfer
+		uint8_t currRegisterBank = 5; // Invalid initial state
+		uint16_t fifoSize = 0;
 
-	// Filtering
-	void configureNotchFilter();
-	void setAntiAliasFilter(uint16_t bandwidth_hz, bool accel_enable, bool gyro_enable);
+		RawImu_t rawData[MAX_PACKETS] = {};
+		RawImuBatch_t rawImuDataBatch = {};
+		ScaledImu_t scaledData[MAX_PACKETS] = {};
+		ScaledImuBatch_t scaledImuDataBatch = {};
 
-	// Internal variables
-	float _gyroScale;
-	float _accelScale;
-	uint8_t _gyroFS;
-	uint8_t _accelFS;
-	float _gyrB[3]; // currently not used to correct readings
-	float _accB[3]; // currently not used to correct readings
-	*/
+		// Utility functions, blocking
+		HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); 
+		HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t *data); 
+		HAL_StatusTypeDef setBank(uint8_t bank);
 
-public:
-	IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin);
+		void csLow();
+		void csHigh();
+		void reset();
+		uint8_t whoAmI();
+		void flushFIFO();
+		void dmaTransfer();
+		
+		// Configuration
+		void setLowNoiseMode();
+		void setFIFO();
+		void setODR();
+		
+		// Processing and filtering
+		void processRawData();
+		float lowPassFilter(float rawValue, int select);
 
-	// Initialization
-	int init() override;
-
-	// Data reading
-	// First read returns all 0s, subsequent reads return latest data
-	RawImu_t readRawData() override; // non-blocking
-
-	ScaledImu_t scaleIMUData(const RawImu_t &rawData) override;
-
-	// put this in void HAL_SPI_TxRxCpltCallback (SPI_HandleTypeDef * hspi)
-	void txRxCallback();
-
-	SPI_HandleTypeDef* getSPI();
+		// Internal variables
+		float alpha;
+		float filteredGyro[3];
 };
-
-#endif
