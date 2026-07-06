@@ -244,7 +244,7 @@ void TelemetryManager::enqueueParamValueTx(uint16_t index) {
 
 void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg) {
     bool is_fragmented = (rtcmMsg.flags & 0x01);
-    uint8_t fragment_id = (rtcmMsg.flags >> 1) & (0x02);
+    uint8_t fragment_id = (rtcmMsg.flags >> 1) & (0x03);
     uint8_t sequence_id = (rtcmMsg.flags >> 3) & (0xFF);
 
     if (!is_fragmented) {
@@ -265,7 +265,7 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
         rtcmFragmentsRecieved |= (1 << fragment_id);
     }
 
-    if (rtcmRecievedFragments == 0x0F) {
+    if (rtcmFragmentsRecieved == 0x0F) {
         // TODO: Add logic for enque
         resetRtcmState();
     }
