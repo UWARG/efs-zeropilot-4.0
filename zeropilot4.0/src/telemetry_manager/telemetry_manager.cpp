@@ -261,6 +261,8 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
     memcpy(rtcmAssemblyBuffer + (fragment_id * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
     if (rtcmMsg.len < 180) {
         rtcmFragmentsRecieved |= (~((1 << fragment_id) - 1)) & 0x0F;
+    } else {
+        rtcmFragmentsRecieved |= (1 << fragment_id);
     }
 
     if (rtcmRecievedFragments == 0x0F) {
