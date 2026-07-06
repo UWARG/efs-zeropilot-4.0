@@ -72,6 +72,10 @@ python sitl_quad_airsim.py     # Start the simulation
 ```
 Download Blocks.zip @ https://github.com/Microsoft/AirSim/releases. Open Blocks.exe and select "No" for quadcopter simulation. Connect a controller to your laptop for controls.
 
+### button_testing.py
+
+Run the test to determine which channel on the controller corresponds to which channel in pygame when connecting to a new controller.
+
 ## SITL Drivers
 
 Each driver in `sitl_drivers/` implements the same interface as the hardware driver but provides simulated data.
