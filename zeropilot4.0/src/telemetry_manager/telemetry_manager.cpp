@@ -220,6 +220,7 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
         case MAVLINK_MSG_ID_GPS_RTCM_DATA: {
             mavlink_gps_rtcm_data_t rtcmMsg;
             mavlink_msg_gps_rtcm_data_decode(&msg, &rtcmMsg);
+            handleRtcmFragment(rtcmMsg);
             break;
         }
 
