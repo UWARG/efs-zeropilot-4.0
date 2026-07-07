@@ -5,6 +5,110 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
+void FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
+    // Validate configuration parameters
+    if (config.sample_freq_hz <= 0.0f || config.bandwidth_hz <= 0.0f) {
+        return;
+    }
+
+    // Store configuration
+    _config = config;
+
+    // Calculate generic Attenuation (A) and Quality (Q) factors
+    _A = powf(10.0f, -_config.attenuation_dB / 40.0f);
+    _Q = _config.min_freq_hz / _config.bandwidth_hz;
+
+    // Initialize CMSIS-DSP FFT Instance
+    arm_rfft_fast_init_f32(&_fftHandler, FFT_SIZE); // FILLMEIN: Replace arm_rfft_fast_init_f32 with FFT driver init
+    _fftIndex = 0;
+
+    // Pre-compute the Hanning Window to save FPU cycles during runtime
+    for (int i = 0; i < FFT_SIZE; i++) {
+        _hanningWindow[i] = 0.5f * (1.0f - cosf(2.0f * M_PI * i / (FFT_SIZE - 1))); // FILLMEIN: Replace with arm_cos_f32 from SystemUtils
+    }
+
+    // Reset filter states and mark as initialized
+    reset();
+    _initialised = true;
+}
+
+bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
+    if (!_initialised) return false;
+
+    // Load sample into buffer
+    _fftBuffer[_fftIndex++] = raw_gyro_sample;
+
+    // If buffer is full, execute FFT
+    if (_fftIndex >= FFT_SIZE) {
+        float fftOutput[FFT_SIZE];
+        float magnitudes[FFT_SIZE / 2];
+
+        // 1. Apply Hanning window
+        // FILLMEIN (for each sample in the buffer, buffer[i] *= _hanningWindow[i])
+
+        // 2. Run FFT via CMSIS-DSP
+        // FILLMEIN (call arm_rfft_fast_f32 with _fftHandler, _fftBuffer, fftOutput, 0)
+        
+        // 3. Calculate Magnitudes via CMSIS-DSP [arm_cmplx_mag_f32]
+        // FILLMEIN (call arm_cmplx_mag_f32 with fftOutput, magnitudes, FFT_SIZE / 2)
+
+        // 4. Find Peak Frequency Bin
+        // Start searching at the bin corresponding to min_freq_hz to avoid physical flight dynamics
+        // FILLMEIN (find idx for starting bin, and if 0 then set to 1 to avoid DC component)
+        //          (then, loop through magnitudes to find the index w/ the maximum energy)
+
+        // 5. Convert to Hz and update coefficients via updateFilters(peak_freq_hz)
+        float peakFreq = (float)peakBin * (_config.sample_freq_hz / FFT_SIZE);
+        updateFilters(peakFreq);
+
+        // 6. Reset buffer index for next cycle
+        _fftIndex = 0; // Reset buffer
+        return true;   // FFT ran (buffer full)
+    }
+
+    return false; // Buffer not full yet
+}
+
+void FFTHarmonicNotch::updateFilters(float peak_freq_hz) {
+    const float nyquist_limit = _config.sample_freq_hz * 0.48f;
+
+    for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
+        // Check if this harmonic bit is enabled in the mask
+        if (!((1U << i) & _config.harmonics_mask)) {
+            _filters[i].enabled = false;
+            continue;
+        }
+
+        float harmonic_freq = peak_freq_hz * (i + 1);
+
+        // Disable filter if it exceeds Nyquist or drops below the minimum configured frequency
+        if (harmonic_freq >= nyquist_limit || harmonic_freq < _config.min_freq_hz) {
+            _filters[i].enabled = false;
+            continue;
+        }
+
+        // Update coefficients for this specific harmonic
+        _filters[i].updateCoefficients(_config.sample_freq_hz, harmonic_freq, _A, _Q);
+        _filters[i].enabled = true;
+    }
+}
+
+void FFTHarmonicNotch::apply(float& gx, float& gy, float& gz) {
+    if (!_initialised) return;
+
+    for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
+        if (_filters[i].enabled) {
+            _filters[i].applyTriAxis(gx, gy, gz);
+        }
+    }
+}
+
+void FFTHarmonicNotch::reset() {
+    for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
+        _filters[i].resetStates();
+    }
+}
+
 // ---------------------------------------------------------
 // Bi-Quadratic Filter Mathematical Implementation
 // ---------------------------------------------------------
