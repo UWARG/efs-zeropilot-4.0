@@ -12,8 +12,8 @@ StabilizeMapping::StabilizeMapping(float control_iter_period_s, AcroMapping &acr
     rollPitchLimitAngle(0.0f),
     acroCLAW(acro),
     decimationCounter(0),
-    stabilizeRollCmd(ACRO_PID_OUTPUT_SHIFT),
-    stabilizePitchCmd(ACRO_PID_OUTPUT_SHIFT) {
+    stabilizeRollCmd(STABILIZE_PID_OUTPUT_SHIFT),
+    stabilizePitchCmd(STABILIZE_PID_OUTPUT_SHIFT) {
         rollPID.pidInitState();
         pitchPID.pidInitState();
 }
@@ -33,8 +33,8 @@ void StabilizeMapping::resetControlLoopState() noexcept {
     rollPID.pidInitState();
     pitchPID.pidInitState();
     decimationCounter = 0;
-    stabilizeRollCmd = ACRO_PID_OUTPUT_SHIFT;
-    stabilizePitchCmd = ACRO_PID_OUTPUT_SHIFT;
+    stabilizeRollCmd = STABILIZE_PID_OUTPUT_SHIFT;
+    stabilizePitchCmd = STABILIZE_PID_OUTPUT_SHIFT;
 }
 
 // Setter for *rollLimitAngle* and *pitchLimitAngle* in rad
@@ -63,8 +63,8 @@ RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t con
         float pitchAngleMeasured = droneState.pitch;
 
         // Run PID (output control efforts in [-1,1]), then scale back to RC controller range [0,100] for acro control loop
-        stabilizeRollCmd = (rollPID.pidOutput(rollAngleSetpoint, rollAngleMeasured) * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
-        stabilizePitchCmd = (pitchPID.pidOutput(pitchAngleSetpoint, pitchAngleMeasured) * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
+        stabilizeRollCmd = (rollPID.pidOutput(rollAngleSetpoint, rollAngleMeasured) * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
+        stabilizePitchCmd = (pitchPID.pidOutput(pitchAngleSetpoint, pitchAngleMeasured) * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
     }
     decimationCounter = (decimationCounter + 1) % ANGLE_LOOP_TO_INNER_LOOP_RATIO;
 

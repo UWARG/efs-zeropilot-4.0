@@ -55,8 +55,8 @@ class StabilizeMapping : public Flightmode{
         static constexpr float OUTPUT_MAX = +1.0f;
 
         // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
-        static constexpr float ACRO_PID_OUTPUT_SCALE = 50.0f;
-        static constexpr float ACRO_PID_OUTPUT_SHIFT = 50.0f;
+        static constexpr float STABILIZE_PID_OUTPUT_SCALE = 50.0f;
+        static constexpr float STABILIZE_PID_OUTPUT_SHIFT = 50.0f;
 
         // Assumed normalized range of RC Input to be [0, 100]
         static constexpr float MAX_RC_INPUT_VAL = 100.0f;
