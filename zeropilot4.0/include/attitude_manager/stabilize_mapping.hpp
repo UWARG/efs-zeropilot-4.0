@@ -3,10 +3,11 @@
 #include <cstdint>
 #include "flightmode.hpp"
 #include "pid.hpp"
+#include "acro_mapping.hpp"
 
-class AcroMapping : public Flightmode{
+class StabilizeMapping : public Flightmode{
     public: 
-        AcroMapping(float control_iter_period_s) noexcept;
+        StabilizeMapping(float control_iter_period_s, AcroMapping &acro) noexcept;
 
         void activateFlightMode() override;
 
@@ -18,17 +19,8 @@ class AcroMapping : public Flightmode{
         // Setter for *pitch* PID consts
         void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
-        // Setter for *yaw* PID consts
-        void setYawPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
-
-        // Setter for *rollLimitRate* in rad / s
-        void setRollLimitRate(float newRollLimitRate) noexcept;
-
-         // Setter for *pitchLimitRate* in rad / s
-        void setPitchLimitRate(float newPitchLimitRate) noexcept;
-
-         // Setter for *yawLimitRate* in rad / s
-        void setYawLimitRate(float newYawLimitRate) noexcept;
+        // Setter for *rollLimitAngle* and *pitchLimitAngle* in rad
+        void setRollPitchLimitAngle(float newRollPitchLimitAngle) noexcept;
 
         // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
         void resetControlLoopState() noexcept;
@@ -36,29 +28,35 @@ class AcroMapping : public Flightmode{
         // Getter for PID objects
         PID *getRollPID() noexcept;
         PID *getPitchPID() noexcept;
-        PID *getYawPID() noexcept;
 
         // Destructor
-        ~AcroMapping() noexcept override = default;
+        ~StabilizeMapping() noexcept override = default;
+
 
     private: 
-         // Roll, pitch and yaw PID class objects
+        static constexpr uint8_t ANGLE_LOOP_TO_INNER_LOOP_RATIO = 10;
+        
+         // Roll, and pitch PID class objects
         PID rollPID;
         PID pitchPID;
-        PID yawPID;
 
-        // Values for roll, pitch and yaw limits
-        float rollLimitRate;
-        float pitchLimitRate;
-        float yawLimitRate;
+        // Values for roll, and pitch limits
+        float rollPitchLimitAngle;
+
+        AcroMapping &acroCLAW;
+
+        uint16_t decimationCounter;
+
+        float stabilizeRollCmd;
+        float stabilizePitchCmd;
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
         static constexpr float OUTPUT_MAX = +1.0f;
 
         // PID output scale and shift to convert from [-1,1] normalized range to [0,100] motor range
-        static constexpr float ACRO_PID_OUTPUT_SCALE = 50.0f;
-        static constexpr float ACRO_PID_OUTPUT_SHIFT = 50.0f;
+        static constexpr float STABILIZE_PID_OUTPUT_SCALE = 50.0f;
+        static constexpr float STABILIZE_PID_OUTPUT_SHIFT = 50.0f;
 
         // Assumed normalized range of RC Input to be [0, 100]
         static constexpr float MAX_RC_INPUT_VAL = 100.0f;

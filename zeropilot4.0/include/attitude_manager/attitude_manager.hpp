@@ -13,6 +13,7 @@
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
 #include "acro_mapping.hpp"
+#include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
@@ -60,7 +61,8 @@ class AttitudeManager {
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         #endif
         #ifdef QUADCOPTER
-        ACROMapping acroCLAW;       // ACRO Control Law (Roll, Pitch, and Yaw Rates)
+        AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
+        StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
         #endif
         RCMotorControlMessage_t controlMsg;
         FlightMode_e currentFlightMode;

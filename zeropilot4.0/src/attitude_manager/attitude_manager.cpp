@@ -27,10 +27,11 @@ AttitudeManager::AttitudeManager(
     currentFlightMode(FlightMode_e::MANUAL),
     #endif
     #ifdef QUADCOPTER
-    activeCLAW(&acroCLAW),
+    activeCLAW(&stabilizeCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
-    currentFlightMode(FlightMode_e::ACRO),
+    stabilizeCLAW(AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
+    controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
+    currentFlightMode(FlightMode_e::STABILIZE),
     #endif
     droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
@@ -43,15 +44,15 @@ AttitudeManager::AttitudeManager(
     lastTimestamp(0),
     haveLastImuTimestamp(false),
     profilerId(0),
-    paramSetup(this){
+    paramSetup(this) {
 
-    paramSetup.loadAllParams();
-    paramSetup.bindAllParamCallbacks();
+        paramSetup.loadAllParams();
+        paramSetup.bindAllParamCallbacks();
 
-    // Activate the activeCLAW
-    activeCLAW->activateFlightMode();
+        // Activate the activeCLAW
+        activeCLAW->activateFlightMode();
 
-    systemUtilsDriver->profilerRegister("AM", &profilerId);
+        systemUtilsDriver->profilerRegister("AM", &profilerId);
 }
 
 void AttitudeManager::amUpdate() {
@@ -185,13 +186,16 @@ void AttitudeManager::amUpdate() {
                 activeCLAW = &fbwaCLAW;
                 break;
             #endif
-            
+
             #ifdef QUADCOPTER
             case FlightMode_e::ACRO:
                 activeCLAW = &acroCLAW;
                 break;
+            case FlightMode_e::STABILIZE:
+                activeCLAW = &stabilizeCLAW;
+                break;
             #endif
-
+            
         }
         activeCLAW->activateFlightMode();
         currentFlightMode = controlMsg.flightMode;

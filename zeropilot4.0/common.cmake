@@ -8,6 +8,7 @@ set(AM_SRC
     "src/attitude_manager/pid.cpp"
     "src/attitude_manager/MahonyAHRS.cpp"
     "src/attitude_manager/motor_mixing.cpp"
+    "src/attitude_manager/stabilize_mapping.cpp"
 )
 set(AM_INC
     "include/attitude_manager/"
