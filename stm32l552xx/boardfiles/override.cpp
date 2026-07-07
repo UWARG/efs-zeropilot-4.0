@@ -100,7 +100,13 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == asHandle->getHI2C()) {
+  if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
     asHandle->receiveCallback();
+  }
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+  if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+    asHandle->errorCallback();
   }
 }

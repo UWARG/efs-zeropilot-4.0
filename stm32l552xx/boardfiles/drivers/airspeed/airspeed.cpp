@@ -1,99 +1,114 @@
 #include "airspeed.hpp"
 #include <cstring>
 
-/*
-airspeedInit - gets the initial data, confirms that data is good
-getData - runs only if airspeedInit gives HAL_OK
-*/
-
 bool Airspeed::init() {
-    bool success = false;
-    bool dma_success = false;
-    HAL_StatusTypeDef status = HAL_I2C_Master_Receive_DMA(hi2c, devAddress, dmaRXBuffer, arraySize);
-    dma_success = (status == HAL_OK);
-    
-    if (dma_success) {
-        success = calibrate(20, 4);
+    if (hi2c == nullptr) return false;
+
+    calibrated_ = false;
+    dataValid_ = false;
+    filterInitialized_ = false;
+    calibrationPressureSum = 0.0;
+    calibrationSampleCount = 0;
+    pressZero = 0.0;
+    lastSampleTick_ = 0;
+    errorCount_ = 0;
+
+    if (HAL_I2C_IsDeviceReady(hi2c, devAddress, 3, 100) != HAL_OK) {
+        initSuccess_ = false;
+        return false;
     }
 
-    initSuccess_ = success;
-    return success;
-}
-
-bool Airspeed::calibrate(int samples, int discard) {
-    double sumPress = 0;
-    double n = 0;
-
-    for (int i = 0; i < samples + discard; i++) {
-        Status status = static_cast<Status>((processRXBuffer[0] >> 6) & 0x03);
-        if (status != Status::Normal) continue;
-        const double rPress = (((processRXBuffer[0] & 0x3F) << 8) | processRXBuffer[1]);
-
-        //calculate pressure in psi
-        //Assumptions: output type A, 30 psi pressure range, differential mode (converted from psi to pa)
-        const double pPress = ((rPress - 1638.3)/6553.2 - 1) * 6894.76;
-
-        if (i < discard) continue;
-
-        sumPress += pPress;
-        n++;
-    }
-
-    if (n < (samples / 2)) return false; // too few good samples
-
-    pressZero = sumPress / n;
-    calibrated_ = true;
-
-    return true;
+    initSuccess_ = startReceive();
+    return initSuccess_;
 }
 
 bool Airspeed::getAirspeedData(AirspeedData_t* data) {
-	if (!initSuccess_) { return false; }
-	return calculateAirspeed(data); // Will send a proper error message later
+    if (data == nullptr) return false;
+
+    // The DMA callback runs in interrupt context and writes 64-bit fields.
+    // Briefly mask interrupts so the task receives one coherent snapshot.
+    const uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+
+    const bool valid =
+        initSuccess_ && calibrated_ && dataValid_ &&
+        ((HAL_GetTick() - lastSampleTick_) <= dataTimeoutMs);
+    if (valid) *data = latestData_;
+
+    if (primask == 0U) __enable_irq();
+    return valid;
 }
 
 bool Airspeed::calculateAirspeed(AirspeedData_t* airspeedData_) {
-    status_ = static_cast<Status>((processRXBuffer[0] >> 6) & 0x03);
-    if(status_ != Status::Normal) return false;
-
-    airspeedData_->raw_press_ = (((processRXBuffer[0] & 0x3F) << 8) | (processRXBuffer[1]));
-    airspeedData_->raw_temp_ = ((processRXBuffer[2] << 3) | (((processRXBuffer[3] & 0xE0) >> 5) & 0x03));
-
-    // -- Calculations -- //
-
-    //process raw temperature and pressure data
-    airspeedData_->processed_temp_ = (airspeedData_->raw_temp_ * 200)/2047 - 50; // calculate temperature in deg C
-
-    //calculate pressure in psi
-    //Assumptions: output type A, 30 psi pressure range, differential mode
-    airspeedData_->processed_press_ = (airspeedData_->raw_press_ - 1638.3)/6553.2 - 1;
-
-    //convert pressure to Pa
-    if (calibrated_) {
-    	airspeedData_->processed_press_ = abs((airspeedData_->processed_press_ * 6894.76) - pressZero);
-    }
-
-
-    double airDensity = 101325.0 / (287.058 * (airspeedData_->processed_temp_ + 273.15)); //calculate air density in kg/m^3, assuming stanard air pressure of 101.325 kPa and specific gas constant for dry air R = 287.058 J/(kg·K)
-
-    //calculate airspeed in m/s using Bernoulli's equation
-    airspeedData_->airspeed_ = std::sqrt((2 * airspeedData_->processed_press_) / airDensity); // this negative symbol might not be right
-
-    return true; // Will send a proper error message later
+    return getAirspeedData(airspeedData_);
 }
 
+bool Airspeed::startReceive() {
+    return HAL_I2C_Master_Receive_DMA(
+        hi2c,
+        devAddress,
+        dmaRXBuffer,
+        arraySize
+    ) == HAL_OK;
+}
+
+bool Airspeed::decodeFrame(const uint8_t* frame, AirspeedData_t* data) {
+    status_ = static_cast<Status>((frame[0] >> 6) & 0x03);
+    if (status_ != Status::Normal) return false;
+
+    data->raw_press_ = ((frame[0] & 0x3F) << 8) | frame[1];
+    data->raw_temp_ = (frame[2] << 3) | (frame[3] >> 5);
+    data->processed_temp_ = (data->raw_temp_ * 200.0 / 2047.0) - 50.0;
+
+    // TE 4525DO-DS5AI001DP: type A output, bidirectional +/-1 psi.
+    data->processed_press_ =
+        (((data->raw_press_ - 1638.3) / 6553.2) - 1.0) * 6894.757;
+    return true;
+}
 
 void Airspeed::receiveCallback() {
-    memcpy(
-        getProcessRXBuffer(),
-        getDMARXBuffer(),
-        getArraySize()
-	);
+    std::memcpy(processRXBuffer, dmaRXBuffer, arraySize);
 
-    HAL_I2C_Master_Receive_DMA(
-        getHI2C(),
-        getDevAddress(),
-        getDMARXBuffer(),
-        getArraySize()
-    );
+    AirspeedData_t sample{};
+    if (decodeFrame(processRXBuffer, &sample)) {
+        if (!calibrated_) {
+            calibrationPressureSum += sample.processed_press_;
+            calibrationSampleCount++;
+
+            if (calibrationSampleCount >= calibrationSamples) {
+                pressZero = calibrationPressureSum / calibrationSampleCount;
+                calibrated_ = true;
+            }
+        } else {
+            const double correctedPressure = sample.processed_press_ - pressZero;
+
+            if (!filterInitialized_) {
+                filteredPressure = correctedPressure;
+                filterInitialized_ = true;
+            } else {
+                filteredPressure += filterAlpha * (correctedPressure - filteredPressure);
+            }
+
+            const double dynamicPressure = filteredPressure > pressureDeadbandPa
+                ? filteredPressure - pressureDeadbandPa
+                : 0.0;
+
+            sample.processed_press_ = filteredPressure;
+            sample.airspeed_ = std::sqrt((2.0 * dynamicPressure) / airDensityKgM3);
+
+            latestData_ = sample;
+            lastSampleTick_ = HAL_GetTick();
+            dataValid_ = true;
+        }
+    }
+
+    if (!startReceive()) {
+        errorCount_++;
+        initSuccess_ = false;
+    }
+}
+
+void Airspeed::errorCallback() {
+    errorCount_++;
+    initSuccess_ = startReceive();
 }
