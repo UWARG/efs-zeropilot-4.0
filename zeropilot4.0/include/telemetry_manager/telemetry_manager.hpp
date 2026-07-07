@@ -20,6 +20,14 @@
 #include "rc_motor_control.hpp"
 #include "telemlink_iface.hpp"
 #include "tm_param_setup.hpp"
+
+struct rtcm_correction_data_t {
+  uint8_t data[720];
+  uint16_t len;
+  bool newData;
+};
+extern rtcm_correction_data_t sharedRtcmBuffer;
+
 class TelemetryManager {
     friend class TMParamSetup;
 
@@ -40,9 +48,8 @@ class TelemetryManager {
 
     // rtcm
     uint8_t rtcmAssemblyBuffer[720]; // 180 * 4(Max Frag Count)
-    uint8_t rtcmAssemblyLen;
+    uint8_t rtcmLen;
     uint8_t rtcmCurrentSequenceId;
-    uint8_t rtcmFragmentsRecieved;
     uint8_t rtcmRecievedFragments; // bit n set to 1 means fragment n has been recieved. Other non-related bits(Other than 4 LSB) are set to 0
 
     void processRxMsg(const mavlink_message_t &msg);

@@ -248,7 +248,9 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
     uint8_t sequence_id = (rtcmMsg.flags >> 3) & (0xFF);
 
     if (!is_fragmented) {
-        // TODO: Add logic for enque
+        memcpy(sharedRtcmBuffer.data, rtcmMsg.data, rtcmMsg.len);
+        sharedRtcmBuffer.len = rtcmMsg.len;
+        sharedRtcmBuffer.newData = true;
         resetRtcmState();
         return;
     }
@@ -260,13 +262,17 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
 
     memcpy(rtcmAssemblyBuffer + (fragment_id * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
     if (rtcmMsg.len < 180) {
-        rtcmFragmentsRecieved |= (~((1 << fragment_id) - 1)) & 0x0F;
+        rtcmRecievedFragments |= (~((1 << fragment_id) - 1)) & 0x0F;
+        rtcmLen = fragment_id * 180 + rtcmMsg.len;
     } else {
-        rtcmFragmentsRecieved |= (1 << fragment_id);
+        rtcmRecievedFragments |= (1 << fragment_id);
     }
 
-    if (rtcmFragmentsRecieved == 0x0F) {
-        // TODO: Add logic for enque
+    if (rtcmRecievedFragments == 0x0F) {
+        int len = (rtcmLen  == -1) ? 480 : rtcmLen;
+        memcpy(sharedRtcmBuffer.data, rtcmAssemblyBuffer, len);
+        sharedRtcmBuffer.len = len;
+        sharedRtcmBuffer.newData = true;
         resetRtcmState();
     }
 }
@@ -274,5 +280,6 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
 void TelemetryManager::resetRtcmState() {
     memset(rtcmAssemblyBuffer, 0, sizeof(rtcmAssemblyBuffer));
     rtcmCurrentSequenceId = UINT8_MAX; // Won't accidentally clash with a possible seq id, just in case
-    rtcmFragmentsRecieved = 0;
+    rtcmRecievedFragments = 0;
+    rtcmLen = -1;
 }
