@@ -28,6 +28,7 @@
 #include "unified_threads.hpp"
 #include "utils.h"
 #include "drivers.hpp"
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
