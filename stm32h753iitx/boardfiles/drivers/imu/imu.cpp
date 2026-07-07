@@ -21,10 +21,11 @@
 
 #define ICM42688P_IMU_WHOAMI 0x47
 
-IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin) : 
+IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId) : 
     spi(spiHandle),
     csPort(csPort),
     csPin(csPin),
+    imuId(imuId),
     alpha(0.1f) {
 
     filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
@@ -258,6 +259,7 @@ void IMU::processRawData() {
         rawData[k].ygyro = (int16_t)((imuRxBuffer[base + 9] << 8) | imuRxBuffer[base + 10]);
         rawData[k].zgyro = -(int16_t)((imuRxBuffer[base + 11] << 8) | imuRxBuffer[base + 12]);
         rawData[k].timestamp = (uint16_t)((imuRxBuffer[base + 14] << 8) | imuRxBuffer[base + 15]);
+        rawData[k].imuId = imuId;
         validData++;
     }
 

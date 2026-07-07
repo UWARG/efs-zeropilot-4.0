@@ -26,6 +26,7 @@ extern I2C_HandleTypeDef hi2c1;
 SystemUtils *systemUtilsHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
+FFT *fftHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -72,6 +73,7 @@ void initDrivers()
     systemUtilsHandle = new SystemUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
     loggerHandle = new Logger(); // Initialized later in RTOS task
+    fftHandle = new FFT();
 
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
@@ -105,8 +107,8 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
-    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
+    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0);
+    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
 

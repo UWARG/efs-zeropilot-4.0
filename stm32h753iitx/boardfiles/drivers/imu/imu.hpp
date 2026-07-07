@@ -8,7 +8,7 @@
 
 class IMU : public IIMU {
 	public:
-		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
+		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId);
 	
 		// Initialization
 		int init() override;
@@ -33,6 +33,7 @@ class IMU : public IIMU {
 		SPI_HandleTypeDef *spi;
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
+		const uint8_t imuId;
 		
 		static constexpr uint8_t PACKET_SIZE = 16;
 		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit

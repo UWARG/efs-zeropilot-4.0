@@ -8,6 +8,7 @@ AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
+    IFFT *fftDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -16,6 +17,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    harmonicNotchFilter(systemUtilsDriver, fftDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -45,9 +47,17 @@ AttitudeManager::AttitudeManager(
     haveLastImuTimestamp(false),
     profilerId(0),
     paramSetup(this) {
-
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
+
+        FFTHarmonicNotchConfig notchConfig {
+            .sample_freq_hz  = 4000.0f,
+            .min_freq_hz     = 50.0f,
+            .bandwidth_hz    = 40.0f,
+            .attenuation_dB  = 40.0f,
+            .harmonics_mask  = 0b00000111,
+        };
+        harmonicNotchFilter.init(notchConfig);
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -70,6 +80,12 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
+        if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data as notch filter's sample
+            harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro);
+        }
+        // For first 255 data is just pass through
+        harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
+        
         /**
          * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
          * and the delta for double IMU will be necessarily less than uint16_t max value.

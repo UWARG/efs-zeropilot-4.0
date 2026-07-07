@@ -117,6 +117,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/threads/inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/museq"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/imu"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/ARM_CMSIS/CMSIS/Core/Include/"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/ARM_CMSIS/PrivateInclude/"/>

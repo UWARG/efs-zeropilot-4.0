@@ -16,7 +16,7 @@ struct FFTHarmonicNotchConfig {
 
 class FFTHarmonicNotch {
     public:
-        FFTHarmonicNotch(ISystemUtils *systemUtilsDriver);
+        FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDriver);
         
         // Initialize filters, compute Hanning window, setup FFT handler
         bool init(const FFTHarmonicNotchConfig& config);
@@ -55,7 +55,7 @@ class FFTHarmonicNotch {
         BiquadState _filters[FFT_NOTCH_MAX_HARMONICS];
         
         // DSP State
-        IFFT *fftHandler;
+        IFFT *fftDriver;
         float _fftBuffer[FFT_SIZE];
         float _hanningWindow[FFT_SIZE];
         uint16_t _fftIndex = 0;

@@ -17,11 +17,13 @@
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fused_imu.hpp"
+#include "fft.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
+extern FFT *fftHandle;
 
 extern IMotorControl *motorHandles[8];
 

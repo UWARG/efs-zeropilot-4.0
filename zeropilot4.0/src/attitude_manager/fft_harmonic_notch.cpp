@@ -5,8 +5,9 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
-FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver) : 
-    systemUtilsDriver(systemUtilsDriver) {}
+FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDriver) : 
+    systemUtilsDriver(systemUtilsDriver),
+    fftDriver(fftDriver) {}
 
 bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
     // Validate configuration parameters
@@ -22,7 +23,11 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
     _Q = _config.min_freq_hz / _config.bandwidth_hz;
 
     // Initialize CMSIS-DSP FFT Instance
-    fftHandler->init(FFT_SIZE); // FILLMEIN: Replace arm_rfft_fast_init_f32 with FFT driver init
+    // FILLMEIN: Replace arm_rfft_fast_init_f32 with FFT driver init
+    if (fftDriver == nullptr || !fftDriver->init(FFT_SIZE)) {
+        _initialised = false;
+        return false; 
+    }
     
     _fftIndex = 0;
 
@@ -57,11 +62,11 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
         
         // 2. Run FFT via CMSIS-DSP
         // FILLMEIN (call arm_rfft_fast_f32 with _fftHandler, _fftBuffer, fftOutput, 0)
-        fftHandler->runFFT(_fftBuffer, fftOutput, 0); // 0 for time to freq domain
+        fftDriver->runFFT(_fftBuffer, fftOutput, 0); // 0 for time to freq domain
         
         // 3. Calculate Magnitudes via CMSIS-DSP [arm_cmplx_mag_f32]
         // FILLMEIN (call arm_cmplx_mag_f32 with fftOutput, magnitudes, FFT_SIZE / 2)
-        fftHandler->computeMag(fftOutput, magnitudes, FFT_SIZE / 2);
+        fftDriver->computeMag(fftOutput, magnitudes, FFT_SIZE / 2);
         
         // 4. Find Peak Frequency Bin
         // Start searching at the bin corresponding to min_freq_hz to avoid physical flight dynamics
