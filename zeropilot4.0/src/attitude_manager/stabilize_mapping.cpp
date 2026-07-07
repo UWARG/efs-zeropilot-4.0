@@ -2,16 +2,15 @@
 #include "stabilize_mapping.hpp"
 #include "unit_conversions.hpp"
 
-StabilizeMapping::StabilizeMapping(float stabilize_control_iter_period_s, float acro_control_iter_period_s, AcroMapping &acro) noexcept : 
+StabilizeMapping::StabilizeMapping(float control_iter_period_s, AcroMapping &acro) noexcept : 
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
             OUTPUT_MIN, OUTPUT_MAX, 100,
-            stabilize_control_iter_period_s),
+            control_iter_period_s / ANGLE_LOOP_TO_INNER_LOOP_RATIO),
     pitchPID(0.0f, 0.0f, 0.0f, 0.0f,
             OUTPUT_MIN, OUTPUT_MAX, 100,
-            stabilize_control_iter_period_s),
+            control_iter_period_s / ANGLE_LOOP_TO_INNER_LOOP_RATIO),
     rollPitchLimitAngle(0.0f),
     acroCLAW(acro),
-    decimationFactor(computeDecimation(stabilize_control_iter_period_s, acro_control_iter_period_s)),
     decimationCounter(0),
     stabilizeRollCmd(ACRO_PID_OUTPUT_SHIFT),
     stabilizePitchCmd(ACRO_PID_OUTPUT_SHIFT) {
@@ -54,7 +53,7 @@ void StabilizeMapping::activateFlightMode() {
 
 // Main control mapping function for STABILIZE mode
 RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
-    // Outer angle loop runs once every decimationFactor calls
+    // Outer angle loop runs once every ANGLE_LOOP_TO_INNER_LOOP_RATIO calls
     if (decimationCounter == 0) {
         // Setpoints: Maps [0, 100] to [-limit, +limit]
         float rollAngleSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
@@ -67,7 +66,7 @@ RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t con
         stabilizeRollCmd = (rollPID.pidOutput(rollAngleSetpoint, rollAngleMeasured) * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
         stabilizePitchCmd = (pitchPID.pidOutput(pitchAngleSetpoint, pitchAngleMeasured) * ACRO_PID_OUTPUT_SCALE) + ACRO_PID_OUTPUT_SHIFT;
     }
-    decimationCounter = (decimationCounter + 1) % decimationFactor;
+    decimationCounter = (decimationCounter + 1) % ANGLE_LOOP_TO_INNER_LOOP_RATIO;
 
     controlInputs.roll = stabilizeRollCmd;
     controlInputs.pitch = stabilizePitchCmd;

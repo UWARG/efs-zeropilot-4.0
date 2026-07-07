@@ -29,7 +29,7 @@ AttitudeManager::AttitudeManager(
     #ifdef QUADCOPTER
     activeCLAW(&stabilizeCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    stabilizeCLAW(STABILIZE_CONTROL_LOOP_PERIOD_S, AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
+    stabilizeCLAW(AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
     controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
     currentFlightMode(FlightMode_e::STABILIZE),
     #endif

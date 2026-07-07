@@ -25,10 +25,6 @@
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 
-#ifdef QUADCOPTER
-#define STABILIZE_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 100.0f)
-#endif
-
 class AttitudeManager {
     friend class AMParamSetup;
 

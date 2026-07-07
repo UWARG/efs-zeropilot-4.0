@@ -7,7 +7,7 @@
 
 class StabilizeMapping : public Flightmode{
     public: 
-        StabilizeMapping(float stabilize_control_iter_period_s, float acro_control_iter_period_s, AcroMapping &acro) noexcept;
+        StabilizeMapping(float control_iter_period_s, AcroMapping &acro) noexcept;
 
         void activateFlightMode() override;
 
@@ -34,6 +34,8 @@ class StabilizeMapping : public Flightmode{
 
 
     private: 
+        static constexpr uint8_t ANGLE_LOOP_TO_INNER_LOOP_RATIO = 10;
+        
          // Roll, and pitch PID class objects
         PID rollPID;
         PID pitchPID;
@@ -48,11 +50,6 @@ class StabilizeMapping : public Flightmode{
 
         float stabilizeRollCmd;
         float stabilizePitchCmd;
-
-        static constexpr uint16_t computeDecimation(float stabilize_control_iter_period_s, float acro_control_iter_period_s) noexcept
-        {
-            return (acro_control_iter_period_s != 0) ? (stabilize_control_iter_period_s / acro_control_iter_period_s) : 1;
-        }
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
