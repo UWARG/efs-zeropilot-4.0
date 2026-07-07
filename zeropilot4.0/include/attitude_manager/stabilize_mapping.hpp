@@ -45,7 +45,6 @@ class StabilizeMapping : public Flightmode{
 
         AcroMapping &acroCLAW;
 
-        uint16_t decimationFactor;
         uint16_t decimationCounter;
 
         float stabilizeRollCmd;
