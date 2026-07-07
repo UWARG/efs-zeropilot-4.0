@@ -18,7 +18,7 @@ StabilizeMapping::StabilizeMapping(float control_iter_period_s, AcroMapping &acr
         pitchPID.pidInitState();
 }
 
-// Setter *roll* for PID consts
+// Setter for *roll* PID consts
 void StabilizeMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
     rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
@@ -66,12 +66,13 @@ RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t con
         stabilizeRollCmd = (rollPID.pidOutput(rollAngleSetpoint, rollAngleMeasured) * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
         stabilizePitchCmd = (pitchPID.pidOutput(pitchAngleSetpoint, pitchAngleMeasured) * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
     }
+
     decimationCounter = (decimationCounter + 1) % ANGLE_LOOP_TO_INNER_LOOP_RATIO;
 
     controlInputs.roll = stabilizeRollCmd;
     controlInputs.pitch = stabilizePitchCmd;
 
-    // Run acro control at the full loop rate
+    // Run acro control at the full AM loop rate
     controlInputs = acroCLAW.runControl(controlInputs, droneState);
 
     return controlInputs;
