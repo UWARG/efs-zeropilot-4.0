@@ -5,9 +5,9 @@
 #include "pid.hpp"
 #include "acro_mapping.hpp"
 
-class STABILIZEMapping : public Flightmode{
+class StabilizeMapping : public Flightmode{
     public: 
-        STABILIZEMapping(float stabilize_control_iter_period_s, float acro_control_iter_period_s, ACROMapping &acro) noexcept;
+        StabilizeMapping(float stabilize_control_iter_period_s, float acro_control_iter_period_s, AcroMapping &acro) noexcept;
 
         void activateFlightMode() override;
 
@@ -30,7 +30,7 @@ class STABILIZEMapping : public Flightmode{
         PID *getPitchPID() noexcept;
 
         // Destructor
-        ~STABILIZEMapping() noexcept override = default;
+        ~StabilizeMapping() noexcept override = default;
 
 
     private: 
@@ -41,7 +41,7 @@ class STABILIZEMapping : public Flightmode{
         // Values for roll, and pitch limits
         float rollPitchLimitAngle;
 
-        ACROMapping &acroCLAW;
+        AcroMapping &acroCLAW;
 
         uint16_t decimationFactor;
         uint16_t decimationCounter;

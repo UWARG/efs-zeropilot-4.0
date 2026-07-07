@@ -4,9 +4,9 @@
 #include "flightmode.hpp"
 #include "pid.hpp"
 
-class ACROMapping : public Flightmode{
+class AcroMapping : public Flightmode{
     public: 
-        ACROMapping(float control_iter_period_s) noexcept;
+        AcroMapping(float control_iter_period_s) noexcept;
 
         void activateFlightMode() override;
 
@@ -39,7 +39,7 @@ class ACROMapping : public Flightmode{
         PID *getYawPID() noexcept;
 
         // Destructor
-        ~ACROMapping() noexcept override = default;
+        ~AcroMapping() noexcept override = default;
 
     private: 
          // Roll, pitch and yaw PID class objects

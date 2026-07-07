@@ -2,7 +2,7 @@
 #include "stabilize_mapping.hpp"
 #include "unit_conversions.hpp"
 
-STABILIZEMapping::STABILIZEMapping(float stabilize_control_iter_period_s, float acro_control_iter_period_s, ACROMapping &acro) noexcept : 
+StabilizeMapping::StabilizeMapping(float stabilize_control_iter_period_s, float acro_control_iter_period_s, AcroMapping &acro) noexcept : 
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
             OUTPUT_MIN, OUTPUT_MAX, 100,
             stabilize_control_iter_period_s),
@@ -20,17 +20,17 @@ STABILIZEMapping::STABILIZEMapping(float stabilize_control_iter_period_s, float 
 }
 
 // Setter *roll* for PID consts
-void STABILIZEMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+void StabilizeMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
     rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Setter for *pitch* PID consts
-void STABILIZEMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+void StabilizeMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
     pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Resetter for both roll and pitch PIDs (needed for unit testing)
-void STABILIZEMapping::resetControlLoopState() noexcept {
+void StabilizeMapping::resetControlLoopState() noexcept {
     rollPID.pidInitState();
     pitchPID.pidInitState();
     decimationCounter = 0;
@@ -39,21 +39,21 @@ void STABILIZEMapping::resetControlLoopState() noexcept {
 }
 
 // Setter for *rollLimitAngle* and *pitchLimitAngle* in rad
-void STABILIZEMapping::setRollPitchLimitAngle(float newRollPitchLimitAngle) noexcept {
+void StabilizeMapping::setRollPitchLimitAngle(float newRollPitchLimitAngle) noexcept {
     rollPitchLimitAngle = newRollPitchLimitAngle * ZP_UNITS::DEG_TO_RAD;
 }
 
 // Getter for PID objects
-PID *STABILIZEMapping::getRollPID() noexcept { return &rollPID; }
-PID *STABILIZEMapping::getPitchPID() noexcept { return &pitchPID; }
+PID *StabilizeMapping::getRollPID() noexcept { return &rollPID; }
+PID *StabilizeMapping::getPitchPID() noexcept { return &pitchPID; }
 
-void STABILIZEMapping::activateFlightMode() {
+void StabilizeMapping::activateFlightMode() {
     resetControlLoopState();
     acroCLAW.resetControlLoopState();
 }
 
 // Main control mapping function for STABILIZE mode
-RCMotorControlMessage_t STABILIZEMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
+RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
     // Outer angle loop runs once every decimationFactor calls
     if (decimationCounter == 0) {
         // Setpoints: Maps [0, 100] to [-limit, +limit]
