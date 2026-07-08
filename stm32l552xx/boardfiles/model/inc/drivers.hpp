@@ -18,6 +18,7 @@
 #include "dshot.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;

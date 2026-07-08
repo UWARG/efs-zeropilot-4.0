@@ -21,6 +21,7 @@ extern I2C_HandleTypeDef hi2c1;
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
 
@@ -66,6 +67,7 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 void initDrivers()
 {
     // Core utilities
+    fftHandle = new FFT();
     systemUtilsHandle = new SystemUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
     loggerHandle = new Logger(); // Initialized later in RTOS task
