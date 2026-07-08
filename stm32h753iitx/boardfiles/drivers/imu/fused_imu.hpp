@@ -17,6 +17,8 @@ class FusedIMU : public IIMU {
 
         SPI_HandleTypeDef *getSPI();
 
+        float getODR(); // Change when using a different ODR
+
     private:
         SPI_HandleTypeDef *spiBus;
 

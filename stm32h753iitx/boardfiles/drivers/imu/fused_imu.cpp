@@ -148,3 +148,7 @@ void FusedIMU::txRxCallback() {
 SPI_HandleTypeDef* FusedIMU::getSPI() {
     return spiBus;
 }
+
+float FusedIMU::getODR() {
+    return 4000.0f; // Change when using a different ODR
+}
