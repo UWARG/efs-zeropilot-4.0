@@ -10,7 +10,7 @@ TelemetryManager::TelemetryManager(
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer,
-    rtcm_correction_data_t &sharedRtcmBuffer
+    rtcmCorrectionData_t &sharedRtcmBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
@@ -257,22 +257,22 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
         return;
     }
 
-    if (sequence_id != rtcmCurrentSequenceId) {
+    if (sequence_id != assemblingRtcmBuffer.rtcmCurrentSequenceId) {
         resetRtcmState();
-        rtcmCurrentSequenceId = sequence_id;
+        assemblingRtcmBuffer.rtcmCurrentSequenceId = sequence_id;
     }
 
-    memcpy(rtcmAssemblyBuffer + (fragment_id * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
+    memcpy(assemblingRtcmBuffer.rtcmAssemblyBuffer + (fragment_id * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
     if (rtcmMsg.len < 180) {
-        rtcmRecievedFragments |= (~((1 << fragment_id) - 1)) & 0x0F;
-        rtcmLen = fragment_id * 180 + rtcmMsg.len;
+        assemblingRtcmBuffer.rtcmRecievedFragments |= (~((1 << fragment_id) - 1)) & 0x0F;
+        assemblingRtcmBuffer.rtcmLen = fragment_id * 180 + rtcmMsg.len;
     } else {
-        rtcmRecievedFragments |= (1 << fragment_id);
+        assemblingRtcmBuffer.rtcmRecievedFragments |= (1 << fragment_id);
     }
 
-    if (rtcmRecievedFragments == 0x0F) {
-        int len = (rtcmLen  == -1) ? 480 : rtcmLen;
-        memcpy(sharedRtcmBuffer.data, rtcmAssemblyBuffer, len);
+    if (assemblingRtcmBuffer.rtcmRecievedFragments == 0x0F) {
+        int len = (assemblingRtcmBuffer.rtcmLen  == -1) ? 480 : assemblingRtcmBuffer.rtcmLen;
+        memcpy(sharedRtcmBuffer.data, assemblingRtcmBuffer.rtcmAssemblyBuffer, len);
         sharedRtcmBuffer.len = len;
         sharedRtcmBuffer.newData = true;
         resetRtcmState();
@@ -280,8 +280,8 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
 }
 
 void TelemetryManager::resetRtcmState() {
-    memset(rtcmAssemblyBuffer, 0, sizeof(rtcmAssemblyBuffer));
-    rtcmCurrentSequenceId = UINT8_MAX; // Won't accidentally clash with a possible seq id, just in case
-    rtcmRecievedFragments = 0;
-    rtcmLen = -1;
+    memset(assemblingRtcmBuffer.rtcmAssemblyBuffer, 0, sizeof(assemblingRtcmBuffer.rtcmAssemblyBuffer));
+    assemblingRtcmBuffer.rtcmCurrentSequenceId = UINT8_MAX; // Won't accidentally clash with a possible seq id, just in case
+    assemblingRtcmBuffer.rtcmRecievedFragments = 0;
+    assemblingRtcmBuffer.rtcmLen = -1;
 }
