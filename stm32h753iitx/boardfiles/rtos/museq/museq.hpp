@@ -27,4 +27,4 @@ extern osMessageQueueId_t messageBufferId;
 
 void initQueues();
 
-extern rtcm_correction_data_t sharedRtcmBuffer;
+extern rtcmCorrectionData_t sharedRtcmBuffer;
