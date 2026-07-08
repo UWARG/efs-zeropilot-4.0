@@ -53,9 +53,9 @@ AttitudeManager::AttitudeManager(
         FFTHarmonicNotchConfig notchConfig {
             .sample_freq_hz  = 4000.0f,
             .min_freq_hz     = 50.0f,
-            .bandwidth_hz    = 40.0f,
-            .attenuation_dB  = 40.0f,
-            .harmonics_mask  = 0b00000111,
+            .bandwidth_hz    = 20.0f,
+            .attenuation_dB  = 20.0f,
+            .harmonics_mask  = 0b00000011,
         };
         harmonicNotchFilter.init(notchConfig);
 
