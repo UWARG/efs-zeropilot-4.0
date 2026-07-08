@@ -1,10 +1,11 @@
 #include "fused_imu.hpp"
 #include <cstring>
 
-FusedIMU::FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1) : 
+FusedIMU::FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1, ImuOdrConfig_t odrConfig) : 
     spiBus(spiHandle),
     imu{imu0, imu1},
-    active_imu(0){}
+    active_imu(0),
+    {}
     
 int FusedIMU::init() {
     bool status = true;
@@ -150,5 +151,5 @@ SPI_HandleTypeDef* FusedIMU::getSPI() {
 }
 
 float FusedIMU::getODR() {
-    return 4000.0f; // Change when using a different ODR
+    return imu[0]->getODR();
 }

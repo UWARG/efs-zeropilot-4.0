@@ -51,8 +51,8 @@ AttitudeManager::AttitudeManager(
         paramSetup.bindAllParamCallbacks();
 
         FFTHarmonicNotchConfig notchConfig {
-            .sampleFreqHz  = imuDriver->getODR(),
-            .minFreqHz     = 50.0f,
+            .sampleFreqHz   = imuDriver->getODR(),
+            .minFreqHz      = 50.0f,
             .bandwidthHz    = 20.0f,
             .attenuationDB  = 20.0f,
             .harmonicsMask  = 0b00000011,

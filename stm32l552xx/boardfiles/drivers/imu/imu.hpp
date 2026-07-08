@@ -2,13 +2,28 @@
 #pragma once
 
 #include "imu_iface.hpp"
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx_hal.h"
 #include <cstdint>
 #include "imu_datatypes.hpp"
 
+typedef enum : uint8_t {
+	IMU_ODR_32KHZ = 0b0001,
+	IMU_ODR_16KHZ = 0b0010,
+	IMU_ODR_8KHZ = 0b0011,
+	IMU_ODR_4KHZ = 0b0100,
+	IMU_ODR_2KHZ = 0b0101,
+	IMU_ODR_1KHZ = 0b0110,
+	IMU_ODR_500HZ = 0b1111,
+	IMU_ODR_200HZ = 0b0111,
+	IMU_ODR_100HZ = 0b1000,
+	IMU_ODR_50HZ = 0b1001,
+	IMU_ODR_25HZ = 0b1010,
+	IMU_ODR_12HZ5 = 0b1011
+} ImuOdrConfig_t;
+
 class IMU : public IIMU {
 	public:
-		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId);
+		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig);
 	
 		// Initialization
 		int init() override;
@@ -35,6 +50,7 @@ class IMU : public IIMU {
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
 		const uint8_t imuId;
+		const ImuOdrConfig_t imuOdr;
 		
 		static constexpr uint8_t PACKET_SIZE = 16;
 		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit
