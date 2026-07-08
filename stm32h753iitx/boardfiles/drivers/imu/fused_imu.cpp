@@ -1,7 +1,7 @@
 #include "fused_imu.hpp"
 #include <cstring>
 
-FusedIMU::FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1, ImuOdrConfig_t odrConfig) : 
+FusedIMU::FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1) : 
     spiBus(spiHandle),
     imu{imu0, imu1},
     active_imu(0),
