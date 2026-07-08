@@ -53,7 +53,7 @@ class FFTHarmonicNotch {
             bool enabled = false;
 
             void updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float Q);
-            void applyTriAxis(float& gx, float& gy, float& gz);
+            void applyTriAxis(float &gx, float &gy, float &gz);
             void resetStates();
         };
 
@@ -74,5 +74,5 @@ class FFTHarmonicNotch {
         
         float a; 
         float q; 
-        bool initialised = false;
+        bool initialized = false;
 };

@@ -24,7 +24,7 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
 
     // Initialize CMSIS-DSP FFT Instance
     if (fftDriver == nullptr || !fftDriver->init(FFT_WINDOW_SIZE)) {
-        initialised = false;
+        initialized = false;
         return false;
     }
 
@@ -32,18 +32,18 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
 
     // Pre-compute the Hanning Window to save FPU cycles during runtime
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
-        hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->dspCosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
+        hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsisDspCosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
     }
 
     // Reset filter states and mark as initialized
     reset();
-    initialised = true;
+    initialized = true;
 
     return true;
 }
 
 bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
-    if (!initialised) return false;
+    if (!initialized) return false;
     if (fftIndex >= FFT_WINDOW_SIZE) return false;
 
     // Accumulate RMS energy for this FFT window
@@ -131,7 +131,8 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
 }
 
 void FFTHarmonicNotch::updateFilters(float peakFreqHz) {
-    const float NYQUIST_LIMIT = config.sampleFreqHz * 0.48f;
+    static constexpr float NYQUIST_SAFETY_FACTOR = 0.48f;
+    const float NYQUIST_LIMIT = config.sampleFreqHz * NYQUIST_SAFETY_FACTOR;
 
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
         // Check if this harmonic bit is enabled in the mask
@@ -155,7 +156,7 @@ void FFTHarmonicNotch::updateFilters(float peakFreqHz) {
 }
 
 void FFTHarmonicNotch::apply(float& gx, float& gy, float& gz) {
-    if (!initialised) return;
+    if (!initialized) return;
 
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
         if (filters[i].enabled) {
@@ -182,8 +183,8 @@ void FFTHarmonicNotch::reset() {
 
 void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float q) {
     float omega = 2.0f * M_PI * center_freq / sample_freq;
-    float sn = systemUtilsDriver->dspSinf(omega);
-    float cs = systemUtilsDriver->dspCosf(omega);
+    float sn = systemUtilsDriver->cmsisDspSinf(omega);
+    float cs = systemUtilsDriver->cmsisDspCosf(omega);
     float alpha = sn / (2.0f * q);
 
     float a0 = 1.0f + alpha * A;
