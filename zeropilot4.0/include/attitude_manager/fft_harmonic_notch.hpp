@@ -14,7 +14,6 @@ enum class GyroAxis {
 
 struct FFTHarmonicNotchConfig {
     float sample_freq_hz;       // IMU Sample Rate
-    uint16_t fft_window_size;   // FFT window size (must be a power of 2)
     float min_freq_hz;          // Minimum frequency to track
     float bandwidth_hz;         // Base notch width
     float attenuation_dB;       // Attenuation depth
@@ -39,6 +38,8 @@ class FFTHarmonicNotch {
         void reset();
     
     private:
+        static constexpr uint16_t FFT_WINDOW_SIZE = 256;
+
         ISystemUtils *systemUtilsDriver;
 
         // Calculates coefficients based on the new peak frequency
