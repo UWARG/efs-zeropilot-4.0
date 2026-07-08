@@ -61,6 +61,10 @@ public:
         return rawBatch;
     }
 
+    float getODR() override {
+        return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
+    }
+
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
