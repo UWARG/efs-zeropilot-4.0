@@ -111,7 +111,6 @@ void initDrivers()
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
-    imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     pmHandle = new PowerModule(&hi2c1);
 
     // Queues
