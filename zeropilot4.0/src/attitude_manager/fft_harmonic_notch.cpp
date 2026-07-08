@@ -23,7 +23,7 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
     _Q = _config.min_freq_hz / _config.bandwidth_hz;
 
     // Initialize CMSIS-DSP FFT Instance
-    if (fftDriver == nullptr || !fftDriver->init(FFT_SIZE)) {
+    if (fftDriver == nullptr || !fftDriver->init(FFT_WINDOW_SIZE)) {
         _initialised = false;
         return false; 
     }
@@ -31,8 +31,8 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
     _fftIndex = 0;
 
     // Pre-compute the Hanning Window to save FPU cycles during runtime
-    for (int i = 0; i < FFT_SIZE; i++) {
-        _hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsis_dsp_cosf(2.0f * M_PI * i / (FFT_SIZE - 1)));
+    for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
+        _hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsis_dsp_cosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
     }
 
     // Reset filter states and mark as initialized
@@ -49,12 +49,12 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
     _fftBuffer[_fftIndex++] = raw_gyro_sample;
     
     // If buffer is full, execute FFT
-    if (_fftIndex >= FFT_SIZE) {
-        float fftOutput[FFT_SIZE];
-        float magnitudes[FFT_SIZE / 2]; // Real-valued signal has symmetric FFT output
+    if (_fftIndex >= FFT_WINDOW_SIZE) {
+        float fftOutput[FFT_WINDOW_SIZE];
+        float magnitudes[FFT_WINDOW_SIZE / 2]; // Real-valued signal has symmetric FFT output
         
         // 1. Apply Hanning window
-        for (int i = 0; i < FFT_SIZE; i++) {
+        for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
             _fftBuffer[i] *= _hanningWindow[i];
         }
         
@@ -62,15 +62,15 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
         fftDriver->runFFT(_fftBuffer, fftOutput, 0); // 0 for time to freq domain
         
         // 3. Calculate Magnitudes via CMSIS-DSP [arm_cmplx_mag_f32]
-        fftDriver->computeMag(fftOutput, magnitudes, FFT_SIZE / 2);
+        fftDriver->computeMag(fftOutput, magnitudes, FFT_WINDOW_SIZE / 2);
         
         // 4. Find Peak Frequency Bin
         // Start searching at the bin corresponding to min_freq_hz to avoid physical flight dynamics
-        uint8_t startBin = (uint8_t)(_config.min_freq_hz / (_config.sample_freq_hz / FFT_SIZE)); // Each bin covers _config.sample_freq_hz / FFT_SIZE hz
+        uint8_t startBin = (uint8_t)(_config.min_freq_hz / (_config.sample_freq_hz / FFT_WINDOW_SIZE)); // Each bin covers _config.sample_freq_hz / FFT_WINDOW_SIZE hz
         if (startBin == 0) startBin = 1;
         uint8_t peakBin = startBin;
         float peak = magnitudes[peakBin];
-        for (int i = startBin + 1; i < FFT_SIZE / 2; i++) {
+        for (int i = startBin + 1; i < FFT_WINDOW_SIZE / 2; i++) {
             if (magnitudes[i] > peak) {
                 peak = magnitudes[i];
                 peakBin = i;
@@ -78,7 +78,7 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
         }
         
         // 5. Convert to Hz and update coefficients via updateFilters(peak_freq_hz)
-        float peakFreq = (float)peakBin * (_config.sample_freq_hz / FFT_SIZE);
+        float peakFreq = (float)peakBin * (_config.sample_freq_hz / FFT_WINDOW_SIZE);
         updateFilters(peakFreq);
         
         // 6. Reset buffer index for next cycle

@@ -272,3 +272,7 @@ float IMU::lowPassFilter(float rawValue, int select) {
     filteredGyro[select] = alpha * rawValue + (1 - alpha) * filteredGyro[select];
     return filteredGyro[select];
 }
+
+float IMU::getODR() {
+    return 4000.0f; // Change when using a different ODR
+}
