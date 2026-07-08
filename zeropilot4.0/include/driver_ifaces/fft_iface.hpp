@@ -10,5 +10,5 @@ class IFFT {
 
         virtual void runFFT(float *input_buffer, float *output_buffer, uint8_t direction) = 0;
 
-        virtual void computeMag(const float *input_buffer, float *output_buffer, uint32_t numSamples) = 0; 
+        virtual void complexMag(const float *input_buffer, float *output_buffer, uint32_t numSamples) = 0; 
 };

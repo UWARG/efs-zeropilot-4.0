@@ -102,7 +102,7 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
         fftDriver->runFFT(fftBuffer, fftOutput, 0); // 0 for time to freq domain
 
         // 3. Calculate Magnitudes
-        fftDriver->computeMag(fftOutput, magnitudes, FFT_WINDOW_SIZE / 2);
+        fftDriver->complexMag(fftOutput, magnitudes, FFT_WINDOW_SIZE / 2);
 
         // 4. Find Peak Frequency Bin
         // Start searching at the bin corresponding to minFreqHz to avoid physical flight dynamics

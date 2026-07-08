@@ -9,6 +9,6 @@ void FFT::runFFT(float *input_buffer, float *output_buffer, uint8_t direction) {
     arm_rfft_fast_f32(&fftInstance, input_buffer, output_buffer, direction);
 }
 
-void FFT::computeMag(const float *input_buffer, float *output_buffer, uint32_t numSamples) {
+void FFT::complexMag(const float *input_buffer, float *output_buffer, uint32_t numSamples) {
     arm_cmplx_mag_f32(input_buffer, output_buffer, numSamples);
 }
