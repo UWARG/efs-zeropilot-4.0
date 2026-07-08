@@ -52,6 +52,7 @@ AttitudeManager::AttitudeManager(
 
         FFTHarmonicNotchConfig notchConfig {
             .sample_freq_hz  = imuDriver->getODR(),
+            .fft_window_size = 256,
             .min_freq_hz     = 50.0f,
             .bandwidth_hz    = 20.0f,
             .attenuation_dB  = 20.0f,

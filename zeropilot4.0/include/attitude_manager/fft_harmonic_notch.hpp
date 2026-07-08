@@ -7,11 +7,12 @@
 #define FFT_NOTCH_MAX_HARMONICS 8 
 
 struct FFTHarmonicNotchConfig {
-    float sample_freq_hz;    // IMU Sample Rate (e.g., 4000.0f)
-    float min_freq_hz;       // Minimum frequency to track (e.g., 90.0f)
-    float bandwidth_hz;      // Base notch width
-    float attenuation_dB;    // Attenuation depth
-    uint8_t harmonics_mask;  // Bitmask for harmonics
+    float sample_freq_hz;       // IMU Sample Rate
+    uint16_t fft_window_size;   // FFT window size (must be a power of 2)
+    float min_freq_hz;          // Minimum frequency to track
+    float bandwidth_hz;         // Base notch width
+    float attenuation_dB;       // Attenuation depth
+    uint8_t harmonics_mask;     // Bitmask for harmonics
 };
 
 class FFTHarmonicNotch {
@@ -32,8 +33,6 @@ class FFTHarmonicNotch {
         void reset();
     
     private:
-        static constexpr uint16_t FFT_WINDOW_SIZE = 256; // 256 points under 4kHz ODR gives ~15.625Hz frequency resolution
-        
         ISystemUtils *systemUtilsDriver;
 
         // Calculates coefficients based on the new peak frequency
