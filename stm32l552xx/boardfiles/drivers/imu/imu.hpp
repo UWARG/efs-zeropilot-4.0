@@ -8,7 +8,7 @@
 
 class IMU : public IIMU {
 	public:
-		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
+		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId);
 	
 		// Initialization
 		int init() override;
@@ -24,6 +24,7 @@ class IMU : public IIMU {
 
 		void beginRead();
 		RawImuBatch_t getBatch();
+		float getODR(); // Change when using a different ODR
 		
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
@@ -33,6 +34,7 @@ class IMU : public IIMU {
 		SPI_HandleTypeDef *spi;
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
+		const uint8_t imuId;
 		
 		static constexpr uint8_t PACKET_SIZE = 16;
 		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit
