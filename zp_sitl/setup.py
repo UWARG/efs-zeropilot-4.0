@@ -21,7 +21,7 @@ else:
     compile_args = ['-std=c++17', f'-D{VEHICLE}']
     libraries = []
     
-sources = ['zeropilot_wrapper.cpp']
+sources = ['zeropilot_wrapper.cpp', 'sitl_drivers/sitl_cmsis_dsp.cpp']
 sources += glob.glob(
     os.path.join(zeropilot_root, 'src', '**', '*.cpp'),
     recursive=True
@@ -40,6 +40,8 @@ zeropilot = Extension(
         f'{zeropilot_root}/include/zp_param',
         '../external/c_library_v2',
         '../external/c_library_v2/common',
+        '../external/CMSIS-DSP/Include',
+        '../external/CMSIS-DSP/PrivateInclude',
     ],
     libraries=libraries,
     extra_compile_args=compile_args,
