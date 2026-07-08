@@ -6,18 +6,18 @@
 
 #define FFT_NOTCH_MAX_HARMONICS 8
 
-enum class GyroAxis {
+enum class GyroAxis_e {
     X,
     Y,
     Z
 };
 
 struct FFTHarmonicNotchConfig {
-    float sample_freq_hz;       // IMU Sample Rate
-    float min_freq_hz;          // Minimum frequency to track
-    float bandwidth_hz;         // Base notch width
-    float attenuation_dB;       // Attenuation depth
-    uint8_t harmonics_mask;     // Bitmask for harmonics
+    float sampleFreqHz;    // IMU Sample Rate
+    float minFreqHz;       // Minimum frequency to track
+    float bandwidthHz;     // Base notch width
+    float attenuationDB;   // Attenuation depth
+    uint8_t harmonicsMask; // Bitmask for harmonics
 };
 
 class FFTHarmonicNotch {
@@ -43,7 +43,7 @@ class FFTHarmonicNotch {
         ISystemUtils *systemUtilsDriver;
 
         // Calculates coefficients based on the new peak frequency
-        void updateFilters(float peak_freq_hz);
+        void updateFilters(float peakFreqHz);
 
         struct BiquadState {
             float b0, b1, b2, a1, a2;
@@ -66,13 +66,13 @@ class FFTHarmonicNotch {
         float hanningWindow[FFT_WINDOW_SIZE];
         uint16_t fftIndex = 0;
 
-        GyroAxis dominantAxis = GyroAxis::X;
+        GyroAxis_e dominantAxis = GyroAxis_e::X;
         float rmsX = 0.0f;
         float rmsY = 0.0f;
         float rmsZ = 0.0f;
         uint16_t rmsCount = 0;
         
-        float A; 
-        float Q; 
+        float a; 
+        float q; 
         bool initialised = false;
 };

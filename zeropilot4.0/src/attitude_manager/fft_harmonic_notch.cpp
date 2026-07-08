@@ -11,7 +11,7 @@ FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDri
 
 bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
     // Validate configuration parameters
-    if (notchConfig.sample_freq_hz <= 0.0f || notchConfig.bandwidth_hz <= 0.0f) {
+    if (notchConfig.sampleFreqHz <= 0.0f || notchConfig.bandwidthHz <= 0.0f) {
         return false;
     }
 
@@ -19,8 +19,8 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
     config = notchConfig;
 
     // Calculate generic Attenuation (A) and Quality (Q) factors
-    A = powf(10.0f, -config.attenuation_dB / 40.0f);
-    Q = config.min_freq_hz / config.bandwidth_hz;
+    a = powf(10.0f, -config.attenuationDB / 40.0f);
+    q = config.minFreqHz / config.bandwidthHz;
 
     // Initialize CMSIS-DSP FFT Instance
     if (fftDriver == nullptr || !fftDriver->init(FFT_WINDOW_SIZE)) {
@@ -55,15 +55,15 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
     // Use the dominant axis selected from the previous window
     float rawGyroSample;
     switch (dominantAxis) {
-        case GyroAxis::X:
+        case GyroAxis_e::X:
             rawGyroSample = gx;
             break;
 
-        case GyroAxis::Y:
+        case GyroAxis_e::Y:
             rawGyroSample = gy;
             break;
 
-        case GyroAxis::Z:
+        case GyroAxis_e::Z:
             rawGyroSample = gz;
             break;
     }
@@ -76,13 +76,13 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
 
         // Pick strongest vibration axis for next FFT window
         if (rmsX >= rmsY && rmsX >= rmsZ) {
-            dominantAxis = GyroAxis::X;
+            dominantAxis = GyroAxis_e::X;
         }
         else if (rmsY >= rmsZ) {
-            dominantAxis = GyroAxis::Y;
+            dominantAxis = GyroAxis_e::Y;
         }
         else {
-            dominantAxis = GyroAxis::Z;
+            dominantAxis = GyroAxis_e::Z;
         }
 
         rmsX = 0.0f;
@@ -105,8 +105,8 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
         fftDriver->computeMag(fftOutput, magnitudes, FFT_WINDOW_SIZE / 2);
 
         // 4. Find Peak Frequency Bin
-        // Start searching at the bin corresponding to min_freq_hz to avoid physical flight dynamics
-        uint8_t startBin = (uint8_t)(config.min_freq_hz / (config.sample_freq_hz / FFT_WINDOW_SIZE)); // Each bin covers config.sample_freq_hz / FFT_WINDOW_SIZE hz
+        // Start searching at the bin corresponding to minFreqHz to avoid physical flight dynamics
+        uint8_t startBin = (uint8_t)(config.minFreqHz / (config.sampleFreqHz / FFT_WINDOW_SIZE)); // Each bin covers config.sampleFreqHz / FFT_WINDOW_SIZE hz
         if (startBin == 0)
             startBin = 1;
         uint8_t peakBin = startBin;
@@ -119,7 +119,7 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
         }
 
         // 5. Convert to Hz and update coefficients
-        float peakFreq = (float)peakBin * (config.sample_freq_hz / FFT_WINDOW_SIZE);
+        float peakFreq = (float)peakBin * (config.sampleFreqHz / FFT_WINDOW_SIZE);
         updateFilters(peakFreq);
 
         // 6. Reset buffer index for next cycle
@@ -130,26 +130,26 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
     return false; // Buffer not full yet
 }
 
-void FFTHarmonicNotch::updateFilters(float peak_freq_hz) {
-    const float nyquist_limit = config.sample_freq_hz * 0.48f;
+void FFTHarmonicNotch::updateFilters(float peakFreqHz) {
+    const float NYQUIST_LIMIT = config.sampleFreqHz * 0.48f;
 
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
         // Check if this harmonic bit is enabled in the mask
-        if (!((1U << i) & config.harmonics_mask)) {
+        if (!((1U << i) & config.harmonicsMask)) {
             filters[i].enabled = false;
             continue;
         }
 
-        float harmonic_freq = peak_freq_hz * (i + 1);
+        float harmonicFreq = peakFreqHz * (i + 1);
 
         // Disable filter if it exceeds Nyquist or drops below the minimum configured frequency
-        if (harmonic_freq >= nyquist_limit || harmonic_freq < config.min_freq_hz) {
+        if (harmonicFreq >= NYQUIST_LIMIT || harmonicFreq < config.minFreqHz) {
             filters[i].enabled = false;
             continue;
         }
 
         // Update coefficients for this specific harmonic
-        filters[i].updateCoefficients(systemUtilsDriver, config.sample_freq_hz, harmonic_freq, A, Q);
+        filters[i].updateCoefficients(systemUtilsDriver, config.sampleFreqHz, harmonicFreq, a, q);
         filters[i].enabled = true;
     }
 }
@@ -173,18 +173,18 @@ void FFTHarmonicNotch::reset() {
     rmsY = 0.0f;
     rmsZ = 0.0f;
     rmsCount = 0;
-    dominantAxis = GyroAxis::X;
+    dominantAxis = GyroAxis_e::X;
 }
 
 // ---------------------------------------------------------
 // Bi-Quadratic Filter Mathematical Implementation
 // ---------------------------------------------------------
 
-void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float Q) {
+void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float q) {
     float omega = 2.0f * M_PI * center_freq / sample_freq;
     float sn = systemUtilsDriver->cmsisDspSinf(omega);
     float cs = systemUtilsDriver->cmsisDspCosf(omega);
-    float alpha = sn / (2.0f * Q);
+    float alpha = sn / (2.0f * q);
 
     float a0 = 1.0f + alpha * A;
     b0 = (1.0f + alpha) / a0;
