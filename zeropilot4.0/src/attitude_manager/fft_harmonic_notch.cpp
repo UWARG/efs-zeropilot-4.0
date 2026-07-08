@@ -9,7 +9,7 @@ FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDri
     systemUtilsDriver(systemUtilsDriver),
     fftDriver(fftDriver) {}
 
-bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
+bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
     // Validate configuration parameters
     if (notchConfig.sample_freq_hz <= 0.0f || notchConfig.bandwidth_hz <= 0.0f) {
         return false;
@@ -155,7 +155,7 @@ void FFTHarmonicNotch::updateFilters(float peak_freq_hz) {
 }
 
 void FFTHarmonicNotch::apply(float& gx, float& gy, float& gz) {
-    if (!_initialised) return;
+    if (!initialised) return;
 
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
         if (filters[i].enabled) {
