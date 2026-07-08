@@ -20,10 +20,10 @@
 #include "fft.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
-extern FFT *fftHandle;
 
 extern IMotorControl *motorHandles[8];
 

@@ -24,9 +24,9 @@ extern I2C_HandleTypeDef hi2c1;
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
-FFT *fftHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -71,9 +71,9 @@ void initDrivers()
 {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
+    fftHandle = new FFT();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
     loggerHandle = new Logger(); // Initialized later in RTOS task
-    fftHandle = new FFT();
 
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
