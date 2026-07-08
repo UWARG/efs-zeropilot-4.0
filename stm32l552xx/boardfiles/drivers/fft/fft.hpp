@@ -12,5 +12,5 @@ class FFT : public IFFT {
         void computeMag(const float *input_buffer, float *output_buffer, uint32_t numSamples) override; 
 
     private:
-        arm_rfft_fast_instance_f32 fft;
+        arm_rfft_fast_instance_f32 fftInstance;
 };
