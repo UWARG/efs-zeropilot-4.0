@@ -44,3 +44,5 @@ void initQueues()
   tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
   messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);
 }
+
+extern rtcm_correction_data_t sharedRtcmBuffer;

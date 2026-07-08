@@ -9,7 +9,8 @@ TelemetryManager::TelemetryManager(
     ITelemLink *telemLinkDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
-    IMessageQueue<mavlink_message_t> *packedMsgBuffer
+    IMessageQueue<mavlink_message_t> *packedMsgBuffer,
+    rtcm_correction_data_t &sharedRtcmBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
@@ -19,7 +20,8 @@ TelemetryManager::TelemetryManager(
     overflowMsgPending(false),
     currParamListTxIdx(ZP_PARAM::getCount()),
     profilerId(0),
-    paramSetup(this){
+    paramSetup(this),
+    sharedRtcmBuffer(sharedRtcmBuffer){
 
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();

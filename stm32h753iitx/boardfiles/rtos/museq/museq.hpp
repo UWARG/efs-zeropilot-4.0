@@ -1,6 +1,8 @@
 #pragma once
 
 #include "cmsis_os.h"
+#include "gps_datatypes.hpp"
+#include "gps_iface.hpp"
 
 /* --- mutexes --- */
 /* declare mutexes begin*/
@@ -24,3 +26,5 @@ extern osMessageQueueId_t messageBufferId;
 /* declare queues end */
 
 void initQueues();
+
+extern rtcm_correction_data_t sharedRtcmBuffer;
