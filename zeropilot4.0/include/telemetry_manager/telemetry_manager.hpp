@@ -22,7 +22,7 @@
 #include "tm_param_setup.hpp"
 #include "gps_iface.hpp"
 
-struct parseRtcmData_t {
+struct parseRtcmData {
   uint8_t rtcmAssemblyBuffer[720]; // 180 * 4(Max Frag Count)
   int8_t rtcmLen;
   uint8_t rtcmCurrentSequenceId;
@@ -48,7 +48,7 @@ class TelemetryManager {
     uint8_t rxBuffer[TM_MAX_RX_BYTES];
 
     // rtcm
-    parseRtcmData_t assemblingRtcmBuffer;
+    parseRtcmData assemblingRtcmBuffer;
     rtcmCorrectionData_t &sharedRtcmBuffer;
 
     void processRxMsg(const mavlink_message_t &msg);
