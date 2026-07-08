@@ -29,7 +29,7 @@ public:
 
     void profilerGetAll(TaskProfile* out, uint8_t* count) override { return; }
 
-    float cmsisDspSinf(float x) override { return sinf(x); };
+    float dspSinf(float x) override { return sinf(x); };
 
-    float cmsisDspCosf(float x) override { return cosf(x); };
+    float dspCosf(float x) override { return cosf(x); };
 };
