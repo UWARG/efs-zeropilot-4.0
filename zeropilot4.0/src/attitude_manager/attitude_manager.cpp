@@ -82,7 +82,7 @@ void AttitudeManager::amUpdate() {
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data as notch filter's sample
-            harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro);
+            harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         }
         // For first 255 data is just pass through
         harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);

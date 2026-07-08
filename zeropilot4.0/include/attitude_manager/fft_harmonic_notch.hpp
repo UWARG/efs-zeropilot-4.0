@@ -4,7 +4,13 @@
 #include "systemutils_iface.hpp"
 #include "fft_iface.hpp"
 
-#define FFT_NOTCH_MAX_HARMONICS 8 
+#define FFT_NOTCH_MAX_HARMONICS 8
+
+enum class GyroAxis {
+    X,
+    Y,
+    Z
+};
 
 struct FFTHarmonicNotchConfig {
     float sample_freq_hz;       // IMU Sample Rate
@@ -24,7 +30,7 @@ class FFTHarmonicNotch {
         
         // Push a raw sample into the FFT buffer. 
         // Returns true if the buffer filled and an FFT was calculated this cycle.
-        bool pushSample(float raw_gyro_sample);
+        bool pushSample(float gx, float gy, float gz);
         
         // Apply the filter cascade to all three gyro axes in-place
         void apply(float& gx, float& gy, float& gz);
@@ -58,6 +64,12 @@ class FFTHarmonicNotch {
         float _fftBuffer[FFT_WINDOW_SIZE];
         float _hanningWindow[FFT_WINDOW_SIZE];
         uint16_t _fftIndex = 0;
+
+        GyroAxis _dominantAxis = GyroAxis::X;
+        float _rmsX = 0.0f;
+        float _rmsY = 0.0f;
+        float _rmsZ = 0.0f;
+        uint16_t _rmsCount = 0;
         
         float _A; 
         float _Q; 

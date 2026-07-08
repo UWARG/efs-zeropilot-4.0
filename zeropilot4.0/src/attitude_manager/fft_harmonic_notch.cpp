@@ -42,14 +42,54 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
     return true;
 }
 
-bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
+bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
     if (!_initialised) return false;
-    
+    if (_fftIndex >= FFT_WINDOW_SIZE) return false;
+
+    // Accumulate RMS energy for this FFT window
+    _rmsX += gx * gx;
+    _rmsY += gy * gy;
+    _rmsZ += gz * gz;
+    _rmsCount++;
+
+    // Use the dominant axis selected from the previous window
+    float raw_gyro_sample;
+    switch (_dominantAxis) {
+        case GyroAxis::X:
+            raw_gyro_sample = gx;
+            break;
+
+        case GyroAxis::Y:
+            raw_gyro_sample = gy;
+            break;
+
+        case GyroAxis::Z:
+            raw_gyro_sample = gz;
+            break;
+    }
+
     // Load sample into buffer
     _fftBuffer[_fftIndex++] = raw_gyro_sample;
     
     // If buffer is full, execute FFT
     if (_fftIndex >= FFT_WINDOW_SIZE) {
+
+        // Pick strongest vibration axis for next FFT window
+        if (_rmsX >= _rmsY && _rmsX >= _rmsZ) {
+            _dominantAxis = GyroAxis::X;
+        } 
+        else if (_rmsY >= _rmsZ) {
+            _dominantAxis = GyroAxis::Y;
+        } 
+        else {
+            _dominantAxis = GyroAxis::Z;
+        }
+
+        _rmsX = 0.0f;
+        _rmsY = 0.0f;
+        _rmsZ = 0.0f;
+        _rmsCount = 0;
+
         float fftOutput[FFT_WINDOW_SIZE];
         float magnitudes[FFT_WINDOW_SIZE / 2]; // Real-valued signal has symmetric FFT output
         
@@ -61,7 +101,7 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
         // 2. Run FFT via CMSIS-DSP
         fftDriver->runFFT(_fftBuffer, fftOutput, 0); // 0 for time to freq domain
         
-        // 3. Calculate Magnitudes via CMSIS-DSP [arm_cmplx_mag_f32]
+        // 3. Calculate Magnitudes
         fftDriver->computeMag(fftOutput, magnitudes, FFT_WINDOW_SIZE / 2);
         
         // 4. Find Peak Frequency Bin
@@ -77,7 +117,7 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
             }
         }
         
-        // 5. Convert to Hz and update coefficients via updateFilters(peak_freq_hz)
+        // 5. Convert to Hz and update coefficients
         float peakFreq = (float)peakBin * (_config.sample_freq_hz / FFT_WINDOW_SIZE);
         updateFilters(peakFreq);
         
@@ -127,6 +167,12 @@ void FFTHarmonicNotch::reset() {
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
         _filters[i].resetStates();
     }
+
+    _rmsX = 0.0f;
+    _rmsY = 0.0f;
+    _rmsZ = 0.0f;
+    _rmsCount = 0;
+    _dominantAxis = GyroAxis::X;
 }
 
 // ---------------------------------------------------------
