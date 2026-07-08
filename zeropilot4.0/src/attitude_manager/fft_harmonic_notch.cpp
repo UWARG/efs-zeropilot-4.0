@@ -23,7 +23,6 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
     _Q = _config.min_freq_hz / _config.bandwidth_hz;
 
     // Initialize CMSIS-DSP FFT Instance
-    // FILLMEIN: Replace arm_rfft_fast_init_f32 with FFT driver init
     if (fftDriver == nullptr || !fftDriver->init(FFT_SIZE)) {
         _initialised = false;
         return false; 
@@ -33,7 +32,7 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
 
     // Pre-compute the Hanning Window to save FPU cycles during runtime
     for (int i = 0; i < FFT_SIZE; i++) {
-        _hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsis_dsp_cosf(2.0f * M_PI * i / (FFT_SIZE - 1))); // FILLMEIN: Replace with arm_cos_f32 from SystemUtils
+        _hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsis_dsp_cosf(2.0f * M_PI * i / (FFT_SIZE - 1)));
     }
 
     // Reset filter states and mark as initialized
@@ -55,23 +54,18 @@ bool FFTHarmonicNotch::pushSample(float raw_gyro_sample) {
         float magnitudes[FFT_SIZE / 2]; // Real-valued signal has symmetric FFT output
         
         // 1. Apply Hanning window
-        // FILLMEIN (for each sample in the buffer, buffer[i] *= _hanningWindow[i])
         for (int i = 0; i < FFT_SIZE; i++) {
             _fftBuffer[i] *= _hanningWindow[i];
         }
         
         // 2. Run FFT via CMSIS-DSP
-        // FILLMEIN (call arm_rfft_fast_f32 with _fftHandler, _fftBuffer, fftOutput, 0)
         fftDriver->runFFT(_fftBuffer, fftOutput, 0); // 0 for time to freq domain
         
         // 3. Calculate Magnitudes via CMSIS-DSP [arm_cmplx_mag_f32]
-        // FILLMEIN (call arm_cmplx_mag_f32 with fftOutput, magnitudes, FFT_SIZE / 2)
         fftDriver->computeMag(fftOutput, magnitudes, FFT_SIZE / 2);
         
         // 4. Find Peak Frequency Bin
         // Start searching at the bin corresponding to min_freq_hz to avoid physical flight dynamics
-        // FILLMEIN (find idx for starting bin, and if 0 then set to 1 to avoid DC component)
-        //          (then, loop through magnitudes to find the index w/ the maximum energy)
         uint8_t startBin = (uint8_t)(_config.min_freq_hz / (_config.sample_freq_hz / FFT_SIZE)); // Each bin covers _config.sample_freq_hz / FFT_SIZE hz
         if (startBin == 0) startBin = 1;
         uint8_t peakBin = startBin;
@@ -141,8 +135,8 @@ void FFTHarmonicNotch::reset() {
 
 void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float Q) {
     float omega = 2.0f * M_PI * center_freq / sample_freq;
-    float sn = systemUtilsDriver->cmsis_dsp_sinf(omega); // FILLMEIN: Replace with arm_sin_f32(omega) from SystemUtils
-    float cs = systemUtilsDriver->cmsis_dsp_cosf(omega); // FILLMEIN: Replace with arm_cos_f32(omega) from SystemUtils
+    float sn = systemUtilsDriver->cmsis_dsp_sinf(omega);
+    float cs = systemUtilsDriver->cmsis_dsp_cosf(omega);
     float alpha = sn / (2.0f * Q);
 
     float a0 = 1.0f + alpha * A;

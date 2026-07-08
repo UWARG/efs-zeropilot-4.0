@@ -32,7 +32,7 @@ class FFTHarmonicNotch {
         void reset();
     
     private:
-        static constexpr uint16_t FFT_SIZE = 256; // 256 points under 4kHz ODR gives ~15.625Hz frequency resolution
+        static constexpr uint16_t FFT_WINDOW_SIZE = 256; // 256 points under 4kHz ODR gives ~15.625Hz frequency resolution
         
         ISystemUtils *systemUtilsDriver;
 
@@ -56,8 +56,8 @@ class FFTHarmonicNotch {
         
         // DSP State
         IFFT *fftDriver;
-        float _fftBuffer[FFT_SIZE];
-        float _hanningWindow[FFT_SIZE];
+        float _fftBuffer[FFT_WINDOW_SIZE];
+        float _hanningWindow[FFT_WINDOW_SIZE];
         uint16_t _fftIndex = 0;
         
         float _A; 
