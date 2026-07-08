@@ -25,7 +25,7 @@ class FFTHarmonicNotch {
         FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDriver);
         
         // Initialize filters, compute Hanning window, setup FFT handler
-        bool init(const FFTHarmonicNotchConfig& config);
+        bool init(const FFTHarmonicNotchConfig& notchConfig);
         
         // Push a raw sample into the FFT buffer. 
         // Returns true if the buffer filled and an FFT was calculated this cycle.
@@ -47,9 +47,9 @@ class FFTHarmonicNotch {
 
         struct BiquadState {
             float b0, b1, b2, a1, a2;
-            float x1_x = 0, x2_x = 0, y1_x = 0, y2_x = 0;
-            float x1_y = 0, x2_y = 0, y1_y = 0, y2_y = 0;
-            float x1_z = 0, x2_z = 0, y1_z = 0, y2_z = 0;
+            float x1X = 0, x2X = 0, y1X = 0, y2X = 0;
+            float x1Y = 0, x2Y = 0, y1Y = 0, y2Y = 0;
+            float x1Z = 0, x2Z = 0, y1Z = 0, y2Z = 0;
             bool enabled = false;
 
             void updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float Q);
@@ -57,22 +57,22 @@ class FFTHarmonicNotch {
             void resetStates();
         };
 
-        FFTHarmonicNotchConfig _config;
-        BiquadState _filters[FFT_NOTCH_MAX_HARMONICS];
+        FFTHarmonicNotchConfig config;
+        BiquadState filters[FFT_NOTCH_MAX_HARMONICS];
         
         // DSP State
         IFFT *fftDriver;
-        float _fftBuffer[FFT_WINDOW_SIZE];
-        float _hanningWindow[FFT_WINDOW_SIZE];
-        uint16_t _fftIndex = 0;
+        float fftBuffer[FFT_WINDOW_SIZE];
+        float hanningWindow[FFT_WINDOW_SIZE];
+        uint16_t fftIndex = 0;
 
-        GyroAxis _dominantAxis = GyroAxis::X;
-        float _rmsX = 0.0f;
-        float _rmsY = 0.0f;
-        float _rmsZ = 0.0f;
-        uint16_t _rmsCount = 0;
+        GyroAxis dominantAxis = GyroAxis::X;
+        float rmsX = 0.0f;
+        float rmsY = 0.0f;
+        float rmsZ = 0.0f;
+        uint16_t rmsCount = 0;
         
-        float _A; 
-        float _Q; 
-        bool _initialised = false;
+        float A; 
+        float Q; 
+        bool initialised = false;
 };
