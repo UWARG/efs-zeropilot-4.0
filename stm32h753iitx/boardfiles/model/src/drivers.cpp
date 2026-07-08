@@ -108,6 +108,9 @@ void initDrivers()
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
     telemLinkvirtualComHandle = new RFD(&huart8); 
+    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
+    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
+    imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     pmHandle = new PowerModule(&hi2c1);
 
@@ -127,6 +130,7 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    pmHandle->init();
     telemLinkHandle->init();
     telemLinkvirtualComHandle->init();
     if (telemLinkvirtualComHandle) telemLinkvirtualComHandle->init();
