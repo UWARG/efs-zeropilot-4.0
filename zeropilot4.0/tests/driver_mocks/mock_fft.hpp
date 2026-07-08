@@ -8,4 +8,4 @@ class MockFFT : public IFFT {
         MOCK_METHOD(bool, init, (uint16_t fftLen), (override));
         MOCK_METHOD(void, runFFT, (float* input_buffer, float* output_buffer, uint8_t direction), (override));
         MOCK_METHOD(void, computeMag, (const float* input_buffer, float* output_buffer, uint32_t numSamples), (override));
-}
+};
