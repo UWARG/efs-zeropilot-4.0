@@ -107,10 +107,7 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
-    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5);
-    imuHandle = new FusedIMU(&hspi1, imu0, imu1);
-    telemLinkvirtualComHandle = new RFD(&huart8);
+    telemLinkvirtualComHandle = new RFD(&huart8); 
     imuHandle = new IMU(&hspi1, GPIOC, GPIO_PIN_4);
     pmHandle = new PowerModule(&hi2c1);
 

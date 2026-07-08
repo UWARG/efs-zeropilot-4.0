@@ -179,8 +179,10 @@ void TelemetryManager::transmit() {
         txBufIdx += MSG_LEN;
     }
 
-//    telemLinkDriver->transmit(txBuffer, txBufIdx);
-    telemLinkVirtualComDriver->transmit(txBuffer, txBufIdx);
+   telemLinkDriver->transmit(txBuffer, txBufIdx);
+   if (telemLinkVirtualComDriver != nullptr) {
+        telemLinkVirtualComDriver->transmit(txBuffer, txBufIdx);
+    }
 }
 
 void TelemetryManager::receive() {
@@ -197,7 +199,7 @@ void TelemetryManager::receive() {
     }
 
         // Also poll virtual COM link if present
-        if (telemLinkVirtualComDriver) {
+        if (telemLinkVirtualComDriver != nullptr) {
             const uint16_t RECEIVED_BYTES_VCOM = telemLinkVirtualComDriver->receive(rxBuffer, sizeof(rxBuffer));
             for (uint16_t i = 0; i < RECEIVED_BYTES_VCOM; ++i) {
                 if (mavlink_parse_char(0, rxBuffer[i], &msgToRX, &status)) {
@@ -206,6 +208,7 @@ void TelemetryManager::receive() {
                 }
             }
         }
+    
 }
 
 void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
