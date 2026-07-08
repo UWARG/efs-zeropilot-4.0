@@ -42,7 +42,7 @@ class TelemetryManager {
 
     // rtcm
     uint8_t rtcmAssemblyBuffer[720]; // 180 * 4(Max Frag Count)
-    uint8_t rtcmLen;
+    int8_t rtcmLen;
     uint8_t rtcmCurrentSequenceId;
     uint8_t rtcmRecievedFragments; // bit n set to 1 means fragment n has been recieved. Other non-related bits(Other than 4 LSB) are set to 0
     rtcm_correction_data_t &sharedRtcmBuffer;
