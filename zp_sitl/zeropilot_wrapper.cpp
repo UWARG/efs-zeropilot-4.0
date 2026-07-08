@@ -14,6 +14,7 @@
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
+#include "sitl_drivers/sitl_fft.hpp"
 #include <functional>
 #include <string>
 #include <queue>
@@ -48,6 +49,7 @@ typedef struct {
     AttitudeManager* am;
     
     SITL_SystemUtils* sysUtils;
+    SITL_FFT *fft;
     SITL_Queue<RCMotorControlMessage_t>* amQueue;
     SITL_Queue<TMMessage_t>* tmQueue;
     SITL_LogQueue* logQueue;
@@ -107,6 +109,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::init();
 
         self->sysUtils = new SITL_SystemUtils();
+        self->fft = new SITL_FFT();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
         self->tmQueue = new SITL_Queue<TMMessage_t>();
         self->logQueue = new SITL_LogQueue();
@@ -210,7 +213,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->gps, self->imu,
+            self->sysUtils, self->gps, self->imu, self->fft,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );

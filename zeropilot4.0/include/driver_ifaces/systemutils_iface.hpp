@@ -25,6 +25,6 @@ class ISystemUtils {
         virtual void profilerEnd(uint8_t id) = 0;
         virtual void profilerGetAll(TaskProfile* out, uint8_t* count) = 0;
 
-        virtual float cmsis_dsp_sinf(float x) = 0;
-        virtual float cmsis_dsp_cosf(float x) = 0;
+        virtual float cmsisDspSinf(float x) = 0;
+        virtual float cmsisDspCosf(float x) = 0;
 };

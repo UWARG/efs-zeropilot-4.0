@@ -28,7 +28,6 @@
 #include "unified_threads.hpp"
 #include "utils.h"
 #include "drivers.hpp"
-#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -172,7 +171,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
   MX_FATFS_Init();
-//  MX_IWDG1_Init();
+  MX_IWDG1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 

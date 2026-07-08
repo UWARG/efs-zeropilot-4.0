@@ -9,105 +9,106 @@ FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDri
     systemUtilsDriver(systemUtilsDriver),
     fftDriver(fftDriver) {}
 
-bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& config) {
+bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
     // Validate configuration parameters
-    if (config.sample_freq_hz <= 0.0f || config.bandwidth_hz <= 0.0f) {
+    if (notchConfig.sampleFreqHz <= 0.0f || notchConfig.bandwidthHz <= 0.0f) {
         return false;
     }
 
     // Store configuration
-    _config = config;
+    config = notchConfig;
 
     // Calculate generic Attenuation (A) and Quality (Q) factors
-    _A = powf(10.0f, -_config.attenuation_dB / 40.0f);
-    _Q = _config.min_freq_hz / _config.bandwidth_hz;
+    a = powf(10.0f, -config.attenuationDB / 40.0f);
+    q = config.minFreqHz / config.bandwidthHz;
 
     // Initialize CMSIS-DSP FFT Instance
     if (fftDriver == nullptr || !fftDriver->init(FFT_WINDOW_SIZE)) {
-        _initialised = false;
-        return false; 
+        initialised = false;
+        return false;
     }
-    
-    _fftIndex = 0;
+
+    fftIndex = 0;
 
     // Pre-compute the Hanning Window to save FPU cycles during runtime
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
-        _hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsis_dsp_cosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
+        hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsisDspCosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
     }
 
     // Reset filter states and mark as initialized
     reset();
-    _initialised = true;
+    initialised = true;
 
     return true;
 }
 
 bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
-    if (!_initialised) return false;
-    if (_fftIndex >= FFT_WINDOW_SIZE) return false;
+    if (!initialised) return false;
+    if (fftIndex >= FFT_WINDOW_SIZE) return false;
 
     // Accumulate RMS energy for this FFT window
-    _rmsX += gx * gx;
-    _rmsY += gy * gy;
-    _rmsZ += gz * gz;
-    _rmsCount++;
+    rmsX += gx * gx;
+    rmsY += gy * gy;
+    rmsZ += gz * gz;
+    rmsCount++;
 
     // Use the dominant axis selected from the previous window
-    float raw_gyro_sample;
-    switch (_dominantAxis) {
-        case GyroAxis::X:
-            raw_gyro_sample = gx;
+    float rawGyroSample;
+    switch (dominantAxis) {
+        case GyroAxis_e::X:
+            rawGyroSample = gx;
             break;
 
-        case GyroAxis::Y:
-            raw_gyro_sample = gy;
+        case GyroAxis_e::Y:
+            rawGyroSample = gy;
             break;
 
-        case GyroAxis::Z:
-            raw_gyro_sample = gz;
+        case GyroAxis_e::Z:
+            rawGyroSample = gz;
             break;
     }
 
     // Load sample into buffer
-    _fftBuffer[_fftIndex++] = raw_gyro_sample;
-    
+    fftBuffer[fftIndex++] = rawGyroSample;
+
     // If buffer is full, execute FFT
-    if (_fftIndex >= FFT_WINDOW_SIZE) {
+    if (fftIndex >= FFT_WINDOW_SIZE) {
 
         // Pick strongest vibration axis for next FFT window
-        if (_rmsX >= _rmsY && _rmsX >= _rmsZ) {
-            _dominantAxis = GyroAxis::X;
-        } 
-        else if (_rmsY >= _rmsZ) {
-            _dominantAxis = GyroAxis::Y;
-        } 
+        if (rmsX >= rmsY && rmsX >= rmsZ) {
+            dominantAxis = GyroAxis_e::X;
+        }
+        else if (rmsY >= rmsZ) {
+            dominantAxis = GyroAxis_e::Y;
+        }
         else {
-            _dominantAxis = GyroAxis::Z;
+            dominantAxis = GyroAxis_e::Z;
         }
 
-        _rmsX = 0.0f;
-        _rmsY = 0.0f;
-        _rmsZ = 0.0f;
-        _rmsCount = 0;
+        rmsX = 0.0f;
+        rmsY = 0.0f;
+        rmsZ = 0.0f;
+        rmsCount = 0;
 
         float fftOutput[FFT_WINDOW_SIZE];
         float magnitudes[FFT_WINDOW_SIZE / 2]; // Real-valued signal has symmetric FFT output
-        
+
         // 1. Apply Hanning window
         for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
-            _fftBuffer[i] *= _hanningWindow[i];
+            fftBuffer[i] *= hanningWindow[i];
         }
-        
+
         // 2. Run FFT via CMSIS-DSP
-        fftDriver->runFFT(_fftBuffer, fftOutput, 0); // 0 for time to freq domain
-        
+        fftDriver->runFFT(fftBuffer, fftOutput, 0); // 0 for time to freq domain
+
         // 3. Calculate Magnitudes
         fftDriver->computeMag(fftOutput, magnitudes, FFT_WINDOW_SIZE / 2);
-        
+
         // 4. Find Peak Frequency Bin
-        // Start searching at the bin corresponding to min_freq_hz to avoid physical flight dynamics
-        uint8_t startBin = (uint8_t)(_config.min_freq_hz / (_config.sample_freq_hz / FFT_WINDOW_SIZE)); // Each bin covers _config.sample_freq_hz / FFT_WINDOW_SIZE hz
-        if (startBin == 0) startBin = 1;
+        // Start searching at the bin corresponding to minFreqHz to avoid physical flight dynamics
+        uint8_t startBin = (uint8_t)(config.minFreqHz / (config.sampleFreqHz / FFT_WINDOW_SIZE)); // Each bin covers config.sampleFreqHz / FFT_WINDOW_SIZE hz
+        if (startBin == 0)
+            startBin = 1;
         uint8_t peakBin = startBin;
         float peak = magnitudes[peakBin];
         for (int i = startBin + 1; i < FFT_WINDOW_SIZE / 2; i++) {
@@ -116,102 +117,111 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
                 peakBin = i;
             }
         }
-        
+
         // 5. Convert to Hz and update coefficients
-        float peakFreq = (float)peakBin * (_config.sample_freq_hz / FFT_WINDOW_SIZE);
+        float peakFreq = (float)peakBin * (config.sampleFreqHz / FFT_WINDOW_SIZE);
         updateFilters(peakFreq);
-        
+
         // 6. Reset buffer index for next cycle
-        _fftIndex = 0; // Reset buffer
-        return true;   // FFT ran (buffer full)
+        fftIndex = 0; // Reset buffer
+        return true;  // FFT ran (buffer full)
     }
-    
+
     return false; // Buffer not full yet
 }
 
-void FFTHarmonicNotch::updateFilters(float peak_freq_hz) {
-    const float nyquist_limit = _config.sample_freq_hz * 0.48f;
+void FFTHarmonicNotch::updateFilters(float peakFreqHz) {
+    const float NYQUIST_LIMIT = config.sampleFreqHz * 0.48f;
 
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
         // Check if this harmonic bit is enabled in the mask
-        if (!((1U << i) & _config.harmonics_mask)) {
-            _filters[i].enabled = false;
+        if (!((1U << i) & config.harmonicsMask)) {
+            filters[i].enabled = false;
             continue;
         }
 
-        float harmonic_freq = peak_freq_hz * (i + 1);
+        float harmonicFreq = peakFreqHz * (i + 1);
 
         // Disable filter if it exceeds Nyquist or drops below the minimum configured frequency
-        if (harmonic_freq >= nyquist_limit || harmonic_freq < _config.min_freq_hz) {
-            _filters[i].enabled = false;
+        if (harmonicFreq >= NYQUIST_LIMIT || harmonicFreq < config.minFreqHz) {
+            filters[i].enabled = false;
             continue;
         }
 
         // Update coefficients for this specific harmonic
-        _filters[i].updateCoefficients(systemUtilsDriver, _config.sample_freq_hz, harmonic_freq, _A, _Q);
-        _filters[i].enabled = true;
+        filters[i].updateCoefficients(systemUtilsDriver, config.sampleFreqHz, harmonicFreq, a, q);
+        filters[i].enabled = true;
     }
 }
 
 void FFTHarmonicNotch::apply(float& gx, float& gy, float& gz) {
-    if (!_initialised) return;
+    if (!initialised) return;
 
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
-        if (_filters[i].enabled) {
-            _filters[i].applyTriAxis(gx, gy, gz);
+        if (filters[i].enabled) {
+            filters[i].applyTriAxis(gx, gy, gz);
         }
     }
 }
 
 void FFTHarmonicNotch::reset() {
     for (uint8_t i = 0; i < FFT_NOTCH_MAX_HARMONICS; i++) {
-        _filters[i].resetStates();
+        filters[i].resetStates();
     }
 
-    _rmsX = 0.0f;
-    _rmsY = 0.0f;
-    _rmsZ = 0.0f;
-    _rmsCount = 0;
-    _dominantAxis = GyroAxis::X;
+    rmsX = 0.0f;
+    rmsY = 0.0f;
+    rmsZ = 0.0f;
+    rmsCount = 0;
+    dominantAxis = GyroAxis_e::X;
 }
 
 // ---------------------------------------------------------
 // Bi-Quadratic Filter Mathematical Implementation
 // ---------------------------------------------------------
 
-void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float Q) {
+void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float q) {
     float omega = 2.0f * M_PI * center_freq / sample_freq;
-    float sn = systemUtilsDriver->cmsis_dsp_sinf(omega);
-    float cs = systemUtilsDriver->cmsis_dsp_cosf(omega);
-    float alpha = sn / (2.0f * Q);
+    float sn = systemUtilsDriver->cmsisDspSinf(omega);
+    float cs = systemUtilsDriver->cmsisDspCosf(omega);
+    float alpha = sn / (2.0f * q);
 
     float a0 = 1.0f + alpha * A;
     b0 = (1.0f + alpha) / a0;
     b1 = (-2.0f * cs) / a0;
     b2 = (1.0f - alpha) / a0;
-    a1 = b1; 
+    a1 = b1;
     a2 = (1.0f - alpha * A) / a0;
 }
 
-void FFTHarmonicNotch::BiquadState::applyTriAxis(float& gx, float& gy, float& gz) {
+void FFTHarmonicNotch::BiquadState::applyTriAxis(float &gx, float &gy, float &gz) {
     // X Axis
-    float outX = b0 * gx + b1 * x1_x + b2 * x2_x - a1 * y1_x - a2 * y2_x;
-    x2_x = x1_x; x1_x = gx; y2_x = y1_x; y1_x = outX;
+    float outX = b0 * gx + b1 * x1X + b2 * x2X - a1 * y1X - a2 * y2X;
+    x2X = x1X;
+    x1X = gx;
+    y2X = y1X;
+    y1X = outX;
     gx = outX;
 
     // Y Axis
-    float outY = b0 * gy + b1 * x1_y + b2 * x2_y - a1 * y1_y - a2 * y2_y;
-    x2_y = x1_y; x1_y = gy; y2_y = y1_y; y1_y = outY;
+    float outY = b0 * gy + b1 * x1Y + b2 * x2Y - a1 * y1Y - a2 * y2Y;
+    x2Y = x1Y;
+    x1Y = gy;
+    y2Y = y1Y;
+    y1Y = outY;
     gy = outY;
 
     // Z Axis
-    float outZ = b0 * gz + b1 * x1_z + b2 * x2_z - a1 * y1_z - a2 * y2_z;
-    x2_z = x1_z; x1_z = gz; y2_z = y1_z; y1_z = outZ;
+    float outZ = b0 * gz + b1 * x1Z + b2 * x2Z - a1 * y1Z - a2 * y2Z;
+    x2Z = x1Z;
+    x1Z = gz;
+    y2Z = y1Z;
+    y1Z = outZ;
     gz = outZ;
 }
 
 void FFTHarmonicNotch::BiquadState::resetStates() {
-    x1_x = x2_x = y1_x = y2_x = 0.0f;
-    x1_y = x2_y = y1_y = y2_y = 0.0f;
-    x1_z = x2_z = y1_z = y2_z = 0.0f;
+    x1X = x2X = y1X = y2X = 0.0f;
+    x1Y = x2Y = y1Y = y2Y = 0.0f;
+    x1Z = x2Z = y1Z = y2Z = 0.0f;
 }
