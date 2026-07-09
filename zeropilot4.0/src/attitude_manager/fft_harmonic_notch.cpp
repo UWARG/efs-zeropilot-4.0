@@ -9,7 +9,7 @@ FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDri
     systemUtilsDriver(systemUtilsDriver),
     fftDriver(fftDriver) {}
 
-bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig& notchConfig) {
+bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig &notchConfig) {
     // Validate configuration parameters
     if (notchConfig.sampleFreqHz <= 0.0f || notchConfig.bandwidthHz <= 0.0f) {
         return false;
