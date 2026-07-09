@@ -7,7 +7,7 @@ on:
     type: [opened, synchronize, reopened]
 
 jobs:
-  unit_test:
+  unit_test_plane:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +23,31 @@ jobs:
 
     - name: Build tests
       working-directory: ./zeropilot4.0/tests
-      run: bash ./testbuild.bash -c
+      run: bash ./testbuild.bash -c -v plane
+    
+    - name: Run tests
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        chmod +x build/gtestzeropilot4.0
+        ./build/gtestzeropilot4.0
+
+  unit_test_quad:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtest-dev libgmock-dev
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build tests
+      working-directory: ./zeropilot4.0/tests
+      run: bash ./testbuild.bash -c -v quad
     
     - name: Run tests
       working-directory: ./zeropilot4.0/tests

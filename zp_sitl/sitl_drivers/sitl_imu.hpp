@@ -58,7 +58,11 @@ public:
     }
     
     RawImuBatch_t readRawData() override {
-        return rawBatch; // Single-sample batch backed by rawData
+        return rawBatch;
+    }
+
+    float getODRHz() override {
+        return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
 
     /**
@@ -73,10 +77,10 @@ public:
             scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
             scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-            // Convert LSB back to rad/s: (Raw / Scale) -> deg/s -> rad/s
-            scaledData.xgyro = ((float)raw.xgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-            scaledData.ygyro = ((float)raw.ygyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-            scaledData.zgyro = ((float)raw.zgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
+            // Convert LSB back to deg/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
 
             scaledData.timestamp = raw.timestamp;
         }

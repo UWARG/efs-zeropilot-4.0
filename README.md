@@ -37,29 +37,20 @@ external/                   # Third-party dependencies (MAVLink)
 
 Build for STM32H753 or STM32L552 can be done via STM32CubeIDE.
 
+Select Debug/Release-plane for plane build and Debug/Release-quad for quadcopter build.
+
 ### Unit Tests
 
 ```bash
 cd zeropilot4.0/tests
-./testbuild.bash            # Build tests
-./testbuild.bash -c         # Clean build
-./build/gtestzeropilot4.0   # Run tests
+./testbuild.bash -c -v plane    # Clean build for plane
+./testbuild.bash -c -v quad     # Clean build for quadcopter
+./build/gtestzeropilot4.0       # Run tests
 ```
 
 **Requirements**: GoogleTest, GoogleMock
 
 ### SITL Simulation
-
-Software-in-the-Loop simulation with JSBSim flight dynamics:
-
-```bash
-cd zp_sitl
-pip install -r requirements.txt
-./build_sitl.sh
-python sitl_main.py
-```
-
-Open `http://localhost:8080` for web UI. MAVLink streams to `udp://127.0.0.1:14550` (connect MissionPlanner/QGroundControl).
 
 See [zp_sitl/README.md](zp_sitl/README.md) for details.
 
@@ -69,7 +60,8 @@ See [zp_sitl/README.md](zp_sitl/README.md) for details.
 
 ```bash
 cd zeropilot4.0
-./lint.bash
+./lint.bash -v plane   # Linting for plane
+./lint.bash -v quad    # Linting for quadcopter
 ```
 
 ### Debugging Unit Tests (VS Code)

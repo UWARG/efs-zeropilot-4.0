@@ -21,10 +21,12 @@
 
 #define ICM42688P_IMU_WHOAMI 0x47
 
-IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin) : 
+IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig) : 
     spi(spiHandle),
     csPort(csPort),
     csPin(csPin),
+    imuId(imuId),
+    imuOdr(odrConfig),
     alpha(0.1f) {
 
     filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
@@ -235,8 +237,8 @@ void IMU::setFIFO() {
 }
 
 void IMU::setODR() {
-    writeRegister(0, UB0_REG_GYRO_ODR, 0b00000100); // Configure gyro ODR to 4khz
-    writeRegister(0, UB0_REG_ACCEL_CONFIG0, 0b00000100); // Configure accelerometer ODR to 4khz
+    writeRegister(0, UB0_REG_GYRO_ODR, (uint8_t)imuOdr); // Configure gyro ODR to 4khz
+    writeRegister(0, UB0_REG_ACCEL_CONFIG0, (uint8_t)imuOdr); // Configure accelerometer ODR to 4khz
 }
 
 void IMU::processRawData() {
@@ -258,6 +260,7 @@ void IMU::processRawData() {
         rawData[k].ygyro = (int16_t)((imuRxBuffer[base + 9] << 8) | imuRxBuffer[base + 10]);
         rawData[k].zgyro = -(int16_t)((imuRxBuffer[base + 11] << 8) | imuRxBuffer[base + 12]);
         rawData[k].timestamp = (uint16_t)((imuRxBuffer[base + 14] << 8) | imuRxBuffer[base + 15]);
+        rawData[k].imuId = imuId;
         validData++;
     }
 
@@ -269,4 +272,22 @@ void IMU::processRawData() {
 float IMU::lowPassFilter(float rawValue, int select) {
     filteredGyro[select] = alpha * rawValue + (1 - alpha) * filteredGyro[select];
     return filteredGyro[select];
+}
+
+float IMU::getODRHz() {
+    switch (imuOdr) {
+        case IMU_ODR_32KHZ: return 32000.0f;
+        case IMU_ODR_16KHZ: return 16000.0f;
+        case IMU_ODR_8KHZ:  return 8000.0f;
+        case IMU_ODR_4KHZ:  return 4000.0f;
+        case IMU_ODR_2KHZ:  return 2000.0f;
+        case IMU_ODR_1KHZ:  return 1000.0f;
+        case IMU_ODR_500HZ: return 500.0f;
+        case IMU_ODR_200HZ: return 200.0f;
+        case IMU_ODR_100HZ: return 100.0f;
+        case IMU_ODR_50HZ:  return 50.0f;
+        case IMU_ODR_25HZ:  return 25.0f;
+        case IMU_ODR_12HZ5: return 12.5f;
+        default:            return 0.0f;
+    }
 }
