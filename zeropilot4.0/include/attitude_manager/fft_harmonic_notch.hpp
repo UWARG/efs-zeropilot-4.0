@@ -4,7 +4,7 @@
 #include "systemutils_iface.hpp"
 #include "fft_iface.hpp"
 
-#define FFT_NOTCH_MAX_HARMONICS 8
+#define FFT_NOTCH_MAX_HARMONICS 16
 
 enum class GyroAxis_e {
     X,
@@ -13,11 +13,13 @@ enum class GyroAxis_e {
 };
 
 struct FFTHarmonicNotchConfig {
-    float sampleFreqHz;    // IMU Sample Rate
-    float minFreqHz;       // Minimum frequency to track
-    float bandwidthHz;     // Base notch width
-    float attenuationDB;   // Attenuation depth
-    uint8_t harmonicsMask; // Bitmask for harmonics
+    bool enabled;           // Enable/disable the FFT harmonic notch filter
+    uint16_t fftWindowSize; // FFT window size (must be a power of 2)
+    float sampleFreqHz;     // IMU Sample Rate
+    float minFreqHz;        // Minimum frequency to track
+    float bandwidthHz;      // Base notch width
+    float attenuationDB;    // Attenuation depth
+    uint8_t harmonicsMask;  // Bitmask for harmonics
 };
 
 class FFTHarmonicNotch {
@@ -38,7 +40,8 @@ class FFTHarmonicNotch {
         void reset();
     
     private:
-        static constexpr uint16_t FFT_WINDOW_SIZE = 256;
+        static constexpr uint16_t FFT_MAX_WINDOW_SIZE = 1024;
+        uint16_t fftWindowSize; // Set via ZP_PARAM::FFT_WINDOW_LEN at runtime
 
         ISystemUtils *systemUtilsDriver;
 
@@ -62,8 +65,8 @@ class FFTHarmonicNotch {
         
         // DSP State
         IFFT *fftDriver;
-        float fftBuffer[FFT_WINDOW_SIZE];
-        float hanningWindow[FFT_WINDOW_SIZE];
+        float fftBuffer[FFT_MAX_WINDOW_SIZE];
+        float hanningWindow[FFT_MAX_WINDOW_SIZE];
         uint16_t fftIndex = 0;
 
         GyroAxis_e dominantAxis = GyroAxis_e::X;

@@ -64,6 +64,14 @@ class AMParamSetup : public IParamSetup {
     static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
     #endif
 
+    // FFT Harmonic Notch Filter param callbacks
+    static bool updateHarmonicNotchEnabled(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchWindowSize(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchMinFreqHz(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchBandwidthHz(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchAttenuationDB(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchHarmonicsMask(AttitudeManager* ctx, float val);
+
     // Servo param callback helpers
     static bool setServoTrim(AttitudeManager* ctx, uint8_t ch, float val);
     static bool setServoMin(AttitudeManager* ctx, uint8_t ch, float val);
