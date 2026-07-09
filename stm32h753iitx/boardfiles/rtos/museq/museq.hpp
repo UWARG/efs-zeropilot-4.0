@@ -17,6 +17,8 @@ void initMutexes();
 
 void initSemphrs();
 
+extern rtcmCorrectionData_t sharedRtcmBuffer;
+
 /* --- queues --- */
 /* declare queues begin */
 extern osMessageQueueId_t amQueueId;
@@ -26,5 +28,3 @@ extern osMessageQueueId_t messageBufferId;
 /* declare queues end */
 
 void initQueues();
-
-extern rtcmCorrectionData_t sharedRtcmBuffer;
