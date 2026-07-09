@@ -50,14 +50,8 @@ AttitudeManager::AttitudeManager(
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
 
-        FFTHarmonicNotchConfig notchConfig {
-            .sampleFreqHz   = imuDriver->getODRHz(),
-            .minFreqHz      = 50.0f,
-            .bandwidthHz    = 20.0f,
-            .attenuationDB  = 20.0f,
-            .harmonicsMask  = 0b00000011,
-        };
-        harmonicNotchFilter.init(notchConfig);
+        harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
+        harmonicNotchFilter.init(harmonicNotchConfig);
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();

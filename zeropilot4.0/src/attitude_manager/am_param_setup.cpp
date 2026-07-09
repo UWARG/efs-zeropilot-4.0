@@ -77,6 +77,14 @@ void AMParamSetup::loadAllParams() {
     am->stabilizeCLAW.setRollPitchLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::ATC_ANGLE_MAX));
     #endif
 
+    // FFT Harmonic Notch Filter params 
+    am->harmonicNotchConfig.enabled = ZP_PARAM::get(ZP_PARAM_ID::FFT_ENABLE);
+    am->harmonicNotchConfig.fftWindowSize = ZP_PARAM::get(ZP_PARAM_ID::FFT_WINDOW_LEN);
+    am->harmonicNotchConfig.minFreqHz = ZP_PARAM::get(ZP_PARAM_ID::FFT_MINHZ);
+    am->harmonicNotchConfig.bandwidthHz = ZP_PARAM::get(ZP_PARAM_ID::INS_HNTCH_BW);
+    am->harmonicNotchConfig.attenuationDB = ZP_PARAM::get(ZP_PARAM_ID::INS_HNTCH_ATT);
+    am->harmonicNotchConfig.harmonicsMask = ZP_PARAM::get(ZP_PARAM_ID::INS_HNTCH_HMNCS);
+
     // Servo params
     auto loadMotor = [&](uint8_t ch, ZP_PARAM_ID trim, ZP_PARAM_ID min, ZP_PARAM_ID max, ZP_PARAM_ID rev, ZP_PARAM_ID func) {
         if (ch >= am->mainMotorGroup->motorCount) return;

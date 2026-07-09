@@ -52,6 +52,7 @@ class AttitudeManager {
         IIMU *imuDriver;
 
         FFTHarmonicNotch harmonicNotchFilter;
+        FFTHarmonicNotchConfig harmonicNotchConfig;
         Mahony mahonyFilter;
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;

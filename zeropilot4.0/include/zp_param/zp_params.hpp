@@ -142,6 +142,12 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     RC3_REVERSED,
     RC4_REVERSED,
     BATT_N_CELLS,
+    FFT_ENABLE,
+    FFT_WINDOW_LEN,
+    FFT_MINHZ,
+    INS_HNTCH_BW,
+    INS_HNTCH_ATT,
+    INS_HNTCH_HMNCS,
     PARAM_COUNT
 };
 
