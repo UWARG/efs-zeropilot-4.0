@@ -32,7 +32,7 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig &notchConfig) {
 
     // Pre-compute the Hanning Window to save FPU cycles during runtime
     for (int i = 0; i < FFT_WINDOW_SIZE; i++) {
-        hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->cmsisDspCosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
+        hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->dspCosf(2.0f * M_PI * i / (FFT_WINDOW_SIZE - 1)));
     }
 
     // Reset filter states and mark as initialized
@@ -183,8 +183,8 @@ void FFTHarmonicNotch::reset() {
 
 void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float q) {
     float omega = 2.0f * M_PI * center_freq / sample_freq;
-    float sn = systemUtilsDriver->cmsisDspSinf(omega);
-    float cs = systemUtilsDriver->cmsisDspCosf(omega);
+    float sn = systemUtilsDriver->dspSinf(omega);
+    float cs = systemUtilsDriver->dspCosf(omega);
     float alpha = sn / (2.0f * q);
 
     float a0 = 1.0f + alpha * A;
