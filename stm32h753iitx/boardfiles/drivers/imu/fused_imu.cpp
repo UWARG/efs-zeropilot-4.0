@@ -4,7 +4,7 @@
 FusedIMU::FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1) : 
     spiBus(spiHandle),
     imu{imu0, imu1},
-    active_imu(0){}
+    active_imu(0) {}
     
 int FusedIMU::init() {
     bool status = true;
@@ -147,4 +147,8 @@ void FusedIMU::txRxCallback() {
 
 SPI_HandleTypeDef* FusedIMU::getSPI() {
     return spiBus;
+}
+
+float FusedIMU::getODRHz() {
+    return imu[0]->getODRHz();
 }
