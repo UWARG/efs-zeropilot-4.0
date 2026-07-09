@@ -1,6 +1,7 @@
 #include "direct_mapping.hpp"
 #include "drivers.hpp"
 #include "managers.hpp"
+#include "museq.hpp"
 
 // Pre-allocated static storage (global, not stack)
 alignas(AttitudeManager) static uint8_t amHandleStorage[sizeof(AttitudeManager)];
@@ -43,6 +44,7 @@ void initManagers()
         telemLinkHandle,
         tmQueueHandle,
         amRCQueueHandle,
-        messageBufferHandle
+        messageBufferHandle,
+        sharedRtcmBuffer
     );
 }
