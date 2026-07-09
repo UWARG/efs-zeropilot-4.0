@@ -22,13 +22,6 @@
 #include "tm_param_setup.hpp"
 #include "gps_iface.hpp"
 
-struct parseRtcmData {
-  uint8_t rtcmAssemblyBuffer[720]; // 180 * 4(Max Frag Count)
-  int8_t rtcmLen;
-  uint8_t rtcmCurrentSequenceId;
-  uint8_t rtcmRecievedFragments; // bit n set to 1 means fragment n has been recieved. Other non-related bits(Other than 4 LSB) are set to 0
-};
-
 class TelemetryManager {
     friend class TMParamSetup;
 
