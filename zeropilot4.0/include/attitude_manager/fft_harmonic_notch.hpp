@@ -4,7 +4,7 @@
 #include "systemutils_iface.hpp"
 #include "fft_iface.hpp"
 
-#define FFT_NOTCH_MAX_HARMONICS 8
+#define FFT_NOTCH_MAX_HARMONICS 16
 
 enum class GyroAxis_e {
     X,
