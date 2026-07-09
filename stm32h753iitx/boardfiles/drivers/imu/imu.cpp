@@ -274,7 +274,7 @@ float IMU::lowPassFilter(float rawValue, int select) {
     return filteredGyro[select];
 }
 
-float IMU::getODR() {
+float IMU::getODRHz() {
     switch (imuOdr) {
         case IMU_ODR_32KHZ: return 32000.0f;
         case IMU_ODR_16KHZ: return 16000.0f;

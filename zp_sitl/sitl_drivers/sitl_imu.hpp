@@ -61,7 +61,7 @@ public:
         return rawBatch;
     }
 
-    float getODR() override {
+    float getODRHz() override {
         return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
 

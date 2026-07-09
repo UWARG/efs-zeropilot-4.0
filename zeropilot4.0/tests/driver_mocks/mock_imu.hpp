@@ -8,5 +8,5 @@ public:
     MOCK_METHOD(int, init, (), (override));
     MOCK_METHOD(RawImuBatch_t, readRawData, (), (override));
     MOCK_METHOD(ScaledImuBatch_t, scaleIMUData, (const RawImuBatch_t &rawDataBatch), (override));
-    MOCK_METHOD(float, getODR, (), (override));
+    MOCK_METHOD(float, getODRHz, (), (override));
 };

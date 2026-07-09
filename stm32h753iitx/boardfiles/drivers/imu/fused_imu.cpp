@@ -149,6 +149,6 @@ SPI_HandleTypeDef* FusedIMU::getSPI() {
     return spiBus;
 }
 
-float FusedIMU::getODR() {
-    return imu[0]->getODR();
+float FusedIMU::getODRHz() {
+    return imu[0]->getODRHz();
 }

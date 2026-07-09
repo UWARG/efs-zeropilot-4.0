@@ -39,7 +39,7 @@ class IMU : public IIMU {
 
 		void beginRead();
 		RawImuBatch_t getBatch();
-		float getODR(); // Change when using a different ODR
+		float getODRHz(); // Change when using a different ODR
 		
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2

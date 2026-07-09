@@ -13,5 +13,5 @@ public:
 	virtual int init() = 0;
 	virtual RawImuBatch_t readRawData() = 0;
 	virtual ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) = 0;
-	virtual float getODR() = 0;
+	virtual float getODRHz() = 0;
 };
