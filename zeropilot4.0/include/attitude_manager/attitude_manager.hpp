@@ -15,6 +15,7 @@
 #include "acro_mapping.hpp"
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
+#include "fft_harmonic_notch.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -33,6 +34,7 @@ class AttitudeManager {
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
+            IFFT *fftDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
@@ -49,6 +51,8 @@ class AttitudeManager {
         IGPS *gpsDriver;
         IIMU *imuDriver;
 
+        FFTHarmonicNotch harmonicNotchFilter;
+        FFTHarmonicNotchConfig harmonicNotchConfig;
         Mahony mahonyFilter;
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;

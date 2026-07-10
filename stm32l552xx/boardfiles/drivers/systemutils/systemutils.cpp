@@ -1,5 +1,6 @@
 #include "cmsis_os.h"
 #include "systemutils.hpp"
+#include "arm_math.h"
 
 struct TaskEntry {
     const char* name;
@@ -73,4 +74,12 @@ uint32_t SystemUtils::getDWTMicroSec() {
     __set_PRIMASK(PRIMASK);
 
     return (uint32_t)(microSecAccumCyc / (SystemCoreClock / 1000000U));
+}
+
+float SystemUtils::dspSinf(float x) {
+    return arm_sin_f32(x);
+}
+
+float SystemUtils::dspCosf(float x) {
+    return arm_cos_f32(x);
 }

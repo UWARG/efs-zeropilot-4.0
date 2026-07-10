@@ -77,6 +77,14 @@ void AMParamSetup::loadAllParams() {
     am->stabilizeCLAW.setRollPitchLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::ATC_ANGLE_MAX));
     #endif
 
+    // FFT Harmonic Notch Filter params 
+    am->harmonicNotchConfig.enabled = ZP_PARAM::get(ZP_PARAM_ID::FFT_ENABLE);
+    am->harmonicNotchConfig.fftWindowSize = ZP_PARAM::get(ZP_PARAM_ID::FFT_WINDOW_LEN);
+    am->harmonicNotchConfig.minFreqHz = ZP_PARAM::get(ZP_PARAM_ID::FFT_MINHZ);
+    am->harmonicNotchConfig.bandwidthHz = ZP_PARAM::get(ZP_PARAM_ID::INS_HNTCH_BW);
+    am->harmonicNotchConfig.attenuationDB = ZP_PARAM::get(ZP_PARAM_ID::INS_HNTCH_ATT);
+    am->harmonicNotchConfig.harmonicsMask = ZP_PARAM::get(ZP_PARAM_ID::INS_HNTCH_HMNCS);
+
     // Servo params
     auto loadMotor = [&](uint8_t ch, ZP_PARAM_ID trim, ZP_PARAM_ID min, ZP_PARAM_ID max, ZP_PARAM_ID rev, ZP_PARAM_ID func) {
         if (ch >= am->mainMotorGroup->motorCount) return;
@@ -158,6 +166,14 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX,     am, updateAngPIDPitchIMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANGLE_MAX,         am, updateRollPitchLimitAng);
     #endif
+
+    // FFT Harmonic Notch Filter params
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_ENABLE,         am, updateHarmonicNotchEnabled);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_WINDOW_LEN,     am, updateHarmonicNotchWindowSize);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_MINHZ,          am, updateHarmonicNotchMinFreqHz);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_BW,       am, updateHarmonicNotchBandwidthHz);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_ATT,      am, updateHarmonicNotchAttenuationDB);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_HMNCS,    am, updateHarmonicNotchHarmonicsMask);
 
     // Servo params: each AM_PARAM_SETUP_BIND_SERVO_CB expands to 5 bindCallback calls
     AM_PARAM_SETUP_BIND_SERVO_CB(1)
@@ -402,6 +418,46 @@ bool AMParamSetup::updateRollPitchLimitAng(AttitudeManager* ctx, float val) {
     return true;
 }
 #endif
+
+// FFT Harmonic Notch Filter callbacks (only do bound checking as they cannot change at runtime)
+bool AMParamSetup::updateHarmonicNotchEnabled(AttitudeManager* ctx, float val) {
+    // Must be 0 or 1
+    int v = static_cast<int>(val);
+    if (v != 0 && v != 1) return false;
+    return true;
+}
+
+bool AMParamSetup::updateHarmonicNotchWindowSize(AttitudeManager* ctx, float val) {
+    // Must be power of 2 between 32 and 1024
+    int v = static_cast<int>(val);
+    if (v < 32 || v > 1024 || (v & (v - 1)) != 0) return false;
+    return true;
+}
+
+bool AMParamSetup::updateHarmonicNotchMinFreqHz(AttitudeManager* ctx, float val) {
+    // Must be between 20 and 400 Hz
+    if (val < 20.0f || val > 400.0f) return false;
+    return true;
+}
+
+bool AMParamSetup::updateHarmonicNotchBandwidthHz(AttitudeManager* ctx, float val) {
+    // Must be between 5 and 250 Hz
+    if (val < 5.0f || val > 250.0f) return false;
+    return true;
+}
+
+bool AMParamSetup::updateHarmonicNotchAttenuationDB(AttitudeManager* ctx, float val) {
+    // Must be between 5 and 50 dB
+    if (val < 5.0f || val > 50.0f) return false;
+    return true;
+}
+
+bool AMParamSetup::updateHarmonicNotchHarmonicsMask(AttitudeManager* ctx, float val) {
+    // Must be between 0 and 0xFFFF
+    int v = static_cast<int>(val);
+    if (v < 0 || v > 0xFFFF) return false;
+    return true;
+}
 
 // Servo field helpers
 bool AMParamSetup::setServoTrim(AttitudeManager* ctx, uint8_t ch, float val) {
