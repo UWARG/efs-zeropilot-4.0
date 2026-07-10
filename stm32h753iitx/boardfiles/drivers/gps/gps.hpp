@@ -27,7 +27,7 @@ private:
     GpsData_t validData;
     GpsData_t tempData;
 
-    __attribute__((section(".dtcm"))) volatile uint8_t rxBuffer[MAX_NMEA_DATA_LENGTH];
+    volatile uint8_t rxBuffer[MAX_NMEA_DATA_LENGTH];
     volatile uint8_t processBuffer[MAX_NMEA_DATA_LENGTH];
     uint8_t *processBufferEnd = (uint8_t*)processBuffer + MAX_NMEA_DATA_LENGTH;
     UART_HandleTypeDef *huart;

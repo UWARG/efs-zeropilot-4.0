@@ -57,39 +57,29 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
 }
 
 GpsData_t GPS::readData() {
-    // __HAL_UART_DISABLE_IT(huart, UART_IT_IDLE);
+    bool rmcRes = parseRMC();
+	bool ggaRes = parseGGA();
+//	bool c = parseUBX();
 
-    bool success = parseRMC() && parseGGA() && parseUBX();
-    tempData.isNew = success;
+    tempData.isNew = rmcRes && ggaRes;
     validData = tempData;
 
     validData.isNew = false;
-
-    HAL_DMA_StateTypeDef dmaStatus = HAL_DMA_GetState(huart->hdmarx);
-    uint32_t dmaError = HAL_DMA_GetError(huart->hdmarx);
-    (void)dmaStatus;
-    (void)dmaError;
-
-//    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
 
     return tempData;
 }
 
 void GPS::rxCallback(uint16_t size) {
     if (size > 0) {
-//    	SCB_InvalidateDCache_by_Addr((uint32_t*)rxBuffer, size);
-    	memcpy((uint8_t*)processBuffer, (uint8_t*)rxBuffer, size);
+        memcpy((uint8_t*)processBuffer, (uint8_t*)rxBuffer, size);
     }
-    HAL_DMA_StateTypeDef dmaStatus = HAL_DMA_GetState(huart->hdmarx);
-	uint32_t dmaError = HAL_DMA_GetError(huart->hdmarx);
-
     HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
 		(uint8_t*)rxBuffer,
 		MAX_NMEA_DATA_LENGTH
     );
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-    processBufferEnd = (uint8_t*)processBuffer + size;
+//    processBufferEnd = (uint8_t*)processBuffer + size;
 }
 
 UART_HandleTypeDef* GPS::getHUART() {
