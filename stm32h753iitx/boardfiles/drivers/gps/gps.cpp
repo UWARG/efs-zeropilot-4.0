@@ -65,13 +65,24 @@ GpsData_t GPS::readData() {
 
     validData.isNew = false;
 
+    HAL_DMA_StateTypeDef dmaStatus = HAL_DMA_GetState(huart->hdmarx);
+    uint32_t dmaError = HAL_DMA_GetError(huart->hdmarx);
+    (void)dmaStatus;
+    (void)dmaError;
+
 //    __HAL_UART_ENABLE_IT(huart, UART_IT_IDLE);
 
     return tempData;
 }
 
 void GPS::rxCallback(uint16_t size) {
-	memcpy((uint8_t*)processBuffer, (uint8_t*)rxBuffer, size);
+    if (size > 0) {
+//    	SCB_InvalidateDCache_by_Addr((uint32_t*)rxBuffer, size);
+    	memcpy((uint8_t*)processBuffer, (uint8_t*)rxBuffer, size);
+    }
+    HAL_DMA_StateTypeDef dmaStatus = HAL_DMA_GetState(huart->hdmarx);
+	uint32_t dmaError = HAL_DMA_GetError(huart->hdmarx);
+
     HAL_UARTEx_ReceiveToIdle_DMA(
 		huart,
 		(uint8_t*)rxBuffer,

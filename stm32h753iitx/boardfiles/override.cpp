@@ -95,7 +95,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 	  if (error & HAL_UART_ERROR_ORE){
 		__HAL_UART_CLEAR_OREFLAG(huart);
 	  }
-	  gpsHandle->rxCallback(1);
+	  gpsHandle->rxCallback(0);
   }
 }
 
