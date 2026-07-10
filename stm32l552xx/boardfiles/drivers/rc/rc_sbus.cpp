@@ -117,3 +117,8 @@ float SBUSReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx) {
 
     return static_cast<float>((res - SBUS_RANGE_MIN) * (100.0f / SBUS_RANGE_RANGE));
 }
+
+void SBUSReceiver::forcePushMAVLinkRC(RCControl rcData) {
+    // TODO: Add MAVLink RC support for crsf and sbus files
+    return;
+}

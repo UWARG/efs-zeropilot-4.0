@@ -24,6 +24,7 @@ class CRSFReceiver : public IRCReceiver {
         CRSFReceiver(UART_HandleTypeDef *uart);
 
         RCControl getRCData() override;
+        void forcePushMAVLinkRC(RCControl rcData) override;
 
         void init();
         void startDMA();
