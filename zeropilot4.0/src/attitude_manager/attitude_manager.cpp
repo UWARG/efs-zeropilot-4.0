@@ -593,7 +593,6 @@ bool AttitudeManager::updatePitchLimMinDeg(AttitudeManager* context, float val) 
 //CONFIRM: why attitude manager has access to FBWB PID constants but not FBWA PID constants? should we be able to change FBWA PID consts in flight as well?
 //CONFIRM: zp_params.cpp initial values
 //Next steps: PieceWise Scaling mapping.cpp
-//Next steps: Slew rate
 
 bool AttitudeManager::updateFBWBTEKp(AttitudeManager* context, float val) {
     if (val < 0.0f) return false;

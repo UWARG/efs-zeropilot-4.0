@@ -73,11 +73,16 @@ RCMotorControlMessage_t FBWBMapping::runControl(RCMotorControlMessage_t controlI
         float measuredTotalEnergy = measuredKE + measuredHeight;
         float measuredEnergyBalance = measuredHeight - measuredKE;
 
-        float throttleOutput = totalEnergyPID.pidOutput(totalEnergy, measuredTotalEnergy);
-        float pitchOutput = energyBalancePID.pidOutput(energyBalance, measuredEnergyBalance);
+        float throttleControlEffort = totalEnergyPID.pidOutput(totalEnergy, measuredTotalEnergy);
+        float pitchControlEffort = energyBalancePID.pidOutput(energyBalance, measuredEnergyBalance);
 
-        currentThrottleOutput_pct = (throttleOutput * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
-        currentPitchSetpoint = (pitchOutput * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
+        if (throttleControlEffort > PID_OUTPUT_MAX)
+        {
+            throttleControlEffort = MAX_THROTTLE_SLEW_RATE_PCT;
+        }
+        // TODO: Use throttle total output or throttle control effort?
+        currentThrottleOutput_pct = (throttleControlEffort * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
+        currentPitchSetpoint = (pitchControlEffort * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
     }
     outerLoopSchedulingCounter = (outerLoopSchedulingCounter + 1) % OUTER_LOOP_DIVIDER;
 

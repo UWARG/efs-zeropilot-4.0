@@ -47,6 +47,7 @@ class FBWBMapping : public FBWAMapping {
         static constexpr float MIN_AIRSPEED_MPS = 20.0f; // 20 m/s = ~40 knots
         static constexpr float MAX_AIRSPEED_MPS = 62.0f; // 60 m/s = ~120 knots
         static constexpr float MAX_AIRSPEED_SLEW_RATE_MSS = 1.0f; // Max target speed change (m/s^2)
+        static constexpr float MAX_THROTTLE_SLEW_RATE_PCT = 1.0f; // Max target throttle control change (percent/s)
         static constexpr float AIRSPEED_WEIGHT = 0.5f; // TECS energy balance weighting of KE relative to PE
 
         // Maximum Altitude Change Rate (in m/s)
