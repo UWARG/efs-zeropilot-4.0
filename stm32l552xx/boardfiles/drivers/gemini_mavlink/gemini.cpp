@@ -40,6 +40,9 @@ uint16_t GeminiMavlink::receive(uint8_t* buffer, uint16_t bufferSize) {
     return bufferSize;
 }
 
+
+
+
 RCControl GeminiMavlink::getRCData() {
     RCControl tmp;
     tmp.isDataNew = false;

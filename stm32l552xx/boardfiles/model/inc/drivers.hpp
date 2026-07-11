@@ -15,6 +15,7 @@
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
+#include "gemini.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 
@@ -30,9 +31,9 @@ extern MotorControl *motor6Handle;
 extern MotorControl *motor7Handle;
 extern MotorControl *motor8Handle;
 
-extern CRSFReceiver *rcHandle;
+extern GeminiMavlink *rcHandle;
 extern GPS *gpsHandle;
-extern RFD *telemLinkHandle;
+extern GeminiMavlink *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
 

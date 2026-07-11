@@ -2,6 +2,7 @@
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
 
+
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg;
 extern TIM_HandleTypeDef htim1;
@@ -30,8 +31,8 @@ alignas(MotorControl) static uint8_t motor7Storage[sizeof(MotorControl)];
 alignas(MotorControl) static uint8_t motor8Storage[sizeof(MotorControl)];
 
 alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
-alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
-alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
+alignas(GeminiMavlink) static uint8_t geminiStorage[sizeof(GeminiMavlink)];
+// alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
 alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
 alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
 
@@ -57,8 +58,8 @@ MotorControl *motor7Handle = nullptr;
 MotorControl *motor8Handle = nullptr;
 
 GPS *gpsHandle = nullptr;
-CRSFReceiver *rcHandle = nullptr;
-RFD *telemLinkHandle = nullptr;
+GeminiMavlink *rcHandle = nullptr;
+GeminiMavlink *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -95,8 +96,8 @@ void initDrivers()
 
     // Peripherals
     gpsHandle = new (&gpsStorage) GPS(&huart2);
-    rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
-    telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
+    rcHandle = new (&geminiStorage) GeminiMavlink(&huart4); // replace with GemMAVLink
+    telemLinkHandle = rcHandle;
     imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
     pmHandle = new (&pmStorage) PowerModule(&hi2c1);
 
