@@ -14,8 +14,12 @@
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
+#include "acro_mapping.hpp"
+#include "stabilize_mapping.hpp"
+#include "motor_mixing.hpp"
+#include "fft_harmonic_notch.hpp"
 
-#define AM_SCHEDULING_RATE_HZ 100
+#define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
@@ -51,7 +55,7 @@ class AttitudeManager {
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
-            IAirspeed *airspeedDriver,
+            IFFT *fftDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
             IMessageQueue<char[100]> *smLoggerQueue,
@@ -61,12 +65,16 @@ class AttitudeManager {
         void amUpdate();
 
     private:
+        static constexpr uint8_t NUM_MOTORS = 8;
+
         ISystemUtils *systemUtilsDriver;
 
         IGPS *gpsDriver;
         IIMU *imuDriver;
         IAirspeed *airspeedDriver;
 
+        FFTHarmonicNotch harmonicNotchFilter;
+        FFTHarmonicNotchConfig harmonicNotchConfig;
         Mahony mahonyFilter;
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
@@ -74,23 +82,35 @@ class AttitudeManager {
         IMessageQueue<char[100]> *smLoggerQueue;
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
+        #ifdef PLANE
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
         FBWBMapping fbwbCLAW;       // Fly-By-Wire B Control Law (TECS)
+        #endif
+        #ifdef QUADCOPTER
+        AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
+        StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
+        #endif
         RCMotorControlMessage_t controlMsg;
+        FlightMode_e currentFlightMode;
         DroneState_t droneState;
-        PlaneFlightMode_e currentFlightMode;
 
         MotorGroupInstance_t *mainMotorGroup;
 
         bool armedFlag;
+        bool setArmFlag;
 
         uint16_t lastServoOutputs[16];
 
-        uint8_t amSchedulingCounter;
+        uint16_t amSchedulingCounter;
 
         int noDataCount;
         bool failsafeTriggered;
+
+        static constexpr uint16_t MAX_TIMESTAMP = 65535;
+        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
+        uint32_t lastTimestamp;
+        bool haveLastImuTimestamp;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
@@ -100,6 +120,11 @@ class AttitudeManager {
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
+        
+        uint8_t profilerId;
+        
+        // Motor mixer output for each motor 
+        float motorPercent[NUM_MOTORS];
 
         // ZP_PARAM callback functions
         static bool updatePIDRollKp(AttitudeManager* context, float val);

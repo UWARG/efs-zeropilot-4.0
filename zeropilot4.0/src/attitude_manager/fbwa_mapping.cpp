@@ -27,7 +27,7 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
     pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
-// Resetter for both roll and pitch PIDs
+// Resetter for both roll and pitch PIDs (needed for unit testing)
 void FBWAMapping::resetControlLoopState() noexcept {
     rollPID.pidInitState();
     pitchPID.pidInitState();

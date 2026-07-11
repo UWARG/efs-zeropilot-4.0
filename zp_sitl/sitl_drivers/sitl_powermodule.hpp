@@ -34,6 +34,10 @@ public:
         pmData.power = pmData.busVoltage * pmData.current; // in Joules per second (Watts)
         pmData.charge = (1 - capacityRatio) * Config::MAX_BATTERY_CAPACITY_MAH * 3.6f; // Convert mAh to Coulombs
         pmData.energy = pmData.charge * Config::V_NOMINAL; // Estimate of total energy consumed in Joules
+
+        // Simulate die temperature based on current draw
+        float targetTemp = Config::AMBIENT_TEMP_C + (pmData.current * Config::TEMP_RISE_PER_AMP);
+        pmData.temperature += (targetTemp - pmData.temperature) * Config::TEMP_THERMAL_LAG_COEFF;
     }
     
     bool readData(PMData_t *data) override {

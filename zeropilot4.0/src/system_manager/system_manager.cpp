@@ -1,6 +1,10 @@
 #include "system_manager.hpp"
 #include "zp_params.hpp"
 #include "flightmode.hpp"
+#include "attitude_manager.hpp"
+#include "telemetry_manager.hpp"
+
+#define LOG_TIMING 0
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
@@ -23,14 +27,21 @@ SystemManager::SystemManager(
         flightModes{},
         oldDataCount(0),
         rcConnected(false),
+        rcChannelReversed{},
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
+        socEstimator(batteryData),
+        profilerId(0),
         paramSetup(this)
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
+    systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
 void SystemManager::smUpdate() {
+
+    systemUtilsDriver->profilerBegin(profilerId);
+
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
 
@@ -79,7 +90,7 @@ void SystemManager::smUpdate() {
     }
 
     // Decode flight mode from raw value and include in custom mode for HEARTBEAT telemetry
-    PlaneFlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
+    FlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
@@ -88,9 +99,11 @@ void SystemManager::smUpdate() {
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
-    updateBatteryFSM();
-    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
-        sendBatteryDataToTelemetryManager(batteryData, 0);
+    if (updateBatteryFSM()) {
+        socEstimator.calcStateOfCharge(batteryData, SOC_CHARGE_DISCHARGE_MODE);
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
+            sendBatteryDataToTelemetryManager(batteryData, 0);
+        }
     }
 
     // Log if new messages
@@ -98,58 +111,99 @@ void SystemManager::smUpdate() {
         sendMessagesToLogger();
     }
 
+    // Send profiler stats at 1Hz
+    if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
+        uint8_t count = 0;
+        systemUtilsDriver->profilerGetAll(profiles, &count);
+
+        for (uint8_t i = 0; i < count; i++) {
+            if (strcmp(profiles[i].name, "SM") == 0) {
+                if (profiles[i].deltaExec >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "SM execution time exceeding scheduled rate");
+                } else if (profiles[i].deltaExec >= 0.8f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "SM execution time about to exceed scheduled rate");
+                }
+            } else if (strcmp(profiles[i].name, "AM") == 0) {
+                if (profiles[i].deltaExec >= (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "AM execution time exceeding scheduled rate");
+                } else if (profiles[i].deltaExec >= 0.8f * (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "AM execution time about to exceed scheduled rate");
+                }
+            } else if (strcmp(profiles[i].name, "TM") == 0) {
+                if (profiles[i].deltaExec >= (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "TM execution time exceeding scheduled rate");
+                } else if (profiles[i].deltaExec >= 0.8f * (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "TM execution time about to exceed scheduled rate");
+                }
+            }
+            #if LOG_TIMING
+            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profilerBuf);
+            #endif
+        }
+        #if LOG_TIMING
+        sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "-------TASK TIMINGS-------");
+        #endif
+    }
+
     // Increment scheduling counter
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
+
+    systemUtilsDriver->profilerEnd(profilerId);
 }
 
-void SystemManager::updateBatteryFSM() {
+bool SystemManager::updateBatteryFSM() {
+    batteryData.isValid = false;         
     MAV_BATTERY_CHARGE_STATE currentBatteryState;
-    if (pmDriver->readData(&batteryData.pmData)) {          
-        currentBatteryState = batteryData.chargeState;
 
-        if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT)) {
-            // Normal battery
-            batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK;
-            batteryData.batteryLowCounterMs = 0;
-            batteryData.batteryCritcounterMs = 0;
-        } else if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) {
-            // Low battery detection
-            batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
-            batteryData.batteryCritcounterMs = 0;
-            uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
-            if (battLowTimeMs > 0 && batteryData.batteryLowCounterMs >= battLowTimeMs) {
-                batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
-            }
-        } else {
-            // Critical battery detection
-            batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
-            batteryData.batteryLowCounterMs = 0;
-            uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
-            if (battLowTimeMs > 0 && batteryData.batteryCritcounterMs >= battLowTimeMs) {
-                batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
-            }
+    if (!pmDriver->readData(&batteryData.pmData)) return false; 
+    batteryData.isValid = true;         
+    currentBatteryState = batteryData.chargeState;
+
+    if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT)) {
+        // Normal battery
+        batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_OK;
+        batteryData.batteryLowCounterMs = 0;
+        batteryData.batteryCritcounterMs = 0;
+    } else if (batteryData.pmData.busVoltage >= ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) {
+        // Low battery detection
+        batteryData.batteryLowCounterMs += SM_UPDATE_LOOP_DELAY_MS;
+        batteryData.batteryCritcounterMs = 0;
+        uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
+        if (battLowTimeMs > 0 && batteryData.batteryLowCounterMs >= battLowTimeMs) {
+            batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_LOW;
         }
-
-        // Logging --> once per transition, checks if the state has yet to be logged and does so 
-        if (currentBatteryState != batteryData.chargeState) {
-            switch (batteryData.chargeState) {
-                case MAV_BATTERY_CHARGE_STATE_OK:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
-                    // loggerDriver->log("Battery State: OK"); (TODO: Uncomment after rearchitecture)
-                    break;
-                case MAV_BATTERY_CHARGE_STATE_LOW:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
-                    // loggerDriver->log("Battery State: LOW"); (TODO: Uncomment after rearchitecture)
-                    break;
-                case MAV_BATTERY_CHARGE_STATE_CRITICAL:
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
-                    // loggerDriver->log("Battery State: CRITICAL"); (TODO: Uncomment after rearchitecture)
-                    break;
-                default:
-                    break;
-            }
+    } else {
+        // Critical battery detection
+        batteryData.batteryCritcounterMs += SM_UPDATE_LOOP_DELAY_MS;
+        batteryData.batteryLowCounterMs = 0;
+        uint32_t battLowTimeMs = ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000;
+        if (battLowTimeMs > 0 && batteryData.batteryCritcounterMs >= battLowTimeMs) {
+            batteryData.chargeState = MAV_BATTERY_CHARGE_STATE_CRITICAL;
         }
     }
+
+    // Logging --> once per transition, checks if the state has yet to be logged and does so 
+    if (currentBatteryState != batteryData.chargeState) {
+        switch (batteryData.chargeState) {
+            case MAV_BATTERY_CHARGE_STATE_OK:
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "Battery State: OK");
+                // loggerDriver->log("Battery State: OK"); (TODO: Uncomment after rearchitecture)
+                break;
+            case MAV_BATTERY_CHARGE_STATE_LOW:
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "Battery State: LOW");
+                // loggerDriver->log("Battery State: LOW"); (TODO: Uncomment after rearchitecture)
+                break;
+            case MAV_BATTERY_CHARGE_STATE_CRITICAL:
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Battery State: CRITICAL");
+                // loggerDriver->log("Battery State: CRITICAL"); (TODO: Uncomment after rearchitecture)
+                break;
+            default:
+                break;
+        }
+    }
+
+    return true;
 }
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
@@ -165,48 +219,35 @@ void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32
 void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     RCMotorControlMessage_t rcDataMessage;
 
-    rcDataMessage.roll = rcData.roll;
-    rcDataMessage.pitch = rcData.pitch;
-    rcDataMessage.yaw = rcData.yaw;
-    rcDataMessage.throttle = rcData.throttle;
+    rcDataMessage.roll = rcChannelReversed[0] ? 100.0f - rcData.roll : rcData.roll;
+    rcDataMessage.pitch = rcChannelReversed[1] ? 100.0f - rcData.pitch : rcData.pitch;
+    rcDataMessage.throttle = rcChannelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
+    rcDataMessage.yaw = rcChannelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
     rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
+    #endif
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
+void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId) {   
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
-
-    // Get battery capacity from ZP_PARAM
-    float battCapacityMah = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY);
-
-    // SOC estimation (0-100 %) based on capacity
-    float consumedColoumbs = batteryData.pmData.charge;
-    float remainingColoumbs = (battCapacityMah * 3.6f) - consumedColoumbs;
-    remainingColoumbs = remainingColoumbs < 0 ? 0 : remainingColoumbs; // Floor at 0
-    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (battCapacityMah * 3.6f)) * 100.0f);
-
-    // Simple time remaining estimation based on current consumption
-    int32_t timeRemainingSec = 0; // Default to unknown if current is too low to estimate
-    if (batteryData.pmData.current > 0.5f) {
-        timeRemainingSec = static_cast<int32_t>(remainingColoumbs / batteryData.pmData.current);
-    }
 
     // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
-        BATTERY_ID,
-        INT16_MAX,
+        batteryId,
+        batteryData.pmData.temperature,
         voltages,
         VOLTAGE_LEN,
         batteryData.pmData.current,
         batteryData.pmData.charge,
         batteryData.pmData.energy,
-        socPercentage,
-        timeRemainingSec,
+        socEstimator.getSocPercentage(),
+        socEstimator.getTimeRemaining(),
         batteryData.chargeState
     );
     tmQueue->push(&batteryDataMsg);
@@ -217,7 +258,7 @@ void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, cons
     tmQueue->push(&statusTextMsg);
 }
 
-PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
+FlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
         return flightModes[0];
     }

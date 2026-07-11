@@ -8,9 +8,15 @@ public:
     void set(uint32_t percent) override {
         currentPercent = percent;
     }
-    
+
+    void init() override {}
+
     uint32_t get() {
         return currentPercent;
+    }
+
+    void setArm(bool arm) override { 
+        armFlag = arm;
     }
 
 private:

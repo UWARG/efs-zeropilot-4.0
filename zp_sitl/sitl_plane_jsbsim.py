@@ -23,7 +23,7 @@ FT_TO_M = 0.3048
 FPS_TO_MPS = 0.3048
 FPS_TO_KTS = 0.592484
 
-class ZP_SITL:
+class ZP_PLANE_SITL_JSBSIM:
     def __init__(self, ip, port):
         # Initialize JSBSim
         self.fdm = jsbsim.FGFDMExec(None)
@@ -278,7 +278,7 @@ def main():
     args = parser.parse_args()
 
     global sitl
-    sitl = ZP_SITL(args.ip, args.port)
+    sitl = ZP_PLANE_SITL_JSBSIM(args.ip, args.port)
 
     # 1. Start Web Server Thread
     server_thread = threading.Thread(target=start_webserver, daemon=True)
