@@ -5,8 +5,13 @@
 #define INVALID_TRACK_ANGLE -1
 #define INVALID_DATA -2
 
+typedef enum {
+    NMEA,
+    UBX
+} GpsProtocol_t;
+
 typedef struct {
-    uint8_t year;
+    uint16_t year;
     uint8_t month;
     uint8_t day;
     uint8_t hour;
@@ -21,16 +26,16 @@ typedef struct {
 */
 typedef struct {
     GpsTime_t time;
-    float latitude;
-    float longitude;
+    float latitude; // deg
+    float longitude; // deg
     float groundSpeed; // cm/s
     uint8_t numSatellites;
-    float altitude;
+    float altitude; // m, -1 if not valid
     float trackAngle;
     bool isNew;
-    float vx;
-    float vy;
-    float vz;
+    float vx; // m/s
+    float vy; // m/s
+    float vz; // m/s
 } GpsData_t;
 
 

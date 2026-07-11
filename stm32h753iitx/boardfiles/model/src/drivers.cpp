@@ -13,6 +13,7 @@ extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
@@ -116,7 +117,7 @@ void initDrivers()
     }
 
     // Peripherals
-    gpsHandle = new GPS(&huart2);
+    gpsHandle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_4KHZ);
