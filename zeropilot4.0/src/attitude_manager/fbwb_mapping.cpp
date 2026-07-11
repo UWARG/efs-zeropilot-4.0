@@ -63,20 +63,23 @@ RCMotorControlMessage_t FBWBMapping::runControl(RCMotorControlMessage_t controlI
 
         float measuredVelocity = droneState.airspeed;
         float measuredHeight = droneState.altitude;
+
+        float targetKE = ((velocity * velocity) / (2 * GRAVITY_MSS)) * AIRSPEED_WEIGHT;
+        float measuredKE = ((measuredVelocity * measuredVelocity) / (2 * GRAVITY_MSS)) * AIRSPEED_WEIGHT;
         
-        float totalEnergy = (velocity * velocity) / (2 * GRAVITY_MSS) + height;
-        float energyBalance = height - (velocity * velocity) / (2 * GRAVITY_MSS);
+        float totalEnergy = targetKE + height;
+        float energyBalance = height - targetKE;
 
-        float meauredTotalEnergy = (measuredVelocity * measuredVelocity) / (2 * GRAVITY_MSS) + measuredHeight;
-        float measuredEnergyBalance = measuredHeight - (measuredVelocity * measuredVelocity) / (2 * GRAVITY_MSS);
+        float measuredTotalEnergy = measuredKE + measuredHeight;
+        float measuredEnergyBalance = measuredHeight - measuredKE;
 
-        float throttleOutput = totalEnergyPID.pidOutput(totalEnergy, meauredTotalEnergy);
+        float throttleOutput = totalEnergyPID.pidOutput(totalEnergy, measuredTotalEnergy);
         float pitchOutput = energyBalancePID.pidOutput(energyBalance, measuredEnergyBalance);
 
         currentThrottleOutput_pct = (throttleOutput * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
         currentPitchSetpoint = (pitchOutput * PID_OUTPUT_SCALE) + PID_OUTPUT_SHIFT;
     }
-    outerLoopSchedulingCounter = (++outerLoopSchedulingCounter) % OUTER_LOOP_DIVIDER;
+    outerLoopSchedulingCounter = (outerLoopSchedulingCounter + 1) % OUTER_LOOP_DIVIDER;
 
     controlInputs.pitch = currentPitchSetpoint;
     controlInputs.throttle = currentThrottleOutput_pct;
