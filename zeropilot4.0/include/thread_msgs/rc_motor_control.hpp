@@ -5,7 +5,8 @@
 enum class FlightMode_e : uint32_t {
     #ifdef PLANE
     MANUAL  = 0,
-    FBWA    = 5
+    FBWA    = 5,
+    FBWB    = 6
     #endif
     #ifdef QUADCOPTER
     STABILIZE = 0,

@@ -9,6 +9,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
+    IAirspeed *airspeedDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -18,6 +19,7 @@ AttitudeManager::AttitudeManager(
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
     harmonicNotchFilter(systemUtilsDriver, fftDriver),
+    airspeedDriver(airspeedDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -25,6 +27,7 @@ AttitudeManager::AttitudeManager(
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
+    fbwbCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
     currentFlightMode(FlightMode_e::MANUAL),
     #endif
@@ -47,11 +50,89 @@ AttitudeManager::AttitudeManager(
     haveLastImuTimestamp(false),
     profilerId(0),
     paramSetup(this) {
-        paramSetup.loadAllParams();
+
+    // Bind all ZP Param setters relevant to AM
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P, this, AttitudeManager::updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I, this, AttitudeManager::updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D, this, AttitudeManager::updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU, this, AttitudeManager::updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX, this, AttitudeManager::updatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P, this, AttitudeManager::updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I, this, AttitudeManager::updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D, this, AttitudeManager::updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU, this, AttitudeManager::updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX, this, AttitudeManager::updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX, this, AttitudeManager::updateKffRddrmix);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG, this, AttitudeManager::updateRollLimitDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG, this, AttitudeManager::updatePitchLimMaxDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG, this, AttitudeManager::updatePitchLimMinDeg);
+
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_P_GAIN, this, AttitudeManager::updateFBWBTEKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_I_GAIN, this, AttitudeManager::updateFBWBTEKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_D_GAIN, this, AttitudeManager::updateFBWBTEKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_D_TAU, this, AttitudeManager::updateFBWBTETau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_P_GAIN, this, AttitudeManager::updateFBWBEBKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_I_GAIN, this, AttitudeManager::updateFBWBEBKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_D_GAIN, this, AttitudeManager::updateFBWBEBKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_D_TAU, this, AttitudeManager::updateFBWBEBTau);
+
+    // Set PID constants, rddr mixing constant, and roll/pitch limits for FBWA control law
+    fbwaCLAW.setRollPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_IMAX)
+    );
+    fbwaCLAW.setPitchPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
+    );
+    fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
+    fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
+    fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
+    fbwaCLAW.setPitchLimitMinDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MIN_DEG));
+            paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
 
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
+
+    // TODO: Load in FBWB PID control constants here
+
+    // Set PID constants for FBWB control law
+    fbwbCLAW.setRollPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_IMAX)
+    );
+    fbwbCLAW.setPitchPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
+    );
+    fbwbCLAW.setEnergyBalancePIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_P_GAIN),
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_I_GAIN),
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_D_GAIN),
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_ENERGY_BALANCE_D_TAU),
+        100 //Learn energybalance max value
+    );
+    fbwbCLAW.setTotalEnergyPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_P_GAIN),
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_I_GAIN),
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_D_GAIN),
+        ZP_PARAM::get(ZP_PARAM_ID::AM_FBWB_TOTAL_ENERGY_D_TAU),
+        100
+    );
+    fbwbCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -127,8 +208,15 @@ void AttitudeManager::amUpdate() {
 
     // Send GPS data to telemetry manager
     GpsData_t gpsData = gpsDriver->readData();
+    droneState.altitude = gpsData.altitude;
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
         sendGPSDataToTelemetryManager(gpsData);
+    }
+
+    // Read airspeed
+    double airspeedData = 0.0f;
+    if (airspeedDriver->getAirspeedData(&airspeedData)) {
+        droneState.airspeed = airspeedData;
     }
 
     // Get data from Queue and motor outputs
@@ -189,11 +277,14 @@ void AttitudeManager::amUpdate() {
         switch (controlMsg.flightMode) {
 
             #ifdef PLANE
-            case FlightMode_e::MANUAL:
+            case PlaneFlightMode_e::MANUAL:
                 activeCLAW = &manualCLAW;
                 break;
-            case FlightMode_e::FBWA:
+            case PlaneFlightMode_e::FBWA:
                 activeCLAW = &fbwaCLAW;
+                break;
+            case PlaneFlightMode_e::FBWB:
+                activeCLAW = &fbwbCLAW;
                 break;
             #endif
 
@@ -392,3 +483,170 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
 
     tmQueue->push(&servoOutputMsg);
 }
+
+// STATIC FUNCTIONS ONLY FOR PARAM CHAINING
+// ==============================================================
+
+
+bool AttitudeManager::updatePIDRollKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setKp(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setKi(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setKd(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setTau(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDRollIMax(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+
+    context->fbwaCLAW.getRollPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    context->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setKp(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setKi(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setKd(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setTau(val);
+    return true;
+}
+
+bool AttitudeManager::updatePIDPitchIMax(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+
+    context->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    context->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+
+bool AttitudeManager::updateKffRddrmix(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 1.0f) return false;
+
+    context->fbwaCLAW.setYawRudderMixingConstant(val);
+    return true;
+}
+
+bool AttitudeManager::updateRollLimitDeg(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+
+    context->fbwaCLAW.setRollLimitDeg(val);
+    return true;
+}
+
+bool AttitudeManager::updatePitchLimMaxDeg(AttitudeManager* context, float val) {
+    if (val < 0.0f || val > 90.0f) return false;
+    
+    context->fbwaCLAW.setPitchLimitMaxDeg(val);
+    return true;
+}
+
+bool AttitudeManager::updatePitchLimMinDeg(AttitudeManager* context, float val) {
+    if (val < -90.0f || val > 0.0f) return false;
+    
+    context->fbwaCLAW.setPitchLimitMinDeg(val);
+    return true;
+}
+
+//TODO: Finish parameterization
+//TODO: learn energy balance max value for I term
+//CONFIRM: why attitude manager has access to FBWB PID constants but not FBWA PID constants? should we be able to change FBWA PID consts in flight as well?
+//CONFIRM: zp_params.cpp initial values
+//Next steps: PieceWise Scaling mapping.cpp
+
+bool AttitudeManager::updateFBWBTEKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getTotalEnergyPID()->setKp(val); 
+    return true; 
+}
+
+bool AttitudeManager::updateFBWBTEKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getTotalEnergyPID()->setKi(val); 
+    return true; 
+}
+
+bool AttitudeManager::updateFBWBTEKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getTotalEnergyPID()->setKd(val); 
+    return true;
+}
+
+bool AttitudeManager::updateFBWBTETau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getTotalEnergyPID()->setTau(val); 
+    return true; 
+}
+
+bool AttitudeManager::updateFBWBEBKp(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getEnergyBalancePID()->setKp(val);
+    return true;
+}
+
+bool AttitudeManager::updateFBWBEBKi(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getEnergyBalancePID()->setKi(val);
+    return true;
+}
+
+bool AttitudeManager::updateFBWBEBKd(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getEnergyBalancePID()->setKd(val);
+    return true;
+}
+
+bool AttitudeManager::updateFBWBEBTau(AttitudeManager* context, float val) {
+    if (val < 0.0f) return false;
+    
+    context->fbwbCLAW.getEnergyBalancePID()->setTau(val);
+    return true;
+}
+// ==============================================================
