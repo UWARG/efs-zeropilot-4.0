@@ -69,18 +69,22 @@ void AcroMapping::activateFlightMode() {
 // Main control mapping function for ACRO mode
 RCMotorControlMessage_t AcroMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
     // Setpoints: Maps [0, 100] to [-limit, +limit]
-    float rollRateSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitRate;
+    float rollRateSetpoint = -((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitRate;
     float pitchRateSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitRate;
     float yawRateSetpoint = ((controlInputs.yaw / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * yawLimitRate;
 
-    float rollRateMeasured = droneState.rollRate;
+    float rollRateMeasured = -droneState.rollRate;
     float pitchRateMeasured = droneState.pitchRate;
     float yawRateMeasured = droneState.yawRate;
 
     // Run PID, outputs control effort in [-1,1]
-    controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
-    controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
-    controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
+    acroRollCmd = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
+    acroPitchCmd = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
+    acroYawCmd = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
+
+    controlInputs.roll = acroRollCmd;
+    controlInputs.pitch = acroPitchCmd;
+    controlInputs.yaw = acroYawCmd;
 
     controlInputs.throttle /= 100.0f; // Throttle remains in [0, 1]
 

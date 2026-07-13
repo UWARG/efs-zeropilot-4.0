@@ -56,10 +56,10 @@ RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t con
     // Outer angle loop runs once every ANGLE_LOOP_TO_INNER_LOOP_RATIO calls
     if (decimationCounter == 0) {
         // Setpoints: Maps [0, 100] to [-limit, +limit]
-        float rollAngleSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
+        float rollAngleSetpoint = -((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
         float pitchAngleSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
 
-        float rollAngleMeasured = droneState.roll;
+        float rollAngleMeasured = -droneState.roll;
         float pitchAngleMeasured = droneState.pitch;
 
         // Run PID (output control efforts in [-1,1]), then scale back to RC controller range [0,100] for acro control loop

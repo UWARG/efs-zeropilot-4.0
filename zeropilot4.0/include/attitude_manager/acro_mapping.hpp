@@ -52,6 +52,10 @@ class AcroMapping : public Flightmode{
         float pitchLimitRate;
         float yawLimitRate;
 
+        float acroRollCmd;
+        float acroPitchCmd;
+        float acroYawCmd;
+
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
         static constexpr float OUTPUT_MAX = +1.0f;
