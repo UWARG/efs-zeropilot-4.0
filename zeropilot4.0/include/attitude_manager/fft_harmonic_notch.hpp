@@ -41,7 +41,6 @@ class FFTHarmonicNotch {
     
     private:
         static constexpr uint16_t FFT_MAX_WINDOW_SIZE = 1024;
-        uint16_t fftWindowSize; // Set via ZP_PARAM::FFT_WINDOW_LEN at runtime
 
         ISystemUtils *systemUtilsDriver;
 
@@ -67,6 +66,8 @@ class FFTHarmonicNotch {
         IFFT *fftDriver;
         float fftBuffer[FFT_MAX_WINDOW_SIZE];
         float hanningWindow[FFT_MAX_WINDOW_SIZE];
+        float fftOutput[FFT_MAX_WINDOW_SIZE];
+        float magnitudes[FFT_MAX_WINDOW_SIZE / 2]; // Real-valued signal has symmetric FFT output
         uint16_t fftIndex = 0;
 
         GyroAxis_e dominantAxis = GyroAxis_e::X;
