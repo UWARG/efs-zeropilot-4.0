@@ -5,6 +5,7 @@
 static constexpr uint8_t UBX_SYNC_1 = 0xB5;
 static constexpr uint8_t UBX_SYNC_2 = 0x62;
 
+
 static constexpr uint8_t UBX_MESSAGE_CLASS_NAV = 0x01;
 static constexpr uint8_t UBX_MESSAGE_CLASS_ACK = 0x05;
 static constexpr uint8_t UBX_MESSAGE_CLASS_CFG = 0x06;
@@ -29,7 +30,6 @@ static constexpr uint8_t VELECEF_EXPECTED_LEN = 20;
 static constexpr uint8_t MESSAGE_RATE_DISABLED = 0;
 static constexpr uint8_t MESSAGE_RATE_EVERY_SOLUTION = 1;
 
-// The standard sentences a u-blox receiver enables by default on a UART
 static constexpr uint8_t NMEA_SENTENCE_IDS[] = {
     0x00, // GGA
     0x01, // GLL
@@ -79,8 +79,8 @@ GPS::GPS(UART_HandleTypeDef* huart) :
 
 bool GPS::init() {
     SET_BIT(huart->Instance->CR3, USART_CR3_OVRDIS);
-    // Configure before starting the DMA receive. waitForAck() reads the UART
-    // synchronously, which would race rxCallback() once DMA owns the line.
+
+    // Configure before starting the DMA receive, waitForAck() is polling
     protocol = configureUBX() ? UBX : NMEA;
 
     HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
@@ -100,14 +100,13 @@ speak UBX and leaves its NMEA output untouched so readData() can still parse it.
 */
 bool GPS::configureUBX() {
     // Enable NAV-PVT before disabling NMEA. If this is not acknowledged the
-    // receiver keeps emitting its default NMEA sentences, so a failure here
+    // receiver keeps emitting its NMEA sentences, so a failure here
     // costs nothing. Disabling NMEA first would leave us with no output at all
     if (!setMessageRate(UBX_MESSAGE_CLASS_NAV, UBX_MESSAGE_ID_PVT, MESSAGE_RATE_EVERY_SOLUTION)) {
         return false;
     }
 
-    // PVT is confirmed, so NMEA is redundant. A sentence that refuses to turn
-    // off is not fatal because readData() dispatches on each frame's sync byte.
+    // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
     for (uint8_t sentenceId : NMEA_SENTENCE_IDS) {
         setMessageRate(UBX_MESSAGE_CLASS_NMEA, sentenceId, MESSAGE_RATE_DISABLED);
     }

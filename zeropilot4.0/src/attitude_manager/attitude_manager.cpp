@@ -126,8 +126,8 @@ void AttitudeManager::amUpdate() {
     }
 
     // Send GPS data to telemetry manager
-    GpsData_t gpsData = gpsDriver->readData();
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
+        GpsData_t gpsData = gpsDriver->readData();
         sendGPSDataToTelemetryManager(gpsData);
     }
 
