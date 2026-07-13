@@ -52,6 +52,7 @@ typedef struct {
     SITL_Queue<TMMessage_t>* tmQueue;
     SITL_LogQueue* logQueue;
     SITL_Queue<mavlink_message_t>* mavlinkQueue;
+    RtcmCorrectionData_t sharedRtcmBuffer;
     
     SITL_IWDG* iwdg;
     SITL_Logger* logger;
@@ -176,7 +177,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->tm = new TelemetryManager(
-            self->sysUtils, self->telem, self->tmQueue, self->amQueue, self->mavlinkQueue
+            self->sysUtils, self->telem, self->tmQueue, self->amQueue, self->mavlinkQueue, self->sharedRtcmBuffer
         );
         
         self->am = new AttitudeManager(
