@@ -100,6 +100,7 @@ static void MX_RTC_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_IWDG_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART2_UART_Init(void);
@@ -107,7 +108,6 @@ static void MX_USART3_UART_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
-static void MX_IWDG_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -157,6 +157,7 @@ int main(void)
   MX_TIM3_Init();
   MX_UART4_Init();
   MX_TIM4_Init();
+  MX_IWDG_Init();
   MX_SPI1_Init();
   MX_TIM1_Init();
   MX_USART2_UART_Init();
@@ -164,7 +165,6 @@ int main(void)
   MX_SPI2_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
-  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -190,7 +190,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  // defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   initModel(); 
@@ -420,9 +420,9 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
   hiwdg.Init.Window = 4095;
-  hiwdg.Init.Reload = 4095;
+  hiwdg.Init.Reload = 2500;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();
@@ -966,6 +966,24 @@ static void MX_DMA_Init(void)
   /* DMA2_Channel2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Channel2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Channel2_IRQn);
+  /* DMA2_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel3_IRQn);
+  /* DMA2_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel4_IRQn);
+  /* DMA2_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel5_IRQn);
+  /* DMA2_Channel6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel6_IRQn);
+  /* DMA2_Channel7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel7_IRQn);
+  /* DMA2_Channel8_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Channel8_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Channel8_IRQn);
 
 }
 

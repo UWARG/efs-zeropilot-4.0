@@ -488,6 +488,34 @@ void DMA2_Channel6_IRQHandler(void)
   /* USER CODE END DMA2_Channel6_IRQn 1 */
 }
 
+/**
+  * @brief This function handles DMA2 channel7 global interrupt.
+  */
+void DMA2_Channel7_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel7_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel7_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_i2c2_rx);
+  /* USER CODE BEGIN DMA2_Channel7_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel7_IRQn 1 */
+}
+
+/**
+  * @brief This function handles DMA2 channel8 global interrupt.
+  */
+void DMA2_Channel8_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Channel8_IRQn 0 */
+
+  /* USER CODE END DMA2_Channel8_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_i2c2_tx);
+  /* USER CODE BEGIN DMA2_Channel8_IRQn 1 */
+
+  /* USER CODE END DMA2_Channel8_IRQn 1 */
+}
+
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
