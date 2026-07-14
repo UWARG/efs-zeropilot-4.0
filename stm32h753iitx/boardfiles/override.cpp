@@ -6,94 +6,76 @@
 #include "utils.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-  /* overriding _write to redirect puts()/printf() to SWO */
-  int _write(int file, char *ptr, int len)
+/* overriding _write to redirect puts()/printf() to SWO */
+int _write(int file, char *ptr, int len)
+{
+  if( osMutexAcquire(itmMutex, osWaitForever) == osOK )
   {
-    if (osMutexAcquire(itmMutex, osWaitForever) == osOK)
+    for (int DataIdx = 0; DataIdx < len; DataIdx++)
     {
-      for (int DataIdx = 0; DataIdx < len; DataIdx++)
-      {
-        ITM_SendChar(ptr[DataIdx]);
-      }
-      osMutexRelease(itmMutex);
+      ITM_SendChar(ptr[DataIdx]);
     }
-    return len;
+    osMutexRelease(itmMutex);
   }
+  return len;
+}
 
-  void HAL_Delay(uint32_t Delay)
-  {
-    if (osKernelGetState() == osKernelRunning)
-    {
-      osDelayUntil(osKernelGetTickCount() + timeToTicks(Delay));
+void HAL_Delay(uint32_t Delay) {
+  if (osKernelGetState() == osKernelRunning) {
+    osDelayUntil(osKernelGetTickCount() + timeToTicks(Delay));
+  } else {
+    uint32_t tickstart = HAL_GetTick();
+    uint32_t wait = Delay;
+
+    if (wait < HAL_MAX_DELAY) {
+      wait += (uint32_t)uwTickFreq;
     }
-    else
-    {
-      uint32_t tickstart = HAL_GetTick();
-      uint32_t wait = Delay;
 
-      if (wait < HAL_MAX_DELAY)
-      {
-        wait += (uint32_t)uwTickFreq;
-      }
-
-      while ((HAL_GetTick() - tickstart) < wait)
-      {
-      }
-    }
+    while ((HAL_GetTick() - tickstart) < wait) {}
   }
+}
 
-  /* interrupt callback functions */
+/* interrupt callback functions */
 
-  void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
-  {
-    if (huart == rcHandle->getHUART())
-    {
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
+  if (huart == rcHandle->getHUART()){
       rcHandle->parse();
       rcHandle->startDMA();
-    }
-    else if (huart == telemLinkHandle->getHUART())
-    {
-      telemLinkHandle->receiveCallback(Size);
-    }
-    // GPS dma callback
-    else if (huart == gpsHandle->getHUART())
-    {
-      gpsHandle->rxCallback(Size);
-    }
+  } 
+  else if (huart == telemLinkHandle->getHUART()) {
+    telemLinkHandle->receiveCallback(Size);
   }
+  else if (huart == gpsHandle->getHUART()) {
+    gpsHandle->rxCallback(Size);
+  }
+}
 
-  void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
-  {
-    if (huart == rcHandle->getHUART())
-    {
-      uint32_t error = HAL_UART_GetError(huart);
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+  if(huart == rcHandle->getHUART()){
+    uint32_t error = HAL_UART_GetError(huart);
 
-      if (error & HAL_UART_ERROR_PE)
-      {
-        __HAL_UART_CLEAR_PEFLAG(huart);
-      }
-
-      if (error & HAL_UART_ERROR_NE)
-      {
-        __HAL_UART_CLEAR_FEFLAG(huart);
-      }
-
-      if (error & HAL_UART_ERROR_FE)
-      {
-        __HAL_UART_CLEAR_NEFLAG(huart);
-      }
-
-      if (error & HAL_UART_ERROR_ORE)
-      {
-        __HAL_UART_CLEAR_OREFLAG(huart);
-      }
-
-      rcHandle->startDMA();
+    if (error & HAL_UART_ERROR_PE) {
+      __HAL_UART_CLEAR_PEFLAG(huart);
     }
+
+    if (error & HAL_UART_ERROR_NE){
+      __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_FE){
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE){
+      __HAL_UART_CLEAR_OREFLAG(huart);
+    }
+
+    rcHandle->startDMA();
+  }
     else if (huart == gpsHandle->getHUART())
     {
       uint32_t error = HAL_UART_GetError(huart);
@@ -121,29 +103,25 @@ extern "C"
     }
   }
 
-  void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  if (hspi == imuHandle->getSPI())
   {
-    if (hspi == imuHandle->getSPI())
-    {
-      imuHandle->txRxCallback();
-    }
+    imuHandle->txRxCallback();
   }
+}
 
-  void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c)
-  {
-    if (hi2c == pmHandle->getI2C())
-    {
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == pmHandle->getI2C()) {
       pmHandle->I2C_MemRxCpltCallback();
     }
-  }
+}
 
-  void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
-  {
-    if (hi2c == pmHandle->getI2C())
-    {
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == pmHandle->getI2C()) {
       pmHandle->I2C_ErrorCallback();
     }
-  }
+}
 
 #ifdef __cplusplus
 }
