@@ -5,7 +5,6 @@
 static constexpr uint8_t UBX_SYNC_1 = 0xB5;
 static constexpr uint8_t UBX_SYNC_2 = 0x62;
 
-
 static constexpr uint8_t UBX_MESSAGE_CLASS_NAV = 0x01;
 static constexpr uint8_t UBX_MESSAGE_CLASS_ACK = 0x05;
 static constexpr uint8_t UBX_MESSAGE_CLASS_CFG = 0x06;
@@ -234,10 +233,10 @@ GpsData_t GPS::readData() {
         tempData.isNew = false;
         return tempData;
     }
+    dataReady = false;
 
     // Claim the buffer so rxCallback cannot overwrite it mid-parse
     parsingData = true;
-    dataReady = false;
 
     bool success = false;
     uint16_t idx = 0;

@@ -17,8 +17,6 @@ class GPS : public IGPS {
 
         UART_HandleTypeDef* getHUART();
 
-        // UBX once init() has configured the receiver, NMEA if it fell back.
-        // Diagnostic only, readData() dispatches on each frame's sync byte.
         GpsProtocol_t getProtocol();
 
         GpsData_t readData() override;
@@ -35,8 +33,6 @@ class GPS : public IGPS {
         volatile uint8_t processBuffer[MAX_NMEA_DATA_LENGTH] = {0};
         volatile uint8_t *processBufferEnd = (uint8_t*)processBuffer;
         volatile bool parsingData = false;
-        // rxCallback sets this when a fresh frame lands, readData clears it after
-        // consuming, so a stale buffer is never parsed twice.
         volatile bool dataReady = false;
         UART_HandleTypeDef *huart;
 
