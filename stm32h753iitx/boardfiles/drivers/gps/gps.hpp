@@ -42,6 +42,7 @@ class GPS : public IGPS {
 
         bool configureUBX();
         bool setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate);
+        bool setMessageRateValset(uint32_t key, uint8_t rate);
         bool waitForAck(uint8_t msgClass, uint8_t msgId);
         bool receiveByte(uint8_t &byte, uint32_t deadline);
         bool sendUBX(uint8_t *msg, uint16_t len);
