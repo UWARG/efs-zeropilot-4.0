@@ -10,6 +10,8 @@
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
+#include "sm_param_setup.hpp"
+#include "soc_estimation.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -31,14 +33,9 @@ static constexpr float SM_FLIGHTMODE3_MAX = 49.0f; // (1425 + 1555) / 2 = 1490 -
 static constexpr float SM_FLIGHTMODE4_MAX = 62.0f; // (1555 + 1685) / 2 = 1620 -> scaled/offset to 62.0
 static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -> scaled/offset to 75.0
 
-typedef struct{
-    PMData_t pmData;
-    MAV_BATTERY_CHARGE_STATE chargeState;
-    uint32_t batteryLowCounterMs;
-    uint32_t batteryCritcounterMs;
-} BatteryData_t;
-
 class SystemManager {
+    friend class SMParamSetup;
+
     public:
         SystemManager(
             ISystemUtils *systemUtilsDriver,
@@ -67,25 +64,31 @@ class SystemManager {
 
         uint8_t smSchedulingCounter;
 
-        PlaneFlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
+        FlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
 
         int oldDataCount;
         bool rcConnected;
+
+        bool rcChannelReversed[4];
         
         BatteryData_t batteryData;
-        void updateBatteryFSM();
+        bool updateBatteryFSM();
+        SocEstimator socEstimator;
 
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
-        void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID);
+        void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId);
         void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 
-        PlaneFlightMode_e decodeRawFlightMode(float flightModeRawValue);
+        FlightMode_e decodeRawFlightMode(float flightModeRawValue);
 
         void sendMessagesToLogger();
 
-        // ZP_PARAM callbacks
-        template <uint8_t Idx>
-        static bool updateFltMode(SystemManager* context, float val);
+        uint8_t profilerId;
+
+        SMParamSetup paramSetup;
+
+        uint8_t profilerBuf[256];
+        TaskProfile profiles[MAX_PROFILED_TASKS];
 };

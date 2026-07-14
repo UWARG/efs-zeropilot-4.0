@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <utility>
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "fbwa_mapping.hpp"
@@ -13,8 +12,13 @@
 #include "barometer_iface.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
+#include "am_param_setup.hpp"
+#include "acro_mapping.hpp"
+#include "stabilize_mapping.hpp"
+#include "motor_mixing.hpp"
+#include "fft_harmonic_notch.hpp"
 
-#define AM_SCHEDULING_RATE_HZ 100
+#define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
@@ -24,11 +28,14 @@
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 
 class AttitudeManager {
+    friend class AMParamSetup;
+
     public:
         AttitudeManager(
             ISystemUtils *systemUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
+            IFFT *fftDriver,
             IBarometer *barometerDriver,
             IMessageQueue<RCMotorControlMessage_t> *amQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
@@ -39,12 +46,16 @@ class AttitudeManager {
         void amUpdate();
 
     private:
+        static constexpr uint8_t NUM_MOTORS = 8;
+
         ISystemUtils *systemUtilsDriver;
 
         IGPS *gpsDriver;
         IIMU *imuDriver;
         IBarometer *barometerDriver;
 
+        FFTHarmonicNotch harmonicNotchFilter;
+        FFTHarmonicNotchConfig harmonicNotchConfig;
         Mahony mahonyFilter;
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
@@ -52,24 +63,36 @@ class AttitudeManager {
         IMessageQueue<char[100]> *smLoggerQueue;
 
         Flightmode *activeCLAW;     // Pointer to current active Control Law
+        #ifdef PLANE
         DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
         FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
+        #endif
+        #ifdef QUADCOPTER
+        AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
+        StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
+        #endif
         RCMotorControlMessage_t controlMsg;
+        FlightMode_e currentFlightMode;
         DroneState_t droneState;
-        PlaneFlightMode_e currentFlightMode;
 
         MotorGroupInstance_t *mainMotorGroup;
 
         bool armedFlag;
+        bool setArmFlag;
 
         uint16_t lastServoOutputs[16];
 
         BaroData_t lastBaroData;
 
-        uint8_t amSchedulingCounter;
+        uint16_t amSchedulingCounter;
 
         int noDataCount;
         bool failsafeTriggered;
+
+        static constexpr uint16_t MAX_TIMESTAMP = 65535;
+        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
+        uint32_t lastTimestamp;
+        bool haveLastImuTimestamp;
 
         bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
@@ -79,35 +102,11 @@ class AttitudeManager {
         void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
         void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
         void sendServoOutputRawToTelemetryManager();
+        
+        uint8_t profilerId;
+        
+        // Motor mixer output for each motor 
+        float motorPercent[NUM_MOTORS];
 
-        void loadServoParams();
-        void bindServoParamCallbacks();
-
-        // ZP_PARAM callback functions
-        static bool updatePIDRollKp(AttitudeManager* context, float val);
-        static bool updatePIDRollKi(AttitudeManager* context, float val);
-        static bool updatePIDRollKd(AttitudeManager* context, float val);
-        static bool updatePIDRollTau(AttitudeManager* context, float val);
-        static bool updatePIDRollIMax(AttitudeManager* context, float val);
-        static bool updatePIDPitchKp(AttitudeManager* context, float val);
-        static bool updatePIDPitchKi(AttitudeManager* context, float val);
-        static bool updatePIDPitchKd(AttitudeManager* context, float val);
-        static bool updatePIDPitchTau(AttitudeManager* context, float val);
-        static bool updatePIDPitchIMax(AttitudeManager* context, float val);
-        static bool updateKffRddrmix(AttitudeManager* context, float val);
-        static bool updateRollLimitDeg(AttitudeManager* context, float val);
-        static bool updatePitchLimMaxDeg(AttitudeManager* context, float val);
-        static bool updatePitchLimMinDeg(AttitudeManager* context, float val);
-
-        // Servo param callbacks: one unique function is generated at compile time for each
-        // servo parameter index (Idx). The compiler stamps out updateServoParam<0>,
-        // updateServoParam<1>, ... so each ZP_PARAM slot gets its own callback with the
-        // channel and field baked in as compile-time constants.
-        template <uint8_t Idx> static bool updateServoParam(AttitudeManager* ctx, float val);
-
-        // Registers all servo-param callbacks in one shot using C++ parameter pack expansion.
-        // std::integer_sequence<uint8_t, Is...> carries the compile-time list {0, 1, 2, ...}
-        // and the "..." expands a bindCallback() call for every index in that list.
-        template <uint8_t... Is>
-        void bindServoParamCallbacksImpl(std::integer_sequence<uint8_t, Is...>);
+        AMParamSetup paramSetup;
 };
