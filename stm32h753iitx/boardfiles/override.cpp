@@ -55,60 +55,53 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart == rcHandle->getHUART()){
+  if(huart == rcHandle->getHUART()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
       __HAL_UART_CLEAR_PEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_NE){
+    if (error & HAL_UART_ERROR_NE) {
       __HAL_UART_CLEAR_NEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_FE){
+    if (error & HAL_UART_ERROR_FE) {
       __HAL_UART_CLEAR_FEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_ORE){
+    if (error & HAL_UART_ERROR_ORE) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
     rcHandle->startDMA();
-  }
-    else if (huart == gpsHandle->getHUART())
-    {
-      uint32_t error = HAL_UART_GetError(huart);
+  } else if (huart == gpsHandle->getHUART()) {
+    uint32_t error = HAL_UART_GetError(huart);
 
-      if (error & HAL_UART_ERROR_PE)
-      {
-        __HAL_UART_CLEAR_PEFLAG(huart);
-      }
-
-      if (error & HAL_UART_ERROR_NE)
-      {
-        __HAL_UART_CLEAR_NEFLAG(huart);
-      }
-
-      if (error & HAL_UART_ERROR_FE)
-      {
-        __HAL_UART_CLEAR_FEFLAG(huart);
-      }
-
-      if (error & HAL_UART_ERROR_ORE)
-      {
-        __HAL_UART_CLEAR_OREFLAG(huart);
-      }
-      gpsHandle->restartDMA();
+    if (error & HAL_UART_ERROR_PE) {
+      __HAL_UART_CLEAR_PEFLAG(huart);
     }
-  }
 
-void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi)
-{
-  if (hspi == imuHandle->getSPI())
-  {
-    imuHandle->txRxCallback();
+    if (error & HAL_UART_ERROR_NE) {
+      __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_FE) {
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE) {
+      __HAL_UART_CLEAR_OREFLAG(huart);
+    }
+
+    gpsHandle->restartDMA();
   }
+}
+
+void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
+    if (hspi == imuHandle->getSPI()) {
+      imuHandle->txRxCallback();
+    }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
