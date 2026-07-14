@@ -67,9 +67,9 @@ public:
 	CANController(FDCAN_HandleTypeDef *hfdcan);
 
 	bool CanardShouldAcceptTransfer(const CanardInstance* ins,
-		uint64_t* out_data_type_signature,
-		uint16_t data_type_id,
-		CanardTransferType transfer_type,
+		uint64_t* outDataTypeSignature,
+		uint16_t dataTypeId,
+		CanardTransferType transferType,
 		uint8_t sourceNodeId);
 
 	void CanardOnTransferReception(CanardInstance* ins,
@@ -80,28 +80,28 @@ public:
 	// Called as much as possible
 	bool routineTasks();
 
-	void handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t *rx_data);
+	void handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t *rxData);
 
 	int16_t broadcastObj(
 		CanardTxTransfer* transfer
 	);
 
 	int16_t broadcast(
-		CanardTransferType transfer_type,
-		uint64_t data_type_signature,
-		uint16_t data_type_id,
-		uint8_t* inout_transfer_id,
+		CanardTransferType transferType,
+		uint64_t dataTypeSignature,
+		uint16_t dataTypeId,
+		uint8_t* inoutTransferId,
 		uint8_t priority,
 		const uint8_t* payload,
-		uint16_t payload_len
+		uint16_t payloadLen
 		#if CANARD_ENABLE_CANFD
 			, bool canfd              // True to send as a CAN FD frame
 		#endif
 		#if CANARD_ENABLE_DEADLINE
-			, uint64_t deadline_usec  // Transfer deadline in microseconds
+			, uint64_t deadlineUsec  // Transfer deadline in microseconds
 		#endif
 		#if CANARD_MULTI_IFACE
-			, uint8_t iface_mask      // Bitmask of interfaces to send the transfer on
+			, uint8_t ifaceMask      // Bitmask of interfaces to send the transfer on
 		#endif
 		#if CANARD_ENABLE_TAO_OPTION
 			, bool tao                // True to enable tail array optimization

@@ -42,23 +42,24 @@ CANController::~CANController() {}
 
 bool CANController::CanardShouldAcceptTransfer(
     const CanardInstance* ins,
-    uint64_t* out_data_type_signature,
-    uint16_t data_type_id,
-    CanardTransferType transfer_type,
+    uint64_t* outDataTypeSignature,
+    uint16_t dataTypeId,
+    CanardTransferType transferType,
     uint8_t sourceNodeId)
 {
     (void)ins;
     (void)sourceNodeId;
+    (void)transferType;
 
-    switch (data_type_id)
+    switch (dataTypeId)
     {
         case UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID: {
-            *out_data_type_signature = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE;
+            *outDataTypeSignature = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE;
             return true;
         }
 
         case UAVCAN_PROTOCOL_NODESTATUS_ID: {
-            *out_data_type_signature = UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE;
+            *outDataTypeSignature = UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE;
             return true;
         }
 
@@ -108,14 +109,14 @@ uint8_t CANController::dlcToLength(uint32_t dlc) {
 }
 
 
-void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rx_header, uint8_t * rx_data) {
+void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t * rxData) {
 	const uint64_t timestamp_usec = HAL_GetTick() * 1000ULL;
 
 	CanardCANFrame frame;
-	frame.id = rx_header->Identifier;
+	frame.id = rxHeader->Identifier;
 	frame.id |= (1UL << CAN_FRAME_EFF_BIT);
-	frame.data_len = dlcToLength(rx_header->DataLength);
-	memcpy(frame.data, rx_data, frame.data_len);
+	frame.data_len = dlcToLength(rxHeader->DataLength);
+	memcpy(frame.data, rxData, frame.data_len);
 
 	canardHandleRxFrame(&canard, &frame, timestamp_usec);
 }
@@ -419,21 +420,21 @@ int16_t CANController::broadcastObj(CanardTxTransfer* transfer) {
 }
 
 int16_t CANController::broadcast(
-	CanardTransferType transfer_type,
-	uint64_t data_type_signature,
-	uint16_t data_type_id,
-	uint8_t* inout_transfer_id,
+	CanardTransferType transferType,
+	uint64_t dataTypeSignature,
+	uint16_t dataTypeId,
+	uint8_t* inoutTransferId,
 	uint8_t priority,
 	const uint8_t* payload,
-	uint16_t payload_len
+	uint16_t payloadLen
 	#if CANARD_ENABLE_CANFD
 		, bool canfd
 	#endif
 	#if CANARD_ENABLE_DEADLINE
-		, uint64_t deadline_usec
+		, uint64_t deadlineUsec
 	#endif
 	#if CANARD_MULTI_IFACE
-		, uint8_t iface_mask
+		, uint8_t ifaceMask
 	#endif
 	#if CANARD_ENABLE_TAO_OPTION
 		, bool tao
@@ -441,22 +442,22 @@ int16_t CANController::broadcast(
 )
 {
 	CanardTxTransfer transfer_object;
-	transfer_object.transfer_type = transfer_type;
-	transfer_object.data_type_signature = data_type_signature;
-	transfer_object.data_type_id = data_type_id;
-	transfer_object.inout_transfer_id = inout_transfer_id;
+	transfer_object.transfer_type = transferType;
+	transfer_object.data_type_signature = dataTypeSignature;
+	transfer_object.data_type_id = dataTypeId;
+	transfer_object.inout_transfer_id = inoutTransferId;
 	transfer_object.priority = priority;
 	transfer_object.payload = payload;
-	transfer_object.payload_len = payload_len;
+	transfer_object.payload_len = payloadLen;
 	
 	#if CANARD_ENABLE_CANFD
 		transfer_object.canfd = canfd;
 	#endif
 	#if CANARD_ENABLE_DEADLINE
-		transfer_object.deadline_usec = deadline_usec;
+		transfer_object.deadline_usec = deadlineUsec;
 	#endif
 	#if CANARD_MULTI_IFACE
-		transfer_object.iface_mask = iface_mask;
+		transfer_object.iface_mask = ifaceMask;
 	#endif
 	#if CANARD_ENABLE_TAO_OPTION
 		transfer_object.tao = tao;
