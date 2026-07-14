@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 #include "gps_iface.hpp"
 #include <cmath>
 
