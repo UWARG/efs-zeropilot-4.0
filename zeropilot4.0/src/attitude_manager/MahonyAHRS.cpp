@@ -55,7 +55,7 @@ Mahony::Mahony()
 //-------------------------------------------------------------------------------------------
 // IMU algorithm update
 
-void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float az)
+void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float az, float dt)
 {
 	float recipNorm;
 	float halfvx, halfvy, halfvz;
@@ -91,9 +91,9 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 		// Compute and apply integral feedback if enabled
 		if(twoKi > 0.0f) {
 			// integral error scaled by Ki
-			integralFBx += twoKi * halfex * invSampleFreq;
-			integralFBy += twoKi * halfey * invSampleFreq;
-			integralFBz += twoKi * halfez * invSampleFreq;
+			integralFBx += twoKi * halfex * dt;
+			integralFBy += twoKi * halfey * dt;
+			integralFBz += twoKi * halfez * dt;
 			gx += integralFBx;	// apply integral feedback
 			gy += integralFBy;
 			gz += integralFBz;
@@ -110,9 +110,9 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 	}
 
 	// Integrate rate of change of quaternion
-	gx *= (0.5f * invSampleFreq);		// pre-multiply common factors
-	gy *= (0.5f * invSampleFreq);
-	gz *= (0.5f * invSampleFreq);
+	gx *= (0.5f * dt);		// pre-multiply common factors
+	gy *= (0.5f * dt);
+	gz *= (0.5f * dt);
 	qa = q0;
 	qb = q1;
 	qc = q2;

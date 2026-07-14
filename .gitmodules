@@ -13,3 +13,6 @@
 [submodule "external/dronecan/dronecan_dsdlc"]
 	path = external/dronecan/dronecan_dsdlc
 	url = https://github.com/dronecan/dronecan_dsdlc.git
+[submodule "external/CMSIS-DSP"]
+	path = external/CMSIS-DSP
+	url = https://github.com/ARM-software/CMSIS-DSP

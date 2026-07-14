@@ -99,6 +99,18 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     }
 }
 
+void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == pmHandle->getI2C()) {
+      pmHandle->I2C_MemRxCpltCallback();
+    }
+}
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == pmHandle->getI2C()) {
+      pmHandle->I2C_ErrorCallback();
+    }
+}
+
 #ifdef __cplusplus
 }
 #endif

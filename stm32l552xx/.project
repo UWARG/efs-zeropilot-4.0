@@ -43,5 +43,25 @@
 			<type>2</type>
 			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/libcanard</location>
 		</link>
+		<link>
+			<name>boardfiles/CommonTables.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/CommonTables/CommonTables.c</locationURI>
+		</link>
+		<link>
+			<name>boardfiles/ComplexMathFunctions.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/ComplexMathFunctions/ComplexMathFunctions.c</locationURI>
+		</link>
+		<link>
+			<name>boardfiles/FastMathFunctions.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/FastMathFunctions/FastMathFunctions.c</locationURI>
+		</link>
+		<link>
+			<name>boardfiles/TransformFunctions.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/TransformFunctions/TransformFunctions.c</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>

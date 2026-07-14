@@ -17,8 +17,10 @@
 #include "imu.hpp"
 #include "power_module.hpp"
 #include "dshot.hpp"
+#include "fft.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
