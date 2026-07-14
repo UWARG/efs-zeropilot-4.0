@@ -54,9 +54,6 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-  .gpsHandle : {
-    *(.gpsHandle)
-  } >RAM_D2
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
