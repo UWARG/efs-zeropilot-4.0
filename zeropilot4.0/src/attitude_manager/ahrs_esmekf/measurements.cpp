@@ -1,6 +1,4 @@
-#include "attitude_manager/ahrs_esmekf/measurements.hpp"
-
-#include "arm_math.h"
+#include "measurements.hpp"
 
 Measurements::Measurements(
     const float32_t *gyroInitial,

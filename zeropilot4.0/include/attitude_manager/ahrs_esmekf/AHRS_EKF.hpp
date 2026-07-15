@@ -5,13 +5,13 @@
 
 #include <cstdint>
 
-class AhrsEsmekf {
+class AhrsEsMekf {
 public:
     static constexpr uint32_t ERROR_STATE_SIZE = 9;
     static constexpr uint32_t VECTOR_SIZE = 3;
     static constexpr uint32_t MEASUREMENT_SIZE = 3;
 
-    AhrsEsmekf(
+    AhrsEsMekf(
         const float32_t *gyroInitial = nullptr,
         const float32_t *accelInitial = nullptr,
         const float32_t *magInitial = nullptr,

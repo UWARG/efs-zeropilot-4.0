@@ -1,8 +1,5 @@
-#include "attitude_manager/ahrs_esmekf/nominal_state.hpp"
+#include "nominal_state.hpp"
 
-#include "arm_math.h"
-#include "dsp/fast_math_functions.h"
-#include "dsp/matrix_functions.h"
 #include "quaternions.hpp"
 
 namespace {

@@ -1,8 +1,4 @@
-#include "attitude_manager/ahrs_esmekf/Quaternions.hpp"
-#include "arm_math.h"
-#include "dsp/fast_math_functions.h"
-#include "dsp/matrix_functions.h"
-#include "dsp/quaternion_math_functions.h"
+#include "quaternions.hpp"
 
 #include <cmath>
 

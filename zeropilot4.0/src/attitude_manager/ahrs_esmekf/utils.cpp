@@ -1,7 +1,4 @@
-#include "attitude_manager/ahrs_esmekf/utils.hpp"
-
-#include "arm_math.h"
-#include "dsp/matrix_functions.h"
+#include "utils.hpp"
 
 const float32_t IDENTITY_QUATERNION[4] = {1.0f, 0.0f, 0.0f, 0.0f};
 const float32_t GRAVITY_INERTIAL[3] = {0.0f, 0.0f, 9.81f};

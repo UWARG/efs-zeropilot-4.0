@@ -1,11 +1,9 @@
-#include "attitude_manager/ahrs_esmekf/AHRS_EKF.hpp"
+#include "AHRS_EKF.hpp"
 
-#include "arm_math.h"
-#include "dsp/matrix_functions.h"
 #include "quaternions.hpp"
 #include "utils.hpp"
 
-AhrsEsmekf::AhrsEsmekf(
+AhrsEsMekf::AhrsEsMekf(
     const float32_t *gyroInitial,
     const float32_t *accelInitial,
     const float32_t *magInitial,
@@ -63,7 +61,7 @@ AhrsEsmekf::AhrsEsmekf(
     }
 }
 
-void AhrsEsmekf::stateExtrapolation(const float32_t *gyroNew, float32_t dt) {
+void AhrsEsMekf::stateExtrapolation(const float32_t *gyroNew, float32_t dt) {
     measurements.updateGyro(gyroNew);
 
     nominalState.stateExtrapolation(
@@ -104,7 +102,7 @@ void AhrsEsmekf::stateExtrapolation(const float32_t *gyroNew, float32_t dt) {
     symmetrizeSquareMatrixInPlace(covariance, ERROR_STATE_SIZE);
 }
 
-bool AhrsEsmekf::correctionAccelerometer(const float32_t *accelerometerNew) {
+bool AhrsEsMekf::correctionAccelerometer(const float32_t *accelerometerNew) {
     measurements.updateAccel(accelerometerNew);
 
     // accelPredicted = iToBFrameRotMatrix(q) @ -gravityInertial
@@ -157,7 +155,7 @@ bool AhrsEsmekf::correctionAccelerometer(const float32_t *accelerometerNew) {
     );
 }
 
-bool AhrsEsmekf::correctionMagnetometer(const float32_t *magnetometerNew) {
+bool AhrsEsMekf::correctionMagnetometer(const float32_t *magnetometerNew) {
     float32_t magNormalized[VECTOR_SIZE];
 
     if (!normalizeVector(magnetometerNew, magNormalized, VECTOR_SIZE)) {
@@ -217,7 +215,7 @@ bool AhrsEsmekf::correctionMagnetometer(const float32_t *magnetometerNew) {
     );
 }
 
-void AhrsEsmekf::stateTransitionMatrix(float32_t dt, float32_t *phiOut) {
+void AhrsEsMekf::stateTransitionMatrix(float32_t dt, float32_t *phiOut) {
     // Phi = I + dt * F + 0.5 * dt^2 * F^2
     float32_t fData[ERROR_STATE_SIZE * ERROR_STATE_SIZE];
     float32_t fSquaredData[ERROR_STATE_SIZE * ERROR_STATE_SIZE];
@@ -270,7 +268,7 @@ void AhrsEsmekf::stateTransitionMatrix(float32_t dt, float32_t *phiOut) {
     );
 }
 
-void AhrsEsmekf::errorStateGradientMatrixF(float32_t *fOut) {
+void AhrsEsMekf::errorStateGradientMatrixF(float32_t *fOut) {
     setZero(fOut, ERROR_STATE_SIZE * ERROR_STATE_SIZE);
 
     // omegaMatrix = -skewSymmetric(gyroBar)
@@ -290,7 +288,7 @@ void AhrsEsmekf::errorStateGradientMatrixF(float32_t *fOut) {
     }
 }
 
-void AhrsEsmekf::processNoiseCovMatrix(float32_t dt, float32_t *qOut) {
+void AhrsEsMekf::processNoiseCovMatrix(float32_t dt, float32_t *qOut) {
     setZero(qOut, ERROR_STATE_SIZE * ERROR_STATE_SIZE);
 
     const float32_t DT_SQUARED = dt * dt;
@@ -319,7 +317,7 @@ void AhrsEsmekf::processNoiseCovMatrix(float32_t dt, float32_t *qOut) {
     }
 }
 
-bool AhrsEsmekf::applyUpdate(
+bool AhrsEsMekf::applyUpdate(
     const float32_t *y,
     const float32_t *h,
     const float32_t *r,
@@ -553,11 +551,11 @@ bool AhrsEsmekf::applyUpdate(
     return true;
 }
 
-void AhrsEsmekf::setZero(float32_t *data, uint32_t length) {
+void AhrsEsMekf::setZero(float32_t *data, uint32_t length) {
     arm_fill_f32(0.0f, data, length);
 }
 
-void AhrsEsmekf::setIdentity(float32_t *data, uint32_t size) {
+void AhrsEsMekf::setIdentity(float32_t *data, uint32_t size) {
     setZero(data, size * size);
 
     for (uint32_t i = 0; i < size; ++i) {
@@ -565,7 +563,7 @@ void AhrsEsmekf::setIdentity(float32_t *data, uint32_t size) {
     }
 }
 
-void AhrsEsmekf::setDiagonal3(float32_t *matrixOut, float32_t value) {
+void AhrsEsMekf::setDiagonal3(float32_t *matrixOut, float32_t value) {
     setZero(matrixOut, VECTOR_SIZE * VECTOR_SIZE);
 
     matrixOut[0] = value;
@@ -573,15 +571,15 @@ void AhrsEsmekf::setDiagonal3(float32_t *matrixOut, float32_t value) {
     matrixOut[8] = value;
 }
 
-void AhrsEsmekf::copyVector3(const float32_t *in, float32_t *out) {
+void AhrsEsMekf::copyVector3(const float32_t *in, float32_t *out) {
     arm_copy_f32(in, out, VECTOR_SIZE);
 }
 
-void AhrsEsmekf::copyMatrix(const float32_t *in, float32_t *out, uint32_t length) {
+void AhrsEsMekf::copyMatrix(const float32_t *in, float32_t *out, uint32_t length) {
     arm_copy_f32(in, out, length);
 }
 
-void AhrsEsmekf::symmetrizeSquareMatrixInPlace(float32_t *matrix, uint32_t size) {
+void AhrsEsMekf::symmetrizeSquareMatrixInPlace(float32_t *matrix, uint32_t size) {
     for (uint32_t row = 0; row < size; ++row) {
         for (uint32_t col = row + 1; col < size; ++col) {
             const uint32_t ROW_COL_INDEX = row * size + col;
