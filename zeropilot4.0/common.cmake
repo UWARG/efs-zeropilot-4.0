@@ -10,6 +10,11 @@ set(AM_SRC
     "src/attitude_manager/MahonyAHRS.cpp"
     "src/attitude_manager/motor_mixing.cpp"
     "src/attitude_manager/stabilize_mapping.cpp"
+    "src/attitude_manager/ahrs_esmekf/AHRS_EKF.cpp"
+    "src/attitude_manager/ahrs_esmekf/measurements.cpp"
+    "src/attitude_manager/ahrs_esmekf/nominal_state.cpp"
+    "src/attitude_manager/ahrs_esmekf/quaternions.cpp"
+    "src/attitude_manager/ahrs_esmekf/utils.cpp"
 )
 set(AM_INC
     "include/attitude_manager/"
