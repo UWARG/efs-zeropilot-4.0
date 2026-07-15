@@ -391,3 +391,15 @@ void AHRS_ESMEKF::applyUpdate(const float* y, const float* H, const float* R, fl
     math->matrixMult(J_P, 9, 9, J_T, 9, P);
     math->ensureSymmetric(P, 9);
 }
+
+Attitude_t AHRS_ESMEKF::getAttitude() const {
+    float euler_tmp[3];
+    math->quatToEuler(nom.quaternion_new, euler_tmp);
+
+    Attitude_t att;
+    att.roll  = euler_tmp[0];
+    att.pitch = euler_tmp[1];
+    att.yaw   = euler_tmp[2];
+
+    return att;
+}

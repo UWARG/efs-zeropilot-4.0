@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mathutils_iface.hpp"
+#include "imu_datatypes.hpp"
 #include <cstdint>
 
 class Measurements {
@@ -76,6 +77,8 @@ public:
     void stateExtrapolation(const float* gyro_new, float dt);
     void correctionAccelerometer(const float* accel_new);
     void correctionMagnetometer(const float* mag_new);
+
+    Attitude_t getAttitude() const;
 
     // Public state access
     Measurements meas;
