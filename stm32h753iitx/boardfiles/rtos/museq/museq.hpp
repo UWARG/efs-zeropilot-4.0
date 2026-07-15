@@ -17,7 +17,7 @@ void initMutexes();
 
 void initSemphrs();
 
-extern rtcmCorrectionData_t sharedRtcmBuffer;
+extern RtcmCorrectionData_t sharedRtcmBuffer;
 
 /* --- queues --- */
 /* declare queues begin */

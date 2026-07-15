@@ -12,8 +12,8 @@ public:
     virtual GpsData_t readData() = 0;
 };
 
-struct rtcmCorrectionData_t {
+typedef struct {
   uint8_t data[720];
   uint16_t len;
   bool newData;
-};
+} RtcmCorrectionData_t;

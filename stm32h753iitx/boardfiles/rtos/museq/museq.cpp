@@ -11,7 +11,7 @@ osMessageQueueId_t smLoggerQueueId;
 osMessageQueueId_t tmQueueId;
 osMessageQueueId_t messageBufferId;
 
-rtcmCorrectionData_t sharedRtcmBuffer;
+RtcmCorrectionData_t sharedRtcmBuffer;
 
 static const osMutexAttr_t itmMutexAttr = {
   "itmMutex",

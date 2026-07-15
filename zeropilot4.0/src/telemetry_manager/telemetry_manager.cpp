@@ -10,7 +10,7 @@ TelemetryManager::TelemetryManager(
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer,
-    rtcmCorrectionData_t &sharedRtcmBuffer
+    RtcmCorrectionData_t &sharedRtcmBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),

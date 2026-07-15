@@ -49,7 +49,7 @@ class TelemetryManager {
 
     // rtcm
     parseRtcmData assemblingRtcmBuffer;
-    rtcmCorrectionData_t &sharedRtcmBuffer;
+    RtcmCorrectionData_t &sharedRtcmBuffer;
 
     void processRxMsg(const mavlink_message_t &msg);
     void processTXMsgQueue();
@@ -63,7 +63,7 @@ class TelemetryManager {
     uint8_t profilerId;
     
   public:
-    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer, rtcmCorrectionData_t &sharedRtcmBuffer);
+    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer, RtcmCorrectionData_t &sharedRtcmBuffer);
     ~TelemetryManager();
 
     void tmUpdate();

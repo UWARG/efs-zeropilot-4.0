@@ -18,7 +18,7 @@ protected:
     MockMessageQueue<TMMessage_t> mockTMQueue;
     MockMessageQueue<RCMotorControlMessage_t> mockAMQueue;
     MockMessageQueue<mavlink_message_t> mockPackedMsgBuffer;
-    rtcmCorrectionData_t mockRtcmSharedBuffer;
+    RtcmCorrectionData_t mockRtcmSharedBuffer;
 
     void SetUp() override {
         ZP_PARAM::init();
