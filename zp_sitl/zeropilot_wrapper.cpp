@@ -52,7 +52,7 @@ typedef struct {
     SITL_Queue<TMMessage_t>* tmQueue;
     SITL_LogQueue* logQueue;
     SITL_Queue<mavlink_message_t>* mavlinkQueue;
-    RtcmCorrectionData_t sharedRtcmBuffer;
+    rtcmCorrectionData_t sharedRtcmBuffer;
     
     SITL_IWDG* iwdg;
     SITL_Logger* logger;
