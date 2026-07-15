@@ -245,11 +245,11 @@ void TelemetryManager::enqueueParamValueTx(uint16_t index) {
 }
 
 void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg) {
-    bool is_fragmented = (rtcmMsg.flags & 0x01);
-    uint8_t fragment_id = (rtcmMsg.flags >> 1) & (0x03);
-    uint8_t sequence_id = (rtcmMsg.flags >> 3) & (0xFF);
+    bool isFragmented = (rtcmMsg.flags & 0x01);
+    uint8_t fragmentId = (rtcmMsg.flags >> 1) & (0x03);
+    uint8_t sequenceId = (rtcmMsg.flags >> 3) & (0xFF);
 
-    if (!is_fragmented) {
+    if (!isFragmented) {
         memcpy(sharedRtcmBuffer.data, rtcmMsg.data, rtcmMsg.len);
         sharedRtcmBuffer.len = rtcmMsg.len;
         sharedRtcmBuffer.newData = true;
@@ -257,17 +257,17 @@ void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg
         return;
     }
 
-    if (sequence_id != assemblingRtcmBuffer.rtcmCurrentSequenceId) {
+    if (sequenceId != assemblingRtcmBuffer.rtcmCurrentSequenceId) {
         resetRtcmState();
-        assemblingRtcmBuffer.rtcmCurrentSequenceId = sequence_id;
+        assemblingRtcmBuffer.rtcmCurrentSequenceId = sequenceId;
     }
 
-    memcpy(assemblingRtcmBuffer.rtcmAssemblyBuffer + (fragment_id * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
+    memcpy(assemblingRtcmBuffer.rtcmAssemblyBuffer + (fragmentId * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
     if (rtcmMsg.len < 180) {
-        assemblingRtcmBuffer.rtcmRecievedFragments |= (~((1 << fragment_id) - 1)) & 0x0F;
-        assemblingRtcmBuffer.rtcmLen = fragment_id * 180 + rtcmMsg.len;
+        assemblingRtcmBuffer.rtcmRecievedFragments |= (~((1 << fragmentId) - 1)) & 0x0F;
+        assemblingRtcmBuffer.rtcmLen = fragmentId * 180 + rtcmMsg.len;
     } else {
-        assemblingRtcmBuffer.rtcmRecievedFragments |= (1 << fragment_id);
+        assemblingRtcmBuffer.rtcmRecievedFragments |= (1 << fragmentId);
     }
 
     if (assemblingRtcmBuffer.rtcmRecievedFragments == 0x0F) {
