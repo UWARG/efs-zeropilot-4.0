@@ -182,7 +182,8 @@ static void setBlock3x3(float* M9x9, int block_row, int block_col, const float* 
 void AHRS_ESMEKF::stateExtrapolation(const float* gyro_new, float dt) {
     meas.updateGyro(gyro_new);
     nom.stateExtrapolation(meas.gyro_new, meas.gyro_prev, dt);
-
+    // We only calculate the non-zero parts of the 9x9 matrix thru CMSIS DSP to optimize performance, 
+    // as convention we do this by only calculating the non-zero 3x3 sub-matrices of all matrices
     // Phi = I + F*dt + 0.5*dt^2 * F@F, with F = [[-S, -I, 0], [0, 0, 0], [0, 0, 0]]
     // (S = skew(gyro_bar)). F is zero outside its top block row, so Phi differs
     // from identity only in:
@@ -303,6 +304,11 @@ void AHRS_ESMEKF::correctionMagnetometer(const float* mag_new) {
     applyUpdate(innovation, H0, false, mag_cov_mat, cfg.mag_gate_threshold);
 }
 
+/*
+H is assumed to be a 3x9 matrix of form [skew(accel_pred), 0, I] and [skew(mag_pred), 0, 0], 
+bc we only pass in non-zero entries of each
+observes_accel_bias determines which form of the two it is
+*/
 void AHRS_ESMEKF::applyUpdate(const float* y, const float* H0, bool observes_accel_bias,
                               const float* R, float gate_threshold) {
     // H = [H0, 0, H2] with H2 = I for the accelerometer (which observes the
