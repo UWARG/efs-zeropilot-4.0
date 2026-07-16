@@ -72,7 +72,7 @@ static constexpr uint8_t PVT_VALID_TIME_MASK = 0b00000111;
 static constexpr uint8_t PVT_GNSS_FIX_OK_MASK = 0b00000001;
 
 // Read a signed 32 bit int in little endian
-static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx);
+static int32_t readInt32LE(const uint8_t *buf, uint16_t idx);
 
 // Convert ASCII hex to numeric value
 static int8_t hexValue(uint8_t c);
@@ -89,8 +89,8 @@ bool GPS::init() {
     return restartDMA() == HAL_OK;
 }
 
-// Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
 /*
+Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
 Switch the gps to UBX NAV-PVT only. Returns false if the receiver does not support UBX and 
 leaves its NMEA output untouched so readData() can still parse it
 */
@@ -548,11 +548,11 @@ bool GPS::parsePVT(uint16_t &idx) {
         return false;
     }
     tempData.numSatellites = processBuffer[idx - 17];
-    tempData.longitude = readInt32LE(processBuffer, idx - 16) * 1e-7f; // 1e-7 deg to deg
-    tempData.latitude = readInt32LE(processBuffer, idx - 12) * 1e-7f; // 1e-7 deg to deg
+    tempData.longitude = readInt32LE((uint8_t*)processBuffer, idx - 16) * 1e-7f; // 1e-7 deg to deg
+    tempData.latitude = readInt32LE((uint8_t*)processBuffer, idx - 12) * 1e-7f; // 1e-7 deg to deg
     // hMSL is height above mean sea level, 2D fix carries no usable altitude
     tempData.altitude = (fixType == FIX_TYPE_3D)
-        ? readInt32LE(processBuffer, idx - 4) / 1000.0f // mm to m
+        ? readInt32LE((uint8_t*)processBuffer, idx - 4) / 1000.0f // mm to m
         : INVALID_ALTITUDE;
 
     // Skip hAcc(4) and vAcc(4) fields
@@ -560,17 +560,17 @@ bool GPS::parsePVT(uint16_t &idx) {
 
     // Consume the NED velocities velN(4), velE(4), velD(4)
     if (!incrementProcessBufferIndex(idx, 12)) return false;
-    tempData.vx = readInt32LE(processBuffer, idx - 12) / 1000.0f; // mm/s to m/s
-    tempData.vy = readInt32LE(processBuffer, idx - 8) / 1000.0f;
-    tempData.vz = readInt32LE(processBuffer, idx - 4) / 1000.0f;
+    tempData.vx = readInt32LE((uint8_t*)processBuffer, idx - 12) / 1000.0f; // mm/s to m/s
+    tempData.vy = readInt32LE((uint8_t*)processBuffer, idx - 8) / 1000.0f;
+    tempData.vz = readInt32LE((uint8_t*)processBuffer, idx - 4) / 1000.0f;
 
     // Get gSpeed field
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    tempData.groundSpeed = readInt32LE(processBuffer, idx - 4) / 10.0f; // mm/s to cm/s
+    tempData.groundSpeed = readInt32LE((uint8_t*)processBuffer, idx - 4) / 10.0f; // mm/s to cm/s
 
     // Get headMot field
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    tempData.trackAngle = readInt32LE(processBuffer, idx - 4) * 1e-5f; // 1e-5 deg to deg
+    tempData.trackAngle = readInt32LE((uint8_t*)processBuffer, idx - 4) * 1e-5f; // 1e-5 deg to deg
 
     return true;
 }
@@ -759,7 +759,7 @@ bool GPS::getAltitudeGGA(uint16_t &idx) {
 
 bool GPS::getVxVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVX = readInt32LE(processBuffer, idx - 4);
+    int32_t ecefVX = readInt32LE((uint8_t*)processBuffer, idx - 4);
 
     tempData.vx = ecefVX / 100.0f; // cm/s to m/s
     return true;
@@ -767,7 +767,7 @@ bool GPS::getVxVELECEF(uint16_t &idx) {
 
 bool GPS::getVyVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVY = readInt32LE(processBuffer, idx - 4);
+    int32_t ecefVY = readInt32LE((uint8_t*)processBuffer, idx - 4);
 
     tempData.vy = ecefVY / 100.0f; // cm/s to m/s
     return true;
@@ -775,7 +775,7 @@ bool GPS::getVyVELECEF(uint16_t &idx) {
 
 bool GPS::getVzVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVZ = readInt32LE(processBuffer, idx - 4);
+    int32_t ecefVZ = readInt32LE((uint8_t*)processBuffer, idx - 4);
 
     tempData.vz = ecefVZ / 100.0f; // cm/s to m/s
     return true;
@@ -787,7 +787,7 @@ bool GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
     return true;
 }
 
-static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx) {
+static int32_t readInt32LE(const uint8_t *buf, uint16_t idx) {
     return (int32_t)((uint32_t)buf[idx] |
                     ((uint32_t)buf[idx + 1] << 8) |
                     ((uint32_t)buf[idx + 2] << 16) |
