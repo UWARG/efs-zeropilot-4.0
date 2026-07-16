@@ -42,20 +42,20 @@ void HAL_Delay(uint32_t Delay) {
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-  if (huart == rcHandle->getHUART()){
+  if (huart == rcHandle->getHuart()){
       rcHandle->parse();
       rcHandle->startDMA();
   } 
-  else if (huart == telemLinkHandle->getHUART()) {
+  else if (huart == telemLinkHandle->getHuart()) {
     telemLinkHandle->receiveCallback(Size);
   }
-  else if (huart == gpsHandle->getHUART()) {
+  else if (huart == gpsHandle->getHuart()) {
     gpsHandle->rxCallback(Size);
   }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart == rcHandle->getHUART()) {
+  if(huart == rcHandle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
@@ -75,7 +75,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     }
 
     rcHandle->startDMA();
-  } else if (huart == gpsHandle->getHUART()) {
+  } else if (huart == gpsHandle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
