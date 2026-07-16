@@ -135,7 +135,7 @@ void AttitudeManager::amUpdate() {
     // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
         if (gpsUnsent) {
-            sendGPSDataToTelemetryManager(gpsData);
+            sendGPSDataToTelemetryManager(lastValidGps);
             gpsUnsent = false;
         }
     }
