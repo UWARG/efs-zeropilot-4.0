@@ -95,12 +95,8 @@ private:
     float gyro_bias_cov_mat[9];
     float accel_bias_cov_mat[9];
 
-    void getStateTransitionMatrix(float dt, float* Phi);
-    void getErrorStateGradientMatrixF(float* F);
-    void getProcessNoiseCovMatrix(float dt, float* Q);
-    
-    void applyUpdate(const float* y, const float* H, const float* R, float gate_threshold);
-    
-    // Helper to insert a 3x3 block into a 9x9 matrix
-    void insertBlock3x3(float* dst9x9, const float* src3x3, uint8_t row_start, uint8_t col_start);
+    // Kalman update for a measurement with jacobian H = [H0, 0, H2], where H0 is
+    // 3x3 and H2 is I when the measurement observes the accel bias states, else 0
+    void applyUpdate(const float* y, const float* H0, bool observes_accel_bias,
+                     const float* R, float gate_threshold);
 };

@@ -161,71 +161,21 @@ void AHRS_ESMEKF::init(const float* gyro_init, const float* accel_init, const fl
     }
 }
 
-void AHRS_ESMEKF::insertBlock3x3(float* dst9x9, const float* src3x3, uint8_t row_start, uint8_t col_start) {
+// Copy the 3x3 block at block coordinates (block_row, block_col) out of / into
+// the 9x9 matrix M, so CMSIS can operate on contiguous 3x3 buffers
+static void getBlock3x3(const float* M9x9, int block_row, int block_col, float* out3x3) {
     for (int r = 0; r < 3; ++r) {
         for (int c = 0; c < 3; ++c) {
-            dst9x9[(row_start + r) * 9 + (col_start + c)] = src3x3[r * 3 + c];
+            out3x3[r*3 + c] = M9x9[(block_row*3 + r) * 9 + (block_col*3 + c)];
         }
     }
 }
 
-void AHRS_ESMEKF::getErrorStateGradientMatrixF(float* F) {
-    std::memset(F, 0, 81 * sizeof(float));
-
-    float gyro_bar[3];
-    meas.getGyroBar(gyro_bar);
-
-    float skew_gyro[9];
-    math->skewSymmetric(gyro_bar, skew_gyro);
-
-    // F[0:3, 0:3] = -skew(gyro_bar)
-    for (int i = 0; i < 9; ++i) skew_gyro[i] = -skew_gyro[i];
-    insertBlock3x3(F, skew_gyro, 0, 0);
-
-    // F[0:3, 3:6] = -I
-    float neg_I[9] = {-1.0f, 0, 0,  0, -1.0f, 0,  0, 0, -1.0f};
-    insertBlock3x3(F, neg_I, 0, 3);
-}
-
-void AHRS_ESMEKF::getStateTransitionMatrix(float dt, float* Phi) {
-    float F[81];
-    getErrorStateGradientMatrixF(F);
-
-    // Phi = I + F*dt + 0.5 * dt^2 * F*F
-    float F_dt[81];
-    math->matrixScale(F, dt, F_dt, 9, 9);
-
-    float F2[81];
-    math->matrixMult(F, 9, 9, F, 9, F2);
-    
-    float F2_scaled[81];
-    math->matrixScale(F2, 0.5f * dt * dt, F2_scaled, 9, 9);
-
-    std::memset(Phi, 0, 81 * sizeof(float));
-    for (int i = 0; i < 9; ++i) Phi[i*9 + i] = 1.0f; // I
-
-    float tmp[81];
-    math->matrixAdd(Phi, F_dt, tmp, 9, 9);
-    math->matrixAdd(tmp, F2_scaled, Phi, 9, 9);
-}
-
-void AHRS_ESMEKF::getProcessNoiseCovMatrix(float dt, float* Q) {
-    std::memset(Q, 0, 81 * sizeof(float));
-
-    for (int i = 0; i < 3; ++i) {
-        int r = i * 3 + i;
-        float gb_cov = gyro_bias_cov_mat[r];
-        
-        float q00 = gyro_cov_mat[r] * dt + gb_cov * (dt * dt * dt) / 3.0f;
-        float q01 = -gb_cov * (dt * dt) / 2.0f;
-        float q11 = gb_cov * dt;
-        float q22 = accel_bias_cov_mat[r] * dt;
-
-        Q[(i)*9 + (i)] = q00;           // Q[0:3, 0:3]
-        Q[(i)*9 + (i+3)] = q01;         // Q[0:3, 3:6]
-        Q[(i+3)*9 + (i)] = q01;         // Q[3:6, 0:3]
-        Q[(i+3)*9 + (i+3)] = q11;       // Q[3:6, 3:6]
-        Q[(i+6)*9 + (i+6)] = q22;       // Q[6:9, 6:9]
+static void setBlock3x3(float* M9x9, int block_row, int block_col, const float* src3x3) {
+    for (int r = 0; r < 3; ++r) {
+        for (int c = 0; c < 3; ++c) {
+            M9x9[(block_row*3 + r) * 9 + (block_col*3 + c)] = src3x3[r*3 + c];
+        }
     }
 }
 
@@ -233,23 +183,76 @@ void AHRS_ESMEKF::stateExtrapolation(const float* gyro_new, float dt) {
     meas.updateGyro(gyro_new);
     nom.stateExtrapolation(meas.gyro_new, meas.gyro_prev, dt);
 
-    float Phi[81];
-    getStateTransitionMatrix(dt, Phi);
+    // Phi = I + F*dt + 0.5*dt^2 * F@F, with F = [[-S, -I, 0], [0, 0, 0], [0, 0, 0]]
+    // (S = skew(gyro_bar)). F is zero outside its top block row, so Phi differs
+    // from identity only in:
+    //   A = Phi[0:3, 0:3] = I - S*dt + 0.5*dt^2 * S@S
+    //   B = Phi[0:3, 3:6] = -I*dt + 0.5*dt^2 * S
+    float g[3];
+    meas.getGyroBar(g);
 
-    float Q[81];
-    getProcessNoiseCovMatrix(dt, Q);
+    float S[9];
+    math->skewSymmetric(g, S);
 
-    // P = Phi @ P @ Phi^T + Q
-    float Phi_P[81];
-    math->matrixMult(Phi, 9, 9, P, 9, Phi_P);
+    float S2[9];
+    math->matrixMult(S, 3, 3, S, 3, S2);
 
-    float Phi_T[81];
-    math->matrixTranspose(Phi, 9, 9, Phi_T);
+    float half_dt2 = 0.5f * dt * dt;
 
-    float Phi_P_PhiT[81];
-    math->matrixMult(Phi_P, 9, 9, Phi_T, 9, Phi_P_PhiT);
+    float A[9], B[9], neg_dt_S[9], half_dt2_S2[9];
+    math->matrixScale(S, -dt, neg_dt_S, 3, 3);
+    math->matrixScale(S2, half_dt2, half_dt2_S2, 3, 3);
+    math->matrixAdd(neg_dt_S, half_dt2_S2, A, 3, 3);
+    A[0] += 1.0f; A[4] += 1.0f; A[8] += 1.0f;
 
-    math->matrixAdd(Phi_P_PhiT, Q, P, 9, 9);
+    math->matrixScale(S, half_dt2, B, 3, 3);
+    B[0] -= dt; B[4] -= dt; B[8] -= dt;
+
+    // P = Phi @ P @ Phi^T only modifies the first block row/column of P:
+    //   T_j  = A @ P[0:3, 3j:3j+3] + B @ P[3:6, 3j:3j+3]   (block row 0 of Phi @ P)
+    //   P[0:3, 0:3] = T0 @ A^T + T1 @ B^T
+    //   P[0:3, 3j:3j+3] = T_j and its transpose across the diagonal, for j = 1, 2
+    // The lower-right 6x6 of P passes through unchanged.
+    float T0[9], T1[9], T2[9];
+    float* T[3] = {T0, T1, T2};
+    float P0j[9], P1j[9], AP[9], BP[9];
+    for (int j = 0; j < 3; ++j) {
+        getBlock3x3(P, 0, j, P0j);
+        getBlock3x3(P, 1, j, P1j);
+        math->matrixMult(A, 3, 3, P0j, 3, AP);
+        math->matrixMult(B, 3, 3, P1j, 3, BP);
+        math->matrixAdd(AP, BP, T[j], 3, 3);
+    }
+
+    float A_T[9], B_T[9], P00[9];
+    math->matrixTranspose(A, 3, 3, A_T);
+    math->matrixTranspose(B, 3, 3, B_T);
+    math->matrixMult(T0, 3, 3, A_T, 3, AP);
+    math->matrixMult(T1, 3, 3, B_T, 3, BP);
+    math->matrixAdd(AP, BP, P00, 3, 3);
+
+    float T_transposed[9];
+    setBlock3x3(P, 0, 0, P00);
+    setBlock3x3(P, 0, 1, T1);
+    setBlock3x3(P, 0, 2, T2);
+    math->matrixTranspose(T1, 3, 3, T_transposed);
+    setBlock3x3(P, 1, 0, T_transposed);
+    math->matrixTranspose(T2, 3, 3, T_transposed);
+    setBlock3x3(P, 2, 0, T_transposed);
+
+    // P += Q; Q is nonzero only on the diagonals of its 3x3 blocks
+    for (int i = 0; i < 3; ++i) {
+        int r = i * 3 + i;
+        float gb_cov = gyro_bias_cov_mat[r];
+        float q01 = -gb_cov * (dt * dt) / 2.0f;
+
+        P[(i)*9 + (i)]     += gyro_cov_mat[r] * dt + gb_cov * (dt * dt * dt) / 3.0f;
+        P[(i)*9 + (i+3)]   += q01;
+        P[(i+3)*9 + (i)]   += q01;
+        P[(i+3)*9 + (i+3)] += gb_cov * dt;
+        P[(i+6)*9 + (i+6)] += accel_bias_cov_mat[r] * dt;
+    }
+
     math->ensureSymmetric(P, 9);
 }
 
@@ -268,18 +271,11 @@ void AHRS_ESMEKF::correctionAccelerometer(const float* accel_new) {
     float innovation[3];
     for (int i = 0; i < 3; ++i) innovation[i] = meas.accel_new[i] - accel_pred[i];
 
-    float H[27] = {0}; // 3x9
-    float skew_acc[9];
-    math->skewSymmetric(accel_pred, skew_acc);
-    
-    // H[0:3, 0:3] = skew(accel_pred)
-    for (int r = 0; r < 3; ++r) {
-        for (int c = 0; c < 3; ++c) H[r * 9 + c] = skew_acc[r * 3 + c];
-    }
-    // H[0:3, 6:9] = I
-    H[0*9 + 6] = 1.0f; H[1*9 + 7] = 1.0f; H[2*9 + 8] = 1.0f;
+    // H = [skew(accel_pred), 0, I]; the identity block observes the accel bias states
+    float H0[9];
+    math->skewSymmetric(accel_pred, H0);
 
-    applyUpdate(innovation, H, accel_cov_mat, cfg.accel_gate_threshold);
+    applyUpdate(innovation, H0, true, accel_cov_mat, cfg.accel_gate_threshold);
 }
 
 void AHRS_ESMEKF::correctionMagnetometer(const float* mag_new) {
@@ -300,95 +296,108 @@ void AHRS_ESMEKF::correctionMagnetometer(const float* mag_new) {
     float innovation[3];
     for (int i = 0; i < 3; ++i) innovation[i] = meas.mag_new[i] - mag_pred[i];
 
-    float H[27] = {0}; // 3x9
-    float skew_mag[9];
-    math->skewSymmetric(mag_pred, skew_mag);
-    
-    for (int r = 0; r < 3; ++r) {
-        for (int c = 0; c < 3; ++c) H[r * 9 + c] = skew_mag[r * 3 + c];
-    }
+    // H = [skew(mag_pred), 0, 0]; the magnetometer does not observe the bias states
+    float H0[9];
+    math->skewSymmetric(mag_pred, H0);
 
-    applyUpdate(innovation, H, mag_cov_mat, cfg.mag_gate_threshold);
+    applyUpdate(innovation, H0, false, mag_cov_mat, cfg.mag_gate_threshold);
 }
 
-void AHRS_ESMEKF::applyUpdate(const float* y, const float* H, const float* R, float gate_threshold) {
-    // 1. Mahalanobis Gating: S = H @ P @ H^T + R
-    float H_P[27]; // 3x9
-    math->matrixMult(H, 3, 9, P, 9, H_P);
+void AHRS_ESMEKF::applyUpdate(const float* y, const float* H0, bool observes_accel_bias,
+                              const float* R, float gate_threshold) {
+    // H = [H0, 0, H2] with H2 = I for the accelerometer (which observes the
+    // accel bias states) and H2 = 0 for the magnetometer, so H @ P is a single
+    // block row of P's 3x3 blocks:
+    //   HP_j = H0 @ P[0:3, 3j:3j+3] + H2 @ P[6:9, 3j:3j+3]
+    float HP0[9], HP1[9], HP2[9];
+    float* HP[3] = {HP0, HP1, HP2};
+    float Pblock[9], tmp[9];
+    for (int j = 0; j < 3; ++j) {
+        getBlock3x3(P, 0, j, Pblock);
+        math->matrixMult(H0, 3, 3, Pblock, 3, HP[j]);
+        if (observes_accel_bias) {
+            getBlock3x3(P, 2, j, Pblock);
+            math->matrixAdd(HP[j], Pblock, HP[j], 3, 3);
+        }
+    }
 
-    float H_T[27]; // 9x3
-    math->matrixTranspose(H, 3, 9, H_T);
-
-    float H_P_HT[9]; // 3x3
-    math->matrixMult(H_P, 3, 9, H_T, 3, H_P_HT);
-
-    float S[9]; // 3x3
-    math->matrixAdd(H_P_HT, R, S, 3, 3);
+    // 1. Mahalanobis Gating: S = H @ P @ H^T + R = HP_0 @ H0^T + HP_2 @ H2^T + R
+    float H0_T[9], S[9];
+    math->matrixTranspose(H0, 3, 3, H0_T);
+    math->matrixMult(HP0, 3, 3, H0_T, 3, S);
+    if (observes_accel_bias) {
+        math->matrixAdd(S, HP2, S, 3, 3);
+    }
+    math->matrixAdd(S, R, S, 3, 3);
 
     float S_inv[9]; // 3x3
     if (!math->matrixInverse(S, 3, S_inv)) return; // Failsafe against singularity
 
-    float y_T[3]; // 1x3
-    math->matrixTranspose(y, 3, 1, y_T);
-
     float y_T_Sinv[3]; // 1x3
-    math->matrixMult(y_T, 1, 3, S_inv, 3, y_T_Sinv);
+    math->matrixMult(y, 1, 3, S_inv, 3, y_T_Sinv); // y_T is identical memory layout as y
 
     float mahalanobis_dist = 0;
     math->matrixMult(y_T_Sinv, 1, 3, y, 1, &mahalanobis_dist);
 
     if (mahalanobis_dist > gate_threshold) return;
 
-    // 2. Kalman Update: K = P @ H^T @ S_inv
-    float P_HT[27]; // 9x3
-    math->matrixMult(P, 9, 9, H_T, 3, P_HT);
+    // 2. Kalman Update: K = P @ H^T @ S_inv; P is symmetric, so P @ H^T = (H @ P)^T
+    // and each 3x3 block row of K is K_i = HP_i^T @ S_inv
+    float K0[9], K1[9], K2[9];
+    float* K[3] = {K0, K1, K2};
+    for (int i = 0; i < 3; ++i) {
+        math->matrixTranspose(HP[i], 3, 3, tmp);
+        math->matrixMult(tmp, 3, 3, S_inv, 3, K[i]);
+    }
 
-    float K[27]; // 9x3
-    math->matrixMult(P_HT, 9, 3, S_inv, 3, K);
-
+    // error_state = K @ y
     float error_state[9]; // 9x1
-    math->matrixMult(K, 9, 3, y, 1, error_state);
+    for (int i = 0; i < 3; ++i) {
+        math->matrixMult(K[i], 3, 3, y, 1, &error_state[i*3]);
+    }
 
-    // P = (I - K @ H) @ P
-    float KH[81]; // 9x9
-    math->matrixMult(K, 9, 3, H, 9, KH);
-
-    float I_KH[81];
-    std::memset(I_KH, 0, sizeof(I_KH));
-    for (int i = 0; i < 9; ++i) I_KH[i*9 + i] = 1.0f;
-    math->matrixSub(I_KH, KH, I_KH, 9, 9);
-
-    float P_new[81];
-    math->matrixMult(I_KH, 9, 9, P, 9, P_new);
-    math->ensureSymmetric(P_new, 9);
-    std::copy(P_new, P_new + 81, P);
+    // P = (I - K @ H) @ P = P - K @ (H @ P), one 3x3 block at a time:
+    // block (i, j) of K @ (H @ P) is K_i @ HP_j
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            math->matrixMult(K[i], 3, 3, HP[j], 3, tmp);
+            getBlock3x3(P, i, j, Pblock);
+            math->matrixSub(Pblock, tmp, Pblock, 3, 3);
+            setBlock3x3(P, i, j, Pblock);
+        }
+    }
 
     // 3. Update States & Biases
     nom.correctState(&error_state[0]);
     meas.updateBiases(&error_state[3], &error_state[6], nullptr);
 
-    // 4. Reset Error State Jacobian: P = J @ P @ J^T
-    float J[81];
-    std::memset(J, 0, sizeof(J));
-    for (int i = 0; i < 9; ++i) J[i*9 + i] = 1.0f;
-
-    float skew_err[9];
+    // 4. Reset Error State Jacobian: P = J @ P @ J^T, with J = I except
+    // J[0:3, 0:3] = I - 0.5 * skew(err), so only P's first block row/column changes:
+    //   P00' = J00 @ P00 @ J00^T
+    //   P0j' = J00 @ P0j and Pj0' = Pj0 @ J00^T, for j = 1, 2
+    float skew_err[9], J00[9];
     math->skewSymmetric(&error_state[0], skew_err);
-    
-    // J[0:3, 0:3] = I - 0.5 * skew(err)
-    for (int r = 0; r < 3; ++r) {
-        for (int c = 0; c < 3; ++c) {
-            J[r * 9 + c] -= 0.5f * skew_err[r * 3 + c];
-        }
+    math->matrixScale(skew_err, -0.5f, J00, 3, 3);
+    J00[0] += 1.0f; J00[4] += 1.0f; J00[8] += 1.0f;
+
+    float J00_T[9];
+    math->matrixTranspose(J00, 3, 3, J00_T);
+
+    getBlock3x3(P, 0, 0, Pblock);
+    math->matrixMult(J00, 3, 3, Pblock, 3, tmp);
+    math->matrixMult(tmp, 3, 3, J00_T, 3, Pblock);
+    setBlock3x3(P, 0, 0, Pblock);
+
+    for (int j = 1; j < 3; ++j) {
+        getBlock3x3(P, 0, j, Pblock);
+        math->matrixMult(J00, 3, 3, Pblock, 3, tmp);
+        setBlock3x3(P, 0, j, tmp);
+
+        getBlock3x3(P, j, 0, Pblock);
+        math->matrixMult(Pblock, 3, 3, J00_T, 3, tmp);
+        setBlock3x3(P, j, 0, tmp);
     }
 
-    float J_P[81];
-    math->matrixMult(J, 9, 9, P, 9, J_P);
-    
-    float J_T[81];
-    math->matrixTranspose(J, 9, 9, J_T);
-    
-    math->matrixMult(J_P, 9, 9, J_T, 9, P);
     math->ensureSymmetric(P, 9);
 }
 
