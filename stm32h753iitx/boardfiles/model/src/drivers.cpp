@@ -24,6 +24,7 @@ extern I2C_HandleTypeDef hi2c1;
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
