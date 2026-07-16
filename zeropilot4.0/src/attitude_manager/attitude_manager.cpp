@@ -163,6 +163,7 @@ void AttitudeManager::amUpdate() {
             
             outputToMotors(motorOutputs);
 
+            systemUtilsDriver->profilerEnd(profilerId);
             return;
         }
     } else {
