@@ -392,7 +392,7 @@ void AHRS_ESMEKF::applyUpdate(const float* y, const float* H, const float* R, fl
     math->ensureSymmetric(P, 9);
 }
 
-Attitude_t AHRS_ESMEKF::getAttitude() const {
+Attitude_t AHRS_ESMEKF::getAttitudeRadians() const {
     float euler_tmp[3];
     math->quatToEuler(nom.quaternion_new, euler_tmp);
 

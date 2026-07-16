@@ -78,7 +78,7 @@ public:
     void correctionAccelerometer(const float* accel_new);
     void correctionMagnetometer(const float* mag_new);
 
-    Attitude_t getAttitude() const;
+    Attitude_t getAttitudeRadians() const;
 
     // Public state access
     Measurements meas;

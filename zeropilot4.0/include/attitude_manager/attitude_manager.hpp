@@ -8,7 +8,7 @@
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
-#include "MahonyAHRS.hpp"
+#include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
@@ -32,6 +32,7 @@ class AttitudeManager {
     public:
         AttitudeManager(
             ISystemUtils *systemUtilsDriver,
+            IMathUtils *mathUtilsDriver,
             IGPS *gpsDriver,
             IIMU *imuDriver,
             IFFT *fftDriver,
@@ -53,7 +54,7 @@ class AttitudeManager {
 
         FFTHarmonicNotch harmonicNotchFilter;
         FFTHarmonicNotchConfig harmonicNotchConfig;
-        Mahony mahonyFilter;
+        AHRS_ESMEKF ekf;
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
         IMessageQueue<TMMessage_t> *tmQueue;

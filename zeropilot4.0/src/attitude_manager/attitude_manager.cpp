@@ -6,6 +6,7 @@
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
+    IMathUtils *mathUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
@@ -18,6 +19,7 @@ AttitudeManager::AttitudeManager(
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
     harmonicNotchFilter(systemUtilsDriver, fftDriver),
+    ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -52,6 +54,26 @@ AttitudeManager::AttitudeManager(
 
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
+
+        // Init the EKF
+        AHRS_ESMEKF::Config ekf_cfg = {
+            .gyro_cov = 4.78e-6f,
+            .accel_cov = 9.41e-4f,
+            .mag_cov = 3.6e-5f,
+            .gyro_bias_cov = 1.0e-10f,
+            .accel_bias_cov = 1.0e-8f,
+            .accel_gate_threshold = 12.0f,
+            .mag_gate_threshold = 12.0f, // <-- Added missing comma
+            .p_init_att = 1e-2f,
+            .p_init_bias = 1e-4f,
+            .gravity_inertial = {0, 0, 9.81f},
+            .mag_inertial = {1, 0, 0}
+        };
+        float init_gyro[3] = {0.0f, 0.0f, 0.0f};
+        float init_accel[3] = {0.0f, 0.0f, 9.81f};
+        float init_mag[3] = {1.0f, 0.0f, 0.0f};
+        float init_quat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+        ekf.init(init_gyro, init_accel, init_mag, init_quat, ekf_cfg);
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -96,20 +118,26 @@ void AttitudeManager::amUpdate() {
 
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
 
-        mahonyFilter.updateIMU(
-            scaledImuData.data[i].xgyro,
-            scaledImuData.data[i].ygyro,
-            scaledImuData.data[i].zgyro,
-            scaledImuData.data[i].xacc,
-            scaledImuData.data[i].yacc,
-            scaledImuData.data[i].zacc,
-            dt
-        );
+        float gyro[3] = {
+            scaledImuData.data[i].xgyro, 
+            scaledImuData.data[i].ygyro, 
+            scaledImuData.data[i].zgyro
+        };
+        float accel[3] = {
+            scaledImuData.data[i].xacc, 
+            scaledImuData.data[i].yacc, 
+            scaledImuData.data[i].zacc
+        };
+
+        ekf.stateExtrapolation(gyro, dt);
+        ekf.correctionAccelerometer(accel);
     }
-    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
+
+    Attitude_t attitude = ekf.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
+
     uint8_t scaledImuCount = scaledImuData.count;
     if (scaledImuCount > 0) { // Use most recent sample in the batch for rates
         droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD;
