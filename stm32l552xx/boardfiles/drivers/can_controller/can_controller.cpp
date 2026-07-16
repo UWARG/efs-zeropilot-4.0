@@ -34,6 +34,9 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	// All other nodes are default-constructed to OFFLINE.
 
 	canard.node_id = CANController::NODE_ID;
+
+	// Enable bus off interrupt
+	HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_BUS_OFF, 0);
 }
 
 CANController::~CANController() {}

@@ -40,10 +40,6 @@ void HAL_Delay(uint32_t Delay) {
   }
 }
 
-#ifdef __cplusplus
-}
-#endif
-
 /* interrupt callback functions */
 
 
@@ -120,3 +116,16 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 
     }
 }
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
+    FDCAN_ProtocolStatusTypeDef protocol_status;
+    HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
+
+    if (protocol_status.BusOff != 0) {
+        CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
+    }
+}
+
+#ifdef __cplusplus
+}
+#endif
