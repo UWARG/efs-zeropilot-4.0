@@ -2,7 +2,7 @@
 #pragma once
 
 #include "imu_iface.hpp"
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 #include <cstdint>
 #include "imu_datatypes.hpp"
 
