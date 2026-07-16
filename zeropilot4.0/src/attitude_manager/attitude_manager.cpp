@@ -62,11 +62,11 @@ AttitudeManager::AttitudeManager(
             .mag_cov = 3.6e-5f,
             .gyro_bias_cov = 1.0e-10f,
             .accel_bias_cov = 1.0e-8f,
-            .accel_gate_threshold = 12.0f,
-            .mag_gate_threshold = 12.0f, // <-- Added missing comma
+            .accel_gate_threshold = 7.8f,
+            .mag_gate_threshold = 16.3f,
             .p_init_att = 1e-2f,
             .p_init_bias = 1e-4f,
-            .gravity_inertial = {0, 0, 9.81f},
+            .gravity_inertial = {0, 0, -9.81f},
             .mag_inertial = {1, 0, 0}
         };
         float init_gyro[3] = {0.0f, 0.0f, 0.0f};
@@ -96,12 +96,8 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
-        if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
-            harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-        }
-        // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
-        harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-        
+        if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
+
         /**
          * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
          * and the delta for double IMU will be necessarily less than uint16_t max value.
@@ -119,9 +115,9 @@ void AttitudeManager::amUpdate() {
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
 
         float gyro[3] = {
-            scaledImuData.data[i].xgyro, 
-            scaledImuData.data[i].ygyro, 
-            scaledImuData.data[i].zgyro
+            scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD,
+            scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD,
+            scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD
         };
         float accel[3] = {
             scaledImuData.data[i].xacc, 
@@ -131,6 +127,8 @@ void AttitudeManager::amUpdate() {
 
         ekf.stateExtrapolation(gyro, dt);
         ekf.correctionAccelerometer(accel);
+
+        break; // for now only use one imu message per am loop
     }
 
     Attitude_t attitude = ekf.getAttitudeRadians();
