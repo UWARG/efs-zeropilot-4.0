@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-inline constexpr float INVALID_TRACK_ANGLE = -1.0f;
-inline constexpr float INVALID_ALTITUDE = -1.0f;
+static constexpr float INVALID_TRACK_ANGLE = -1.0f;
+static constexpr float INVALID_ALTITUDE = -1.0f;
 
 typedef enum {
     NMEA,
