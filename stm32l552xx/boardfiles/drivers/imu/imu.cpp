@@ -10,16 +10,21 @@
 #define UB0_REG_FIFO_CONFIG       0x16
 #define UB0_REG_FIFO_CONFIG1      0x5F
 #define UB0_REG_INTF_CONFIG0      0x4C
+#define UB0_REG_GYRO_DATA_X1      0x25
 #define UB0_REG_FIFO_DATA         0x30
 #define UB0_REG_FIFO_COUNTH       0x2E
 #define UB0_REG_SIGNAL_PATH_RESET 0x4B
 #define UB0_REG_GYRO_ODR          0x4F
 #define UB0_REG_ACCEL_CONFIG0     0x50
-#define FIFO_HEADER_MSG_BIT 0x80
-#define FIFO_HEADER_ACCEL_BIT 0x40
-#define FIFO_HEADER_GYRO_BIT 0x20
+#define FIFO_HEADER_MSG_BIT       0x80
+#define FIFO_HEADER_ACCEL_BIT     0x40
+#define FIFO_HEADER_GYRO_BIT      0x20
 
 #define ICM42688P_IMU_WHOAMI 0x47
+
+#define GYRO_SAMPLE_COUNT 1000
+#define GYRO_CAL_RETRY_LIMIT 10
+#define GYRO_MOVING_THRESHOLD_LSB 33
 
 IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig) : 
     spi(spiHandle),
@@ -41,12 +46,49 @@ int IMU::init() {
     csHigh();
     SystemUtils::dwtInit();
     reset();
-    uint8_t address = whoAmI();
     setODR();
     setFIFO();
     flushFIFO();
     setLowNoiseMode();
     HAL_Delay(60); // Wait after sensors are turned on
+    uint8_t address = whoAmI();
+
+    // Collect samples to calculate gyro bias
+    for (uint8_t calAttempt = 0; calAttempt < GYRO_CAL_RETRY_LIMIT; calAttempt++) {
+        uint8_t buf[6] = {};
+        int32_t gyroSum[3] = {0};
+        int16_t gyroMax[3] = {INT16_MIN, INT16_MIN, INT16_MIN};
+        int16_t gyroMin[3] = {INT16_MAX, INT16_MAX, INT16_MAX};
+        bool moving = false;
+
+        for (uint16_t sampleCount = 0; (sampleCount < GYRO_SAMPLE_COUNT) && (!moving); sampleCount++) {
+            readRegister(0, UB0_REG_GYRO_DATA_X1, buf, 6); // Read GYRO_DATA_X1, GYRO_DATA_X0, GYRO_DATA_Y1, GYRO_DATA_Y0, GYRO_DATA_Z1, GYRO_DATA_Z0
+            int16_t gyroVal[3] = {0};
+            gyroVal[0] = -(int16_t)((buf[0] << 8) | buf[1]);
+            gyroVal[1] = (int16_t)((buf[2] << 8) | buf[3]);
+            gyroVal[2] = -(int16_t)((buf[4] << 8) | buf[5]);
+            for (int i = 0; i < 3; i++) {
+                if (gyroVal[i] < gyroMin[i]) gyroMin[i] = gyroVal[i];
+                if (gyroVal[i] > gyroMax[i]) gyroMax[i] = gyroVal[i];
+                if (gyroMax[i] - gyroMin[i] > GYRO_MOVING_THRESHOLD_LSB) {
+                    moving = true;
+                } else {
+                    gyroSum[i] += gyroVal[i];
+                }
+            }
+            HAL_Delay(1);
+        }
+
+        if (moving) {
+            HAL_Delay(500);
+        } else {
+            gyroBias[0] = (float)gyroSum[0] / GYRO_SAMPLE_COUNT;
+            gyroBias[1] = (float)gyroSum[1] / GYRO_SAMPLE_COUNT;
+            gyroBias[2] = (float)gyroSum[2] / GYRO_SAMPLE_COUNT;
+            break;
+        }
+    }
+    flushFIFO();
 
     return (address == ICM42688P_IMU_WHOAMI) ? 0 : -1;
 }
@@ -68,9 +110,9 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
-        scaledData[i].xgyro = lowPassFilter((float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR, 0);
-        scaledData[i].ygyro = lowPassFilter((float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR, 1);
-        scaledData[i].zgyro = lowPassFilter((float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR, 2);
+        scaledData[i].xgyro = lowPassFilter((float)(rawDataBatch.data[i].xgyro - gyroBias[0]) / GYRO_SEN_SCALE_FACTOR, 0);
+        scaledData[i].ygyro = lowPassFilter((float)(rawDataBatch.data[i].ygyro - gyroBias[1]) / GYRO_SEN_SCALE_FACTOR, 1);
+        scaledData[i].zgyro = lowPassFilter((float)(rawDataBatch.data[i].zgyro - gyroBias[2]) / GYRO_SEN_SCALE_FACTOR, 2);
         scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
     }
     scaledImuDataBatch.count = rawDataBatch.count;
@@ -136,20 +178,24 @@ HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t
     return status;
 }
 
-HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data) {
+HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, uint8_t length) {
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
         return status;
     }
 
-    uint8_t tx[2] = {(uint8_t)(registerAddr | 0b10000000), 0}; // Set 8-th bit to 1 for read, page 53
-    uint8_t rx[2] = {0, 0};
+    static constexpr uint8_t MAX_READ_LEN = 8;
+    if (length > MAX_READ_LEN) return HAL_ERROR;
+    uint8_t tx[MAX_READ_LEN + 1] = {0}; 
+    uint8_t rx[MAX_READ_LEN + 1] = {0};
+
+    tx[0] = (uint8_t)(registerAddr | 0b10000000); // Set 8-th bit to 1 for read, page 53
 
     csLow();
-    status = HAL_SPI_TransmitReceive(spi, tx, rx, 2, HAL_MAX_DELAY);
+    status = HAL_SPI_TransmitReceive(spi, tx, rx, length + 1, HAL_MAX_DELAY); // +1 to length to send the dummy byte
     csHigh();
 
-    *data = rx[1];
+    memcpy(data, &rx[1], length);
 
     return status;
 }
@@ -182,7 +228,7 @@ void IMU::reset() {
 
 uint8_t IMU::whoAmI() {
     uint8_t buffer;
-    readRegister(0, UB0_REG_WHO_AM_I, &buffer);
+    readRegister(0, UB0_REG_WHO_AM_I, &buffer, 1);
     return buffer;
 }
 
