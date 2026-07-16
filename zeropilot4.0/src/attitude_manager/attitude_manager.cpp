@@ -129,14 +129,13 @@ void AttitudeManager::amUpdate() {
     GpsData_t gpsData = gpsDriver->readData();
     if (gpsData.isNew) {
         lastValidGps = gpsData;
-        gpsUnsent = true;
     }
     
     // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        if (gpsUnsent) {
+        if (gpsData.isNew) {
             sendGPSDataToTelemetryManager(lastValidGps);
-            gpsUnsent = false;
+            gpsData.isNew = false;
         }
     }
 
