@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx_hal.h"
 #include "gps_iface.hpp"
 #include <cmath>
 
@@ -15,7 +15,7 @@ class GPS : public IGPS {
     public:
         GPS(UART_HandleTypeDef *huart);
 
-        UART_HandleTypeDef* getHUART();
+        UART_HandleTypeDef* getHuart();
 
         GpsProtocol_t getProtocol();
 
@@ -23,7 +23,7 @@ class GPS : public IGPS {
 
         bool init();
         void rxCallback(uint16_t size);
-        void restartDMA();
+        HAL_StatusTypeDef restartDMA();
 
     private:
         GpsProtocol_t protocol = NMEA;
@@ -38,7 +38,8 @@ class GPS : public IGPS {
 
         bool configureUBX();
         bool setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate);
-        bool setMessageRateValset(uint32_t key, uint8_t rate);
+        bool setRate(uint16_t measRateMs, uint16_t navRate);
+        bool configValset(uint32_t key, uint32_t value);
         bool waitForAck(uint8_t msgClass, uint8_t msgId);
         bool receiveByte(uint8_t &byte, uint32_t deadline);
         bool sendUBX(uint8_t *msg, uint16_t len);

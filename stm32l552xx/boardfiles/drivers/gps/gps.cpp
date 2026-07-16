@@ -13,8 +13,9 @@ static constexpr uint8_t UBX_MESSAGE_CLASS_NMEA = 0xF0;
 static constexpr uint8_t UBX_MESSAGE_ID_VELECEF = 0x11;
 static constexpr uint8_t UBX_MESSAGE_ID_PVT = 0x07;
 static constexpr uint8_t UBX_MESSAGE_ID_ACK_ACK = 0x01;
-static constexpr uint8_t UBX_MESSAGE_ID_CFG_MSG = 0x01;
 static constexpr uint8_t UBX_MESSAGE_ID_CFG_VALSET = 0x8A;
+static constexpr uint8_t UBX_MESSAGE_ID_CFG_MSG = 0x01;
+static constexpr uint8_t UBX_MESSAGE_ID_CFG_RATE = 0x08;
 
 static constexpr uint8_t CFG_LAYER_RAM = 0x01;
 
@@ -30,6 +31,10 @@ static constexpr uint8_t VELECEF_EXPECTED_LEN = 20;
 static constexpr uint8_t MESSAGE_RATE_DISABLED = 0;
 static constexpr uint8_t MESSAGE_RATE_EVERY_SOLUTION = 1;
 
+// Config key for nominal time between GNSS measurements, used with CFG-VALSET
+static constexpr uint32_t CFG_KEY_RATE_MEAS = 0x30210001;
+// Config key for ratio of number of measurements to number of navigation solutions, used with CFG-VALSET
+static constexpr uint32_t CFG_KEY_RATE_NAV  = 0x30210002;
 // Config keys for the message output rates on UART1, used with CFG-VALSET
 static constexpr uint32_t CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1 = 0x20910007;
 static constexpr uint32_t CFG_KEY_MSGOUT_NMEA_UART1[] = {
@@ -54,38 +59,23 @@ static constexpr uint8_t NMEA_SENTENCE_IDS[] = {
 static constexpr uint8_t NMEA_SENTENCE_START = '$';
 static constexpr uint8_t NMEA_SENTENCE_END = '\n';
 static constexpr uint8_t NMEA_CHECKSUM_DELIMITER = '*';
-// A sentence opens with '$' followed by a two character talker ID
-static constexpr uint16_t NMEA_SENTENCE_TYPE_OFFSET = 3;
+static constexpr uint16_t NMEA_SENTENCE_TYPE_OFFSET = 3; // A sentence opens with '$' followed by a two character talker ID
 static constexpr uint16_t NMEA_SENTENCE_TYPE_LEN = 3;
-// The sentence type plus the comma that closes the field
-static constexpr uint16_t NMEA_SENTENCE_TYPE_SKIP = 4;
+static constexpr uint16_t NMEA_SENTENCE_TYPE_SKIP = 4; // The sentence type plus the comma that closes the field
 
 static constexpr uint8_t FIX_TYPE_2D = 2;
 static constexpr uint8_t FIX_TYPE_3D = 3;
 
-// valid: bit0 validDate, bit1 validTime, bit2 fullyResolved
+// Time Validity flags: bit0 validDate, bit1 validTime, bit2 fullyResolved
 static constexpr uint8_t PVT_VALID_TIME_MASK = 0b00000111;
-// flags: bit0 gnssFixOK
+// Fix status flags: bit0 gnssFixOK
 static constexpr uint8_t PVT_GNSS_FIX_OK_MASK = 0b00000001;
 
-// GpsData_t documents an invalid altitude as -1
-static constexpr float INVALID_ALTITUDE = -1.0f;
-
 // Read a signed 32 bit int in little endian
-static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx) {
-    return (int32_t)((uint32_t)buf[idx] |
-                     ((uint32_t)buf[idx + 1] << 8) |
-                     ((uint32_t)buf[idx + 2] << 16) |
-                     ((uint32_t)buf[idx + 3] << 24));
-}
+static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx);
 
 // Convert ASCII hex to numeric value
-static int8_t hexValue(uint8_t c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    return -1; // Character is not a hex digit
-}
+static int8_t hexValue(uint8_t c);
 
 GPS::GPS(UART_HandleTypeDef* huart) :
     huart(huart) {}
@@ -96,46 +86,44 @@ bool GPS::init() {
     // Configure before starting the DMA receive, waitForAck() is polling
     protocol = configureUBX() ? UBX : NMEA;
 
-    HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
-		huart,
-		(uint8_t*)rxBuffer,
-		MAX_NMEA_DATA_LENGTH
-    );
-
-   __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-
-    return success == HAL_OK;
+    return restartDMA() == HAL_OK;
 }
 
-// Switch the gps to UBX NAV-PVT only. Returns false if the receiver does not support UBX and 
-// leaves its NMEA output untouched so readData() can still parse it
+// Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
+/*
+Switch the gps to UBX NAV-PVT only. Returns false if the receiver does not support UBX and 
+leaves its NMEA output untouched so readData() can still parse it
+*/
 bool GPS::configureUBX() {
-    // Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
-
     // Try CFG-VALSET config msg, prefered for chips M9/M10
-    if (setMessageRateValset(CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1, MESSAGE_RATE_EVERY_SOLUTION)) {
+    if (configValset(CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1, MESSAGE_RATE_EVERY_SOLUTION)) {
         // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
         for (uint32_t key : CFG_KEY_MSGOUT_NMEA_UART1) {
-            setMessageRateValset(key, MESSAGE_RATE_DISABLED);
+            configValset(key, MESSAGE_RATE_DISABLED);
         }
+        // Configure GPS ODR to be 5Hz
+        configValset(CFG_KEY_RATE_MEAS, 200);
+        configValset(CFG_KEY_RATE_NAV, 1);
         return true;
     }
 
-    // GPS is m8 or older, retry over legacy CFG-MSG
-    if (!setMessageRate(UBX_MESSAGE_CLASS_NAV, UBX_MESSAGE_ID_PVT, MESSAGE_RATE_EVERY_SOLUTION)) {
-        return false;
+    // GPS is M8 or older, retry over legacy CFG-MSG
+    if (setMessageRate(UBX_MESSAGE_CLASS_NAV, UBX_MESSAGE_ID_PVT, MESSAGE_RATE_EVERY_SOLUTION)) {
+        // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
+        for (uint8_t sentenceId : NMEA_SENTENCE_IDS) {
+            setMessageRate(UBX_MESSAGE_CLASS_NMEA, sentenceId, MESSAGE_RATE_DISABLED);
+        }
+        setRate(200, 1);
+        return true;
     }
 
-    // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
-    for (uint8_t sentenceId : NMEA_SENTENCE_IDS) {
-        setMessageRate(UBX_MESSAGE_CLASS_NMEA, sentenceId, MESSAGE_RATE_DISABLED);
-    }
-
-    return true;
+    return false;
 }
 
-// Send config message via CFG-MSG for m8 or below
-// Rate 0 disables the message, 1 emits it on every navigation solution
+/*
+Send config message via CFG-MSG for M8 or older
+Rate 0 disables the message, 1 emits it on every navigation solution
+*/
 bool GPS::setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate) {
     uint8_t cfgMsg[] = {
         UBX_SYNC_1, UBX_SYNC_2,
@@ -144,33 +132,63 @@ bool GPS::setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate) {
         msgClass, msgId, rate,
         0x00, 0x00 // Placeholder for checksum
     };
-
-    if (!sendUBX(cfgMsg, sizeof(cfgMsg))) {
-        return false;
-    }
-
+    if (!sendUBX(cfgMsg, sizeof(cfgMsg))) return false;
     return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_MSG);
 }
 
-// Send config message via UBX-CFG-VALSET for m9/m10
-// Rate 0 disables the message, 1 emits it on every navigation solution
-bool GPS::setMessageRateValset(uint32_t key, uint8_t rate) {
-    uint8_t cfgValset[] = {
+// Legacy CFG-RATE for M8 and older. measRate in ms, navRate in cycles.
+bool GPS::setRate(uint16_t measRateMs, uint16_t navRate) {
+    uint8_t cfgRate[] = {
         UBX_SYNC_1, UBX_SYNC_2,
-        UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_VALSET,
-        0x09, 0x00, // Length
-        0x00, // Message version 0, transactionless
-        CFG_LAYER_RAM,
-        0x00, 0x00, // Reserved
-        (uint8_t)(key), (uint8_t)(key >> 8), (uint8_t)(key >> 16), (uint8_t)(key >> 24),
-        rate,
-        0x00, 0x00 // Placeholder for checksum
+        UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_RATE,
+        0x06, 0x00, // Length
+        (uint8_t)(measRateMs), (uint8_t)(measRateMs >> 8), // The elapsed time between GNSS measurements
+        (uint8_t)(navRate), (uint8_t)(navRate >> 8), // The ratio between the number of measurements and the number of navigation solutions
+        0x01, 0x00, // timeRef = 1 (GPS time)
+        0x00, 0x00  // Checksum placeholder
     };
+    if (!sendUBX(cfgRate, sizeof(cfgRate))) return false;
+    return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_RATE);
+}
 
-    if (!sendUBX(cfgValset, sizeof(cfgValset))) {
-        return false;
+/*
+Send config message via UBX-CFG-VALSET for M9/M10
+Rate 0 disables the message, 1 emits it on every navigation solution
+*/
+bool GPS::configValset(uint32_t key, uint32_t value) {
+    // The value width (1/2/4 bytes) is encoded in bits 30:28 of the key
+    uint8_t valueLen;
+    switch ((key >> 28) & 0x07) {
+        case 0x2: valueLen = 1; break; // U1 or bool
+        case 0x3: valueLen = 2; break; // U2
+        case 0x4: valueLen = 4; break; // U4
+        default:  return false; // Unsupported width
     }
 
+    // Header(6) + cfg preamble(4) + key(4) + value(<=4) + checksum(2)
+    uint8_t msg[UBX_HEADER_LEN + 4 + 4 + 4 + UBX_CHECKSUM_LEN] = {};
+    uint16_t i = 0;
+    msg[i++] = UBX_SYNC_1;
+    msg[i++] = UBX_SYNC_2;
+    msg[i++] = UBX_MESSAGE_CLASS_CFG;
+    msg[i++] = UBX_MESSAGE_ID_CFG_VALSET;
+    msg[i++] = (uint8_t)(4 + 4 + valueLen); // Payload length low byte, fixed overhead(version, layers, reserved) + key + value
+    msg[i++] = 0x00; // Payload length high byte
+    msg[i++] = 0x00; // Version (transactionless, apply config immediately)
+    msg[i++] = CFG_LAYER_RAM; // Layers
+    msg[i++] = 0x00; // Reserved
+    msg[i++] = 0x00; // Reserved
+    msg[i++] = (uint8_t)(key);
+    msg[i++] = (uint8_t)(key >> 8);
+    msg[i++] = (uint8_t)(key >> 16);
+    msg[i++] = (uint8_t)(key >> 24);
+    for (uint8_t b = 0; b < valueLen; b++) {
+        msg[i++] = (uint8_t)(value >> (8 * b)); // Little-endian
+    }
+    msg[i++] = 0x00; // Checksum placeholder
+    msg[i++] = 0x00;
+
+    if (!sendUBX(msg, i)) return false;
     return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_VALSET);
 }
 
@@ -189,8 +207,10 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
     return (HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY) == HAL_OK);
 }
 
-// Scans the incoming msgs in polling for an ACK msgClass and msgId. 
-// A gps that does not speak UBX never ACKs and timeout tells us to fall back to NMEA
+/*
+Scans the incoming msgs in polling for an ACK msgClass and msgId. 
+A gps that does not speak UBX never ACKs and timeout tells us to fall back to NMEA
+*/
 bool GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
     const uint32_t deadline = HAL_GetTick() + UBX_ACK_TIMEOUT_MS;
 
@@ -265,24 +285,20 @@ void GPS::rxCallback(uint16_t size) {
         dataReady = true;
     }
 
-    HAL_UARTEx_ReceiveToIdle_DMA(
+    restartDMA();
+}
+
+HAL_StatusTypeDef GPS::restartDMA() {
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(
         huart,
         (uint8_t*)rxBuffer,
         MAX_NMEA_DATA_LENGTH
     );
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
+    return status;
 }
 
-void GPS::restartDMA() {
-    HAL_UARTEx_ReceiveToIdle_DMA(
-        huart,
-        (uint8_t*)rxBuffer,
-        MAX_NMEA_DATA_LENGTH
-    );
-    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-}
-
-UART_HandleTypeDef* GPS::getHUART() {
+UART_HandleTypeDef* GPS::getHuart() {
     return huart;
 }
 
@@ -743,10 +759,7 @@ bool GPS::getAltitudeGGA(uint16_t &idx) {
 
 bool GPS::getVxVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVX = (int32_t)((uint32_t)processBuffer[idx - 4] |
-                               ((uint32_t)processBuffer[idx - 3] << 8) |
-                               ((uint32_t)processBuffer[idx - 2] << 16) |
-                               ((uint32_t)processBuffer[idx - 1] << 24));
+    int32_t ecefVX = readInt32LE(processBuffer, idx - 4);
 
     tempData.vx = ecefVX / 100.0f; // cm/s to m/s
     return true;
@@ -754,10 +767,7 @@ bool GPS::getVxVELECEF(uint16_t &idx) {
 
 bool GPS::getVyVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVY = (int32_t)((uint32_t)processBuffer[idx - 4] |
-                               ((uint32_t)processBuffer[idx - 3] << 8) |
-                               ((uint32_t)processBuffer[idx - 2] << 16) |
-                               ((uint32_t)processBuffer[idx - 1] << 24));
+    int32_t ecefVY = readInt32LE(processBuffer, idx - 4);
 
     tempData.vy = ecefVY / 100.0f; // cm/s to m/s
     return true;
@@ -765,10 +775,7 @@ bool GPS::getVyVELECEF(uint16_t &idx) {
 
 bool GPS::getVzVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVZ = (int32_t)((uint32_t)processBuffer[idx - 4] |
-                               ((uint32_t)processBuffer[idx - 3] << 8) |
-                               ((uint32_t)processBuffer[idx - 2] << 16) |
-                               ((uint32_t)processBuffer[idx - 1] << 24));
+    int32_t ecefVZ = readInt32LE(processBuffer, idx - 4);
 
     tempData.vz = ecefVZ / 100.0f; // cm/s to m/s
     return true;
@@ -778,4 +785,18 @@ bool GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
     if (processBuffer + idx + increment >= processBufferEnd) return false;
     idx += increment;
     return true;
+}
+
+static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx) {
+    return (int32_t)((uint32_t)buf[idx] |
+                    ((uint32_t)buf[idx + 1] << 8) |
+                    ((uint32_t)buf[idx + 2] << 16) |
+                    ((uint32_t)buf[idx + 3] << 24));
+}
+
+static int8_t hexValue(uint8_t c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return -1; // Character is not a hex digit
 }
