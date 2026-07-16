@@ -4,18 +4,18 @@
 #include "gps_iface.hpp"
 #include <cmath>
 
-static constexpr uint8_t MAX_NMEA_DATA_LENGTH_PER_LINE = 82;
-static constexpr uint8_t NUM_NMEA_DATA_LINES = 8;
-static constexpr uint16_t MAX_NMEA_DATA_LENGTH = MAX_NMEA_DATA_LENGTH_PER_LINE * NUM_NMEA_DATA_LINES;
-static constexpr uint32_t DECIMAL_PRECISION = 1e6;
-static constexpr uint16_t RX_BUFFER_PADDING_SIZE = 16;
-static constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
+inline constexpr uint8_t MAX_NMEA_DATA_LENGTH_PER_LINE = 82;
+inline constexpr uint8_t NUM_NMEA_DATA_LINES = 8;
+inline constexpr uint16_t MAX_NMEA_DATA_LENGTH = MAX_NMEA_DATA_LENGTH_PER_LINE * NUM_NMEA_DATA_LINES;
+inline constexpr uint32_t DECIMAL_PRECISION = 1e6;
+inline constexpr uint16_t RX_BUFFER_PADDING_SIZE = 16;
+inline constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
 
 class GPS : public IGPS {
     public:
         GPS(UART_HandleTypeDef *huart);
 
-        UART_HandleTypeDef* getHUART();
+        UART_HandleTypeDef* getHuart();
 
         GpsProtocol_t getProtocol();
 
@@ -23,7 +23,7 @@ class GPS : public IGPS {
 
         bool init();
         void rxCallback(uint16_t size);
-        void restartDMA();
+        HAL_StatusTypeDef restartDMA();
 
     private:
         GpsProtocol_t protocol = NMEA;

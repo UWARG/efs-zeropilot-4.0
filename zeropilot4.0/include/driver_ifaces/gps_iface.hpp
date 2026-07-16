@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#define INVALID_TRACK_ANGLE -1
-#define INVALID_DATA -2
+inline constexpr float INVALID_TRACK_ANGLE = -1.0f;
+inline constexpr float INVALID_ALTITUDE = -1.0f;
 
 typedef enum {
     NMEA,
@@ -31,7 +31,7 @@ typedef struct {
     float groundSpeed; // cm/s
     uint8_t numSatellites;
     float altitude; // m, -1 if not valid
-    float trackAngle;
+    float trackAngle; // deg
     bool isNew;
     float vx; // m/s
     float vy; // m/s
@@ -40,11 +40,11 @@ typedef struct {
 
 
 class IGPS {
-protected:
-    IGPS() = default;
+    protected:
+        IGPS() = default;
 
-public:
-    virtual ~IGPS() = default;
+    public:
+        virtual ~IGPS() = default;
 
-    virtual GpsData_t readData() = 0;
+        virtual GpsData_t readData() = 0;
 };

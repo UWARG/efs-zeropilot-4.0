@@ -66,29 +66,16 @@ static constexpr uint16_t NMEA_SENTENCE_TYPE_SKIP = 4; // The sentence type plus
 static constexpr uint8_t FIX_TYPE_2D = 2;
 static constexpr uint8_t FIX_TYPE_3D = 3;
 
-// valid: bit0 validDate, bit1 validTime, bit2 fullyResolved
+// Time Validity flags: bit0 validDate, bit1 validTime, bit2 fullyResolved
 static constexpr uint8_t PVT_VALID_TIME_MASK = 0b00000111;
-// flags: bit0 gnssFixOK
+// Fix status flags: bit0 gnssFixOK
 static constexpr uint8_t PVT_GNSS_FIX_OK_MASK = 0b00000001;
 
-// GpsData_t documents an invalid altitude as -1
-static constexpr float INVALID_ALTITUDE = -1.0f;
-
 // Read a signed 32 bit int in little endian
-static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx) {
-    return (int32_t)((uint32_t)buf[idx] |
-                     ((uint32_t)buf[idx + 1] << 8) |
-                     ((uint32_t)buf[idx + 2] << 16) |
-                     ((uint32_t)buf[idx + 3] << 24));
-}
+static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx);
 
 // Convert ASCII hex to numeric value
-static int8_t hexValue(uint8_t c) {
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    return -1; // Character is not a hex digit
-}
+static int8_t hexValue(uint8_t c);
 
 GPS::GPS(UART_HandleTypeDef* huart) :
     huart(huart) {}
@@ -99,22 +86,15 @@ bool GPS::init() {
     // Configure before starting the DMA receive, waitForAck() is polling
     protocol = configureUBX() ? UBX : NMEA;
 
-    HAL_StatusTypeDef success = HAL_UARTEx_ReceiveToIdle_DMA(
-		huart,
-		(uint8_t*)rxBuffer,
-		MAX_NMEA_DATA_LENGTH
-    );
-
-   __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-
-    return success == HAL_OK;
+    return restartDMA() == HAL_OK;
 }
 
-// Switch the gps to UBX NAV-PVT only. Returns false if the receiver does not support UBX and 
-// leaves its NMEA output untouched so readData() can still parse it
+// Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
+/*
+Switch the gps to UBX NAV-PVT only. Returns false if the receiver does not support UBX and 
+leaves its NMEA output untouched so readData() can still parse it
+*/
 bool GPS::configureUBX() {
-    // Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
-
     // Try CFG-VALSET config msg, prefered for chips M9/M10
     if (configValset(CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1, MESSAGE_RATE_EVERY_SOLUTION)) {
         // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
@@ -127,7 +107,7 @@ bool GPS::configureUBX() {
         return true;
     }
 
-    // GPS is m8 or older, retry over legacy CFG-MSG
+    // GPS is M8 or older, retry over legacy CFG-MSG
     if (setMessageRate(UBX_MESSAGE_CLASS_NAV, UBX_MESSAGE_ID_PVT, MESSAGE_RATE_EVERY_SOLUTION)) {
         // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
         for (uint8_t sentenceId : NMEA_SENTENCE_IDS) {
@@ -140,8 +120,10 @@ bool GPS::configureUBX() {
     return false;
 }
 
-// Send config message via CFG-MSG for M8 or older
-// Rate 0 disables the message, 1 emits it on every navigation solution
+/*
+Send config message via CFG-MSG for M8 or older
+Rate 0 disables the message, 1 emits it on every navigation solution
+*/
 bool GPS::setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate) {
     uint8_t cfgMsg[] = {
         UBX_SYNC_1, UBX_SYNC_2,
@@ -169,8 +151,10 @@ bool GPS::setRate(uint16_t measRateMs, uint16_t navRate) {
     return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_RATE);
 }
 
-// Send config message via UBX-CFG-VALSET for m9/m10
-// Rate 0 disables the message, 1 emits it on every navigation solution
+/*
+Send config message via UBX-CFG-VALSET for M9/M10
+Rate 0 disables the message, 1 emits it on every navigation solution
+*/
 bool GPS::configValset(uint32_t key, uint32_t value) {
     // The value width (1/2/4 bytes) is encoded in bits 30:28 of the key
     uint8_t valueLen;
@@ -223,8 +207,10 @@ bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
     return (HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY) == HAL_OK);
 }
 
-// Scans the incoming msgs in polling for an ACK msgClass and msgId. 
-// A gps that does not speak UBX never ACKs and timeout tells us to fall back to NMEA
+/*
+Scans the incoming msgs in polling for an ACK msgClass and msgId. 
+A gps that does not speak UBX never ACKs and timeout tells us to fall back to NMEA
+*/
 bool GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
     const uint32_t deadline = HAL_GetTick() + UBX_ACK_TIMEOUT_MS;
 
@@ -299,24 +285,20 @@ void GPS::rxCallback(uint16_t size) {
         dataReady = true;
     }
 
-    HAL_UARTEx_ReceiveToIdle_DMA(
+    restartDMA();
+}
+
+HAL_StatusTypeDef GPS::restartDMA() {
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(
         huart,
         (uint8_t*)rxBuffer,
         MAX_NMEA_DATA_LENGTH
     );
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
+    return status;
 }
 
-void GPS::restartDMA() {
-    HAL_UARTEx_ReceiveToIdle_DMA(
-        huart,
-        (uint8_t*)rxBuffer,
-        MAX_NMEA_DATA_LENGTH
-    );
-    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-}
-
-UART_HandleTypeDef* GPS::getHUART() {
+UART_HandleTypeDef* GPS::getHuart() {
     return huart;
 }
 
@@ -777,10 +759,7 @@ bool GPS::getAltitudeGGA(uint16_t &idx) {
 
 bool GPS::getVxVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVX = (int32_t)((uint32_t)processBuffer[idx - 4] |
-                               ((uint32_t)processBuffer[idx - 3] << 8) |
-                               ((uint32_t)processBuffer[idx - 2] << 16) |
-                               ((uint32_t)processBuffer[idx - 1] << 24));
+    int32_t ecefVX = readInt32LE(processBuffer, idx - 4);
 
     tempData.vx = ecefVX / 100.0f; // cm/s to m/s
     return true;
@@ -788,10 +767,7 @@ bool GPS::getVxVELECEF(uint16_t &idx) {
 
 bool GPS::getVyVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVY = (int32_t)((uint32_t)processBuffer[idx - 4] |
-                               ((uint32_t)processBuffer[idx - 3] << 8) |
-                               ((uint32_t)processBuffer[idx - 2] << 16) |
-                               ((uint32_t)processBuffer[idx - 1] << 24));
+    int32_t ecefVY = readInt32LE(processBuffer, idx - 4);
 
     tempData.vy = ecefVY / 100.0f; // cm/s to m/s
     return true;
@@ -799,10 +775,7 @@ bool GPS::getVyVELECEF(uint16_t &idx) {
 
 bool GPS::getVzVELECEF(uint16_t &idx) {
     if (!incrementProcessBufferIndex(idx, 4)) return false;
-    int32_t ecefVZ = (int32_t)((uint32_t)processBuffer[idx - 4] |
-                               ((uint32_t)processBuffer[idx - 3] << 8) |
-                               ((uint32_t)processBuffer[idx - 2] << 16) |
-                               ((uint32_t)processBuffer[idx - 1] << 24));
+    int32_t ecefVZ = readInt32LE(processBuffer, idx - 4);
 
     tempData.vz = ecefVZ / 100.0f; // cm/s to m/s
     return true;
@@ -812,4 +785,18 @@ bool GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
     if (processBuffer + idx + increment >= processBufferEnd) return false;
     idx += increment;
     return true;
+}
+
+static int32_t readInt32LE(const volatile uint8_t *buf, uint16_t idx) {
+    return (int32_t)((uint32_t)buf[idx] |
+                    ((uint32_t)buf[idx + 1] << 8) |
+                    ((uint32_t)buf[idx + 2] << 16) |
+                    ((uint32_t)buf[idx + 3] << 24));
+}
+
+static int8_t hexValue(uint8_t c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return -1; // Character is not a hex digit
 }
