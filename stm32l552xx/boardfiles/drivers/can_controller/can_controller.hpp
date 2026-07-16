@@ -13,10 +13,9 @@
 #include "museq.hpp"
 
 class CANController {
-
 private:
 	struct DnaAllocationEntry {
-		uint8_t unique_id[16];
+		uint8_t uniqueId[16];
 		uint8_t nodeId;
 	};
 
@@ -53,7 +52,6 @@ private:
 	void sendCANTx();
 	void handleNodeAllocation(CanardRxTransfer* transfer);
 	void handleNodeStatus(CanardRxTransfer* transfer);
-	static uint8_t dlcToLength(uint32_t dlc);
 	int8_t allocateNode();
 	int8_t lookupAllocation(const uint8_t unique_id[16]) const;
 	bool isNodeIdAllocated(uint8_t nodeId) const;
@@ -62,9 +60,14 @@ private:
 	DnaStage getExpectedDnaStage() const;
 	void resetDnaInProgress();
 	int16_t publishDnaAllocationResponse(uint8_t nodeId, const uint8_t* unique_id, uint8_t unique_id_len);
+	
+	static uint8_t dlcToLength(uint32_t dlc);
+	static uint32_t lengthToDlc(uint8_t length);
 
 public:
 	CANController(FDCAN_HandleTypeDef *hfdcan);
+	
+	~CANController() = delete;
 
 	bool CanardShouldAcceptTransfer(const CanardInstance* ins,
 		uint64_t* outDataTypeSignature,
@@ -74,8 +77,6 @@ public:
 
 	void CanardOnTransferReception(CanardInstance* ins,
 		CanardRxTransfer* transfer);
-
-	~CANController();
 
 	// Called as much as possible
 	bool routineTasks();

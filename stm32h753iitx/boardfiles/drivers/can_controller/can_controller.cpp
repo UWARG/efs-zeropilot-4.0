@@ -13,7 +13,6 @@ static void staticOnTransferReception(CanardInstance* ins, CanardRxTransfer* tra
 }
 
 static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* outSig, uint16_t id, CanardTransferType type, uint8_t src) {
-
 	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, outSig, id, type, src);
 }
 
@@ -21,27 +20,23 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	static uint8_t canardMemoryPool[CANARD_MEMORY_BUFFER_SIZE];
 
 	canardInit(&canard,
-			canardMemoryPool,
-			sizeof(canardMemoryPool),
-			&staticOnTransferReception,
-			&staticShouldAcceptTransfer,
-			this
+		canardMemoryPool,
+		sizeof(canardMemoryPool),
+		&staticOnTransferReception,
+		&staticShouldAcceptTransfer,
+		this
 	);
 
 	nodeStatus = {0};
 
-	canNodes[CANController::NODE_ID].markOnline(HAL_GetTick());
 	// All other nodes are default-constructed to OFFLINE.
+	canNodes[CANController::NODE_ID].markOnline(HAL_GetTick());
 
 	canard.node_id = CANController::NODE_ID;
 
 	// Enable bus off interrupt
 	HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_BUS_OFF, 0);
 }
-
-CANController::~CANController() {}
-
-
 
 bool CANController::CanardShouldAcceptTransfer(
     const CanardInstance* ins,
@@ -54,8 +49,7 @@ bool CANController::CanardShouldAcceptTransfer(
     (void)sourceNodeId;
     (void)transferType;
 
-    switch (dataTypeId)
-    {
+    switch (dataTypeId) {
         case UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID: {
             *outDataTypeSignature = UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_SIGNATURE;
             return true;
@@ -72,16 +66,13 @@ bool CANController::CanardShouldAcceptTransfer(
     }
 }
 
-void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer)
-{
-
+void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
     switch (transfer->data_type_id)
     {
         case UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID: {
             if (transfer->transfer_type == CanardTransferTypeBroadcast) {
 				handleNodeAllocation(transfer);
             }
-
             break;
         }
 
@@ -96,24 +87,8 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
     }
 }
 
-uint8_t CANController::dlcToLength(uint32_t dlc) {
-	switch (dlc) {
-		case FDCAN_DLC_BYTES_0: return 0;
-		case FDCAN_DLC_BYTES_1: return 1;
-		case FDCAN_DLC_BYTES_2: return 2;
-		case FDCAN_DLC_BYTES_3: return 3;
-		case FDCAN_DLC_BYTES_4: return 4;
-		case FDCAN_DLC_BYTES_5: return 5;
-		case FDCAN_DLC_BYTES_6: return 6;
-		case FDCAN_DLC_BYTES_7: return 7;
-		case FDCAN_DLC_BYTES_8: return 8;
-		default: return 8; // Fallback
-	}
-}
-
-
 void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t * rxData) {
-	const uint64_t timestamp_usec = HAL_GetTick() * 1000ULL;
+	const uint64_t timestampUsec = HAL_GetTick() * 1000ULL;
 
 	CanardCANFrame frame;
 	frame.id = rxHeader->Identifier;
@@ -121,7 +96,7 @@ void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t * rxD
 	frame.data_len = dlcToLength(rxHeader->DataLength);
 	memcpy(frame.data, rxData, frame.data_len);
 
-	canardHandleRxFrame(&canard, &frame, timestamp_usec);
+	canardHandleRxFrame(&canard, &frame, timestampUsec);
 }
 
 void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
@@ -129,9 +104,7 @@ void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
 
 	uavcan_protocol_NodeStatus status {};
 
-	bool invalid = uavcan_protocol_NodeStatus_decode(transfer, &status);
-
-	if (invalid) return;
+	if (uavcan_protocol_NodeStatus_decode(transfer, &status)) return;
 
 	const uint8_t sourceNodeId = transfer->source_node_id;
 
@@ -163,10 +136,10 @@ void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
 	if (incoming == CANController::DnaStage::INVALID || incoming != getExpectedDnaStage()) {
 		return;
 	}
+	
 	// Append the new chunk
 	memcpy(dnaCurrentUniqueId + dnaCurrentUniqueIdLen, msg.unique_id.data, msg.unique_id.len);
 	dnaCurrentUniqueIdLen += msg.unique_id.len;
-
 
 	if (incoming == CANController::DnaStage::FIRST_UNIQUE_ID_PART) {
 		dnaPreferredNodeId = msg.node_id;
@@ -187,9 +160,9 @@ void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
 	}
 }
 
-int8_t CANController::lookupAllocation(const uint8_t unique_id[16]) const {
+int8_t CANController::lookupAllocation(const uint8_t uniqueId[16]) const {
 	for (uint8_t i = 0; i < allocationCount; i++) {
-		if (memcmp(allocationTable[i].unique_id, unique_id, 16) == 0) {
+		if (memcmp(allocationTable[i].uniqueId, uniqueId, 16) == 0) {
 			return allocationTable[i].nodeId;
 		}
 	}
@@ -242,7 +215,7 @@ int8_t CANController::allocateNode() {
 
 	// Push to allocation table
 	if (allocationCount < MAX_ALLOCATION_ENTRIES) {
-		memcpy(allocationTable[allocationCount].unique_id, dnaCurrentUniqueId, 16);
+		memcpy(allocationTable[allocationCount].uniqueId, dnaCurrentUniqueId, 16);
 		allocationTable[allocationCount].nodeId = assignedId;
 		allocationCount++;
 	}
@@ -320,21 +293,6 @@ int16_t CANController::publishDnaAllocationResponse(uint8_t nodeId, const uint8_
 	);
 }
 
-uint32_t getFDCANDLC(uint8_t len) {
-    switch (len) {
-        case 0: return FDCAN_DLC_BYTES_0;
-        case 1: return FDCAN_DLC_BYTES_1;
-        case 2: return FDCAN_DLC_BYTES_2;
-        case 3: return FDCAN_DLC_BYTES_3;
-        case 4: return FDCAN_DLC_BYTES_4;
-        case 5: return FDCAN_DLC_BYTES_5;
-        case 6: return FDCAN_DLC_BYTES_6;
-        case 7: return FDCAN_DLC_BYTES_7;
-        case 8: return FDCAN_DLC_BYTES_8;
-        default: return FDCAN_DLC_BYTES_8; // Fallback (or assert)
-    }
-}
-
 void CANController::sendCANTx() {
 	CanardCANFrame* frame = canardPeekTxQueue(&canard);
 	if (frame == nullptr) return;
@@ -344,7 +302,7 @@ void CANController::sendCANTx() {
 		txHeader.Identifier = frame->id & CANARD_CAN_EXT_ID_MASK;
 		txHeader.IdType = FDCAN_EXTENDED_ID;
 		txHeader.TxFrameType = FDCAN_DATA_FRAME;
-		txHeader.DataLength = getFDCANDLC(frame->data_len);
+		txHeader.DataLength = lengthToDlc(frame->data_len);
 		txHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
 		txHeader.BitRateSwitch = FDCAN_BRS_OFF;
 		txHeader.FDFormat = FDCAN_CLASSIC_CAN;
@@ -354,16 +312,13 @@ void CANController::sendCANTx() {
 		uint8_t txData[8];
 		memcpy(txData, frame->data, frame->data_len);
 
-		bool success = HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txHeader, txData) == HAL_OK;
-
-		if (success) {
+		if (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txHeader, txData) == HAL_OK) {
 			canardPopTxQueue(&canard);
 		}
 	}
 }
 
 bool CANController::routineTasks() {
-
 	sendCANTx();
 
 	uint32_t tick = HAL_GetTick();
@@ -387,10 +342,6 @@ void CANController::sendNodeStatus() {
 
     uint32_t len = uavcan_protocol_NodeStatus_encode(&nodeStatus, buffer);
 
-    // We need a static variable for the transfer ID. This is
-    // incremented on each transfer, allowing for detection of packet
-    // loss
-
     broadcast(CanardTransferTypeBroadcast,
 			UAVCAN_PROTOCOL_NODESTATUS_SIGNATURE,
 			UAVCAN_PROTOCOL_NODESTATUS_ID,
@@ -404,12 +355,12 @@ void CANController::sendNodeStatus() {
 
 void CANController::process1HzTasks() {
 
-	uint32_t timestamp_msec = HAL_GetTick();
+	uint32_t timestampMsec = HAL_GetTick();
 
 	// Mark remote nodes offline if they have not been seen recently
 	for (int i = CANARD_MIN_NODE_ID; i <= CANARD_MAX_NODE_ID; i++) {
 		if (i != CANController::NODE_ID) {
-			canNodes[i].updateLiveness(timestamp_msec, UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS);
+			canNodes[i].updateLiveness(timestampMsec, UAVCAN_PROTOCOL_NODESTATUS_OFFLINE_TIMEOUT_MS);
 		}
 	}
 
@@ -467,4 +418,34 @@ int16_t CANController::broadcast(
 	#endif
 
 	return broadcastObj(&transfer_object);
+}
+
+uint8_t CANController::dlcToLength(uint32_t dlc) {
+	switch (dlc) {
+		case FDCAN_DLC_BYTES_0: return 0;
+		case FDCAN_DLC_BYTES_1: return 1;
+		case FDCAN_DLC_BYTES_2: return 2;
+		case FDCAN_DLC_BYTES_3: return 3;
+		case FDCAN_DLC_BYTES_4: return 4;
+		case FDCAN_DLC_BYTES_5: return 5;
+		case FDCAN_DLC_BYTES_6: return 6;
+		case FDCAN_DLC_BYTES_7: return 7;
+		case FDCAN_DLC_BYTES_8: return 8;
+		default: return 8; // Fallback
+	}
+}
+
+uint32_t CANController::lengthToDlc(uint8_t len) {
+    switch (len) {
+        case 0: return FDCAN_DLC_BYTES_0;
+        case 1: return FDCAN_DLC_BYTES_1;
+        case 2: return FDCAN_DLC_BYTES_2;
+        case 3: return FDCAN_DLC_BYTES_3;
+        case 4: return FDCAN_DLC_BYTES_4;
+        case 5: return FDCAN_DLC_BYTES_5;
+        case 6: return FDCAN_DLC_BYTES_6;
+        case 7: return FDCAN_DLC_BYTES_7;
+        case 8: return FDCAN_DLC_BYTES_8;
+        default: return FDCAN_DLC_BYTES_8; // Fallback (or assert)
+    }
 }
