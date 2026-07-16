@@ -91,12 +91,12 @@ void initDrivers()
     for (int i = 0; i < 8; i++)
     {
         bool isBLDC = false;
-#ifdef PLANE
+        #ifdef PLANE
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
-#endif
-#ifdef QUADCOPTER
+        #endif
+        #ifdef QUADCOPTER
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
-#endif
+        #endif
         if (isBLDC)
         {
             switch (servoType)

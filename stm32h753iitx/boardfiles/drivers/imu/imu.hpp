@@ -62,6 +62,7 @@ class IMU : public IIMU {
 			DATA
 		} RxStates_e;
 
+		float gyroBias[3] = {0};
 		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE]; // First bit should be 1 for register read
 		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE]; // First byte is dummy, rest are data received
 		volatile RxStates_e rxFlag = COUNT;
@@ -76,7 +77,7 @@ class IMU : public IIMU {
 
 		// Utility functions, blocking
 		HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); 
-		HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t *data); 
+		HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, uint8_t length); 
 		HAL_StatusTypeDef setBank(uint8_t bank);
 
 		void csLow();

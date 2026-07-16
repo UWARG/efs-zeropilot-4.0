@@ -115,6 +115,15 @@ void AttitudeManager::amUpdate() {
         droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD;
         droneState.pitchRate = scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD;
         droneState.yawRate = scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD;
+        if (droneState.rollRate > 1 || droneState.rollRate < -1) {
+            while(1);
+        }
+        if (droneState.pitchRate > 1 || droneState.pitchRate < -1) {
+            while(1);
+        }
+        if (droneState.yawRate > 1 || droneState.yawRate < -1) {
+            while(1);
+        }
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
