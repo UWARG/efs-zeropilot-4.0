@@ -83,6 +83,7 @@ void initDrivers()
 {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
+    mathUtilsHandle = new MathUtils();
     fftHandle = new FFT();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
     loggerHandle = new Logger(); // Initialized later in RTOS task
