@@ -22,7 +22,7 @@
 
 #define ICM42688P_IMU_WHOAMI 0x47
 
-#define GYRO_SMAPLE_COUNT 1000
+#define GYRO_SAMPLE_COUNT 1000
 #define GYRO_CAL_RETRY_LIMIT 10
 #define GYRO_MOVING_THRESHOLD_LSB 33
 
@@ -61,7 +61,7 @@ int IMU::init() {
         int16_t gyroMin[3] = {INT16_MAX, INT16_MAX, INT16_MAX};
         bool moving = false;
 
-        for (uint16_t sampleCount = 0; (sampleCount < GYRO_SMAPLE_COUNT) && (!moving); sampleCount++) {
+        for (uint16_t sampleCount = 0; (sampleCount < GYRO_SAMPLE_COUNT) && (!moving); sampleCount++) {
             readRegister(0, UB0_REG_GYRO_DATA_X1, buf, 6); // Read GYRO_DATA_X1, GYRO_DATA_X0, GYRO_DATA_Y1, GYRO_DATA_Y0, GYRO_DATA_Z1, GYRO_DATA_Z0
             int16_t gyroVal[3] = {0};
             gyroVal[0] = -(int16_t)((buf[0] << 8) | buf[1]);
@@ -82,12 +82,13 @@ int IMU::init() {
         if (moving) {
             HAL_Delay(500);
         } else {
-            gyroBias[0] = (float)gyroSum[0] / GYRO_SMAPLE_COUNT;
-            gyroBias[1] = (float)gyroSum[1] / GYRO_SMAPLE_COUNT;
-            gyroBias[2] = (float)gyroSum[2] / GYRO_SMAPLE_COUNT;
+            gyroBias[0] = (float)gyroSum[0] / GYRO_SAMPLE_COUNT;
+            gyroBias[1] = (float)gyroSum[1] / GYRO_SAMPLE_COUNT;
+            gyroBias[2] = (float)gyroSum[2] / GYRO_SAMPLE_COUNT;
             break;
         }
     }
+    flushFIFO();
 
     return (address == ICM42688P_IMU_WHOAMI) ? 0 : -1;
 }
