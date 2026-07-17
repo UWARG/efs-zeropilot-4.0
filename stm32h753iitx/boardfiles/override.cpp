@@ -49,6 +49,10 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     else if (huart == telemLinkHandle->getHUART()) {
       telemLinkHandle->receiveCallback(Size);
     }
+    else if (telemLinkvirtualComHandle && huart == telemLinkvirtualComHandle->getHUART()) {
+      telemLinkvirtualComHandle->receiveCallback(Size);
+    }
+
     // GPS dma callback
     else if (huart == gpsHandle->getHUART()) {
       gpsHandle->processGPSData();

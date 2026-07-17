@@ -15,6 +15,7 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart8;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
@@ -33,6 +34,7 @@ IMotorControl *motorHandles[8] = {0};
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
+RFD *telemLinkvirtualComHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
@@ -120,6 +122,7 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
+    telemLinkvirtualComHandle = new RFD(&huart8); 
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_4KHZ);
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_4KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
@@ -142,8 +145,10 @@ void initDrivers()
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
-    telemLinkHandle->init();
     pmHandle->init();
+    telemLinkHandle->init();
+    telemLinkvirtualComHandle->init();
+    if (telemLinkvirtualComHandle) telemLinkvirtualComHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++)
