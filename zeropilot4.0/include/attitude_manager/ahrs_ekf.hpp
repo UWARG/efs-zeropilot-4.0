@@ -8,27 +8,27 @@ class Measurements {
 public:
     Measurements(IMathUtils* mathUtils);
 
-    void init(const float* gyro_init, const float* accel_init, const float* mag_init);
+    void init(const float* gyroInit, const float* accelInit, const float* magInit);
     
-    void updateGyro(const float* gyro_new_raw);
-    void updateAccel(const float* accel_new_raw);
-    void updateMag(const float* mag_new_raw);
-    void updateBiases(const float* gyro_bias_new, const float* accel_bias_new, const float* mag_bias_new);
+    void updateGyro(const float* gyroNewRaw);
+    void updateAccel(const float* accelNewRaw);
+    void updateMag(const float* magNewRaw);
+    void updateBiases(const float* gyroBiasNew, const float* accelBiasNew, const float* magBiasNew);
     
-    void getGyroBar(float* out_bar) const;
-    void getAccelBar(float* out_bar) const;
-    void getMagBar(float* out_bar) const;
+    void getGyroBar(float* outBar) const;
+    void getAccelBar(float* outBar) const;
+    void getMagBar(float* outBar) const;
 
-    float gyro_prev[3];
-    float gyro_new[3];
-    float accel_prev[3];
-    float accel_new[3];
-    float mag_prev[3];
-    float mag_new[3];
+    float gyroPrev[3];
+    float gyroNew[3];
+    float accelPrev[3];
+    float accelNew[3];
+    float magPrev[3];
+    float magNew[3];
 
-    float gyro_bias_accumulated[3];
-    float accel_bias_accumulated[3];
-    float mag_bias_accumulated[3];
+    float gyroBiasAccumulated[3];
+    float accelBiasAccumulated[3];
+    float magBiasAccumulated[3];
 
 private:
     IMathUtils* math;
@@ -38,65 +38,65 @@ class NominalState {
 public:
     NominalState(IMathUtils* mathUtils);
 
-    void init(const float* quat_init);
-    void stateExtrapolation(const float* gyro_new, const float* gyro_prev, float dt);
-    void correctState(const float* small_angle_error);
+    void init(const float* quatInit);
+    void stateExtrapolation(const float* gyroNew, const float* gyroPrev, float dt);
+    void correctState(const float* smallAngleError);
 
-    float quaternion_prev[4];
-    float quaternion_new[4];
+    float quaternionPrev[4];
+    float quaternionNew[4];
 
 private:
     IMathUtils* math;
-    void extrapolateQuaternion(const float* gyro_new, const float* gyro_prev, float dt, float* q_out);
+    void extrapolateQuaternion(const float* gyroNew, const float* gyroPrev, float dt, float* qOut);
 };
 
-class AHRS_ESMEKF {
+class AhrsEsmEkf {
 public:
     // Constants
     static constexpr uint16_t ERROR_STATE_SZ = 9;
 
     struct Config {
-        float gyro_cov;
-        float accel_cov;
-        float mag_cov;
-        float gyro_bias_cov;
-        float accel_bias_cov;
-        float accel_gate_threshold;
-        float mag_gate_threshold;
-        float p_init_att;
-        float p_init_bias;
-        float gravity_inertial[3];
-        float mag_inertial[3];
+        float gyroCov;
+        float accelCov;
+        float magCov;
+        float gyroBiasCov;
+        float accelBiasCov;
+        float accelGateThreshold;
+        float magGateThreshold;
+        float pInitAtt;
+        float pInitBias;
+        float gravityInertial[3];
+        float magInertial[3];
     };
 
-    AHRS_ESMEKF(IMathUtils* mathUtils);
+    AhrsEsmEkf(IMathUtils* mathUtils);
 
-    void init(const float* gyro_init, const float* accel_init, const float* mag_init, 
-              const float* quat_init, const Config& config);
+    void init(const float* gyroInit, const float* accelInit, const float* magInit, 
+              const float* quatInit, const Config& config);
 
-    void stateExtrapolation(const float* gyro_new, float dt);
-    void correctionAccelerometer(const float* accel_new);
-    void correctionMagnetometer(const float* mag_new);
+    void stateExtrapolation(const float* gyroNew, float dt);
+    void correctionAccelerometer(const float* accelNew);
+    void correctionMagnetometer(const float* magNew);
 
     Attitude_t getAttitudeRadians() const;
 
     // Public state access
     Measurements meas;
     NominalState nom;
-    float P[ERROR_STATE_SZ * ERROR_STATE_SZ];
+    float p[ERROR_STATE_SZ * ERROR_STATE_SZ];
 
 private:
     IMathUtils* math;
     Config cfg;
 
-    float gyro_cov_mat[9];
-    float accel_cov_mat[9];
-    float mag_cov_mat[9];
-    float gyro_bias_cov_mat[9];
-    float accel_bias_cov_mat[9];
+    float gyroCovMat[9];
+    float accelCovMat[9];
+    float magCovMat[9];
+    float gyroBiasCovMat[9];
+    float accelBiasCovMat[9];
 
-    // Kalman update for a measurement with jacobian H = [H0, 0, H2], where H0 is
+    // Kalman update for a measurement with jacobian H = [h0, 0, H2], where h0 is
     // 3x3 and H2 is I when the measurement observes the accel bias states, else 0
-    void applyUpdate(const float* y, const float* H0, bool observes_accel_bias,
-                     const float* R, float gate_threshold);
+    void applyUpdate(const float* y, const float* h0, bool observesAccelBias,
+                     const float* R, float gateThreshold);
 };

@@ -54,7 +54,7 @@ class AttitudeManager {
 
         FFTHarmonicNotch harmonicNotchFilter;
         FFTHarmonicNotchConfig harmonicNotchConfig;
-        AHRS_ESMEKF ekf;
+        AhrsEsmEkf ekf;
 
         IMessageQueue<RCMotorControlMessage_t> *amQueue;
         IMessageQueue<TMMessage_t> *tmQueue;

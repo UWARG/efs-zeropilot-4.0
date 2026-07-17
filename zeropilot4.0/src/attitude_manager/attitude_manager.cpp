@@ -56,24 +56,24 @@ AttitudeManager::AttitudeManager(
         harmonicNotchFilter.init(harmonicNotchConfig);
 
         // Init the EKF
-        AHRS_ESMEKF::Config ekf_cfg = {
-            .gyro_cov = 4.78e-6f,
-            .accel_cov = 9.41e-4f,
-            .mag_cov = 3.6e-5f,
-            .gyro_bias_cov = 1.0e-10f,
-            .accel_bias_cov = 1.0e-8f,
-            .accel_gate_threshold = 7.8f,
-            .mag_gate_threshold = 16.3f,
-            .p_init_att = 1e-2f,
-            .p_init_bias = 1e-4f,
-            .gravity_inertial = {0, 0, -9.81f},
-            .mag_inertial = {1, 0, 0}
+        AhrsEsmEkf::Config ekfCfg = {
+            .gyroCov = 4.78e-6f,
+            .accelCov = 9.41e-4f,
+            .magCov = 3.6e-5f,
+            .gyroBiasCov = 1.0e-10f,
+            .accelBiasCov = 1.0e-8f,
+            .accelGateThreshold = 7.8f,
+            .magGateThreshold = 16.3f,
+            .pInitAtt = 1e-2f,
+            .pInitBias = 1e-4f,
+            .gravityInertial = {0, 0, -9.81f},
+            .magInertial = {1, 0, 0}
         };
-        float init_gyro[3] = {0.0f, 0.0f, 0.0f};
-        float init_accel[3] = {0.0f, 0.0f, 9.81f};
-        float init_mag[3] = {1.0f, 0.0f, 0.0f};
-        float init_quat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-        ekf.init(init_gyro, init_accel, init_mag, init_quat, ekf_cfg);
+        float initGyro[3] = {0.0f, 0.0f, 0.0f};
+        float initAccel[3] = {0.0f, 0.0f, 9.81f};
+        float initMag[3] = {1.0f, 0.0f, 0.0f};
+        float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+        ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
