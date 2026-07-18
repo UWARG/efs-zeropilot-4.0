@@ -48,3 +48,9 @@ class IGPS {
 
         virtual GpsData_t readData() = 0;
 };
+
+typedef struct {
+  uint8_t data[720];
+  uint16_t len;
+  bool newData;
+} RtcmCorrectionData_t;

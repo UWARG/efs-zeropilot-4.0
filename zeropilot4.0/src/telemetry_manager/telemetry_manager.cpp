@@ -9,7 +9,8 @@ TelemetryManager::TelemetryManager(
     ITelemLink *telemLinkDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
-    IMessageQueue<mavlink_message_t> *packedMsgBuffer
+    IMessageQueue<mavlink_message_t> *packedMsgBuffer,
+    RtcmCorrectionData_t &sharedRtcmBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
@@ -19,7 +20,8 @@ TelemetryManager::TelemetryManager(
     overflowMsgPending(false),
     currParamListTxIdx(ZP_PARAM::getCount()),
     profilerId(0),
-    paramSetup(this){
+    paramSetup(this),
+    sharedRtcmBuffer(sharedRtcmBuffer){
 
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
@@ -223,6 +225,13 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             break;
         }
 
+        case MAVLINK_MSG_ID_GPS_RTCM_DATA: {
+            mavlink_gps_rtcm_data_t rtcmMsg;
+            mavlink_msg_gps_rtcm_data_decode(&msg, &rtcmMsg);
+            handleRtcmFragment(rtcmMsg);
+            break;
+        }
+
         default:
             break;
     }
@@ -239,4 +248,46 @@ void TelemetryManager::enqueueParamValueTx(uint16_t index) {
         ZP_PARAM::getCount(), index
     );
     packedMsgBuffer->push(&response);
+}
+
+void TelemetryManager::handleRtcmFragment(const mavlink_gps_rtcm_data_t &rtcmMsg) {
+    bool isFragmented = (rtcmMsg.flags & 0x01);
+    uint8_t fragmentId = (rtcmMsg.flags >> 1) & (0x03);
+    uint8_t sequenceId = (rtcmMsg.flags >> 3) & (0xFF);
+
+    if (!isFragmented) {
+        memcpy(sharedRtcmBuffer.data, rtcmMsg.data, rtcmMsg.len);
+        sharedRtcmBuffer.len = rtcmMsg.len;
+        sharedRtcmBuffer.newData = true;
+        resetRtcmState();
+        return;
+    }
+
+    if (sequenceId != assemblingRtcmBuffer.rtcmCurrentSequenceId) {
+        resetRtcmState();
+        assemblingRtcmBuffer.rtcmCurrentSequenceId = sequenceId;
+    }
+
+    memcpy(assemblingRtcmBuffer.rtcmAssemblyBuffer + (fragmentId * 180), rtcmMsg.data, rtcmMsg.len); // Assumed that prev fragments sizes are 180, if not, this fragment should not exist in the first place
+    if (rtcmMsg.len < 180) {
+        assemblingRtcmBuffer.rtcmRecievedFragments |= (~((1 << fragmentId) - 1)) & 0x0F;
+        assemblingRtcmBuffer.rtcmLen = fragmentId * 180 + rtcmMsg.len;
+    } else {
+        assemblingRtcmBuffer.rtcmRecievedFragments |= (1 << fragmentId);
+    }
+
+    if (assemblingRtcmBuffer.rtcmRecievedFragments == 0x0F) {
+        int len = (assemblingRtcmBuffer.rtcmLen  == -1) ? 480 : assemblingRtcmBuffer.rtcmLen;
+        memcpy(sharedRtcmBuffer.data, assemblingRtcmBuffer.rtcmAssemblyBuffer, len);
+        sharedRtcmBuffer.len = len;
+        sharedRtcmBuffer.newData = true;
+        resetRtcmState();
+    }
+}
+
+void TelemetryManager::resetRtcmState() {
+    memset(assemblingRtcmBuffer.rtcmAssemblyBuffer, 0, sizeof(assemblingRtcmBuffer.rtcmAssemblyBuffer));
+    assemblingRtcmBuffer.rtcmCurrentSequenceId = UINT8_MAX; // Won't accidentally clash with a possible seq id, just in case
+    assemblingRtcmBuffer.rtcmRecievedFragments = 0;
+    assemblingRtcmBuffer.rtcmLen = -1;
 }
