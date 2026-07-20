@@ -19,6 +19,7 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c3;
 
 // ----------------------------------------------------------------------------
 // Global handles
@@ -35,6 +36,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Rangefinder *rfHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -78,8 +80,7 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 // Initialization
 // ----------------------------------------------------------------------------
-void initDrivers()
-{
+void initDrivers() {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
     fftHandle = new FFT();
@@ -88,19 +89,17 @@ void initDrivers()
 
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
-    for (int i = 0; i < 8; i++)
-    {
-        bool isBLDC = false;
-#ifdef PLANE
+    for (int i = 0; i < 8; i++) {
+        // Determine if it is brushless DC motor
+        bool isBLDC = false; 
+        #ifdef PLANE
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
-#endif
-#ifdef QUADCOPTER
+        #endif
+        #ifdef QUADCOPTER
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
-#endif
-        if (isBLDC)
-        {
-            switch (servoType)
-            {
+        #endif
+        if (isBLDC) {
+            switch (servoType) {
             case MOT_TYPE_DSHOT: // DShot
                 motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
                 break;
@@ -110,8 +109,7 @@ void initDrivers()
                 break;
             }
         }
-        else
-        {
+        else {
             motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
@@ -124,6 +122,7 @@ void initDrivers()
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_4KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
+    rfHandle = new rangefinder(&hi2c3);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -132,8 +131,7 @@ void initDrivers()
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
         motorHandles[i]->init();
     }
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
@@ -144,10 +142,10 @@ void initDrivers()
     imuHandle->init();
     telemLinkHandle->init();
     pmHandle->init();
+    rfHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
         motorInstances[i] = {motorHandles[i]};
     }
 
