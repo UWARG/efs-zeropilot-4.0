@@ -5,8 +5,8 @@
 struct TaskEntry {
     const char* name;
     uint32_t startCycle;
-    uint32_t maxExecUs;   // worst-case exec time since last profilerGetAll
-    uint32_t iterations;  // completed begin/end pairs since last profilerGetAll
+    uint32_t maxExecUs;   // Worst-case exec time since last profilerGetAll
+    uint32_t iterations;  // Completed begin/end pairs since last profilerGetAll
 };
 
 static TaskEntry registry[MAX_PROFILED_TASKS] = {};
