@@ -20,6 +20,7 @@ void initManagers()
         gpsHandle,
         imuHandle,
         fftHandle,
+        rfHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 

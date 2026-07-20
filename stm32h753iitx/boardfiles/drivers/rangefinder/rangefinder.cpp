@@ -3,15 +3,12 @@
 static constexpr uint8_t RANGEFINDER_I2C_ADDR = 0x10 << 1; // 7-bit address for the TF02-Pro rangefinder, shifted left by 1 for the HAL functions
 
 static constexpr uint8_t FIRMWARE_VERSION_CMD[] = {0x5A, 0x04, 0x01, 0x5F};
-static constexpr uint8_t RESET_CMD[] = {0x5A, 0x04, 0x02, 0x60};
 static constexpr uint8_t OUTPUT_FORMAT_CM_CMD[] = {0x5A, 0x05, 0x05, 0x01, 0x65};
 static constexpr uint8_t SAVE_CONFIG_CMD[] = {0x5A, 0x04, 0x11, 0x6F};
 static constexpr uint8_t I2C_READ_CMD[] = {0x5A, 0x05, 0x00, 0x01, 0x60};
 
 // Expected responses from commands
-static constexpr uint8_t FIRMWARE_VERSION_RESPONSE[] = {0x5A, 0x05, 0x01}; // First three bytes of the firmware version response, the last two bytes are the actual version number
-static constexpr uint8_t RESET_SUCCESS_RESPONSE[] = {0x5A, 0x05, 0x02, 0x00, 0x61};
-static constexpr uint8_t RESET_FAILURE_RESPONSE[] = {0x5A, 0x05, 0x02, 0x01, 0x62};
+static constexpr uint8_t FIRMWARE_VERSION_RESPONSE[] = {0x5A, 0x07, 0x01}; // First three bytes of the firmware version response, the last two bytes are the actual version number
 static constexpr uint8_t OUTPUT_FORMAT_CM_SUCCESS_RESPONSE[] = {0x5A, 0x05, 0x05, 0x01, 0x65};
 static constexpr uint8_t SAVE_CONFIG_SUCCESS_RESPONSE[] = {0x5A, 0x05, 0x11, 0x00, 0x70};
 
@@ -35,20 +32,6 @@ int Rangefinder::init() {
     for (int i = 0; i < sizeof(FIRMWARE_VERSION_RESPONSE); i++) {
         if (recieveBuffer[i] != FIRMWARE_VERSION_RESPONSE[i]) {
             return -1; // Firmware version response does not match expected response
-        }
-    }
-
-    // Perform a system reset 
-    if (HAL_I2C_Master_Transmit(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)RESET_CMD, sizeof(RESET_CMD), HAL_MAX_DELAY) != HAL_OK) {
-        return -1;
-    }
-    HAL_Delay(100); 
-    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, recieveBuffer, sizeof(RESET_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
-        return -1;
-    }
-    for (int i = 0; i < sizeof(RESET_SUCCESS_RESPONSE); i++) {
-        if (recieveBuffer[i] != RESET_SUCCESS_RESPONSE[i]) {
-            return -1; 
         }
     }
 
@@ -87,7 +70,7 @@ int Rangefinder::init() {
 RangefinderData_t Rangefinder::readData() {
     // Kick off DMA transfer for the first transfer, the first readData() call will return empty data
     if (!dataFilled) {
-        restartDma();
+        restartTransfer();
         return data;
     }
     dataFilled = false;
@@ -100,18 +83,24 @@ RangefinderData_t Rangefinder::readData() {
 
         if (computeChecksum() != rxBuffer[8]) { // The checksum doesnt match, the data is corrupted
             data.isValid = false;
+        } else if (data.signalStrength < 100) {
+            data.distance = -1;
+            data.isValid = false;
+        } else if (data.distance == 65535 || data.distance == 4500) {
+            data.isValid = false;
+        } else {
+            data.isValid = true;
         }
-        data.isValid = true;
     } 
 
     // Kick off another DMA transfer we have new when next readData() is called
-    restartDma();
+    restartTransfer();
 
     return data;
 }
 
 void Rangefinder::txCallback() {
-    HAL_I2C_Master_Receive_DMA(hi2c, RANGEFINDER_I2C_ADDR, rxBuffer, READ_RESPONSE_LENGTH);
+    HAL_I2C_Master_Receive_IT(hi2c, RANGEFINDER_I2C_ADDR, rxBuffer, READ_RESPONSE_LENGTH);
 }
 
 void Rangefinder::rxCallback() {
@@ -119,15 +108,15 @@ void Rangefinder::rxCallback() {
 }
 
 void Rangefinder::errorCallback() {
-    while(1);
+    restartTransfer();
 }
 
 I2C_HandleTypeDef *Rangefinder::getI2C() {
     return hi2c;
 }
 
-void Rangefinder::restartDma() {
-    HAL_I2C_Master_Transmit_DMA(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)I2C_READ_CMD, READ_CMD_LEN);
+void Rangefinder::restartTransfer() {
+    HAL_I2C_Master_Transmit_IT(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)I2C_READ_CMD, READ_CMD_LEN);
 }
 
 uint8_t Rangefinder::computeChecksum() {

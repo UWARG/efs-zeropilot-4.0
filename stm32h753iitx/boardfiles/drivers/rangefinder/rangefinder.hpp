@@ -24,7 +24,7 @@ class Rangefinder : public IRangefinder {
         static constexpr uint8_t READ_RESPONSE_LENGTH = 9;
         uint8_t rxBuffer[READ_RESPONSE_LENGTH] = {0};
 
-        void restartDma();
+        void restartTransfer();
         uint8_t computeChecksum();
 
 };

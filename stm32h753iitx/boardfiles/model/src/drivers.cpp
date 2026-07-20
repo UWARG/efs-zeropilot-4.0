@@ -122,7 +122,7 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_4KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
-    rfHandle = new rangefinder(&hi2c3);
+    rfHandle = new Rangefinder(&hi2c3);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
