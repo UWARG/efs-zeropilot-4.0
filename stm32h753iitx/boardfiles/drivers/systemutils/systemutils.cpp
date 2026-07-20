@@ -61,7 +61,7 @@ void SystemUtils::profilerGetAll(TaskProfile* out, uint8_t* count) {
 
     *count = taskCount;
     for (uint8_t i = 0; i < taskCount; i++) {
-        uint32_t rateHz = 0;
+        uint32_t avgRateHz = 0;
         if (windowCycles > 0) {
             avgRateHz = (uint64_t)registry[i].iterations * SystemCoreClock / windowCycles;
         }
