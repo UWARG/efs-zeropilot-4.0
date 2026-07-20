@@ -6,8 +6,8 @@
 
 struct TaskProfile {
     const char* name;
-    uint32_t deltaExec;
-    uint32_t deltaPeriod;
+    uint32_t maxExecUs;
+    uint32_t avgRateHz;
 };
 
 class ISystemUtils {

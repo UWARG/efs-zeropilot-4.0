@@ -47,15 +47,13 @@ void SystemUtils::profilerBegin(uint8_t id) {
 
 void SystemUtils::profilerEnd(uint8_t id) {
     uint32_t cycles = DWT->CYCCNT - registry[id].startCycle;
-    uint32_t execUs = cycles / (SystemCoreClock / 1000000U); // convert hclk ticks to micro sec
+    uint32_t execUs = cycles / (SystemCoreClock / 1000000U); // Convert hclk ticks to micro sec
     if (execUs > registry[id].maxExecUs) {
         registry[id].maxExecUs = execUs;
     }
     registry[id].iterations++;
 }
 
-// deltaExec = worst-case exec time (us) and deltaPeriod = average rate (hz) since the
-// previous call. Must be called more often than the DWT wrap (2^32 cycles, ~9 s at 480 MHz).
 void SystemUtils::profilerGetAll(TaskProfile* out, uint8_t* count) {
     uint32_t now = DWT->CYCCNT;
     uint32_t windowCycles = now - lastReadCycle;
@@ -65,9 +63,9 @@ void SystemUtils::profilerGetAll(TaskProfile* out, uint8_t* count) {
     for (uint8_t i = 0; i < taskCount; i++) {
         uint32_t rateHz = 0;
         if (windowCycles > 0) {
-            rateHz = (uint64_t)registry[i].iterations * SystemCoreClock / windowCycles;
+            avgRateHz = (uint64_t)registry[i].iterations * SystemCoreClock / windowCycles;
         }
-        out[i] = { registry[i].name, registry[i].maxExecUs, rateHz };
+        out[i] = {registry[i].name, registry[i].maxExecUs, avgRateHz};
         registry[i].maxExecUs = 0;
         registry[i].iterations = 0;
     }
