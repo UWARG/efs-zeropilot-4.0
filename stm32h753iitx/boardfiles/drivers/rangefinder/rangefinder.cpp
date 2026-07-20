@@ -81,12 +81,13 @@ RangefinderData_t Rangefinder::readData() {
         data.signalStrength = rxBuffer[5] << 8 | rxBuffer[4];
         data.temp = (rxBuffer[7] << 8 | rxBuffer[6]) / 8 - 256;
 
-        if (computeChecksum() != rxBuffer[8]) { // The checksum doesnt match, the data is corrupted
-            data.isValid = false;
-        } else if (data.signalStrength < 100) {
-            data.distance = -1;
-            data.isValid = false;
-        } else if (data.distance == 65535 || data.distance == 4500) {
+        /*
+        Checksum doesnt match, the data is corrupted
+        When encountering a measured object with high reflectivity, the received signal will be 65535
+        When the signal strength is insufficient and lower than 60, the distance value will become the maximum value of 4500
+        */
+        if (computeChecksum() != rxBuffer[8] || data.distance == 65535 || data.distance == 4500) { 
+            // data.distance = -1;
             data.isValid = false;
         } else {
             data.isValid = true;
