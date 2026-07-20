@@ -26,82 +26,84 @@
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 
-class AttitudeManager {
+class AttitudeManager
+{
     friend class AMParamSetup;
 
-    public:
-        AttitudeManager(
-            ISystemUtils *systemUtilsDriver,
-            IGPS *gpsDriver,
-            IIMU *imuDriver,
-            IFFT *fftDriver,
-            IMessageQueue<RCMotorControlMessage_t> *amQueue,
-            IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue,
-            MotorGroupInstance_t *mainMotorGroup
-        );
+public:
+    AttitudeManager(
+        ISystemUtils *systemUtilsDriver,
+        IGPS *gpsDriver,
+        IIMU *imuDriver,
+        IFFT *fftDriver,
+        IMessageQueue<RCMotorControlMessage_t> *amQueue,
+        IMessageQueue<TMMessage_t> *tmQueue,
+        IMessageQueue<char[100]> *smLoggerQueue,
+        MotorGroupInstance_t *mainMotorGroup);
 
-        void amUpdate();
+    void amUpdate();
 
-    private:
-        static constexpr uint8_t NUM_MOTORS = 8;
+private:
+    static constexpr uint8_t NUM_MOTORS = 8;
 
-        ISystemUtils *systemUtilsDriver;
+    ISystemUtils *systemUtilsDriver;
 
-        IGPS *gpsDriver;
-        IIMU *imuDriver;
+    IGPS *gpsDriver;
+    GpsData_t lastValidGps = {};
+    bool gpsUnsent = false;
+    IIMU *imuDriver;
 
-        FFTHarmonicNotch harmonicNotchFilter;
-        FFTHarmonicNotchConfig harmonicNotchConfig;
-        Mahony mahonyFilter;
+    FFTHarmonicNotch harmonicNotchFilter;
+    FFTHarmonicNotchConfig harmonicNotchConfig;
+    Mahony mahonyFilter;
 
-        IMessageQueue<RCMotorControlMessage_t> *amQueue;
-        IMessageQueue<TMMessage_t> *tmQueue;
-        IMessageQueue<char[100]> *smLoggerQueue;
+    IMessageQueue<RCMotorControlMessage_t> *amQueue;
+    IMessageQueue<TMMessage_t> *tmQueue;
+    IMessageQueue<char[100]> *smLoggerQueue;
 
-        Flightmode *activeCLAW;     // Pointer to current active Control Law
-        #ifdef PLANE
-        DirectMapping manualCLAW;   // Manual Control Law (Direct Passthrough)
-        FBWAMapping fbwaCLAW;       // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
-        #endif
-        #ifdef QUADCOPTER
-        AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
-        StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
-        #endif
-        RCMotorControlMessage_t controlMsg;
-        FlightMode_e currentFlightMode;
-        DroneState_t droneState;
+    Flightmode *activeCLAW; // Pointer to current active Control Law
+#ifdef PLANE
+    DirectMapping manualCLAW; // Manual Control Law (Direct Passthrough)
+    FBWAMapping fbwaCLAW;     // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
+#endif
+#ifdef QUADCOPTER
+    AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
+    StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
+#endif
+    RCMotorControlMessage_t controlMsg;
+    FlightMode_e currentFlightMode;
+    DroneState_t droneState;
 
-        MotorGroupInstance_t *mainMotorGroup;
+    MotorGroupInstance_t *mainMotorGroup;
 
-        bool armedFlag;
-        bool setArmFlag;
+    bool armedFlag;
+    bool setArmFlag;
 
-        uint16_t lastServoOutputs[16];
+    uint16_t lastServoOutputs[16];
 
-        uint16_t amSchedulingCounter;
+    uint16_t amSchedulingCounter;
 
-        int noDataCount;
-        bool failsafeTriggered;
+    int noDataCount;
+    bool failsafeTriggered;
 
-        static constexpr uint16_t MAX_TIMESTAMP = 65535;
-        static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
-        uint32_t lastTimestamp;
-        bool haveLastImuTimestamp;
+    static constexpr uint16_t MAX_TIMESTAMP = 65535;
+    static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
+    uint32_t lastTimestamp;
+    bool haveLastImuTimestamp;
 
-        bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
+    bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-        void outputToMotors(RCMotorControlMessage_t outputControlMsg);
+    void outputToMotors(RCMotorControlMessage_t outputControlMsg);
 
-        void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-        void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
-        void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
-        void sendServoOutputRawToTelemetryManager();
-        
-        uint8_t profilerId;
-        
-        // Motor mixer output for each motor 
-        float motorPercent[NUM_MOTORS];
+    void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
+    void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
+    void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+    void sendServoOutputRawToTelemetryManager();
 
-        AMParamSetup paramSetup;
+    uint8_t profilerId;
+
+    // Motor mixer output for each motor
+    float motorPercent[NUM_MOTORS];
+
+    AMParamSetup paramSetup;
 };
