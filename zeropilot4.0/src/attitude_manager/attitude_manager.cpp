@@ -125,10 +125,18 @@ void AttitudeManager::amUpdate() {
         sendAttitudeDataToTelemetryManager(attitude);
     }
 
-    // Send GPS data to telemetry manager
+    // Get GPS data
     GpsData_t gpsData = gpsDriver->readData();
+    if (gpsData.isNew) {
+        lastValidGps = gpsData;
+    }
+    
+    // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData);
+        if (lastValidGps.isNew) {
+            sendGPSDataToTelemetryManager(lastValidGps);
+            lastValidGps.isNew = false; // Mark as sent to telemetry manager, so if no new GPS data is valid the same data is not sent again
+        }
     }
 
     // Get data from Queue and motor outputs
@@ -163,6 +171,7 @@ void AttitudeManager::amUpdate() {
             
             outputToMotors(motorOutputs);
 
+            systemUtilsDriver->profilerEnd(profilerId);
             return;
         }
     } else {

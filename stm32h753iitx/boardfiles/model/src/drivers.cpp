@@ -124,7 +124,7 @@ void initDrivers()
     }
 
     // Peripherals
-    gpsHandle = new GPS(&huart2);
+    gpsHandle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_4KHZ);
