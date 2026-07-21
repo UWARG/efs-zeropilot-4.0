@@ -132,9 +132,6 @@ void AttitudeManager::amUpdate() {
     if (gpsData.isNew) {
         lastValidGps = gpsData;
     }
-
-    // Get rangefinder data
-    RangefinderData_t rfData = rfDriver->readData();
     
     // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
@@ -143,6 +140,9 @@ void AttitudeManager::amUpdate() {
             lastValidGps.isNew = false; // Mark as sent to telemetry manager, so if no new GPS data is valid the same data is not sent again
         }
     }
+
+    // Get rangefinder data
+    RangefinderData_t rfData = rfDriver->readData();
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);

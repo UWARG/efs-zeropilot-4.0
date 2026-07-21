@@ -127,7 +127,11 @@ I2C_HandleTypeDef *Rangefinder::getI2C() {
 }
 
 void Rangefinder::restartTransfer() {
-    HAL_I2C_Master_Transmit_IT(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)I2C_READ_CMD, READ_CMD_LEN);
+    // AM calls every loop(1kHz) but rangefinder frame rate is 100Hz, so limit the transfer to the frame rate
+    if (HAL_GetTick() - lastTransferTick >= 10) {
+        HAL_I2C_Master_Transmit_IT(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)I2C_READ_CMD, READ_CMD_LEN);
+        lastTransferTick = HAL_GetTick();
+    }
 }
 
 uint8_t Rangefinder::computeChecksum() {
