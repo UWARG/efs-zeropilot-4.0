@@ -63,11 +63,11 @@ AttitudeManager::AttitudeManager(
             .magCov = 3.6e-5f,
             .gyroBiasCov = 1.0e-10f,
             .accelBiasCov = 1.0e-8f,
-            .accelGateThreshold = std::numeric_limits<float>::max(),
+            .accelGateThreshold = std::numeric_limits<float>::max(), // Turning off gating bc if start position is not leveled, then gating prevents convergence
             .magGateThreshold = 16.3f,
             .pInitAtt = 1e-2f,
             .pInitBiasGyro = 1e-4f,
-            .pInitBiasAccel = 1e-6f,
+            .pInitBiasAccel = 1e-6f, // Assume P is a diagonal matrix
             .gravityInertial = {0, 0, -9.81f},
             .magInertial = {1, 0, 0}
         };
