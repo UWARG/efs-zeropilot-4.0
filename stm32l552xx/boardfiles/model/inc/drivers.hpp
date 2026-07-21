@@ -17,6 +17,7 @@
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fft.hpp"
+#include "rangefinder.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern FFT *fftHandle;
@@ -31,6 +32,7 @@ extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
+extern Rangefinder *rangefinderHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

@@ -106,7 +106,8 @@ class ZP_PLANE_SITL_JSBSIM:
                 self.fdm['velocities/vg-fps'] * FPS_TO_MPS,
                 self.fdm['attitude/psi-deg'],
                 self.fdm['propulsion/total-fuel-lbs'],
-                self.fdm['propulsion/engine/propeller-rpm']
+                self.fdm['propulsion/engine/propeller-rpm'],
+                self.fdm['position/h-agl-ft'] * FT_TO_M
             )
             
             # 2. Sync RC commands and update logic

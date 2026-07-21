@@ -9,6 +9,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
+    IRangefinder *rangefinderDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -17,6 +18,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    rangefinderDriver(rangefinderDriver),
     harmonicNotchFilter(systemUtilsDriver, fftDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
@@ -138,6 +140,9 @@ void AttitudeManager::amUpdate() {
             lastValidGps.isNew = false; // Mark as sent to telemetry manager, so if no new GPS data is valid the same data is not sent again
         }
     }
+
+    // Get rangefinder data
+    RangefinderData_t rangefinderData = rangefinderDriver->readData();
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);

@@ -97,7 +97,7 @@ class ZP_QUAD_SITL_AIRSIM:
         q_rad = ang_vel.y_val
         r_rad = ang_vel.z_val
 
-        # latitude, longtitude, altitude
+        # latitude, longtitude, altitude from gps
         lat_deg = state.gps_location.latitude
         long_deg = state.gps_location.longitude
         alt_deg = state.gps_location.altitude
@@ -107,14 +107,18 @@ class ZP_QUAD_SITL_AIRSIM:
 
         heading = math.degrees(yaw) % 360 
 
+        # altitude for rangefinder 
+        alt_rangefinder = self.client.getDistanceSensorData().distance
+
         self.zp.update_from_plant(
-            roll, pitch, 
+            roll, pitch,
             p_rad, q_rad, r_rad,
             lat_deg, long_deg, alt_deg,
-            ground_speed, 
+            ground_speed,
             heading,
             0.0,
-            0.0
+            0.0,
+            alt_rangefinder
         )
 
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'],
