@@ -138,9 +138,9 @@ void initDrivers() {
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
 
     rcHandle->init();
+    telemLinkHandle->init();
     gpsHandle->init();
     imuHandle->init();
-    telemLinkHandle->init();
     pmHandle->init();
     rangefinderHandle->init();
 
