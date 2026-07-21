@@ -117,10 +117,10 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
 
         // 4. Find Peak Frequency Bin
         // Start searching at the bin corresponding to minFreqHz to avoid physical flight dynamics
-        uint8_t startBin = (uint8_t)(config.minFreqHz / (config.sampleFreqHz / config.fftWindowSize)); // Each bin covers sampleFreqHz / fftWindowSize hz
+        uint16_t startBin = (uint16_t)(config.minFreqHz / (config.sampleFreqHz / config.fftWindowSize)); // Each bin covers sampleFreqHz / fftWindowSize hz
         if (startBin == 0)
             startBin = 1;
-        uint8_t peakBin = startBin;
+        uint16_t peakBin = startBin;
         float peak = magnitudes[peakBin];
         for (int i = startBin + 1; i < config.fftWindowSize / 2; i++) {
             if (magnitudes[i] > peak) {
