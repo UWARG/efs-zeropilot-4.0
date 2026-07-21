@@ -72,25 +72,27 @@ int Rangefinder::init() {
 }
 
 RangefinderData_t Rangefinder::readData() {
-    // Kick off DMA transfer for the first transfer, the first readData() call will return empty data
+    // No frame ready yet: kick off the I2C transfer for first call or restart it if the previous one never completed
     if (!dataFilled) {
         restartTransfer();
+        // Report the sample as neither valid nor new
         data.isValid = false;
         data.isNew = false;
         return data;
     }
     dataFilled = false;
     
-    // Parse the recieved data
-    if (rxBuffer[0] == DATA_FRAME_HEADER && rxBuffer[1] == DATA_FRAME_HEADER) { // Check the frame header so we dont parse a corrupted frame
+    // Parse the received data
+    if (rxBuffer[0] == DATA_FRAME_HEADER && rxBuffer[1] == DATA_FRAME_HEADER) { // Check the frame header so we don't parse a corrupted frame
         uint16_t rawDistance = rxBuffer[3] << 8 | rxBuffer[2];
         uint16_t rawStrength = rxBuffer[5] << 8 | rxBuffer[4];
         int16_t rawTemp = (rxBuffer[7] << 8 | rxBuffer[6]) / 8 - 256;
 
-        /*
-        Checksum doesnt match, the data is corrupted
-        When encountering a measured object with high reflectivity, strength = 65535 and the distance value will become 65534
-        When the signal strength is insufficient and lower than 60, the distance value will become the maximum value of 4500
+        /* 
+        Check if the received frame is valid: 
+            Checksum doesnt match, the data is corrupted
+            When encountering a measured object with high reflectivity, strength = 65535 and the distance value will become 65534
+            When the signal strength is insufficient and lower than 60, the distance value will become the maximum value of 4500
         */
         data.isValid = (computeChecksum() == rxBuffer[8]) && (rawStrength != STRGENTH_SATURATED)
                         && (rawDistance != DIST_SATURATED) && (rawDistance != DIST_WEAK_SIGNAL);
@@ -102,7 +104,7 @@ RangefinderData_t Rangefinder::readData() {
         data.isValid = false; // The frame is corrupted, make the data not valid
     }
 
-    // Kick off another DMA transfer we have new when next readData() is called
+    // Kick off the next transfer so a fresh frame is ready by the next readData() call
     restartTransfer();
 
     return data;
