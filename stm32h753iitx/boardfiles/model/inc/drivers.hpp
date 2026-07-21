@@ -33,7 +33,7 @@ extern GPS *gpsHandle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
-extern Rangefinder *rfHandle;
+extern Rangefinder *rangefinderHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

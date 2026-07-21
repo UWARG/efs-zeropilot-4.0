@@ -9,7 +9,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
-    IRangefinder *rfDriver,
+    IRangefinder *rangefinderDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -18,7 +18,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
-    rfDriver(rfDriver),
+    rangefinderDriver(rangefinderDriver),
     harmonicNotchFilter(systemUtilsDriver, fftDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
@@ -142,7 +142,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get rangefinder data
-    RangefinderData_t rfData = rfDriver->readData();
+    RangefinderData_t rangefinderData = rangefinderDriver->readData();
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);

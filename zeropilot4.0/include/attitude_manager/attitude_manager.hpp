@@ -37,7 +37,7 @@ public:
         IGPS *gpsDriver,
         IIMU *imuDriver,
         IFFT *fftDriver,
-        IRangefinder *rfDriver,
+        IRangefinder *rangefinderDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
@@ -54,7 +54,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
-    IRangefinder *rfDriver;
+    IRangefinder *rangefinderDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;

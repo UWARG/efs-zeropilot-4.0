@@ -111,22 +111,22 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == rfHandle->getI2C()) {
-    rfHandle->txCallback();
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->txCallback();
   }
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == rfHandle->getI2C()) {
-    rfHandle->rxCallback();
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->rxCallback();
   }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c == pmHandle->getI2C()) {
     pmHandle->I2C_ErrorCallback();
-  } else if (hi2c == rfHandle->getI2C()) {
-    rfHandle->errorCallback();
+  } else if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->errorCallback();
   }
 }
 
