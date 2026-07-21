@@ -8,6 +8,7 @@ AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
+    IFFT *fftDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -16,6 +17,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    harmonicNotchFilter(systemUtilsDriver, fftDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -27,10 +29,11 @@ AttitudeManager::AttitudeManager(
     currentFlightMode(FlightMode_e::MANUAL),
     #endif
     #ifdef QUADCOPTER
-    activeCLAW(&acroCLAW),
+    activeCLAW(&stabilizeCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    controlMsg({50, 50, 50, 0, 0, FlightMode_e::ACRO}),
-    currentFlightMode(FlightMode_e::ACRO),
+    stabilizeCLAW(AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
+    controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
+    currentFlightMode(FlightMode_e::STABILIZE),
     #endif
     droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
@@ -43,15 +46,17 @@ AttitudeManager::AttitudeManager(
     lastTimestamp(0),
     haveLastImuTimestamp(false),
     profilerId(0),
-    paramSetup(this){
+    paramSetup(this) {
+        paramSetup.loadAllParams();
+        paramSetup.bindAllParamCallbacks();
 
-    paramSetup.loadAllParams();
-    paramSetup.bindAllParamCallbacks();
+        harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
+        harmonicNotchFilter.init(harmonicNotchConfig);
 
-    // Activate the activeCLAW
-    activeCLAW->activateFlightMode();
+        // Activate the activeCLAW
+        activeCLAW->activateFlightMode();
 
-    systemUtilsDriver->profilerRegister("AM", &profilerId);
+        systemUtilsDriver->profilerRegister("AM", &profilerId);
 }
 
 void AttitudeManager::amUpdate() {
@@ -69,6 +74,12 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
+        if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
+            harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
+        }
+        // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
+        harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
+        
         /**
          * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
          * and the delta for double IMU will be necessarily less than uint16_t max value.
@@ -114,10 +125,18 @@ void AttitudeManager::amUpdate() {
         sendAttitudeDataToTelemetryManager(attitude);
     }
 
-    // Send GPS data to telemetry manager
+    // Get GPS data
     GpsData_t gpsData = gpsDriver->readData();
+    if (gpsData.isNew) {
+        lastValidGps = gpsData;
+    }
+    
+    // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
-        sendGPSDataToTelemetryManager(gpsData);
+        if (lastValidGps.isNew) {
+            sendGPSDataToTelemetryManager(lastValidGps);
+            lastValidGps.isNew = false; // Mark as sent to telemetry manager, so if no new GPS data is valid the same data is not sent again
+        }
     }
 
     // Get data from Queue and motor outputs
@@ -152,6 +171,7 @@ void AttitudeManager::amUpdate() {
             
             outputToMotors(motorOutputs);
 
+            systemUtilsDriver->profilerEnd(profilerId);
             return;
         }
     } else {
@@ -185,13 +205,16 @@ void AttitudeManager::amUpdate() {
                 activeCLAW = &fbwaCLAW;
                 break;
             #endif
-            
+
             #ifdef QUADCOPTER
             case FlightMode_e::ACRO:
                 activeCLAW = &acroCLAW;
                 break;
+            case FlightMode_e::STABILIZE:
+                activeCLAW = &stabilizeCLAW;
+                break;
             #endif
-
+            
         }
         activeCLAW->activateFlightMode();
         currentFlightMode = controlMsg.flightMode;

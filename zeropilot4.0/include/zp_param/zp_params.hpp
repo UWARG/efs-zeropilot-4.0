@@ -114,6 +114,17 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     ATC_RAT_YAW_IMAX,
     ACRO_RP_RATE,
     ACRO_Y_RATE,
+    ATC_ANG_RLL_P,
+    ATC_ANG_RLL_I,
+    ATC_ANG_RLL_D,
+    ATC_ANG_RLL_TAU,
+    ATC_ANG_RLL_IMAX,
+    ATC_ANG_PTCH_P,
+    ATC_ANG_PTCH_I,
+    ATC_ANG_PTCH_D,
+    ATC_ANG_PTCH_TAU,
+    ATC_ANG_PTCH_IMAX,
+    ATC_ANGLE_MAX,
     #endif
     FLTMODE1,
     FLTMODE2,
@@ -131,6 +142,12 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     RC3_REVERSED,
     RC4_REVERSED,
     BATT_N_CELLS,
+    FFT_ENABLE,
+    FFT_WINDOW_LEN,
+    FFT_MINHZ,
+    INS_HNTCH_BW,
+    INS_HNTCH_ATT,
+    INS_HNTCH_HMNCS,
     PARAM_COUNT
 };
 

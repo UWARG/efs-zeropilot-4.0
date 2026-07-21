@@ -7,6 +7,7 @@
 #include "mock_imu.hpp"
 #include "mock_queue.hpp"
 #include "mock_motor.hpp"
+#include "mock_fft.hpp"
 
 using ::testing::_;
 using ::testing::Return;
@@ -16,6 +17,7 @@ using ::testing::NiceMock;
 class AttitudeManagerTelemetryTest : public ::testing::Test {
 protected:
     NiceMock<MockSystemUtils> mockSystemUtils;
+    NiceMock<MockFFT> mockFFT;
     NiceMock<MockGPS> mockGPS;
     NiceMock<MockIMU> mockIMU;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
@@ -46,6 +48,7 @@ protected:
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
+        ON_CALL(mockFFT, init(_)).WillByDefault(Return(true));
     }
 };
 
@@ -70,7 +73,7 @@ TEST_F(AttitudeManagerTelemetryTest, RawIMUTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -100,7 +103,7 @@ TEST_F(AttitudeManagerTelemetryTest, AttitudeTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -134,7 +137,7 @@ TEST_F(AttitudeManagerTelemetryTest, RawGPSTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -153,7 +156,7 @@ TEST_F(AttitudeManagerTelemetryTest, ServoOutputRawTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();

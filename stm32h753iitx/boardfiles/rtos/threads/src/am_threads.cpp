@@ -6,7 +6,7 @@ osThreadId_t amMainHandle;
 
 static const osThreadAttr_t amMainLoopAttr = {
     .name = "amMain",
-    .stack_size = 2048,
+    .stack_size = 4096,
     .priority = (osPriority_t) osPriorityNormal
 };
 
