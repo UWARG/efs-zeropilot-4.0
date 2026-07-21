@@ -5,12 +5,13 @@
 struct TaskEntry {
     const char* name;
     uint32_t startCycle;
-    uint32_t deltaUs;
-    uint32_t deltaStartTime;
+    uint32_t maxExecUs;   // Worst-case exec time since last profilerGetAll
+    uint32_t iterations;  // Completed begin/end pairs since last profilerGetAll
 };
 
 static TaskEntry registry[MAX_PROFILED_TASKS] = {};
 static uint8_t taskCount = 0;
+static uint32_t lastReadCycle = 0;
 static uint32_t microSecLastCyc = 0;
 static uint64_t microSecAccumCyc = 0;
 
@@ -41,20 +42,32 @@ void SystemUtils::profilerRegister(const char* name, uint8_t* outId) {
 }
 
 void SystemUtils::profilerBegin(uint8_t id) {
-    uint32_t cycles = DWT->CYCCNT - registry[id].startCycle;
-    registry[id].deltaStartTime = cycles / (SystemCoreClock / 1000000U);
     registry[id].startCycle = DWT->CYCCNT;
 }
 
 void SystemUtils::profilerEnd(uint8_t id) {
     uint32_t cycles = DWT->CYCCNT - registry[id].startCycle;
-    registry[id].deltaUs = cycles / (SystemCoreClock / 1000000U); // convert hclk ticks to micro sec
+    uint32_t execUs = cycles / (SystemCoreClock / 1000000U); // Convert hclk ticks to micro sec
+    if (execUs > registry[id].maxExecUs) {
+        registry[id].maxExecUs = execUs;
+    }
+    registry[id].iterations++;
 }
 
 void SystemUtils::profilerGetAll(TaskProfile* out, uint8_t* count) {
+    uint32_t now = DWT->CYCCNT;
+    uint32_t windowCycles = now - lastReadCycle;
+    lastReadCycle = now;
+
     *count = taskCount;
     for (uint8_t i = 0; i < taskCount; i++) {
-        out[i] = { registry[i].name, registry[i].deltaUs, registry[i].deltaStartTime > 0 ? 1000000U / registry[i].deltaStartTime : 0 };
+        uint32_t avgRateHz = 0;
+        if (windowCycles > 0) {
+            avgRateHz = (uint64_t)registry[i].iterations * SystemCoreClock / windowCycles;
+        }
+        out[i] = {registry[i].name, registry[i].maxExecUs, avgRateHz};
+        registry[i].maxExecUs = 0;
+        registry[i].iterations = 0;
     }
 }
 
