@@ -156,8 +156,8 @@ void AhrsEsmEkf::init(const float* gyroInit, const float* accelInit, const float
     std::memset(p, 0, sizeof(p));
     for (int i = 0; i < 3; ++i) {
         p[i*9 + i] = cfg.pInitAtt;             // Attitude [0:3]
-        p[(i+3)*9 + (i+3)] = cfg.pInitBias;    // Gyro Bias [3:6]
-        p[(i+6)*9 + (i+6)] = cfg.pInitBias;    // Accel Bias [6:9]
+        p[(i+3)*9 + (i+3)] = cfg.pInitBiasGyro;    // Gyro Bias [3:6]
+        p[(i+6)*9 + (i+6)] = cfg.pInitBiasAccel;    // Accel Bias [6:9]
     }
 }
 

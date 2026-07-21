@@ -3,6 +3,7 @@
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
 #include "unit_conversions.hpp"
+#include <limits>
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -62,10 +63,11 @@ AttitudeManager::AttitudeManager(
             .magCov = 3.6e-5f,
             .gyroBiasCov = 1.0e-10f,
             .accelBiasCov = 1.0e-8f,
-            .accelGateThreshold = 7.8f,
+            .accelGateThreshold = std::numeric_limits<float>::max(),
             .magGateThreshold = 16.3f,
             .pInitAtt = 1e-2f,
-            .pInitBias = 1e-4f,
+            .pInitBiasGyro = 1e-4f,
+            .pInitBiasAccel = 1e-6f,
             .gravityInertial = {0, 0, -9.81f},
             .magInertial = {1, 0, 0}
         };

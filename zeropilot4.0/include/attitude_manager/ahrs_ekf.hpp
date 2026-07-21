@@ -64,7 +64,8 @@ public:
         float accelGateThreshold;
         float magGateThreshold;
         float pInitAtt;
-        float pInitBias;
+        float pInitBiasGyro;
+        float pInitBiasAccel;
         float gravityInertial[3];
         float magInertial[3];
     };
