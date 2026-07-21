@@ -7,7 +7,7 @@ private:
     RangefinderData_t data = {};
 public:
 
-    int init() override {}
+    int init() override { return 0; }
     RangefinderData_t readData() override { return data; }
 
     void update_from_plant(float sim_altitude) {

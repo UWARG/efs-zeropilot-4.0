@@ -240,14 +240,14 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     if (!PyArg_ParseTuple(args, "ddddddddddfff",
         &roll_rad, &pitch_rad, &p_rad_s, &q_rad_s, &r_rad_s,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
-        &fuel_lbs, &rpm
+        &fuel_lbs, &rpm,
         &rangefinder_alt))
         return NULL;
     
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
     self->pm->update_from_plant(fuel_lbs, rpm);
-    self->rangedinfer->update_from_plant(rangefinder_alt);
+    self->rangefinder->update_from_plant(rangefinder_alt);
     
     Py_RETURN_NONE;
 }

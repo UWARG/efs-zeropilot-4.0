@@ -51,7 +51,7 @@ protected:
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
         ON_CALL(mockFFT, init(_)).WillByDefault(Return(true));
-        ON_CALL(mockRangefinder, init(_)).WillByDefault(Return(true));
+        ON_CALL(mockRangefinder, init()).WillByDefault(Return(0));
     }
 };
 
