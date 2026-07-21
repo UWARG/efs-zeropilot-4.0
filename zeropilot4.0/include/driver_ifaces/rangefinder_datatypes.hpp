@@ -3,8 +3,9 @@
 #include <cstdint>
 
 typedef struct {
-    uint16_t distance; // cm
+    float distance; // m
     uint16_t signalStrength; // Higher is better
-    uint16_t temp; // Chip temperature in celsius 
-    bool isValid; // True if reading is valid, false otherwise
+    int16_t temp; // Chip temperature in celsius 
+    bool isValid; // True if data is valid, false otherwise
+    bool isNew; // True if the data is new since last readData()
 } RangefinderData_t;

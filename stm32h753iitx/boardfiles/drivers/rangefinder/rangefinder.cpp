@@ -16,6 +16,10 @@ static constexpr uint8_t READ_CMD_LEN = sizeof(I2C_READ_CMD);
 
 static constexpr uint8_t DATA_FRAME_HEADER = 0x59;
 
+static constexpr uint16_t STRGENTH_SATURATED = 65535;
+static constexpr uint16_t DIST_SATURATED = 65534;
+static constexpr uint16_t DIST_WEAK_SIGNAL = 4500;
+
 Rangefinder::Rangefinder(I2C_HandleTypeDef *hi2c) : hi2c(hi2c) {}
 
 int Rangefinder::init() {
@@ -64,34 +68,39 @@ int Rangefinder::init() {
             return -1;
         }
     }
-    return true;
+    return 0;
 }
 
 RangefinderData_t Rangefinder::readData() {
     // Kick off DMA transfer for the first transfer, the first readData() call will return empty data
     if (!dataFilled) {
         restartTransfer();
+        data.isValid = false;
+        data.isNew = false;
         return data;
     }
     dataFilled = false;
     
     // Parse the recieved data
     if (rxBuffer[0] == DATA_FRAME_HEADER && rxBuffer[1] == DATA_FRAME_HEADER) { // Check the frame header so we dont parse a corrupted frame
-        data.distance = rxBuffer[3] << 8 | rxBuffer[2];
-        data.signalStrength = rxBuffer[5] << 8 | rxBuffer[4];
-        data.temp = (rxBuffer[7] << 8 | rxBuffer[6]) / 8 - 256;
+        uint16_t rawDistance = rxBuffer[3] << 8 | rxBuffer[2];
+        uint16_t rawStrength = rxBuffer[5] << 8 | rxBuffer[4];
+        int16_t rawTemp = (rxBuffer[7] << 8 | rxBuffer[6]) / 8 - 256;
 
         /*
         Checksum doesnt match, the data is corrupted
         When encountering a measured object with high reflectivity, strength = 65535 and the distance value will become 65534
         When the signal strength is insufficient and lower than 60, the distance value will become the maximum value of 4500
         */
-        if (computeChecksum() != rxBuffer[8] || data.signalStrength == 65535 || data.distance == 65534 || data.distance == 4500) { 
-            data.isValid = false;
-        } else {
-            data.isValid = true;
-        }
-    } 
+        data.isValid = (computeChecksum() == rxBuffer[8]) && (rawStrength != STRGENTH_SATURATED)
+                        && (rawDistance != DIST_SATURATED) && (rawDistance != DIST_WEAK_SIGNAL);
+        data.isNew = true;
+        data.distance = (float)rawDistance / 100.0f;
+        data.signalStrength = rawStrength;
+        data.temp = rawTemp;
+    } else {
+        data.isValid = false; // The frame is corrupted, make the data not valid
+    }
 
     // Kick off another DMA transfer we have new when next readData() is called
     restartTransfer();

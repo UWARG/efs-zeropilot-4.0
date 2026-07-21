@@ -135,10 +135,6 @@ void AttitudeManager::amUpdate() {
 
     // Get rangefinder data
     RangefinderData_t rfData = rfDriver->readData();
-
-    if (rfData.distance == 65534 || rfData.signalStrength == 65535) {
-        while(1);
-    }
     
     // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {

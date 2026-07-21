@@ -18,7 +18,7 @@ class Rangefinder : public IRangefinder {
 
     private:
         I2C_HandleTypeDef *hi2c;
-        RangefinderData_t data;
+        RangefinderData_t data = {};
         volatile bool dataFilled = false;
 
         static constexpr uint8_t READ_RESPONSE_LENGTH = 9;
