@@ -19,7 +19,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
-    harmonicNotchFilter(systemUtilsDriver, fftDriver),
+    harmonicNotchFilter(mathUtilsDriver, fftDriver),
     ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
