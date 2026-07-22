@@ -4,7 +4,7 @@
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
-#define LOG_TIMING 1
+#define LOG_TIMING 0
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
