@@ -18,7 +18,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 SITL_RATE_HZ = 1000
 
-class ZP_FGFS_SITL:
+class ZP_PLANE_SITL_FGFS:
     def __init__(self, fg_host="127.0.0.1", fg_port=5550):
         # 1. Input Setup (Joysticks)
         pygame.init()
@@ -182,7 +182,7 @@ class ZP_FGFS_SITL:
         sys.stdout.flush()
 
 if __name__ == '__main__':
-    sitl = ZP_FGFS_SITL()
+    sitl = ZP_PLANE_SITL_FGFS()
     sitl.reset_to_air()
     
     os.system('cls' if os.name == 'nt' else 'clear')

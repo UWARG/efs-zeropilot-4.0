@@ -1,27 +1,32 @@
-# attitude manager files
+# Attitude manager files
 set(AM_SRC
+    "src/attitude_manager/acro_mapping.cpp"
     "src/attitude_manager/attitude_manager.cpp"
+    "src/attitude_manager/am_param_setup.cpp"
     "src/attitude_manager/direct_mapping.cpp"
     "src/attitude_manager/fbwa_mapping.cpp"
+    "src/attitude_manager/fft_harmonic_notch.cpp"
     "src/attitude_manager/pid.cpp"
     "src/attitude_manager/MahonyAHRS.cpp"
-    "src/attitude_manager/am_param_setup.cpp"
+    "src/attitude_manager/motor_mixing.cpp"
+    "src/attitude_manager/stabilize_mapping.cpp"
 )
 set(AM_INC
     "include/attitude_manager/"
 )
 
-# system manager files
+# System manager files
 set(SM_SRC
     "src/system_manager/system_manager.cpp"
     "src/system_manager/logger.cpp"
     "src/system_manager/sm_param_setup.cpp"
+    "src/system_manager/soc_estimation.cpp"
 )
 set(SM_INC
     "include/system_manager/"
 )
 
-# telemetry manager files
+# Telemetry manager files
 set(TM_SRC
     "src/telemetry_manager/telemetry_manager.cpp"
     "src/telemetry_manager/tm_param_setup.cpp"
@@ -47,12 +52,12 @@ set(ZP_PARAM_INC
     "include/zp_param/"
 )
 
-# external library files (does not apply compiler warnings)
+# External library files (does not apply compiler warnings)
 set(EXTERNAL_INC
     "../external/c_library_v2/all/"
 )
 
-# combined files
+# Combined files
 set(ZP_SRC
     ${AM_SRC}
     ${SM_SRC}

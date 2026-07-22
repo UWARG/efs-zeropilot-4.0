@@ -63,8 +63,14 @@ void TelemetryManager::processTXMsgQueue() {
         switch (tmqMessage.dataType) {
             case TMMessage_t::HEARTBEAT_DATA: {
                 auto heartbeatData = tmqMessage.tmMessageData.heartbeatData;
-                mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_FIXED_WING, MAV_AUTOPILOT_ARDUPILOTMEGA,
-                	heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
+                #ifdef PLANE
+                    mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_FIXED_WING, MAV_AUTOPILOT_ARDUPILOTMEGA,
+                	    heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
+                #endif
+                #ifdef QUADCOPTER
+                     mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_ARDUPILOTMEGA,
+                	    heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
+                #endif
                 break;
             }
 

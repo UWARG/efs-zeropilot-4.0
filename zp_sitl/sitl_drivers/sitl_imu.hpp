@@ -17,7 +17,10 @@ private:
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
 public:
-    int init() override { return 0; }
+    int init() override {
+        rawData.timestamp = 0; // Initialize timestamp
+        return 0; // Success
+    }
     
     /**
      * Simulates the IMU readings based on the physics engine (Plant)
@@ -32,9 +35,9 @@ public:
 
         // Accelerometer: Gravity projection (assuming 1g static)
         // LSB_PER_G = ACCEL_SCALE (e.g., 2048)
-        float ax = -Config::GRAVITY * sp;
-        float ay =  Config::GRAVITY * sr * cp;
-        float az =  Config::GRAVITY * cr * cp;
+        float ax = Config::GRAVITY * sp;
+        float ay = -Config::GRAVITY * sr * cp;
+        float az = -Config::GRAVITY * cr * cp;
         
         // Convert m/s^2 to LSB: (Value / 9.81) * Scale_Factor
         constexpr float ACCEL_TO_LSB = (float)Config::ACCEL_SCALE / Config::GRAVITY;
@@ -50,10 +53,16 @@ public:
         rawData.xgyro = (int16_t)(p_deg_s * Config::GYRO_SCALE);
         rawData.ygyro = (int16_t)(q_deg_s * Config::GYRO_SCALE);
         rawData.zgyro = (int16_t)(r_deg_s * Config::GYRO_SCALE);
+
+        rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
     }
     
     RawImuBatch_t readRawData() override {
-        return rawBatch; // Single-sample batch backed by rawData
+        return rawBatch;
+    }
+
+    float getODRHz() override {
+        return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
 
     /**
@@ -68,10 +77,10 @@ public:
             scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
             scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-            // Convert LSB back to rad/s: (Raw / Scale) -> deg/s -> rad/s
-            scaledData.xgyro = ((float)raw.xgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-            scaledData.ygyro = ((float)raw.ygyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-            scaledData.zgyro = ((float)raw.zgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
+            // Convert LSB back to deg/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
 
             scaledData.timestamp = raw.timestamp;
         }

@@ -242,14 +242,14 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
     // Internal test mapping: Nominal PWM -> Expected Enum from SystemManager constants
     struct {
         float pwm;
-        PlaneFlightMode_e expected;
+        FlightMode_e expected;
     } testCases[] = {
-        {1165.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE1)))},
-        {1295.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE2)))},
-        {1425.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE3)))},
-        {1555.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE4)))},
-        {1685.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE5)))},
-        {1815.0f, static_cast<PlaneFlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE6)))}
+        {1165.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE1)))},
+        {1295.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE2)))},
+        {1425.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE3)))},
+        {1555.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE4)))},
+        {1685.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE5)))},
+        {1815.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE6)))}
     };
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,

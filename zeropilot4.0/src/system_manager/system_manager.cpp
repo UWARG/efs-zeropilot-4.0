@@ -4,7 +4,7 @@
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
-#define LOG_TIMING 1
+#define LOG_TIMING 0
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
@@ -13,26 +13,28 @@ SystemManager::SystemManager(
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue
-) :
-    systemUtilsDriver(systemUtilsDriver),
-    iwdgDriver(iwdgDriver),
-    fileSystemDriver(fileSystemDriver),
-    rcDriver(rcDriver),
-    pmDriver(pmDriver),
-    amRCQueue(amRCQueue),
-    tmQueue(tmQueue),
-    smSchedulingCounter(0),
-    flightModes{},
-    oldDataCount(0),
-    rcConnected(false),
-    batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
-    profilerId(0),
-    paramSetup(this) {
-        paramSetup.loadAllParams();
-        paramSetup.bindAllParamCallbacks();
-        Logger::init(fileSystemDriver, systemUtilsDriver);
-        systemUtilsDriver->profilerRegister("SM", &profilerId);
+    IMessageQueue<TMMessage_t> *tmQueue) :
+        systemUtilsDriver(systemUtilsDriver),
+        iwdgDriver(iwdgDriver),
+        fileSystemDriver(fileSystemDriver),
+        rcDriver(rcDriver),
+        pmDriver(pmDriver),
+        amRCQueue(amRCQueue),
+        tmQueue(tmQueue),
+        smSchedulingCounter(0),
+        flightModes{},
+        oldDataCount(0),
+        rcConnected(false),
+        rcChannelReversed{},
+        batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
+        socEstimator(batteryData),
+        profilerId(0),
+        paramSetup(this)
+{
+    paramSetup.loadAllParams();
+    paramSetup.bindAllParamCallbacks();
+    Logger::init(fileSystemDriver, systemUtilsDriver);
+    systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
 void SystemManager::smUpdate() {
@@ -87,7 +89,7 @@ void SystemManager::smUpdate() {
     }
 
     // Decode flight mode from raw value and include in custom mode for HEARTBEAT telemetry
-    PlaneFlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
+    FlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
     // Send Heartbeat data to TM at a 1Hz rate
@@ -97,6 +99,7 @@ void SystemManager::smUpdate() {
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
     if (updateBatteryFSM()) {
+        socEstimator.calcStateOfCharge(batteryData, SOC_CHARGE_DISCHARGE_MODE);
         if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
             sendBatteryDataToTelemetryManager(batteryData, 0);
         }
@@ -109,26 +112,26 @@ void SystemManager::smUpdate() {
 
         for (uint8_t i = 0; i < count; i++) {
             if (strcmp(profiles[i].name, "SM") == 0) {
-                if (profiles[i].deltaExec >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                if (profiles[i].maxExecUs >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "SM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.8f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].maxExecUs >= 0.8f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "SM execution time about to exceed scheduled rate");
                 }
             } else if (strcmp(profiles[i].name, "AM") == 0) {
-                if (profiles[i].deltaExec >= (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                if (profiles[i].maxExecUs >= (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "AM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.8f * (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].maxExecUs >= 0.8f * (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "AM execution time about to exceed scheduled rate");
                 }
             } else if (strcmp(profiles[i].name, "TM") == 0) {
-                if (profiles[i].deltaExec >= (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                if (profiles[i].maxExecUs >= (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "TM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.8f * (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].maxExecUs >= 0.8f * (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "TM execution time about to exceed scheduled rate");
                 }
             }
             #if LOG_TIMING
-            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].maxExecUs, profiles[i].avgRateHz);
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profilerBuf);
             #endif
         }
@@ -216,48 +219,35 @@ void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32
 void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     RCMotorControlMessage_t rcDataMessage;
 
-    rcDataMessage.roll = rcData.roll;
-    rcDataMessage.pitch = rcData.pitch;
-    rcDataMessage.yaw = rcData.yaw;
-    rcDataMessage.throttle = rcData.throttle;
+    rcDataMessage.roll = rcChannelReversed[0] ? 100.0f - rcData.roll : rcData.roll;
+    rcDataMessage.pitch = rcChannelReversed[1] ? 100.0f - rcData.pitch : rcData.pitch;
+    rcDataMessage.throttle = rcChannelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
+    rcDataMessage.yaw = rcChannelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
     rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
+    #endif
     rcDataMessage.flightMode = decodeRawFlightMode(rcData.fltModeRaw);
 
     amRCQueue->push(&rcDataMessage);
 }
 
-void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t BATTERY_ID) {   
+void SystemManager::sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId) {   
     static constexpr uint8_t VOLTAGE_LEN = 1;
     float voltages[VOLTAGE_LEN] = {batteryData.pmData.busVoltage};
-
-    // Get battery capacity from ZP_PARAM
-    float battCapacityMah = ZP_PARAM::get(ZP_PARAM_ID::BATT_CAPACITY);
-
-    // SOC estimation (0-100 %) based on capacity
-    float consumedColoumbs = batteryData.pmData.charge;
-    float remainingColoumbs = (battCapacityMah * 3.6f) - consumedColoumbs;
-    remainingColoumbs = remainingColoumbs < 0 ? 0 : remainingColoumbs; // Floor at 0
-    int8_t socPercentage = static_cast<int8_t>((remainingColoumbs / (battCapacityMah * 3.6f)) * 100.0f);
-
-    // Simple time remaining estimation based on current consumption
-    int32_t timeRemainingSec = 0; // Default to unknown if current is too low to estimate
-    if (batteryData.pmData.current > 0.5f) {
-        timeRemainingSec = static_cast<int32_t>(remainingColoumbs / batteryData.pmData.current);
-    }
 
     // Pack battery data into telemetry message and send to TM
     TMMessage_t batteryDataMsg = batteryDataPack(
         systemUtilsDriver->getCurrentTimestampMs(),
-        BATTERY_ID,
-        INT16_MAX,
+        batteryId,
+        batteryData.pmData.temperature,
         voltages,
         VOLTAGE_LEN,
         batteryData.pmData.current,
         batteryData.pmData.charge,
         batteryData.pmData.energy,
-        socPercentage,
-        timeRemainingSec,
+        socEstimator.getSocPercentage(),
+        socEstimator.getTimeRemaining(),
         batteryData.chargeState
     );
     tmQueue->push(&batteryDataMsg);
@@ -268,7 +258,7 @@ void SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, cons
     tmQueue->push(&statusTextMsg);
 }
 
-PlaneFlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
+FlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     if (flightModeRawValue <= SM_FLIGHTMODE1_MAX) {
         return flightModes[0];
     }

@@ -21,8 +21,9 @@ void initManagers()
         systemUtilsHandle, 
         gpsHandle,
         imuHandle,
-        amRCQueueHandle,
-        tmQueueHandle,
+        fftHandle,
+        amRCQueueHandle, 
+        tmQueueHandle, 
         &mainMotorGroup
     );
 

@@ -30,7 +30,7 @@ class FBWAMapping : public Flightmode {
         // Setter for *pitchLimitMinRad*
         void setPitchLimitMinDeg(float newPitchLimitMinDeg) noexcept;
 
-        // Resetter for both roll and pitch PIDs
+        // Resetter for both roll and pitch PIDs (needed for unit testing)
         void resetControlLoopState() noexcept;
 
         // Getter for PID objects

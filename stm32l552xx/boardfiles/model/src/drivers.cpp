@@ -21,6 +21,7 @@ extern I2C_HandleTypeDef hi2c1;
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 SDFileSystem *sdFileSystemHandle = nullptr;
 FatFsBackend *fatFsBackendHandle = nullptr;
@@ -70,14 +71,24 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 void initDrivers()
 {
     // Core utilities
+    fftHandle = new FFT();
     systemUtilsHandle = new SystemUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
 
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
     for (int i = 0; i < 8; i++) {
-        bool isMotor = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
-        if (isMotor) {
+        bool isBLDC = false;
+        #ifdef PLANE
+        isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        #endif
+        #ifdef QUADCOPTER
+        isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3)
+                        || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
+        #endif
+        if (isBLDC) {
             switch (servoType) {
                 case MOT_TYPE_DSHOT: // DShot
                     motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
@@ -96,7 +107,7 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart3);
-    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0);
+    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0, 0, IMU_ODR_4KHZ);
     pmHandle = new PowerModule(&hi2c1);
 
     // Queues

@@ -3,7 +3,29 @@ set -e
 
 script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-build_dir="${script_dir}/build-host"
+vehicle_type="plane"
+
+usage() {
+    echo "Usage: $0 [-v <plane|quad>]"
+    exit 1
+}
+
+while getopts "v:" opt; do
+    case "${opt}" in
+        v)
+            if [[ "$OPTARG" == "plane" || "$OPTARG" == "quad" ]]; then
+                vehicle_type="$OPTARG"
+            else
+                usage
+            fi
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+build_dir="${script_dir}/build-host-${vehicle_type}"
 
 echo "==> Setting up host build directory: $build_dir"
 
@@ -16,7 +38,11 @@ mkdir -p "$build_dir"
 # Run native cmake config with compile_commands export
 cd "$build_dir"
 echo "==> Running native CMake configure..."
-cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "$script_dir"
+if [[ "$vehicle_type" == "plane" ]]; then
+    cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPLANE_BUILD=ON "$script_dir"
+else
+    cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DQUADCOPTER_BUILD=ON "$script_dir"
+fi
 
 echo "==> Building native host build..."
 cmake --build .
