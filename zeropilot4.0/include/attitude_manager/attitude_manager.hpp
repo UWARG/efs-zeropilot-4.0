@@ -30,18 +30,18 @@ class AttitudeManager
 {
     friend class AMParamSetup;
 
-    public:
-        AttitudeManager(
-            ISystemUtils *systemUtilsDriver,
-            IMathUtils *mathUtilsDriver,
-            IGPS *gpsDriver,
-            IIMU *imuDriver,
-            IFFT *fftDriver,
-            IMessageQueue<RCMotorControlMessage_t> *amQueue,
-            IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue,
-            MotorGroupInstance_t *mainMotorGroup
-        );
+public:
+    AttitudeManager(
+        ISystemUtils *systemUtilsDriver,
+        IMathUtils *mathUtilsDriver,
+        IGPS *gpsDriver,
+        IIMU *imuDriver,
+        IFFT *fftDriver,
+        IMessageQueue<RCMotorControlMessage_t> *amQueue,
+        IMessageQueue<TMMessage_t> *tmQueue,
+        IMessageQueue<char[100]> *smLoggerQueue,
+        MotorGroupInstance_t *mainMotorGroup
+    );
 
     void amUpdate();
 

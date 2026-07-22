@@ -74,7 +74,6 @@ bool MathUtils::matrixInverse(const float* src, uint16_t dim, float* dst) {
     arm_mat_init_f32(&In, dim, dim, const_cast<float*>(src));
     arm_mat_init_f32(&Out, dim, dim, dst);
 
-    // arm_mat_inverse_f32 performs Gauss-Jordan elimination
     return arm_mat_inverse_f32(&In, &Out) == ARM_MATH_SUCCESS;
 }
 
@@ -115,7 +114,6 @@ void MathUtils::quatNormalize(const float* q, float* qOut) {
 }
 
 void MathUtils::quatToRotationMatrix(const float* q, float* mat3x3) {
-    // CMSIS-DSP creates the standard C_b^i rotation matrix natively
     float qNorm[4];
     quatNormalize(q, qNorm);
     arm_quaternion2rotation_f32(qNorm, mat3x3, 1);
@@ -160,7 +158,6 @@ void MathUtils::quatAverage(const float* q1, const float* q2, float* qOut) {
     quatInverse(q1n, q1Inv);
     quatMultiply(q1Inv, q2n, r);
 
-    // Enforce shortest path
     if (r[0] < 0.0f) {
         r[0] = -r[0]; r[1] = -r[1]; r[2] = -r[2]; r[3] = -r[3];
     }

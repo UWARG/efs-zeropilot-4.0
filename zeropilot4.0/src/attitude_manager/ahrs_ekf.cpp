@@ -118,7 +118,6 @@ void NominalState::correctState(const float* smallAngleError) {
     };
     
     float qCorrectedUnnorm[4];
-    // Python does: q_new * qErr
     math->quatMultiply(quaternionNew, qErr, qCorrectedUnnorm);
     
     math->quatNormalize(qCorrectedUnnorm, quaternionNew);

@@ -10,16 +10,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-/**
- * Host implementation of IMathUtils for SITL.
- *
- * The flight firmware uses a CMSIS-DSP backed MathUtils, but the SITL build
- * does not link the CMSIS-DSP matrix/quaternion sources, so this provides an
- * equivalent portable implementation. Conventions match the board driver:
- *   - matrices are row-major
- *   - quaternions are [w, x, y, z]
- *   - the rotation matrix is body-to-inertial (C_b^i)
- */
 class SITL_MathUtils : public IMathUtils {
     public:
         float vectorNorm(const float* src, uint16_t dim) override {
@@ -79,7 +69,6 @@ class SITL_MathUtils : public IMathUtils {
         }
 
         bool matrixInverse(const float* src, uint16_t dim, float* dst) override {
-            // Gauss-Jordan elimination with partial pivoting on [src | I].
             std::vector<float> a(src, src + static_cast<uint32_t>(dim) * dim);
             for (uint16_t i = 0; i < dim; ++i) {
                 for (uint16_t j = 0; j < dim; ++j) dst[i * dim + j] = (i == j) ? 1.0f : 0.0f;

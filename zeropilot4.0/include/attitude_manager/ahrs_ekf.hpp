@@ -81,7 +81,6 @@ public:
 
     Attitude_t getAttitudeRadians() const;
 
-    // Public state access
     Measurements meas;
     NominalState nom;
     float p[ERROR_STATE_SZ * ERROR_STATE_SZ];
