@@ -10,6 +10,7 @@ namespace Logger {
     static uint32_t lastSyncCount = 0;
     static uint32_t lastSyncTime = 0;
     static bool newWrite = false;
+    static bool loggerEnable = false;
 
     void init(IFileSystem* fs, ISystemUtils* sysUtils) {
         fileSystem = fs;
@@ -19,6 +20,7 @@ namespace Logger {
         newWrite = false;
         if (!fileSystem) return;
         if (!fileSystem->available()) return;
+        loggerEnable = true;
         
         fileSystem->mkdir("logs");
         logFile = {};
@@ -41,7 +43,7 @@ namespace Logger {
 
     
     void log(const char* format, LogLevel_e level, ...) {
-        if (!fileSystem || !systemUtils) return;
+        if (!loggerEnable || !fileSystem || !systemUtils) return;
         
         char buffer[BUFFER_SIZE];
         
@@ -84,6 +86,7 @@ namespace Logger {
     }
     
     void sync() {
+        if (!loggerEnable) return;
         if (fileSystem && newWrite && systemUtils->getCurrentTimestampMs() - lastSyncTime >= SYNC_PERIOD) {
             fileSystem->sync(ManagerId_e::SYSTEM, &logFile, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncTime = systemUtils->getCurrentTimestampMs();

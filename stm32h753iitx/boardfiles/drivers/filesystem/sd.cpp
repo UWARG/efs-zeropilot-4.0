@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cstdarg>
+#include "stm32h7xx_hal.h"
 
 #ifdef SWO_LOGGING
 extern "C" int _write(int file, char *ptr, int len);
@@ -54,6 +55,10 @@ uint8_t SDFileSystem::modeStringToFatfsFlags(const char* mode) {
 }
 
 FileStatus_e SDFileSystem::init() {
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15) == GPIO_PIN_SET) {
+        mounted = false;
+        return FILE_STATUS_ERROR;
+    }
     // TODO: Ari's version had a HAL_DELAY for 1 second here, that might be needed?
     HAL_Delay(1000); // Wait for SD card to be ready after power up
 
@@ -69,7 +74,7 @@ FileStatus_e SDFileSystem::init() {
 }
 
 FileStatus_e SDFileSystem::open(File* fp, const char* path, const char* mode) {
-    if (!fp) return FILE_STATUS_ERROR;
+    if (!mounted || !fp) return FILE_STATUS_ERROR;
     
     FIL* fil = new (&fp->storage[0]) FIL; // Placement new to construct FIL in File's storage
     uint8_t fatfsMode = modeStringToFatfsFlags(mode);
@@ -78,19 +83,17 @@ FileStatus_e SDFileSystem::open(File* fp, const char* path, const char* mode) {
 }
 
 FileStatus_e SDFileSystem::mkdir(const char* path) {
-    if (!path) return FILE_STATUS_ERROR;
+    if (!mounted || !path) return FILE_STATUS_ERROR;
     FRESULT res = f_mkdir(path);
     return fresultToStatus(res);
 }
 
 FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions_e options) {
-    if (!fp || !buff) return FILE_STATUS_ERROR;
+    if (!mounted || !fp || !buff) return FILE_STATUS_ERROR;
     
 #ifdef SWO_LOGGING
     swoWrite((const char*)buff, btw);
 #endif
-
-    if (!mounted) return FILE_STATUS_ERROR;
 
     if (options == ReqOptions_e::SYNC) {
         uint32_t dummyBytesWritten = 0;
@@ -134,13 +137,11 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
 }
 
 FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t btw, ReqOptions_e options) {
-    if (!fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
+    if (!mounted || !fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
 
 #ifdef SWO_LOGGING
     swoWrite((const char*)buff, btw);
 #endif
-
-    if (!mounted) return FILE_STATUS_ERROR;
 
     ExMemReqMsg req;
     req.id = id;
@@ -174,7 +175,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
 }
 
 FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) {
-    if (!fp) return FILE_STATUS_ERROR;
+    if (!mounted || !fp) return FILE_STATUS_ERROR;
     
     if (options == ReqOptions_e::SYNC) {
         FRESULT res = f_sync(reinterpret_cast<FIL*>(&fp->storage[0]));
@@ -194,7 +195,7 @@ FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) 
 }
 
 FileStatus_e SDFileSystem::stat(const char* path, FileInfo_t* fno) {
-    if (!fno) return FILE_STATUS_ERROR;
+    if (!mounted || !fno) return FILE_STATUS_ERROR;
     
     FILINFO fatfs_fno;
     FRESULT res = f_stat(path, &fatfs_fno);
