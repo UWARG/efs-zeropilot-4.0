@@ -57,7 +57,7 @@ AttitudeManager::AttitudeManager(
         harmonicNotchFilter.init(harmonicNotchConfig);
 
         // Init the EKF
-        AhrsEsmEkf::Config ekfCfg = {
+        AHRSEKF::Config ekfCfg = {
             .gyroCov = 4.78e-6f,
             .accelCov = 9.41e-4f,
             .magCov = 3.6e-5f,
