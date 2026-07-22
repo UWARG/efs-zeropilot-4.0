@@ -138,6 +138,11 @@ void AttitudeManager::amUpdate() {
         ekf.stateExtrapolation(gyro, dt);
         ekf.correctionAccelerometer(accel);
 
+        GyroBias_t gyroBias = ekf.getGyroBias();
+        droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
+        droneState.pitchRate = (scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
+        droneState.yawRate = (scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD); // TODO: Use gyroBias.z once magnetometer is in use.
+
         break; // for now only use one imu message per am loop
     }
 
@@ -145,14 +150,6 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
-
-    uint8_t scaledImuCount = scaledImuData.count;
-    if (scaledImuCount > 0) { // Use most recent sample in the batch for rates
-        GyroBias_t gyroBias = ekf.getGyroBias();
-        droneState.rollRate = (scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
-        droneState.pitchRate = (scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
-        droneState.yawRate = (scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.z;
-    }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
