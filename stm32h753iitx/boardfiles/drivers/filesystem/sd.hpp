@@ -11,7 +11,7 @@ class SDFileSystem : public IFileSystem {
         bool mounted;
         
         // Helper to convert mode string to FatFs mode flags
-        BYTE modeStringToFatfsFlags(const char* mode);
+        uint8_t modeStringToFatfsFlags(const char* mode);
 
         MessageQueue<ExMemReqMsg> *requestQueue;
         MessageQueue<ExMemReqBuf> *bufferQueue;

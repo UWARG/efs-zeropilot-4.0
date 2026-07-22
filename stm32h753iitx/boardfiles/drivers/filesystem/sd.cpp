@@ -26,11 +26,11 @@ FileStatus_e SDFileSystem::fresultToStatus(FRESULT res) {
     return (res == FR_OK) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
 }
 
-BYTE SDFileSystem::modeStringToFatfsFlags(const char* mode) {
+uint8_t SDFileSystem::modeStringToFatfsFlags(const char* mode) {
     static const struct {
-        const char* posix_mode;
-        BYTE fatfs_flags;
-    } mode_lut[] = {
+        const char* posixMode;
+        uint8_t fatfsFlags;
+    } modeLut[] = {
         {"r",    FA_READ},
         {"r+",   FA_READ | FA_WRITE},
         {"w",    FA_CREATE_ALWAYS | FA_WRITE},
@@ -44,9 +44,9 @@ BYTE SDFileSystem::modeStringToFatfsFlags(const char* mode) {
     
     if (!mode) return FA_READ;
     
-    for (int i = 0; mode_lut[i].posix_mode; ++i) {
-        if (std::strcmp(mode, mode_lut[i].posix_mode) == 0) {
-            return mode_lut[i].fatfs_flags;
+    for (int i = 0; modeLut[i].posixMode; ++i) {
+        if (std::strcmp(mode, modeLut[i].posixMode) == 0) {
+            return modeLut[i].fatfsFlags;
         }
     }
     
@@ -72,8 +72,8 @@ FileStatus_e SDFileSystem::open(File* fp, const char* path, const char* mode) {
     if (!fp) return FILE_STATUS_ERROR;
     
     FIL* fil = new (&fp->storage[0]) FIL; // Placement new to construct FIL in File's storage
-    BYTE fatfs_mode = modeStringToFatfsFlags(mode);
-    FRESULT res = f_open(fil, path, fatfs_mode);
+    uint8_t fatfsMode = modeStringToFatfsFlags(mode);
+    FRESULT res = f_open(fil, path, fatfsMode);
     return fresultToStatus(res);
 }
 
@@ -93,9 +93,9 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
     if (!mounted) return FILE_STATUS_ERROR;
 
     if (options == ReqOptions_e::SYNC) {
-        uint32_t dummy_bw = 0;
+        uint32_t dummyBytesWritten = 0;
         if (bw == nullptr) {
-            bw = &dummy_bw; // Use a dummy variable if caller doesn't care about bytes written
+            bw = &dummyBytesWritten; // Use a dummy variable if caller doesn't care about bytes written
         }
         FRESULT res = f_write(reinterpret_cast<FIL*>(&fp->storage[0]), buff, btw, reinterpret_cast<UINT*>(bw));
         res = (res == FR_OK) ? f_sync(reinterpret_cast<FIL*>(&fp->storage[0])) : res; // Sync only if write was successful
