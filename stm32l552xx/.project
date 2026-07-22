@@ -63,5 +63,20 @@
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/TransformFunctions/TransformFunctions.c</locationURI>
 		</link>
+		<link>
+			<name>boardfiles/BasicMathFunctions.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/BasicMathFunctions/BasicMathFunctions.c</locationURI>
+		</link>
+		<link>
+			<name>boardfiles/MatrixFunctions.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/MatrixFunctions/MatrixFunctions.c</locationURI>
+		</link>
+		<link>
+			<name>boardfiles/QuaternionMathFunctions.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/QuaternionMathFunctions/QuaternionMathFunctions.c</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>

@@ -30,6 +30,7 @@ alignas(CANController) static uint8_t canControllerStorage[sizeof(CANController)
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
@@ -89,6 +90,7 @@ void initDrivers()
 {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
+    mathUtilsHandle = new MathUtils();
     fftHandle = new FFT();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
     loggerHandle = new Logger(); // Initialized later in RTOS task
@@ -127,8 +129,8 @@ void initDrivers()
     gpsHandle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_4KHZ);
-    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_4KHZ);
+    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_1KHZ);
+    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
 
