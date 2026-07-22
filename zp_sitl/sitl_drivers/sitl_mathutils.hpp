@@ -12,6 +12,9 @@
 
 class SITL_MathUtils : public IMathUtils {
     public:
+        float dspSinf(float x) override { return sinf(x); };
+        float dspCosf(float x) override { return cosf(x); };
+
         float vectorNorm(const float* src, uint16_t dim) override {
             float dot = 0.0f;
             for (uint16_t i = 0; i < dim; ++i) dot += src[i] * src[i];

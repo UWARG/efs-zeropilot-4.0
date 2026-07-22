@@ -8,6 +8,9 @@ class MathUtils : public IMathUtils {
         MathUtils() = default;
         ~MathUtils() override = default;
 
+        float dspSinf(float x) override;
+        float dspCosf(float x) override;
+
         float vectorNorm(const float* src, uint16_t dim) override;
         bool vectorNormalize(const float* src, float* dst, uint16_t dim) override;
 

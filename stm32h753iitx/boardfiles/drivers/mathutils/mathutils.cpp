@@ -6,6 +6,14 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
+float MathUtils::dspSinf(float x) {
+    return arm_sin_f32(x);
+}
+
+float MathUtils::dspCosf(float x) {
+    return arm_cos_f32(x);
+}
+
 float MathUtils::vectorNorm(const float* src, uint16_t dim) {
     float dot = 0.0f;
     arm_dot_prod_f32(src, src, dim, &dot);

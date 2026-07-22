@@ -5,6 +5,10 @@
 
 class MockMathUtils : public IMathUtils {
     public:
+        // --- Trig Math ---
+        MOCK_METHOD(float, dspSinf, (float x), (override));
+        MOCK_METHOD(float, dspCosf, (float x), (override));
+
         // --- Vector Math ---
         MOCK_METHOD(float, vectorNorm, (const float* src, uint16_t dim), (override));
         MOCK_METHOD(bool, vectorNormalize, (const float* src, float* dst, uint16_t dim), (override));
