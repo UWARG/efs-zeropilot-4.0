@@ -99,9 +99,9 @@ void testFileSystemWrite(SITL_FileSystem* fs) {
 
     File testFp = {};
     fs->open(&testFp, testFile, "w");
-    fs->write(ManId_e::SYSTEM, &testFp, "Hello World\n", 12, nullptr);
-    fs->write(ManId_e::SYSTEM, &testFp, "Line 2\n", 7, nullptr);
-    fs->sync(ManId_e::SYSTEM, &testFp);
+    fs->write(ManagerId_e::SYSTEM, &testFp, "Hello World\n", 12, nullptr);
+    fs->write(ManagerId_e::SYSTEM, &testFp, "Line 2\n", 7, nullptr);
+    fs->sync(ManagerId_e::SYSTEM, &testFp);
 
     FileInfo_t info = {};
     fs->stat(testFile, &info);

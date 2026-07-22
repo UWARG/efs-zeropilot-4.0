@@ -4,7 +4,7 @@
 #include "zp_params.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_iwdg.hpp"
-#include "filesystem_mock.hpp"
+#include "mock_filesystem.hpp"
 #include "mock_rc.hpp"
 #include "mock_power_module.hpp"
 #include "mock_queue.hpp"
@@ -34,9 +34,9 @@ protected:
             ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000) / SM_UPDATE_LOOP_DELAY_MS) + 5;
 
         ON_CALL(mockFileSystem, write(_, _, _, _, _, _))
-            .WillByDefault([this](ManId_e, File*, const void*, uint32_t, uint32_t*, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
+            .WillByDefault([this](ManagerId_e, File*, const void*, uint32_t, uint32_t*, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
         ON_CALL(mockFileSystem, writeAndSync(_, _, _, _, _))
-            .WillByDefault([this](ManId_e, File*, const void*, uint32_t, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
+            .WillByDefault([this](ManagerId_e, File*, const void*, uint32_t, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
     }
 };
 

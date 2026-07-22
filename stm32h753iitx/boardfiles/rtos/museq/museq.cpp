@@ -12,7 +12,7 @@ osMessageQueueId_t tmQueueId;
 osMessageQueueId_t messageBufferId;
 osMessageQueueId_t sdRequestQueueId;
 osMessageQueueId_t sdBufferQueueId;
-osMessageQueueId_t sdResponseQueueId[static_cast<size_t>(ManId_e::COUNT)];
+osMessageQueueId_t sdResponseQueueId[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];
 
 static const osMutexAttr_t itmMutexAttr = {
   "itmMutex",
@@ -46,8 +46,8 @@ void initQueues()
   tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
   messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);
   sdRequestQueueId = osMessageQueueNew(32, sizeof(ExMemReqMsg), NULL);
-  sdBufferQueueId = osMessageQueueNew(32, sizeof(ExMemReqBuff), NULL);
-  for (int i = 0; i < static_cast<int>(ManId_e::COUNT); ++i) {
+  sdBufferQueueId = osMessageQueueNew(32, sizeof(ExMemReqBuf), NULL);
+  for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
       sdResponseQueueId[i] = osMessageQueueNew(16, sizeof(PollResult), NULL);
   }
 }

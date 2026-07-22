@@ -21,11 +21,17 @@ set(TM_TSRC
     telemetry_manager/telemetry_manager_test.cpp
 )
 
+# exmem manager test files
+set(EM_TSRC
+    exmem_manager/exmem_manager_test.cpp
+)
+
 # all test files
 set(ALL_TSRC
     ${AM_TSRC}
     ${SM_TSRC}
     ${TM_TSRC}
+    ${EM_TSRC}
 )
 # ========== test files end ==========
 

@@ -3,7 +3,7 @@
 #include "filesystem_datatypes.hpp"
 
 struct ExMemReqMsg {
-    ManId_e id;
+    ManagerId_e id;
     ReqType_e type;
     File* fp = nullptr;
     uint32_t totalSize; // For write operations
@@ -12,8 +12,8 @@ struct ExMemReqMsg {
     bool sendResp = true;
 };
 
-struct ExMemReqBuff {
-    ManId_e id;
+struct ExMemReqBuf {
+    ManagerId_e id;
     ReqType_e type;
     char buff[MAX_RW_BUFFER_SIZE];
     uint32_t size;

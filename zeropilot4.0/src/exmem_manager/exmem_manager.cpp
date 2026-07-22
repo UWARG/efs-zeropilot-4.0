@@ -2,15 +2,15 @@
 
 ExMemManager::ExMemManager(
     ISystemUtils *systemUtilsDriver,
-    IFileSystemBackend *backend,
+    IFileSystemBackend *fsBackend,
     IMessageQueue<ExMemReqMsg> *reqQueue,
-    IMessageQueue<ExMemReqBuff> *buffQueue,
-    IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId_e::COUNT)]
+    IMessageQueue<ExMemReqBuf> *bufQueue,
+    IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]
 ) :
     systemUtilsDriver(systemUtilsDriver),
-    backend(backend),
+    fsBackend(fsBackend),
     requestQueue(reqQueue),
-    bufferQueue(buffQueue),
+    bufferQueue(bufQueue),
     responseQueues(respQueues),
     profilerId(0) {
        systemUtilsDriver->profilerRegister("EM", &profilerId);
@@ -32,7 +32,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
         switch (reqMsg.type) {
             case ReqType_e::WRITE:
             case ReqType_e::WRITE_SYNC: {
-                ExMemReqBuff writeBuffMsg;
+                ExMemReqBuf writeBuffMsg;
                 int totalSize = reqMsg.totalSize;
                 while (totalSize > 0) {
                     if (bufferQueue->count() == 0) {
@@ -41,7 +41,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                     }
                     bufferQueue->get(&writeBuffMsg);
                     uint32_t bytesWritten = 0;
-                    respMsg.status = backend->writeFile(reqMsg.fp, writeBuffMsg.buff, writeBuffMsg.size, &bytesWritten);
+                    respMsg.status = fsBackend->writeFile(reqMsg.fp, writeBuffMsg.buff, writeBuffMsg.size, &bytesWritten);
                     if (respMsg.status != FILE_STATUS_OK) {
                         break;
                     }
@@ -50,29 +50,29 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                 respMsg.status = (respMsg.status == FILE_STATUS_OK && totalSize <= 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
                 respMsg.data.bytesTransferred = reqMsg.totalSize - totalSize;
                 if (respMsg.status == FILE_STATUS_OK && reqMsg.type == ReqType_e::WRITE_SYNC) {
-                    respMsg.status = backend->syncFile(reqMsg.fp);
+                    respMsg.status = fsBackend->syncFile(reqMsg.fp);
                 }
                 break;
             }
             case ReqType_e::SYNC: {
-                respMsg.status = backend->syncFile(reqMsg.fp);
+                respMsg.status = fsBackend->syncFile(reqMsg.fp);
                 break;
             }
             /* TODO: Verify in later PR
             case ReqType_e::LSEEK: {
-                respMsg.status = backend->seekFile(reqMsg.fp, reqMsg.offset);
+                respMsg.status = fsBackend->seekFile(reqMsg.fp, reqMsg.offset);
                 break;
             }
             case ReqType_e::TELL: {
-                respMsg.data.position = backend->tellFile(reqMsg.fp);
+                respMsg.data.position = fsBackend->tellFile(reqMsg.fp);
                 respMsg.status = FILE_STATUS_OK; // tell doesn't return a result code
                 break;
             }
             case ReqType_e::WRITE_SEEK: {
-                respMsg.status = backend->seekFile(reqMsg.fp, reqMsg.offset);
+                respMsg.status = fsBackend->seekFile(reqMsg.fp, reqMsg.offset);
                 int totalSize = reqMsg.totalSize;
                 if (respMsg.status == FILE_STATUS_OK) {
-                    ExMemReqBuff writeBuffMsg;
+                    ExMemReqBuf writeBuffMsg;
                     while (totalSize > 0) {
                         if (bufferQueue->count() == 0) {
                             respMsg.status = FILE_STATUS_ERROR; // No buffer available for write operation
@@ -80,7 +80,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                         }
                         bufferQueue->get(&writeBuffMsg);
                         uint32_t bytesWritten = 0;
-                        respMsg.status = backend->writeFile(reqMsg.fp, writeBuffMsg.buff, writeBuffMsg.size, &bytesWritten);
+                        respMsg.status = fsBackend->writeFile(reqMsg.fp, writeBuffMsg.buff, writeBuffMsg.size, &bytesWritten);
                         if (respMsg.status != FILE_STATUS_OK) {
                             break;
                         }
@@ -93,7 +93,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                         if (bufferQueue->count() == 0) {
                             break;
                         }
-                        ExMemReqBuff dummyBuff;
+                        ExMemReqBuf dummyBuff;
                         bufferQueue->get(&dummyBuff);
                         totalSize -= dummyBuff.size; // Decrease totalSize to eventually clear all related buffers
                     }

@@ -6,29 +6,29 @@
 #include "exmem_msgs.hpp"
 #include "queue_iface.hpp"
 
-#define SD_SCHEDULING_RATE_HZ 10
-#define SD_UPDATE_LOOP_DELAY_MS (1000 / SD_SCHEDULING_RATE_HZ)
+static constexpr uint8_t EXMEM_SCHEDULING_RATE_HZ = 10;
+static constexpr uint8_t SD_UPDATE_LOOP_DELAY_MS = (1000 / EXMEM_SCHEDULING_RATE_HZ);
 
 class ExMemManager {
     public:
         explicit ExMemManager(
             ISystemUtils *systemUtilsDriver,
-            IFileSystemBackend *backend,
+            IFileSystemBackend *fsBackend,
             IMessageQueue<ExMemReqMsg> *reqQueue,
-            IMessageQueue<ExMemReqBuff> *buffQueue,
-            IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId_e::COUNT)]
+            IMessageQueue<ExMemReqBuf> *bufQueue,
+            IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]
         );
 
         void emUpdate(ExMemReqMsg reqMsg);
 
     private:
         ISystemUtils *systemUtilsDriver;
-        IFileSystemBackend *backend;
+        IFileSystemBackend *fsBackend;
         IMessageQueue<ExMemReqMsg> *requestQueue;
-        IMessageQueue<ExMemReqBuff> *bufferQueue;
+        IMessageQueue<ExMemReqBuf> *bufferQueue;
 
         IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
-        void clearBufferQueue(ManId_e id, ReqType_e type);
+        void clearBufferQueue(ManagerId_e id, ReqType_e type);
 
         uint8_t profilerId;
 };

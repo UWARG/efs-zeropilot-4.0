@@ -38,8 +38,8 @@ MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
 MessageQueue<ExMemReqMsg> *sdRequestQueueHandle = nullptr;
-MessageQueue<ExMemReqBuff> *sdBufferQueueHandle = nullptr;
-IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId_e::COUNT)] = {nullptr};
+MessageQueue<ExMemReqBuf> *sdBufferQueueHandle = nullptr;
+IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & group
@@ -104,8 +104,8 @@ void initDrivers()
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
     sdRequestQueueHandle = new MessageQueue<ExMemReqMsg>(&sdRequestQueueId);
-    sdBufferQueueHandle = new MessageQueue<ExMemReqBuff>(&sdBufferQueueId);
-    for (int i = 0; i < static_cast<int>(ManId_e::COUNT); ++i) {
+    sdBufferQueueHandle = new MessageQueue<ExMemReqBuf>(&sdBufferQueueId);
+    for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
         sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
     }
 

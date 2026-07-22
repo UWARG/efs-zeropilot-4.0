@@ -7,7 +7,7 @@
 #include "mock_imu.hpp"
 #include "mock_queue.hpp"
 #include "mock_motor.hpp"
-#include "filesystem_mock.hpp"
+#include "mock_filesystem.hpp"
 #include "logger.hpp"
 
 using ::testing::_;
@@ -18,8 +18,7 @@ using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::SetArgPointee;
 
-class AttitudeManagerTest : public ::testing::Test
-{
+class AttitudeManagerTest : public ::testing::Test {
 protected:
     int AM_RC_FAILSAFE_ITERATIONS;
     int logWrites = 0; // Count Logger::log calls regardless of write or writeAndSync
@@ -104,9 +103,9 @@ protected:
         Logger::init(&mockFileSystem, &mockSystemUtils);
 
         ON_CALL(mockFileSystem, write(_, _, _, _, _, _))
-            .WillByDefault([this](ManId_e, File*, const void*, uint32_t, uint32_t*, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
+            .WillByDefault([this](ManagerId_e, File*, const void*, uint32_t, uint32_t*, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
         ON_CALL(mockFileSystem, writeAndSync(_, _, _, _, _))
-            .WillByDefault([this](ManId_e, File*, const void*, uint32_t, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
+            .WillByDefault([this](ManagerId_e, File*, const void*, uint32_t, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
     }
 };
 

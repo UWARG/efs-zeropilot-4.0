@@ -40,8 +40,8 @@ extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
 extern MessageQueue<ExMemReqMsg> *sdRequestQueueHandle;
-extern MessageQueue<ExMemReqBuff> *sdBufferQueueHandle;
-extern IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManId_e::COUNT)];
+extern MessageQueue<ExMemReqBuf> *sdBufferQueueHandle;
+extern IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];
 
 extern MotorGroupInstance_t mainMotorGroup;
 

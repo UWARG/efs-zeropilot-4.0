@@ -46,7 +46,7 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus_e write(ManId_e id, File* fp, const void* buff, uint32_t btw,
+    FileStatus_e write(ManagerId_e id, File* fp, const void* buff, uint32_t btw,
                        uint32_t* bw, ReqOptions_e options = ReqOptions_e::ASYNC) override {
         (void)id;
         (void)options;
@@ -61,14 +61,14 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus_e writeAndSync(ManId_e id, File* fp, const void* buff, uint32_t btw,
+    FileStatus_e writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t btw,
                               ReqOptions_e options = ReqOptions_e::ASYNC) override {
         FileStatus_e status = write(id, fp, buff, btw, nullptr, options);
         if (status != FILE_STATUS_OK) return status;
         return sync(id, fp, options);
     }
 
-    FileStatus_e sync(ManId_e id, File* fp,
+    FileStatus_e sync(ManagerId_e id, File* fp,
                       ReqOptions_e options = ReqOptions_e::ASYNC) override {
         (void)id;
         (void)options;

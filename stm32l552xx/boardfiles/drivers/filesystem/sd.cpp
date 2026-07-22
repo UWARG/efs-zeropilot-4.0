@@ -11,8 +11,8 @@ static inline void swoWrite(const char* data, uint32_t len) {
 }
 #endif
 
-SDFileSystem::SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuff> *buffQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManId_e::COUNT)])
-    : mounted(false), requestQueue(reqQueue), bufferQueue(buffQueue), responseQueues(respQueues) {
+SDFileSystem::SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuf> *bufQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)])
+    : mounted(false), requestQueue(reqQueue), bufferQueue(bufQueue), responseQueues(respQueues) {
     std::memset(&fsObj, 0, sizeof(FATFS));
 }
 
@@ -83,7 +83,7 @@ FileStatus_e SDFileSystem::mkdir(const char* path) {
     return fresultToStatus(res);
 }
 
-FileStatus_e SDFileSystem::write(ManId_e id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions_e options) {
+FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions_e options) {
     if (!fp || !buff) return FILE_STATUS_ERROR;
     
 #ifdef SWO_LOGGING
@@ -108,7 +108,7 @@ FileStatus_e SDFileSystem::write(ManId_e id, File* fp, const void* buff, uint32_
         req.totalSize = btw;
         req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
-        ExMemReqBuff writeBuffMsg;
+        ExMemReqBuf writeBuffMsg;
         while (btw > 0) {
             writeBuffMsg.id = id;
             writeBuffMsg.type = ReqType_e::WRITE;
@@ -133,7 +133,7 @@ FileStatus_e SDFileSystem::write(ManId_e id, File* fp, const void* buff, uint32_
     }
 }
 
-FileStatus_e SDFileSystem::writeAndSync(ManId_e id, File* fp, const void* buff, uint32_t btw, ReqOptions_e options) {
+FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t btw, ReqOptions_e options) {
     if (!fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
 
 #ifdef SWO_LOGGING
@@ -149,7 +149,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManId_e id, File* fp, const void* buff, 
     req.totalSize = btw;
     req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
-    ExMemReqBuff writeBuffMsg;
+    ExMemReqBuf writeBuffMsg;
     while (btw > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType_e::WRITE_SYNC;
@@ -173,7 +173,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManId_e id, File* fp, const void* buff, 
     return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
 }
 
-FileStatus_e SDFileSystem::sync(ManId_e id, File* fp, ReqOptions_e options) {
+FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) {
     if (!fp) return FILE_STATUS_ERROR;
     
     if (options == ReqOptions_e::SYNC) {
@@ -216,7 +216,7 @@ bool SDFileSystem::available() {
 }
 
 /* TODO: Verify in later PR
-FileStatus_e SDFileSystem::seek_and_write(ManId_e id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions_e options) {
+FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions_e options) {
     if (!fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
 
     #ifdef SWO_LOGGING
@@ -233,7 +233,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManId_e id, File* fp, const void* buff
     req.offset = ofs;
     req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
-    ExMemReqBuff writeBuffMsg;
+    ExMemReqBuf writeBuffMsg;
     while (btw > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType_e::WRITE_SEEK;
@@ -273,7 +273,7 @@ FileStatus_e SDFileSystem::read(File* fp, void* buff, uint32_t btr, uint32_t* br
     return fresultToStatus(res);
 }
 
-FileStatus_e SDFileSystem::lseek(ManId_e id, File* fp, uint64_t ofs, ReqOptions_e options) {
+FileStatus_e SDFileSystem::lseek(ManagerId_e id, File* fp, uint64_t ofs, ReqOptions_e options) {
     if (!fp) return FILE_STATUS_ERROR;
     
     if (options == ReqOptions_e::SYNC) {
@@ -293,7 +293,7 @@ FileStatus_e SDFileSystem::lseek(ManId_e id, File* fp, uint64_t ofs, ReqOptions_
     }
 }
 
-FileStatus_e SDFileSystem::tell(ManId_e id, File* fp, uint64_t* position, ReqOptions_e options) {
+FileStatus_e SDFileSystem::tell(ManagerId_e id, File* fp, uint64_t* position, ReqOptions_e options) {
     if (!fp) return FILE_STATUS_ERROR; // we dont need position because this operation is async for SD
     
     if (options == ReqOptions_e::SYNC) {
@@ -321,7 +321,7 @@ FileStatus_e SDFileSystem::tell(ManId_e id, File* fp, uint64_t* position, ReqOpt
     }
 }
 
-int SDFileSystem::printf(ManId_e id, File* fp, ReqOptions_e options, const char* str, ...) {
+int SDFileSystem::printf(ManagerId_e id, File* fp, ReqOptions_e options, const char* str, ...) {
     char printBuff[MAX_RW_BUFFER_SIZE];
     va_list args;
     va_start(args, str);
@@ -352,7 +352,7 @@ int SDFileSystem::printf(ManId_e id, File* fp, ReqOptions_e options, const char*
     }
 }
 
-PollResult SDFileSystem::poll(ManId_e id, ReqType_e reqType) {
+PollResult SDFileSystem::poll(ManagerId_e id, ReqType_e reqType) {
     PollResult result;
     result.type = reqType;
     result.status = FILE_STATUS_NOT_DONE; // Default to not done

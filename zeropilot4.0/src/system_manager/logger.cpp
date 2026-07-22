@@ -72,12 +72,12 @@ namespace Logger {
         buffer[totalLen] = '\n';
         buffer[totalLen + 1] = '\0';
         
-        // fileSystem->writeAndSync(ManId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
+        // fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
         if (level == LogLevel_e::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
-            fileSystem->writeAndSync(ManId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
+            fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount = 0;
         } else {
-            fileSystem->write(ManId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
+            fileSystem->write(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount++;
         }
         newWrite = true;
@@ -85,7 +85,7 @@ namespace Logger {
     
     void sync() {
         if (fileSystem && newWrite && systemUtils->getCurrentTimestampMs() - lastSyncTime >= SYNC_PERIOD) {
-            fileSystem->sync(ManId_e::SYSTEM, &logFile, ReqOptions_e::ASYNC_NO_RESP);
+            fileSystem->sync(ManagerId_e::SYSTEM, &logFile, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncTime = systemUtils->getCurrentTimestampMs();
             newWrite = false;
         }

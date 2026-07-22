@@ -4,11 +4,11 @@
 
 #define MAX_RW_BUFFER_SIZE 256  // Maximum buffer size for read/write operations, can be adjusted as needed
 
-enum class ManId_e : uint8_t {
+enum class ManagerId_e : uint8_t {
     SYSTEM = 0,
     ATTITUDE,
     TELEMERTRY,
-    COUNT
+    NUM_MANAGERS
 };
 
 enum FileStatus_e {
@@ -39,7 +39,7 @@ typedef struct {
     uint64_t	size;		/* File size */
     uint16_t	date;		/* Modified date */
     uint16_t	time;		/* Modified time */
-    uint8_t	    isDir;		/* =1 if dir */
+    uint8_t     isDir;		/* =1 if dir */
     char	name[255 + 1];	/* Primary file name */
 } FileInfo_t;
 

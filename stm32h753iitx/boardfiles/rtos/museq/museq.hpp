@@ -23,7 +23,7 @@ extern osMessageQueueId_t tmQueueId;
 extern osMessageQueueId_t messageBufferId;
 extern osMessageQueueId_t sdRequestQueueId;
 extern osMessageQueueId_t sdBufferQueueId;
-extern osMessageQueueId_t sdResponseQueueId[static_cast<size_t>(ManId_e::COUNT)];
+extern osMessageQueueId_t sdResponseQueueId[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];
 
 /* declare queues end */
 
