@@ -225,7 +225,7 @@ bool AMParamSetup::updatePIDRollIMax(AttitudeManager* ctx, float val) {
     return true;
 }
 bool AMParamSetup::updatePIDRollFF(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 4.0f) return false;
+    if (val < 0.0f) return false;
     ctx->fbwaCLAW.setRollFFConstant(val);
     return true;
 }
@@ -256,7 +256,7 @@ bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     return true;
 }
 bool AMParamSetup::updatePIDPitchFF(AttitudeManager* ctx, float val) {
-    if (val < 0.0f || val > 4.0f) return false;
+    if (val < 0.0f) return false;
     ctx->fbwaCLAW.setPitchFFConstant(val);
     return true;
 }
