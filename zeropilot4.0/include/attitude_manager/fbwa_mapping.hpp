@@ -48,7 +48,7 @@ class FBWAMapping : public Flightmode {
 
     private:
         // Control loop iter period (s)
-        float control_iter_period_s;
+        float controlIterPeriod;
 
         // Roll and Pitch PID class objects
         PID rollPID;

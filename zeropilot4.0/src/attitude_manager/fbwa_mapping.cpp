@@ -3,7 +3,7 @@
 #include <algorithm>
 
 FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
-    control_iter_period_s(control_iter_period_s),
+    controlIterPeriod(control_iter_period_s),
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
         OUTPUT_MIN, OUTPUT_MAX, 100,
         control_iter_period_s),
@@ -94,8 +94,8 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
     float pitchMeasured = droneState.pitch;
 
     // Calculate roll/pitch SP rates and save current SP values into prev trackers
-    float rollSetpointRate = (rollSetpoint - prevRollSetpoint) / control_iter_period_s;
-    float pitchSetpointRate = (pitchSetpoint - prevPitchSetpoint) / control_iter_period_s;
+    float rollSetpointRate = (rollSetpoint - prevRollSetpoint) / controlIterPeriod;
+    float pitchSetpointRate = (pitchSetpoint - prevPitchSetpoint) / controlIterPeriod;
     prevRollSetpoint = rollSetpoint;
     prevPitchSetpoint = pitchSetpoint;
 
