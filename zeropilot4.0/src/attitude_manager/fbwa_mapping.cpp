@@ -96,10 +96,15 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
     float rollTotalOut = rollPIDOut + (rollFF * rollSetpoint);
     float pitchTotalOut = pitchPIDOut + (pitchFF * pitchSetpoint);
 
-    // Clamp total output to [-1.0, 1.0] before shifting/scaling
-    rollTotalOut = std::clamp(rollTotalOut, OUTPUT_MIN, OUTPUT_MAX);
-    pitchTotalOut = std::clamp(pitchTotalOut, OUTPUT_MIN, OUTPUT_MAX);
+    // Clamp total roll output to [-1.0, 1.0] before shifting/scaling
+    if (rollTotalOut > OUTPUT_MAX) rollTotalOut = OUTPUT_MAX;
+    else if (rollTotalOut < OUTPUT_MIN) rollTotalOut = OUTPUT_MIN;
+    
+    // Clamp total pitch output to [-1.0, 1.0] before shifting/scaling
+    if (pitchTotalOut > OUTPUT_MAX) pitchTotalOut = OUTPUT_MAX;
+    else if (pitchTotalOut < OUTPUT_MIN) pitchTotalOut = OUTPUT_MIN;
 
+    // Set output signals
     controlInputs.roll = (rollTotalOut * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired roll angle, adding 50 to shift to [0,100] range
     controlInputs.pitch = (pitchTotalOut * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired pitch angle, adding 50 to shift to [0,100] range
 
