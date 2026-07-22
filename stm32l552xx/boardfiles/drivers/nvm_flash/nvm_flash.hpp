@@ -2,6 +2,7 @@
 #pragma once
 
 #include "stm32l5xx_hal.h"
+<<<<<<< HEAD
 #include "nvm_flash_iface.hpp"
 
 class NVMFlash : public INVMFlash {
@@ -15,6 +16,21 @@ public:
 	int read(AbstractMessage *msg) override;
 	int erase(AbstractMessage *msg) override;
 	int update(AbstractMessage *msg) override;
+=======
+#include "nvm_flash_message.hpp"
+
+class NVMFlash {
+public:
+	NVMFlash(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
+
+	int format();
+	int mount();
+
+	int write(AbstractMessage *msg);
+	int read(AbstractMessage *msg);
+	int erase(AbstractMessage *msg);
+	int update(AbstractMessage *msg);
+>>>>>>> b5b48d2 (ported over driver and ftl code from kitchen sinks)
 
 private:
 	SPI_HandleTypeDef *spiHandle;
