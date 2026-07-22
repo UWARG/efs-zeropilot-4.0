@@ -77,10 +77,12 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 		ay *= recipNorm;
 		az *= recipNorm;
 
-		// Estimated direction of gravity
-		halfvx = q1 * q3 - q0 * q2;
-		halfvy = q0 * q1 + q2 * q3;
-		halfvz = q0 * q0 - 0.5f + q3 * q3;
+		// Estimated up direction (the specific force a level accel reports).
+		// FRD/NED: gravity is +Z (down), so accel points to world -Z. This is
+		// R^T * (0,0,-1) = -(R^T * (0,0,1)), i.e. the negated Z-up reference.
+		halfvx = q0 * q2 - q1 * q3;
+		halfvy = -(q0 * q1 + q2 * q3);
+		halfvz = 0.5f - q0 * q0 - q3 * q3;
 
 		// Error is sum of cross product between estimated
 		// and measured direction of gravity
