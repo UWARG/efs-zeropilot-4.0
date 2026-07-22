@@ -5,8 +5,8 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
-FFTHarmonicNotch::FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDriver) : 
-    systemUtilsDriver(systemUtilsDriver),
+FFTHarmonicNotch::FFTHarmonicNotch(IMathUtils *mathUtilsDriver, IFFT *fftDriver) : 
+    mathUtilsDriver(mathUtilsDriver),
     fftDriver(fftDriver) {}
 
 bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig &notchConfig) {
@@ -46,7 +46,7 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig &notchConfig) {
 
     // Pre-compute the Hanning Window to save FPU cycles during runtime
     for (int i = 0; i < config.fftWindowSize; i++) {
-        hanningWindow[i] = 0.5f * (1.0f - systemUtilsDriver->dspCosf(2.0f * M_PI * i / (config.fftWindowSize - 1)));
+        hanningWindow[i] = 0.5f * (1.0f - mathUtilsDriver->dspCosf(2.0f * M_PI * i / (config.fftWindowSize - 1)));
     }
 
     // Reset filter states and mark as initialized
@@ -67,7 +67,7 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
     rmsCount++;
 
     // Use the dominant axis selected from the previous window
-    float rawGyroSample;
+    float rawGyroSample = 0.0f;
     switch (dominantAxis) {
         case GyroAxis_e::X:
             rawGyroSample = gx;
@@ -161,7 +161,7 @@ void FFTHarmonicNotch::updateFilters(float peakFreqHz) {
         }
 
         // Update coefficients for this specific harmonic
-        filters[i].updateCoefficients(systemUtilsDriver, config.sampleFreqHz, harmonicFreq, a, q);
+        filters[i].updateCoefficients(mathUtilsDriver, config.sampleFreqHz, harmonicFreq, a, q);
         filters[i].enabled = true;
     }
 }
@@ -192,10 +192,10 @@ void FFTHarmonicNotch::reset() {
 // Bi-Quadratic Filter Mathematical Implementation
 // ---------------------------------------------------------
 
-void FFTHarmonicNotch::BiquadState::updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float q) {
+void FFTHarmonicNotch::BiquadState::updateCoefficients(IMathUtils *mathUtilsDriver, float sample_freq, float center_freq, float A, float q) {
     float omega = 2.0f * M_PI * center_freq / sample_freq;
-    float sn = systemUtilsDriver->dspSinf(omega);
-    float cs = systemUtilsDriver->dspCosf(omega);
+    float sn = mathUtilsDriver->dspSinf(omega);
+    float cs = mathUtilsDriver->dspCosf(omega);
     float alpha = sn / (2.0f * q);
 
     float a0 = 1.0f + alpha * A;

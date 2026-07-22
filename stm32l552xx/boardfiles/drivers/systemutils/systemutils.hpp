@@ -18,7 +18,4 @@ class SystemUtils : public ISystemUtils {
 
         static void dwtInit();
         static uint32_t getDWTMicroSec();
-
-        float dspSinf(float x) override;
-        float dspCosf(float x) override;
 };
