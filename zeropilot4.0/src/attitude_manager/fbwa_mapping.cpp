@@ -3,6 +3,7 @@
 #include <algorithm>
 
 FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
+    control_iter_period_s(control_iter_period_s),
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
         OUTPUT_MIN, OUTPUT_MAX, 100,
         control_iter_period_s),
