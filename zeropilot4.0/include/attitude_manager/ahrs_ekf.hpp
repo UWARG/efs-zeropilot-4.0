@@ -80,6 +80,7 @@ public:
     void correctionMagnetometer(const float* magNew);
 
     Attitude_t getAttitudeRadians() const;
+    GyroBias_t getGyroBias() const;
 
     Measurements meas;
     NominalState nom;

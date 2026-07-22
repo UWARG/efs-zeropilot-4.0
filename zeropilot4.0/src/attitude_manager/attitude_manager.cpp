@@ -148,9 +148,10 @@ void AttitudeManager::amUpdate() {
 
     uint8_t scaledImuCount = scaledImuData.count;
     if (scaledImuCount > 0) { // Use most recent sample in the batch for rates
-        droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD;
-        droneState.pitchRate = scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD;
-        droneState.yawRate = scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD;
+        GyroBias_t gyroBias = ekf.getGyroBias();
+        droneState.rollRate = (scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
+        droneState.pitchRate = (scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
+        droneState.yawRate = (scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.z;
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
