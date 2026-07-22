@@ -1,9 +1,6 @@
 [submodule "external/c_library_v2"]
 	path = external/c_library_v2
 	url = https://github.com/mavlink/c_library_v2
-[submodule "external/dronecan/pydronecan"]
-	path = external/dronecan/pydronecan
-	url = https://github.com/dronecan/pydronecan.git
 [submodule "external/dronecan/DSDL"]
 	path = external/dronecan/DSDL
 	url = https://github.com/dronecan/DSDL.git

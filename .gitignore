@@ -6,6 +6,8 @@
 .vscode/
 /.project
 /.idea
+.metadata/
+.plugins/
 
 # build and debug artifacts
 build/

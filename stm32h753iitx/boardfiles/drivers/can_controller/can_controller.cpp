@@ -1,5 +1,6 @@
 
 #include "can_controller.hpp"
+#include "drivers.hpp"
 
 static constexpr size_t CANARD_MEMORY_BUFFER_SIZE = 1024;
 static constexpr uint32_t CAN_FRAME_EFF_BIT = 31U;
@@ -30,7 +31,7 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 	nodeStatus = {0};
 
 	// All other nodes are default-constructed to OFFLINE.
-	canNodes[CANController::NODE_ID].markOnline(HAL_GetTick());
+	canNodes[CANController::NODE_ID].markOnline(systemUtilsHandle->getCurrentTimestampMs());
 
 	canard.node_id = CANController::NODE_ID;
 
@@ -88,7 +89,7 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
 }
 
 void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t * rxData) {
-	const uint64_t timestampUsec = HAL_GetTick() * 1000ULL;
+	const uint64_t timestampUsec = systemUtilsHandle->getCurrentTimestampMs() * 1000ULL;
 
 	CanardCANFrame frame;
 	frame.id = rxHeader->Identifier;
@@ -100,7 +101,7 @@ void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t * rxD
 }
 
 void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
-	uint32_t tick = HAL_GetTick();
+	uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
 
 	uavcan_protocol_NodeStatus status {};
 
@@ -125,7 +126,7 @@ void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
 
 	if (uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg)) return;
 
-	const uint32_t tick = HAL_GetTick();
+	const uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
 
 	// If timeout, reset stage
 	if (tick > dnaLastAcceptedTick + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
@@ -321,7 +322,7 @@ void CANController::sendCANTx() {
 bool CANController::routineTasks() {
 	sendCANTx();
 
-	uint32_t tick = HAL_GetTick();
+	uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
 
 	if (tick > last1HzTick + UAVCAN_PROTOCOL_NODESTATUS_MAX_BROADCASTING_PERIOD_MS / 2) {
 		last1HzTick = tick;
@@ -334,7 +335,7 @@ bool CANController::routineTasks() {
 void CANController::sendNodeStatus() {
 	uint8_t buffer[UAVCAN_PROTOCOL_GETNODEINFO_RESPONSE_MAX_SIZE];
 
-    nodeStatus.uptime_sec = HAL_GetTick() / 1000LL;
+    nodeStatus.uptime_sec = systemUtilsHandle->getCurrentTimestampMs() / 1000LL;
     nodeStatus.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK;
     nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
     nodeStatus.sub_mode = 0;
@@ -355,7 +356,7 @@ void CANController::sendNodeStatus() {
 
 void CANController::process1HzTasks() {
 
-	uint32_t timestampMsec = HAL_GetTick();
+	uint32_t timestampMsec = systemUtilsHandle->getCurrentTimestampMs();
 
 	// Mark remote nodes offline if they have not been seen recently
 	for (int i = CANARD_MIN_NODE_ID; i <= CANARD_MAX_NODE_ID; i++) {
@@ -431,7 +432,7 @@ uint8_t CANController::dlcToLength(uint32_t dlc) {
 		case FDCAN_DLC_BYTES_6: return 6;
 		case FDCAN_DLC_BYTES_7: return 7;
 		case FDCAN_DLC_BYTES_8: return 8;
-		default: return 8; // Fallback
+		default: return 0;
 	}
 }
 
@@ -446,6 +447,6 @@ uint32_t CANController::lengthToDlc(uint8_t len) {
         case 6: return FDCAN_DLC_BYTES_6;
         case 7: return FDCAN_DLC_BYTES_7;
         case 8: return FDCAN_DLC_BYTES_8;
-        default: return FDCAN_DLC_BYTES_8; // Fallback (or assert)
+        default: return FDCAN_DLC_BYTES_0;
     }
 }
