@@ -67,7 +67,7 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
     rmsCount++;
 
     // Use the dominant axis selected from the previous window
-    float rawGyroSample;
+    float rawGyroSample = 0.0f;
     switch (dominantAxis) {
         case GyroAxis_e::X:
             rawGyroSample = gx;
