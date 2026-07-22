@@ -50,7 +50,7 @@ private:
     void extrapolateQuaternion(const float* gyroNew, const float* gyroPrev, float dt, float* qOut);
 };
 
-class AhrsEsmEkf {
+class AHRSEKF {
 public:
     // Constants
     static constexpr uint16_t ERROR_STATE_SZ = 9;
@@ -70,7 +70,7 @@ public:
         float magInertial[3];
     };
 
-    AhrsEsmEkf(IMathUtils* mathUtils);
+    AHRSEKF(IMathUtils* mathUtils);
 
     void init(const float* gyroInit, const float* accelInit, const float* magInit, 
               const float* quatInit, const Config& config);

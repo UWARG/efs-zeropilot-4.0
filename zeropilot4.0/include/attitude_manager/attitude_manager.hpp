@@ -57,7 +57,7 @@ private:
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
-    AhrsEsmEkf ekf;
+    AHRSEKF ekf;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;

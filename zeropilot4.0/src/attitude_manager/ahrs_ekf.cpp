@@ -126,12 +126,12 @@ void NominalState::correctState(const float* smallAngleError) {
 
 
 // ---------------------------------------------------------
-// AhrsEsmEkf Implementation
+// AHRSEKF Implementation
 // ---------------------------------------------------------
 
-AhrsEsmEkf::AhrsEsmEkf(IMathUtils* mathUtils) : meas(mathUtils), nom(mathUtils), math(mathUtils) {}
+AHRSEKF::AHRSEKF(IMathUtils* mathUtils) : meas(mathUtils), nom(mathUtils), math(mathUtils) {}
 
-void AhrsEsmEkf::init(const float* gyroInit, const float* accelInit, const float* magInit, 
+void AHRSEKF::init(const float* gyroInit, const float* accelInit, const float* magInit, 
                        const float* quatInit, const Config& config) {
     cfg = config;
     meas.init(gyroInit, accelInit, magInit);
@@ -178,7 +178,7 @@ static void setBlock3x3(float* m9x9, int blockRow, int blockCol, const float* sr
     }
 }
 
-void AhrsEsmEkf::stateExtrapolation(const float* gyroNew, float dt) {
+void AHRSEKF::stateExtrapolation(const float* gyroNew, float dt) {
     meas.updateGyro(gyroNew);
     nom.stateExtrapolation(meas.gyroNew, meas.gyroPrev, dt);
     // We only calculate the non-zero parts of the 9x9 matrix thru CMSIS DSP to optimize performance, 
@@ -256,7 +256,7 @@ void AhrsEsmEkf::stateExtrapolation(const float* gyroNew, float dt) {
     math->ensureSymmetric(p, 9);
 }
 
-void AhrsEsmEkf::correctionAccelerometer(const float* accelNew) {
+void AHRSEKF::correctionAccelerometer(const float* accelNew) {
     meas.updateAccel(accelNew);
 
     // accel_predicted = i_to_b_frame_rot_matrix(q_new) @ -gravityInertial
@@ -278,7 +278,7 @@ void AhrsEsmEkf::correctionAccelerometer(const float* accelNew) {
     applyUpdate(innovation, h0, true, accelCovMat, cfg.accelGateThreshold);
 }
 
-void AhrsEsmEkf::correctionMagnetometer(const float* magNew) {
+void AHRSEKF::correctionMagnetometer(const float* magNew) {
     float magNorm[3];
     math->vectorNormalize(magNew, magNorm, 3);
     meas.updateMag(magNorm);
@@ -308,7 +308,7 @@ H is assumed to be a 3x9 matrix of form [skew(accelPred), 0, I] and [skew(magPre
 bc we only pass in non-zero entries of each
 observesAccelBias determines which form of the two it is
 */
-void AhrsEsmEkf::applyUpdate(const float* y, const float* h0, bool observesAccelBias,
+void AHRSEKF::applyUpdate(const float* y, const float* h0, bool observesAccelBias,
                               const float* R, float gateThreshold) {
     // H = [h0, 0, H2] with H2 = I for the accelerometer (which observes the
     // accel bias states) and H2 = 0 for the magnetometer, so H @ p is a single
@@ -406,7 +406,7 @@ void AhrsEsmEkf::applyUpdate(const float* y, const float* h0, bool observesAccel
     math->ensureSymmetric(p, 9);
 }
 
-Attitude_t AhrsEsmEkf::getAttitudeRadians() const {
+Attitude_t AHRSEKF::getAttitudeRadians() const {
     float eulerTmp[3];
     math->quatToEuler(nom.quaternionNew, eulerTmp);
 
