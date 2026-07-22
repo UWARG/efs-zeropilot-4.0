@@ -18,6 +18,12 @@ class FBWAMapping : public Flightmode {
         // Setter for *pitch* PID consts
         void setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
 
+        // Setter for *roll* FF const
+        void setRollFFConstant(float newRollFFConst) noexcept;
+
+        // Setter for *pitch* FF const
+        void setPitchFFConstant(float newPitchFFConst) noexcept;
+
         // Setter for *yaw* rudder mixing const
         void setYawRudderMixingConstant(float newMixingConst) noexcept;
 
@@ -44,6 +50,10 @@ class FBWAMapping : public Flightmode {
         // Roll and Pitch PID class objects
         PID rollPID;
         PID pitchPID;
+
+        // Feedforward (FF) constants
+        float rollFF;
+        float pitchFF;
 
         // Yaw rudder mixing constant
         float yawRudderMixingConst;
