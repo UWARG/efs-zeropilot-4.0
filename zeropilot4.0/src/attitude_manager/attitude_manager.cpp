@@ -74,12 +74,14 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
+        /* TODO: Uncomment once timing issues are resolved.
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
             harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         }
         // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
         harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-        
+        */
+
         /**
          * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
          * and the delta for double IMU will be necessarily less than uint16_t max value.
