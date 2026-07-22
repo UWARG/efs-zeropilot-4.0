@@ -63,6 +63,10 @@ class FBWAMapping : public Flightmode {
         float pitchLimitMaxRad;
         float pitchLimitMinRad;
 
+        // Internal state variables
+        float prevRollSetpoint;
+        float prevPitchSetpoint;
+
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
         static constexpr float OUTPUT_MAX = +1.0f;
