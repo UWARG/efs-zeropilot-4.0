@@ -68,11 +68,11 @@ AttitudeManager::AttitudeManager(
             .pInitAtt = 1e-2f,
             .pInitBiasGyro = 1e-4f,
             .pInitBiasAccel = 1e-6f, // Assume P is a diagonal matrix
-            .gravityInertial = {0, 0, -9.81f},
+            .gravityInertial = {0, 0, 9.81f},
             .magInertial = {1, 0, 0}
         };
         float initGyro[3] = {0.0f, 0.0f, 0.0f};
-        float initAccel[3] = {0.0f, 0.0f, 9.81f};
+        float initAccel[3] = {0.0f, 0.0f, -9.81f};
         float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
