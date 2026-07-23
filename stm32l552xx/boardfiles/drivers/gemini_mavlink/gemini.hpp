@@ -20,9 +20,13 @@ class GeminiMavlink: public IRCReceiver, public ITelemLink {
         // RFD
         void transmit(const uint8_t* data, uint16_t size) override; // similar to rfd
         uint16_t receive(uint8_t* buffer, uint16_t bufferSize) override; // identical (almost) to rfd
+        void receiveCallback(uint16_t size); // DMA callback
+
 
         // RC
         RCControl getRCData() override;
+        void parse();
+        void startDMA();
 
         void forcePushMAVLinkRC(RCControl rcData) override;
 
@@ -41,5 +45,7 @@ class GeminiMavlink: public IRCReceiver, public ITelemLink {
 
         // RC
         RCControl rcData_;
+        uint8_t crsfRxBuffer[CRSF_BYTE_COUNT];
+
 
 };

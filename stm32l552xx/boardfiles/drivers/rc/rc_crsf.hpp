@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rc_defines.hpp"
+#include "gemini_defines.hpp"
 #include "rc_iface.hpp"
 #include "stm32l5xx_hal.h"
 /**
@@ -34,6 +35,6 @@ class CRSFReceiver : public IRCReceiver {
        
     private:
         UART_HandleTypeDef *uart;
-        RCControl rcData;
+        RCControl rcData_;
         uint8_t crsfRxBuffer[CRSF_BYTE_COUNT];
 };

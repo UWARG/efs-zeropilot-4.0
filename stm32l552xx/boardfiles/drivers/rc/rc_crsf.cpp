@@ -9,18 +9,18 @@ CRSFReceiver::CRSFReceiver(UART_HandleTypeDef* uart) : uart(uart) {
 }
 
 RCControl CRSFReceiver::getRCData() {
-    RCControl tmp = rcData;
-    rcData.isDataNew = false;
+    RCControl tmp = rcData_;
+    rcData_.isDataNew = false;
     return tmp;
 }
 
 void CRSFReceiver::init() {
     // start circular DMA
-    rcData.isDataNew = false;
+    rcData_.isDataNew = false;
     HAL_UARTEx_ReceiveToIdle_DMA(uart, crsfRxBuffer, CRSF_BYTE_COUNT);
 }
 
-void CRSFReceiver::forcePushMAVLinkRC(RCControl rcData) {
+void CRSFReceiver::forcePushMAVLinkRC(RCControl rcData_) {
     // TODO: Add MAVLink RC support for crsf and sbus files
     return;
 }
@@ -82,16 +82,18 @@ void CRSFReceiver::parse() {
         bitsInBuffer -= 11;
 
         if (i < 4) { //stick channels
-            rcData.controlSignals[i] = static_cast<float>((channels[i] - CRSF_PULSE_MIN) * (100.0f / CRSF_PULSE_RANGE));
+            rcData_.controlSignals[i] = static_cast<float>((channels[i] - CRSF_PULSE_MIN) * (100.0f / CRSF_PULSE_RANGE));
         } 
         else{
             // ARM and AUX channels
-            rcData.controlSignals[i] = static_cast<float>((channels[i] - CRSF_AUX_MIN) * (100.0f / CRSF_AUX_RANGE));
+            rcData_.controlSignals[i] = static_cast<float>((channels[i] - CRSF_AUX_MIN) * (100.0f / CRSF_AUX_RANGE));
         }
     }
 
-    rcData.isDataNew = true;
+    rcData_.isDataNew = true;
 }
+
+
 
 UART_HandleTypeDef * CRSFReceiver::getHUART() {
 	return uart;
