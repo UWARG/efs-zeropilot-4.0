@@ -1,6 +1,7 @@
 #pragma once
 
 #include "systemutils.hpp"
+#include "mathutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
 #include "motor.hpp"
@@ -20,6 +21,7 @@
 #include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern MathUtils *mathUtilsHandle;
 extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;

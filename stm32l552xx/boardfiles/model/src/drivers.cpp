@@ -22,6 +22,7 @@ extern I2C_HandleTypeDef hi2c2;
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
@@ -64,7 +65,7 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 };
 
 // ----------------------------------------------------------------------------
-// Initialization (no heap allocations)
+// Initialization
 // ----------------------------------------------------------------------------
 void initDrivers()
 {
@@ -72,6 +73,7 @@ void initDrivers()
     // Core utilities
     fftHandle = new FFT();
     systemUtilsHandle = new SystemUtils();
+    mathUtilsHandle = new MathUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
@@ -107,7 +109,7 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart3);
-    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0, 0, IMU_ODR_4KHZ);
+    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0, 0, IMU_ODR_1KHZ);
     pmHandle = new PowerModule(&hi2c1);
     barometerHandle = new Barometer(&hi2c2);
 
