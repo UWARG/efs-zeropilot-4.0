@@ -17,7 +17,9 @@ class FusedIMU : public IIMU {
 
         SPI_HandleTypeDef *getSPI();
 
-        float getODRHz(); // Change when using a different ODR
+        float getODRHz() override; // Change when using a different ODR
+
+        GyroStartupBias_t getGyroStartupBias() override;        
 
     private:
         SPI_HandleTypeDef *spiBus;

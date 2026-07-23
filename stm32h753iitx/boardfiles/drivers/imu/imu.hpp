@@ -39,7 +39,8 @@ class IMU : public IIMU {
 
 		void beginRead();
 		RawImuBatch_t getBatch();
-		float getODRHz(); // Change when using a different ODR
+		float getODRHz() override;
+		GyroStartupBias_t getGyroStartupBias() override;
 		
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
@@ -62,7 +63,6 @@ class IMU : public IIMU {
 			DATA
 		} RxStates_e;
 
-		float gyroBias[3] = {0};
 		volatile uint8_t imuTxBuffer[RX_BUFFER_SIZE]; // First bit should be 1 for register read
 		volatile uint8_t imuRxBuffer[RX_BUFFER_SIZE]; // First byte is dummy, rest are data received
 		volatile RxStates_e rxFlag = COUNT;
@@ -74,6 +74,7 @@ class IMU : public IIMU {
 		RawImuBatch_t rawImuDataBatch = {};
 		ScaledImu_t scaledData[MAX_PACKETS] = {};
 		ScaledImuBatch_t scaledImuDataBatch = {};
+		GyroStartupBias_t gyroBias = {};
 
 		// Utility functions, blocking
 		HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); 

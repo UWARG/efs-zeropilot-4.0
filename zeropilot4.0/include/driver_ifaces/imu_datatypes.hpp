@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// unscaled, NED frame
+// Unscaled, FRD frame
 typedef struct {
     int16_t xacc;
     int16_t yacc;
@@ -15,12 +15,12 @@ typedef struct {
 } RawImu_t;
 
 typedef struct {
-    float xacc;
-    float yacc;
-    float zacc;
-    float xgyro;
-    float ygyro;
-    float zgyro;
+    float xacc; // m/s^2
+    float yacc; // m/s^2
+    float zacc; // m/s^2
+    float xgyro; // deg/s
+    float ygyro; // deg/s
+    float zgyro; // deg/s
     uint32_t timestamp;
     uint8_t imuId;
 } ScaledImu_t;
@@ -50,3 +50,10 @@ typedef struct {
     uint16_t count;
     uint32_t readTime; // Time the fifo(last data packet) was read, in us
 } ScaledImuBatch_t;
+
+// deg/s
+typedef struct {
+    float x;
+    float y;
+    float z;
+} GyroStartupBias_t;
