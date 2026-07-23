@@ -81,12 +81,12 @@ DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* Definitions for defaultTask */
-// osThreadId_t defaultTaskHandle;
-// const osThreadAttr_t defaultTask_attributes = {
-//   .name = "defaultTask",
-//   .priority = (osPriority_t) osPriorityNormal,
-//   .stack_size = 128 * 4
-// };
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
