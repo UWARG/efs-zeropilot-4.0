@@ -32,6 +32,13 @@ typedef struct {
     float yaw;
 } Attitude_t;
 
+// Gyro Bias in radians
+typedef struct {
+    float x;
+    float y;
+    float z;
+} GyroBias_t;
+
 typedef struct {
     RawImu_t *data;
     uint16_t count;

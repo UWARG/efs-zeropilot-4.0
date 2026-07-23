@@ -417,3 +417,12 @@ Attitude_t AHRSEKF::getAttitudeRadians() const {
 
     return att;
 }
+
+GyroBias_t AHRSEKF::getGyroBias() const {
+    GyroBias_t gyroBiasOut;
+    gyroBiasOut.x = meas.gyroBiasAccumulated[0];
+    gyroBiasOut.y = meas.gyroBiasAccumulated[1];
+    gyroBiasOut.z = meas.gyroBiasAccumulated[2];
+
+    return gyroBiasOut;
+}
