@@ -65,7 +65,7 @@ public:
         return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
 
-    GyroStartupBias_t getGyroStartupBias() override {
+    GyroStartupBias_t getGyroStartupBias(uint8_t imuId) override {
         return GyroStartupBias_t{}; // No startup bias in simulation
     }
 

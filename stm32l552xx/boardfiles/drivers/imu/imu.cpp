@@ -339,6 +339,6 @@ float IMU::getODRHz() {
     }
 }
 
-GyroStartupBias_t IMU::getGyroStartupBias() {
-    return gyroBias;
+GyroStartupBias_t IMU::getGyroStartupBias(uint8_t imuId) {
+    return (this->imuId == imuId) ? gyroBias : GyroStartupBias_t{};
 }

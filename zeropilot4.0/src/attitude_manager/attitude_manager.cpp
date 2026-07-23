@@ -139,7 +139,7 @@ void AttitudeManager::amUpdate() {
         ekf.correctionAccelerometer(accel);
 
         GyroBias_t gyroBias = ekf.getGyroBias();
-        GyroStartupBias_t startupGyroBias = imuDriver->getGyroStartupBias();
+        GyroStartupBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
         droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
         droneState.pitchRate = (scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
         droneState.yawRate = (scaledImuData.data[i].zgyro - startupGyroBias.z) * ZP_UNITS::DEG_TO_RAD; // TODO: Use gyroBias.z once magnetometer is in use.
