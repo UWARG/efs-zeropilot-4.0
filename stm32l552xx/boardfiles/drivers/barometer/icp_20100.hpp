@@ -1,25 +1,21 @@
 #pragma once 
 
-#include "stm32l5xx_hal.h"
+#include "stm32h7xx.h"
 #include "barometer_iface.hpp"
 #include <cmath>
 #include <cstdint>
 
-struct RegInfoBarometer {
-    uint8_t address;
-    uint8_t byte_size;
-};
-
-// Datasheet Values
-
-static constexpr uint8_t VERSION_2 = 0xB2;
-static constexpr uint8_t BOOT_FINISHED = 1U;
-
-// Bit Shift Values
-static constexpr uint8_t kBootStatusBitPos = 0U;
-static constexpr uint8_t kBootStatusEnabledValue = 1U;
+static constexpr uint8_t ICP20100_POWER_MODE = (1U << 2);
+static constexpr uint8_t ICP20100_FORCED_MES_TRIGGER = (1U << 4);
+static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER);
 
 class Barometer : public IBarometer {
+    enum State_e {
+        NotStarted,
+        FifoStarted,
+        DataRead
+    };
+
     public:
         Barometer(I2C_HandleTypeDef *hi2c);
         bool readData(BaroData_t &data);
@@ -27,17 +23,16 @@ class Barometer : public IBarometer {
         void rxCallback();
         bool firWarmupPoll();
         void computeAltitude(BaroData_t *data);
-        I2C_HandleTypeDef* getI2C(); 
-        void waitForOTPRead();
+       
     private:
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;
-		volatile uint8_t callbackCount; 
+        volatile State_e callbackState = NotStarted;
         volatile bool initiatedRead = false;
         uint8_t pressTempData[6];
         uint8_t fifoRegister;
         float latestTemperatureC = 0.0f;
-        float latestPressurekPa = 0.0f;
+        float latestPressureKpa = 0.0f;
         bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
 		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
 };

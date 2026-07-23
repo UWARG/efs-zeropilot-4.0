@@ -124,7 +124,7 @@ static bool waitForOtpStatusClear(I2C_HandleTypeDef *hi2c);
 static bool writeRegisterWithVerify(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
-	hi2c(hi2c), callbackCount(NotStarted), fifoRegister(0) {}
+	hi2c(hi2c), callbackState(NotStarted), fifoRegister(0) {}
 	
 bool Barometer::init() {
     // Step 1: Power on ASIC
@@ -417,8 +417,7 @@ bool Barometer::firWarmupPoll()
 bool Barometer::readRegister(
     uint16_t memAddress,
     uint8_t * pData,
-    uint16_t size,
-    I2C_HandleTypeDef *hi2c) {
+    uint16_t size) {
 	if (HAL_I2C_Mem_Read_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) != HAL_OK) {
 		return false;
 	}
@@ -429,20 +428,19 @@ bool Barometer::readRegister(
 bool Barometer::writeRegister(
     uint16_t memAddress,
     uint8_t * pData,
-    uint16_t size,
-    I2C_HandleTypeDef *hi2c) {
+    uint16_t size) {
 
     return HAL_I2C_Mem_Write_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
 }
 
 void Barometer::rxCallback() {
-	switch(callbackCount) {
+	switch(callbackState) {
 		case NotStarted: { // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
-			if (readRegister(ICP20100_FIFO_FILL, &fifoRegister, 1, hi2c)) {
-				callbackCount = FifoStarted;
+			if (readRegister(ICP20100_FIFO_FILL, &fifoRegister, 1)) {
+				callbackState = FifoStarted;
 			} else {
-				callbackCount = NotStarted;
+				callbackState = NotStarted;
 				initiatedRead = false;
 			}
 			break;
@@ -451,15 +449,15 @@ void Barometer::rxCallback() {
 		case FifoStarted: { // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
 			fifoRegister &= ICP20100_FIFO_FILL_COUNT_MASK;
 			if (fifoRegister > 0) {
-				if (readRegister(ICP20100_PRESS_DATA_0, pressTempData, ICP20100_PRESS_TEMP_BURST_SIZE, hi2c)) {
-					callbackCount = DataRead;
+				if (readRegister(ICP20100_PRESS_DATA_0, pressTempData, ICP20100_PRESS_TEMP_BURST_SIZE)) {
+					callbackState = DataRead;
 				} else {
-					callbackCount = NotStarted;
+					callbackState = NotStarted;
 					initiatedRead = false;
 				}
 			} else {
 				// Keep polling FIFO until at least one sample is ready.
-				callbackCount = NotStarted;
+				callbackState = NotStarted;
 				initiatedRead = false;
 			}
 			break;
@@ -467,13 +465,13 @@ void Barometer::rxCallback() {
 
 		case DataRead: { // Step 3: Burst read complete. Signal data ready.
 			dataFilled = 1;
-			callbackCount = NotStarted;
+			callbackState = NotStarted;
 			initiatedRead = false;
 			break;
 		}
 
 		default: {
-			callbackCount = NotStarted;
+			callbackState = NotStarted;
 			initiatedRead = false;
 			break;
 		}
@@ -506,7 +504,7 @@ bool Barometer::readData(BaroData_t &data)
 		return true;
 	}
 
-	if (callbackCount != 0) {
+	if (callbackState != 0) {
 		return false;
 	}
 
