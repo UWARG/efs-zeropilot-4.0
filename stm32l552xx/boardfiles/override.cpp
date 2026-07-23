@@ -100,28 +100,28 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-    #ifdef SPI_INTERFACE
-    if (hspi->Instance == SPI1) {
-        setSpiTxFlag(1);
-    }
-    #endif
-    if (hspi->Instance == SPI2) {
-      imuHandle->txRxCallback();
-    }
+  #ifdef SPI_INTERFACE
+  if (hspi->Instance == SPI1) {
+      setSpiTxFlag(1);
+  }
+  #endif
+  if (hspi->Instance == SPI2) {
+    imuHandle->txRxCallback();
+  }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_MemRxCpltCallback();
-    } else if(hi2c == barometerHandle->getI2C()){
-      barometerHandle->rxCallback();
-    }
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_MemRxCpltCallback();
+  } else if(hi2c == barometerHandle->getI2C()){
+    barometerHandle->rxCallback();
+  }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_ErrorCallback();
-    }
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  }
 }
 
 #ifdef __cplusplus

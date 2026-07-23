@@ -547,6 +547,10 @@ void Barometer::computeAltitude(BaroData_t *data)
 	}
 }
 
+I2C_HandleTypeDef* Barometer::getI2C() {
+	return hi2c;
+}
+
 // ============================================================================
 // Static helper function implementations
 // ============================================================================
