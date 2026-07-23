@@ -78,7 +78,7 @@ class IMU : public IIMU {
 
 		// Utility functions, blocking
 		HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); 
-		HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, uint8_t length); 
+		HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t *data, uint8_t length); 
 		HAL_StatusTypeDef setBank(uint8_t bank);
 
 		void csLow();
