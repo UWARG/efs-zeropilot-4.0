@@ -1,6 +1,9 @@
 #include "sm_threads.hpp"
 #include "managers.hpp"
+#include "can_controller.hpp"
 #include "utils.h"
+
+extern CANController *canControllerHandle;
 
 osThreadId_t smMainHandle;
 
@@ -16,6 +19,9 @@ void smMainLoopWrapper(void *arg)
   while(true)
   {
     smHandle->smUpdate();
+    if (canControllerHandle) {
+      canControllerHandle->routineTasks();
+    }
     nextWakeUp += timeToTicks(SM_UPDATE_LOOP_DELAY_MS);
     osDelayUntil(nextWakeUp);
   }

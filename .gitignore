@@ -6,6 +6,8 @@
 .vscode/
 /.project
 /.idea
+.metadata/
+.plugins/
 
 # build and debug artifacts
 build/
@@ -19,3 +21,6 @@ Release-quad/
 
 # remove build host
 *build-host*
+
+# python virtual environment
+venv/

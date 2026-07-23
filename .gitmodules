@@ -1,6 +1,15 @@
 [submodule "external/c_library_v2"]
 	path = external/c_library_v2
 	url = https://github.com/mavlink/c_library_v2
+[submodule "external/dronecan/DSDL"]
+	path = external/dronecan/DSDL
+	url = https://github.com/dronecan/DSDL.git
+[submodule "external/dronecan/libcanard"]
+	path = external/dronecan/libcanard
+	url = https://github.com/dronecan/libcanard.git
+[submodule "external/dronecan/dronecan_dsdlc"]
+	path = external/dronecan/dronecan_dsdlc
+	url = https://github.com/dronecan/dronecan_dsdlc.git
 [submodule "external/CMSIS-DSP"]
 	path = external/CMSIS-DSP
 	url = https://github.com/ARM-software/CMSIS-DSP
