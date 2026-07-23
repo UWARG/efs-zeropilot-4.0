@@ -8,6 +8,7 @@
 #include "mock_queue.hpp"
 #include "mock_motor.hpp"
 #include "mock_fft.hpp"
+#include "mock_mathutils.hpp"
 
 using ::testing::_;
 using ::testing::Return;
@@ -23,6 +24,7 @@ protected:
 
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockFFT> mockFFT;
+    NiceMock<MockMathUtils> mockMathUtils;
     NiceMock<MockGPS> mockGPS;
     NiceMock<MockIMU> mockIMU;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
@@ -122,7 +124,7 @@ TEST_F(AttitudeManagerPlaneTest, MotorOutputTest) {
     EXPECT_CALL(mockFlapMotor, set(_)).Times(AtLeast(1));
     EXPECT_CALL(mockSteeringMotor, set(_)).Times(AtLeast(1));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }
@@ -142,7 +144,7 @@ TEST_F(AttitudeManagerPlaneTest, DisarmThrottleZero) {
 
     EXPECT_CALL(mockThrottleMotor, set(0));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }
@@ -158,7 +160,7 @@ TEST_F(AttitudeManagerPlaneTest, FailsafeTriggered) {
     EXPECT_CALL(mockFlapMotor, set(0)).Times(AtLeast(1));
     EXPECT_CALL(mockSteeringMotor, set(50)).Times(AtLeast(1));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -189,7 +191,7 @@ TEST_F(AttitudeManagerPlaneTest, FailsafeRecovery) {
 
     EXPECT_CALL(mockLogQueue, push(_)).Times(2);
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -216,7 +218,7 @@ TEST_F(AttitudeManagerPlaneTest, MotorTrimApplied) {
     uint8_t rollValue = 0;
     EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint8_t val) { rollValue = val; }));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 
@@ -241,7 +243,7 @@ TEST_F(AttitudeManagerPlaneTest, MotorInverted) {
     uint8_t rollValue = 0;
     EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint8_t val) { rollValue = val; }));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 
@@ -263,7 +265,7 @@ TEST_F(AttitudeManagerPlaneTest, MotorClampingUpper) {
 
     EXPECT_CALL(mockRollMotor, set(100));
 
-    AttitudeManager am(&mockSystemUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }
