@@ -2,6 +2,10 @@
 #include "unit_conversions.hpp"
 #include <algorithm>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
 FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
     controlIterPeriod(control_iter_period_s),
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
@@ -12,12 +16,17 @@ FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
         control_iter_period_s),
     rollFF(0.0f),
     pitchFF(0.0f),
+    // alpha = (2pi * fc * dt) / (1 + 2pi * fc * dt)
+    ffLpfAlpha((2 * M_PI * FF_LPF_CUTOFF_FREQ * control_iter_period_s) /
+                (1 + (2 * M_PI * FF_LPF_CUTOFF_FREQ * control_iter_period_s))),
     yawRudderMixingConst(0.0f),
     rollLimitRad(0.0f),
     pitchLimitMaxRad(0.0f),
     pitchLimitMinRad(0.0f),
     prevRollSetpoint(0.0f),
-    prevPitchSetpoint(0.0f)
+    prevPitchSetpoint(0.0f),
+    prevFilteredRollRate(0.0f),
+    prevFilteredPitchRate(0.0f)
 {
     rollPID.pidInitState();
     pitchPID.pidInitState();
@@ -49,6 +58,8 @@ void FBWAMapping::resetControlLoopState() noexcept {
     pitchPID.pidInitState();
     prevRollSetpoint = 0.0f;
     prevPitchSetpoint = 0.0f;
+    prevFilteredRollRate = 0.0f;
+    prevFilteredPitchRate = 0.0f;
 }
 
 // Setter for *yaw* rudder mixing const
@@ -93,19 +104,27 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
     float rollMeasured = droneState.roll;
     float pitchMeasured = droneState.pitch;
 
-    // Calculate roll/pitch SP rates and save current SP values into prev trackers
-    float rollSetpointRate = (rollSetpoint - prevRollSetpoint) / controlIterPeriod;
-    float pitchSetpointRate = (pitchSetpoint - prevPitchSetpoint) / controlIterPeriod;
+    // Calculate raw roll/pitch SP rates
+    float rawRollSetpointRate = (rollSetpoint - prevRollSetpoint) / controlIterPeriod;
+    float rawPitchSetpointRate = (pitchSetpoint - prevPitchSetpoint) / controlIterPeriod;
+
+    // Apply First-Order Low-Pass Filter
+    float filteredRollRate = (ffLpfAlpha * rawRollSetpointRate) + ((1.0f - ffLpfAlpha) * prevFilteredRollRate);
+    float filteredPitchRate = (ffLpfAlpha * rawPitchSetpointRate) + ((1.0f - ffLpfAlpha) * prevFilteredPitchRate);
+
+    // Save current SP values and filtered rates into prev trackers
     prevRollSetpoint = rollSetpoint;
     prevPitchSetpoint = pitchSetpoint;
+    prevFilteredRollRate = filteredRollRate;
+    prevFilteredPitchRate = filteredPitchRate;
 
     // Calculate PID outputs for roll/pitch
     float rollPIDOut = rollPID.pidOutput(rollSetpoint, rollMeasured);
     float pitchPIDOut = pitchPID.pidOutput(pitchSetpoint, pitchMeasured);
 
-    // Add feedforward term for responsiveness
-    float rollTotalOut = rollPIDOut + (rollFF * rollSetpointRate);
-    float pitchTotalOut = pitchPIDOut + (pitchFF * pitchSetpointRate);
+    // Add feedforward term for responsiveness using the filtered rates
+    float rollTotalOut = rollPIDOut + (rollFF * filteredRollRate);
+    float pitchTotalOut = pitchPIDOut + (pitchFF * filteredPitchRate);
 
     // Clamp total roll output to [-1.0, 1.0] before shifting/scaling
     if (rollTotalOut > OUTPUT_MAX) rollTotalOut = OUTPUT_MAX;

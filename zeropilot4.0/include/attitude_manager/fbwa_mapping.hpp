@@ -57,6 +57,7 @@ class FBWAMapping : public Flightmode {
         // Feedforward (FF) constants
         float rollFF;
         float pitchFF;
+        float ffLpfAlpha;
 
         // Yaw rudder mixing constant
         float yawRudderMixingConst;
@@ -66,9 +67,11 @@ class FBWAMapping : public Flightmode {
         float pitchLimitMaxRad;
         float pitchLimitMinRad;
 
-        // Internal state variables
+        // Internal state variables for feedforward logic
         float prevRollSetpoint;
         float prevPitchSetpoint;
+        float prevFilteredRollRate;
+        float prevFilteredPitchRate;
 
         // Output limits (for control effort)
         static constexpr float OUTPUT_MIN = -1.0f;
@@ -80,4 +83,7 @@ class FBWAMapping : public Flightmode {
 
         // Assumed normalized range of RC Input to be [0, 100]
         static constexpr float MAX_RC_INPUT_VAL = 100.0f;
+
+        // Cutoff frequency for FF LPF
+        static constexpr float FF_LPF_CUTOFF_FREQ = 10.0f;
 };
