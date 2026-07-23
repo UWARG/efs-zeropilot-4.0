@@ -5,6 +5,8 @@
 #include <cmath>
 #include <cstdint>
 
+typedef struct __I2C_HandleTypeDef I2C_HandleTypeDef;
+
 static constexpr uint8_t ICP20100_POWER_MODE = (1U << 2);
 static constexpr uint8_t ICP20100_FORCED_MES_TRIGGER = (1U << 4);
 static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER);
@@ -21,6 +23,7 @@ class Barometer : public IBarometer {
         bool readData(BaroData_t &data);
         bool init(); 
         void rxCallback();
+        I2C_HandleTypeDef* getI2C();
         bool firWarmupPoll();
         void computeAltitude(BaroData_t *data);
        
