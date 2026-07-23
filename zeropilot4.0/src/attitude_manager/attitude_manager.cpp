@@ -125,9 +125,9 @@ void AttitudeManager::amUpdate() {
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
 
         float gyro[3] = {
-            scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD,
-            scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD,
-            scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro
         };
         float accel[3] = {
             scaledImuData.data[i].xacc, 
@@ -139,9 +139,10 @@ void AttitudeManager::amUpdate() {
         ekf.correctionAccelerometer(accel);
 
         GyroBias_t gyroBias = ekf.getGyroBias();
-        droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
-        droneState.pitchRate = (scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
-        droneState.yawRate = (scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD); // TODO: Use gyroBias.z once magnetometer is in use.
+        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
+        droneState.rollRate = scaledImuData.data[i].xgyro - gyroBias.x;
+        droneState.pitchRate = scaledImuData.data[i].ygyro - gyroBias.y;
+        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z; // TODO: Use gyroBias.z once magnetometer is in use.
 
         break; // for now only use one imu message per am loop
     }

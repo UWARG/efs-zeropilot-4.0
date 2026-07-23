@@ -1,6 +1,7 @@
 #pragma once
 #include "imu_iface.hpp"
 #include "sitl_driver_configs.hpp"
+#include "unit_conversions.hpp"
 #include <cmath>
 
 class SITL_IMU : public IIMU {
@@ -65,6 +66,10 @@ public:
         return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
 
+    GyroBias_t getGyroStartupBias(uint8_t imuId) override {
+        return GyroBias_t{0.0f, 0.0f, 0.0f}; // No startup bias in simulation
+    }
+
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
@@ -77,10 +82,10 @@ public:
             scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
             scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-            // Convert LSB back to deg/s (consistent with hardware IMU driver)
-            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
-            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
-            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
+            // Convert LSB back to rad/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
 
             scaledData.timestamp = raw.timestamp;
         }

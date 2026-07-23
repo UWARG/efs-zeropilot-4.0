@@ -152,3 +152,7 @@ SPI_HandleTypeDef* FusedIMU::getSPI() {
 float FusedIMU::getODRHz() {
     return imu[0]->getODRHz();
 }
+
+GyroBias_t FusedIMU::getGyroStartupBias(uint8_t imuId) {
+    return imu[imuId]->getGyroStartupBias(imuId);
+}
