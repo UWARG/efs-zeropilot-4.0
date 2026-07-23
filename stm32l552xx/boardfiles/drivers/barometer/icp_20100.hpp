@@ -1,6 +1,6 @@
 #pragma once 
 
-#include "stm32h7xx.h"
+#include "stm32l5xx.h"
 #include "barometer_iface.hpp"
 #include <cmath>
 #include <cstdint>
