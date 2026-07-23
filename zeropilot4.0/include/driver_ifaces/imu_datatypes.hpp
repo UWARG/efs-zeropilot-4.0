@@ -18,9 +18,9 @@ typedef struct {
     float xacc; // m/s^2
     float yacc; // m/s^2
     float zacc; // m/s^2
-    float xgyro; // deg/s
-    float ygyro; // deg/s
-    float zgyro; // deg/s
+    float xgyro; // rad/s
+    float ygyro; // rad/s
+    float zgyro; // rad/s
     uint32_t timestamp;
     uint8_t imuId;
 } ScaledImu_t;
@@ -32,7 +32,7 @@ typedef struct {
     float yaw;
 } Attitude_t;
 
-// Gyro Bias in radians
+// Gyro Bias in rad/s
 typedef struct {
     float x;
     float y;
@@ -50,10 +50,3 @@ typedef struct {
     uint16_t count;
     uint32_t readTime; // Time the fifo(last data packet) was read, in us
 } ScaledImuBatch_t;
-
-// deg/s
-typedef struct {
-    float x;
-    float y;
-    float z;
-} GyroStartupBias_t;

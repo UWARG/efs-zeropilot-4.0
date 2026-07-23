@@ -1,6 +1,7 @@
 // IMU.cpp
 #include "imu.hpp"
 #include "systemutils.hpp"
+#include "unit_conversions.hpp"
 #include <string.h>
 
 #define REG_BANK_SEL              0x76
@@ -82,10 +83,10 @@ int IMU::init() {
         if (moving) {
             HAL_Delay(500);
         } else {
-            // Find average and convert to deg/s
-            gyroBias.x = ((float)gyroSum[0] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR;
-            gyroBias.y = ((float)gyroSum[1] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR;
-            gyroBias.z = ((float)gyroSum[2] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR;
+            // Find average and convert to rad/s
+            gyroBias.x = ((float)gyroSum[0] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.y = ((float)gyroSum[1] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.z = ((float)gyroSum[2] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
             break;
         }
     }
@@ -111,9 +112,9 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
-        scaledData[i].xgyro = lowPassFilter((float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR, 0);
-        scaledData[i].ygyro = lowPassFilter((float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR, 1);
-        scaledData[i].zgyro = lowPassFilter((float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR, 2);
+        scaledData[i].xgyro = lowPassFilter((float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR, 0) * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].ygyro = lowPassFilter((float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR, 1) * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].zgyro = lowPassFilter((float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR, 2) * ZP_UNITS::DEG_TO_RAD;
         scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
     }
     scaledImuDataBatch.count = rawDataBatch.count;
@@ -339,6 +340,6 @@ float IMU::getODRHz() {
     }
 }
 
-GyroStartupBias_t IMU::getGyroStartupBias(uint8_t imuId) {
-    return (this->imuId == imuId) ? gyroBias : GyroStartupBias_t{};
+GyroBias_t IMU::getGyroStartupBias(uint8_t imuId) {
+    return (this->imuId == imuId) ? gyroBias : GyroBias_t{0.0f, 0.0f, 0.0f};
 }

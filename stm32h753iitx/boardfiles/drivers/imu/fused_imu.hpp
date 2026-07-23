@@ -19,7 +19,7 @@ class FusedIMU : public IIMU {
 
         float getODRHz() override; // Change when using a different ODR
 
-        GyroStartupBias_t getGyroStartupBias(uint8_t imuId) override;        
+        GyroBias_t getGyroStartupBias(uint8_t imuId) override;        
 
     private:
         SPI_HandleTypeDef *spiBus;
