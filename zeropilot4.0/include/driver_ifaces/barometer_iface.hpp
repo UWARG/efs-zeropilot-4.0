@@ -4,8 +4,8 @@
 
 typedef struct {
     // Press and Temp data
-    float pressureData; // kPa
-    float temperatureData; // Celsius
+    float pressureKPa; // kPa
+    float temperatureC; // Celsius
     float altitude; // M
 } BaroData_t;
 

@@ -27,12 +27,12 @@ class Barometer : public IBarometer {
     private:
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;
-        volatile State_e callbackCount = NotStarted;
+        volatile State_e callbackState = NotStarted;
         volatile bool initiatedRead = false;
         uint8_t pressTempData[6];
         uint8_t fifoRegister;
         float latestTemperatureC = 0.0f;
         float latestPressureKpa = 0.0f;
-        bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
-		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size, I2C_HandleTypeDef *hi2c);
+        bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
+		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
 };
