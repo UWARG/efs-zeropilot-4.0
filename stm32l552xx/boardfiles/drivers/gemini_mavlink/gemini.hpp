@@ -36,12 +36,22 @@ class GeminiMavlink: public IRCReceiver, public ITelemLink {
         
 
     private:
+
+        // IRFD
         UART_HandleTypeDef* huart;
         
-        // IRFD
         uint8_t rfdRxBuffer[MAVLINK_MAX_PACKET_SIZE];
-        uint16_t readIndex;
-        uint16_t writeIndex;
+        uint16_t getRXTransferSize(uint16_t idx);
+
+        uint8_t rxBuffer[BUFFER_SIZE];
+
+        uint16_t readIndex = 0;
+        uint16_t writeIndex = 0;
+
+        uint16_t currentSize = 0;
+        uint16_t lastIdx = 0;
+
+
 
         // RC
         RCControl rcData_;

@@ -2,6 +2,7 @@
 
 #include "telemlink_iface.hpp"
 #include "rfd_defines.hpp"
+#include "gemini_defines.hpp"
 #include "stm32l5xx_hal.h"
 
 class RFD : public ITelemLink {

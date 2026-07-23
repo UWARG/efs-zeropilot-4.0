@@ -7,6 +7,9 @@
 static constexpr uint16_t MAVLINK_MAX_PACKET_SIZE = 280; 
 
 
+//--- RFD Defines----
+static constexpr uint32_t BUFFER_SIZE = 256;
+
 
 
 //---CRSF Defines----

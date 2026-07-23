@@ -14,6 +14,17 @@ GeminiMavlink::~GeminiMavlink() {
     instance = nullptr;
 }
 
+
+
+
+uint16_t GeminiMavlink::getRXTransferSize(uint16_t idx) {
+	if (idx > lastIdx) {
+		return (uint16_t)(idx - lastIdx);
+	} else {
+		return (uint16_t)(BUFFER_SIZE - lastIdx + idx);
+	}
+}
+
 void GeminiMavlink::init() {
     if(huart) {
         HAL_UARTEx_ReceiveToIdle_DMA(huart, rfdRxBuffer, MAVLINK_MAX_PACKET_SIZE);
