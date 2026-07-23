@@ -433,6 +433,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/museq"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/imu"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
@@ -589,6 +590,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/rtos/museq"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/imu"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
