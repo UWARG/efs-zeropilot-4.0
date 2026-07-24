@@ -312,7 +312,7 @@ bool Barometer::init() {
 	gain &= ICP20100_GAIN_VALUE_MASK;  // Mask bits 1, 2, 3 to extract gain value required, as per datasheet
 	rData |= (gain << ICP20100_TRIM2_MSB_GAIN_SHIFT);  // Set bits 4, 5, 6 to bits 1, 2, 3 from gain value
 
-	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, Rdata)) return false; 
+	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, rData)) return false; 
 
 	// STEP 22: Write HFosc trim value to main registers
 	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_LSB, HFosc)) return false; 
