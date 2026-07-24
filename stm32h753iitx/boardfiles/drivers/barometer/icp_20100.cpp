@@ -430,35 +430,35 @@ bool Barometer::writeRegister(
 
 void Barometer::rxCallback() {
 	switch (callbackState) {
-		case NotStarted: { // Step 1: Start FIFO fill register read via DMA
+		case NOT_STARTED: { // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
 			if (readRegister(ICP20100_FIFO_FILL, &fifoRegister, 1)) {
-				callbackState = FifoStarted;
+				callbackState = FIFO_STARTED;
 			} else {
-				callbackState = NotStarted;
+				callbackState = NOT_STARTED;
 				initiatedRead = false;
 			}
 			break;
 		}
 
-		case FifoStarted: { // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
+		case FIFO_STARTED: { // Step 2: FIFO read complete. If data ready, read pressure/temp burst.
 			fifoRegister &= ICP20100_FIFO_FILL_COUNT_MASK;
 			if (fifoRegister > 0) {
 				if (readRegister(ICP20100_PRESS_DATA_0, pressTempData, ICP20100_PRESS_TEMP_BURST_SIZE)) {
-					callbackState = DataRead;
+					callbackState = DATA_READ;
 				} else {
-					callbackState = NotStarted;
+					callbackState = NOT_STARTED;
 					initiatedRead = false;
 				}
 			} else {
 				// Keep polling FIFO until at least one sample is ready.
-				callbackState = NotStarted;
+				callbackState = NOT_STARTED;
 				initiatedRead = false;
 			}
 			break;
 		}
 
-		case DataRead: { // Step 3: Burst read complete. Signal data ready.
+		case DATA_READ: { // Step 3: Burst read complete. Signal data ready.
 			dataFilled = 1;
 			callbackState = NOT_STARTED;
 			initiatedRead = false;
