@@ -11,9 +11,9 @@ static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | 
 
 class Barometer : public IBarometer {
     enum State_e {
-        NotStarted,
-        FifoStarted,
-        DataRead
+        NOT_STARTED,
+        FIFO_STARTED,
+        DATA_READ
     };
 
     public:
@@ -28,7 +28,7 @@ class Barometer : public IBarometer {
     private:
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;
-        volatile State_e callbackState = NotStarted;
+        volatile State_e callbackState = NOT_STARTED;
         volatile bool initiatedRead = false;
         uint8_t pressTempData[6];
         uint8_t fifoRegister;
