@@ -96,9 +96,11 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
-    // Get barometer data and send to telemetry manager
+    // Read barometer data
     BaroData_t baroData;
     barometerDriver->readData(baroData);
+
+    // Send scaled pressure data to TM
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
         sendPressureDataToTelemetryManager(baroData);
     }
