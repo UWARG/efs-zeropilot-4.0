@@ -96,9 +96,12 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
+    // Get barometer data and send to telemetry manager
     BaroData_t baroData;
     barometerDriver->readData(baroData);
-    (void)baroData; // TODO: Use when we send telemetry.
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
+        sendPressureDataToTelemetryManager(baroData);
+    }
 
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
