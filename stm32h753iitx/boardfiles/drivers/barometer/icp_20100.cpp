@@ -306,13 +306,13 @@ bool Barometer::init() {
 	// STEP 21: Write gain to main registers
 	uint8_t rData = 0x00;
 	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM2_MSB,
-				 I2C_MEMADD_SIZE_8BIT, &Rdata, 1, HAL_MAX_DELAY) != HAL_OK ) return false; 
+				 I2C_MEMADD_SIZE_8BIT, &rData, 1, HAL_MAX_DELAY) != HAL_OK ) return false; 
 
 	rData &= ~ICP20100_TRIM2_MSB_GAIN_FIELD_MASK;  // Clear bits 4, 5, 6
 	gain &= ICP20100_GAIN_VALUE_MASK;  // Mask bits 1, 2, 3 to extract gain value required, as per datasheet
 	rData |= (gain << ICP20100_TRIM2_MSB_GAIN_SHIFT);  // Set bits 4, 5, 6 to bits 1, 2, 3 from gain value
 
-	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, Rdata)) return false; 
+	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, rData)) return false; 
 
 	// STEP 22: Write HFosc trim value to main registers
 	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_LSB, HFosc)) return false; 
