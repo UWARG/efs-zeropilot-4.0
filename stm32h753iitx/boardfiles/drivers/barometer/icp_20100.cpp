@@ -24,7 +24,7 @@ static constexpr uint8_t ICP20100_OTP_COMMAND_READ_REQUEST = 0x10U;  // Bit 4 se
 // OTP address-space addresses written to OTP_ADDRESS to select the trim value to read back
 static constexpr uint8_t ICP20100_OTP_ADDR_OFFSET = 0xF8U;  // PEFE offset trim
 static constexpr uint8_t ICP20100_OTP_ADDR_GAIN = 0xF9U;    // Gain trim
-static constexpr uint8_t ICP20100_OTP_ADDR_HFOSC = 0xFAU;   // HFosc trim
+static constexpr uint8_t ICP20100_OTP_ADDR_HFOSC = 0xFAU;   // HfOsc trim
 
 // Register Definitions for Mikroe ICP-20100
 
@@ -276,9 +276,9 @@ bool Barometer::init() {
 		return false;
 	}
 
-	// STEP 18: Read HFosc
-	uint8_t HFosc = 0x00;
-	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &HFosc, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
+	// STEP 18: Read HfOsc
+	uint8_t HfOsc = 0x00;
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &HfOsc, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	// STEP 19: Disable OTP
 
@@ -314,8 +314,8 @@ bool Barometer::init() {
 
 	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, rData)) return false; 
 
-	// STEP 22: Write HFosc trim value to main registers
-	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_LSB, HFosc)) return false; 
+	// STEP 22: Write HfOsc trim value to main registers
+	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_LSB, HfOsc)) return false; 
 
 	// STEP 23: Lock main registers
 	if (!unlockOrLock(hi2c, true)) {
