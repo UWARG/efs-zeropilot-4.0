@@ -51,7 +51,6 @@ I2C_HandleTypeDef hi2c2;
 DMA_HandleTypeDef hdma_i2c1_tx;
 DMA_HandleTypeDef hdma_i2c1_rx;
 DMA_HandleTypeDef hdma_i2c2_rx;
-DMA_HandleTypeDef hdma_i2c2_tx;
 
 IWDG_HandleTypeDef hiwdg;
 
@@ -84,8 +83,8 @@ DMA_HandleTypeDef hdma_usart3_tx;
 // osThreadId_t defaultTaskHandle;
 // const osThreadAttr_t defaultTask_attributes = {
 //   .name = "defaultTask",
-//   .stack_size = 128 * 4
 //   .priority = (osPriority_t) osPriorityNormal,
+//   .stack_size = 128 * 4
 // };
 /* USER CODE BEGIN PV */
 
@@ -981,9 +980,6 @@ static void MX_DMA_Init(void)
   /* DMA2_Channel7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Channel7_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Channel7_IRQn);
-  /* DMA2_Channel8_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Channel8_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Channel8_IRQn);
 
 }
 
