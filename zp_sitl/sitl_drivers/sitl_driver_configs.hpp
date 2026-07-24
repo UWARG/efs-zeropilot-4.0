@@ -37,6 +37,14 @@ namespace SITL_Driver_Configs {
         static constexpr float TEMP_THERMAL_LAG_COEFF = 0.05f; // First-order filter coefficient (0.0 to 1.0) for thermal mass inertia
     };
 
+    struct SITL_Barometer_Config {
+        static constexpr float AMBIENT_TEMP_C = 25.0f; // Base ambient room temperature in °C
+        static constexpr float KELVIN_OFFSET = 273.15f;
+        static constexpr float TEMP_LAPSE_RATE = 0.0065f; // K/m
+        static constexpr float SEA_LEVEL_PRESSURE_KPA = 101.325f;
+        static constexpr float BAROMETRIC_EXPONENT = 0.190284f; // must match the driver's exponent
+    };
+
     struct SITL_TELEM_Config {
         static constexpr uint32_t RX_BUF_SZ_BYTES = 1048576; // 1 MB receive buffer
     };

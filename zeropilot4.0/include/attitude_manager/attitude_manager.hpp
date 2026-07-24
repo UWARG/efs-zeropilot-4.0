@@ -16,6 +16,7 @@
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
+#include "barometer_iface.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -39,6 +40,7 @@ public:
         IGPS *gpsDriver,
         IIMU *imuDriver,
         IFFT *fftDriver,
+        IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
@@ -56,6 +58,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;

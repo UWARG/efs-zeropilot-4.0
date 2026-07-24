@@ -16,6 +16,7 @@ extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 
 // ----------------------------------------------------------------------------
 // Global handles
@@ -32,6 +33,7 @@ GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
+Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -78,15 +80,15 @@ void initDrivers()
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
     for (int i = 0; i < 8; i++) {
         bool isBLDC = false;
-        #ifdef PLANE
+    #ifdef PLANE
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
-        #endif
-        #ifdef QUADCOPTER
+    #endif
+    #ifdef QUADCOPTER
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1)
                         || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2)
                         || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3)
                         || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
-        #endif
+    #endif
         if (isBLDC) {
             switch (servoType) {
                 case MOT_TYPE_DSHOT: // DShot
@@ -108,6 +110,7 @@ void initDrivers()
     telemLinkHandle = new RFD(&huart3);
     imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0, 0, IMU_ODR_1KHZ);
     pmHandle = new PowerModule(&hi2c1);
+    barometerHandle = new Barometer(&hi2c2);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -124,6 +127,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
+    barometerHandle->init();
     telemLinkHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()

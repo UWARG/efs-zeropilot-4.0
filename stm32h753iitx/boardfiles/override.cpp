@@ -4,6 +4,8 @@
 #include "rfd.hpp"
 #include "drivers.hpp"
 #include "utils.h"
+#include "imu.hpp"
+#include "user_diskio_spi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,16 +44,15 @@ void HAL_Delay(uint32_t Delay) {
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-  if (huart == rcHandle->getHuart()){
-      rcHandle->parse();
-      rcHandle->startDMA();
-  } 
-  else if (huart == telemLinkHandle->getHuart()) {
-    telemLinkHandle->receiveCallback(Size);
-  }
-  else if (huart == gpsHandle->getHuart()) {
-    gpsHandle->rxCallback(Size);
-  }
+    if (huart == rcHandle->getHuart()) {
+        rcHandle->parse();
+        rcHandle->startDMA();
+    } else if (huart == telemLinkHandle->getHuart()) {
+      telemLinkHandle->receiveCallback(Size);
+    }
+    else if (huart == gpsHandle->getHuart()) {
+      gpsHandle->rxCallback(Size);
+    }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
@@ -75,45 +76,52 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     }
 
     rcHandle->startDMA();
-  } else if (huart == gpsHandle->getHuart()) {
-    uint32_t error = HAL_UART_GetError(huart);
+  }
+  else if (huart == gpsHandle->getHuart()) {
+	  uint32_t error = HAL_UART_GetError(huart);
 
-    if (error & HAL_UART_ERROR_PE) {
-      __HAL_UART_CLEAR_PEFLAG(huart);
-    }
+	  if (error & HAL_UART_ERROR_PE) {
+		__HAL_UART_CLEAR_PEFLAG(huart);
+	  }
 
-    if (error & HAL_UART_ERROR_NE) {
-      __HAL_UART_CLEAR_NEFLAG(huart);
-    }
+	  if (error & HAL_UART_ERROR_NE) {
+		__HAL_UART_CLEAR_NEFLAG(huart);
+	  }
 
-    if (error & HAL_UART_ERROR_FE) {
-      __HAL_UART_CLEAR_FEFLAG(huart);
-    }
+	  if (error & HAL_UART_ERROR_FE) {
+		__HAL_UART_CLEAR_FEFLAG(huart);
+	  }
 
-    if (error & HAL_UART_ERROR_ORE) {
-      __HAL_UART_CLEAR_OREFLAG(huart);
-    }
-
-    gpsHandle->restartDMA();
+	  if (error & HAL_UART_ERROR_ORE) {
+		__HAL_UART_CLEAR_OREFLAG(huart);
+	  }
+	  gpsHandle->rxCallback(0);
   }
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-    if (hspi == imuHandle->getSPI()) {
-      imuHandle->txRxCallback();
-    }
+#ifdef SPI_INTERFACE
+  if (hspi->Instance == SPI1) {
+      setSpiTxFlag(1);
+  }
+#endif
+  if (hspi->Instance == SPI2) {
+    imuHandle->txRxCallback();
+  }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_MemRxCpltCallback();
-    }
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_MemRxCpltCallback();
+  } else if(hi2c == barometerHandle->getI2C()) {
+    barometerHandle->rxCallback();
+  }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_ErrorCallback();
-    }
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  }
 }
 
 #ifdef __cplusplus

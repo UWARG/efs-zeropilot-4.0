@@ -11,6 +11,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
+    IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -19,6 +20,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     ekf(mathUtilsDriver),
     amQueue(amQueue),
@@ -93,6 +95,10 @@ void AttitudeManager::amUpdate() {
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         sendServoOutputRawToTelemetryManager();
     }
+
+    BaroData_t baroData;
+    barometerDriver->readData(baroData);
+    (void)baroData; // TODO: Use when we send telemetry.
 
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
