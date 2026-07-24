@@ -1,6 +1,6 @@
 #include "drivers.hpp"
 #include "museq.hpp"
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 #include "zp_params.hpp"
 
 #define MOT_TYPE_PWM   0
