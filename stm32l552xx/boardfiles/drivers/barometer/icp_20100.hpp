@@ -10,11 +10,6 @@ static constexpr uint8_t ICP20100_FORCED_MES_TRIGGER = (1U << 4);
 static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER);
 
 class Barometer : public IBarometer {
-    enum State_e {
-        NOT_STARTED,
-        FIFO_STARTED,
-        DATA_READ
-    };
 
     public:
         Barometer(I2C_HandleTypeDef *hi2c);
@@ -26,6 +21,11 @@ class Barometer : public IBarometer {
         I2C_HandleTypeDef* getI2C();
        
     private:
+        enum State_e {
+            NOT_STARTED,
+            FIFO_STARTED,
+            DATA_READ
+        };
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;
         volatile State_e callbackState = NotStarted;
