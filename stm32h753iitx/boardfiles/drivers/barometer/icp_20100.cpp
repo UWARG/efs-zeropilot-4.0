@@ -420,14 +420,6 @@ bool Barometer::readRegister(
 	return true;
 }
 
-bool Barometer::writeRegister(
-    uint16_t memAddress,
-    uint8_t * pData,
-    uint16_t size) {
-
-    return HAL_I2C_Mem_Write_DMA(hi2c, ICP20100_I2C_ADDR, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
-}
-
 void Barometer::rxCallback() {
 	switch (callbackState) {
 		case NOT_STARTED: { // Step 1: Start FIFO fill register read via DMA

@@ -34,5 +34,4 @@ class Barometer : public IBarometer {
         float latestTemperatureC = 0.0f;
         float latestPressureKpa = 0.0f;
         bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
-		bool writeRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
 };
