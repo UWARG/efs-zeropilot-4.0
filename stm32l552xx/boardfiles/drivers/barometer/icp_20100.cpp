@@ -124,7 +124,7 @@ static bool waitForOtpStatusClear(I2C_HandleTypeDef *hi2c);
 static bool writeRegisterWithVerify(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
-	hi2c(hi2c), callbackState(NotStarted), fifoRegister(0) {}
+	hi2c(hi2c), callbackState(NOT_STARTED), fifoRegister(0) {}
 	
 bool Barometer::init() {
     // Step 1: Power on ASIC
