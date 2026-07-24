@@ -100,11 +100,11 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-  #ifdef SPI_INTERFACE
+#ifdef SPI_INTERFACE
   if (hspi->Instance == SPI1) {
       setSpiTxFlag(1);
   }
-  #endif
+#endif
   if (hspi->Instance == SPI2) {
     imuHandle->txRxCallback();
   }
