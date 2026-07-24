@@ -250,6 +250,7 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
     self->pm->update_from_plant(fuel_lbs, rpm);
+    self->barometer->update_from_plant(alt_m);
     
     Py_RETURN_NONE;
 }
