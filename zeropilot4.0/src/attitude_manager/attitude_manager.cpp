@@ -98,9 +98,14 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
+    // Read barometer data
     BaroData_t baroData;
     barometerDriver->readData(baroData);
-    (void)baroData; // TODO: Use when we send telemetry.
+
+    // Send scaled pressure data to TM
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
+        sendPressureDataToTelemetryManager(baroData);
+    }
 
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
@@ -435,6 +440,18 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     );
 
     tmQueue->push(&attitudeDataMsg);
+}
+
+void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroData) {
+    TMMessage_t pressureDataMsg = scaledPressurePack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        baroData.pressureKPa,
+        0,
+        baroData.temperatureC,
+        0
+    );
+
+    tmQueue->push(&pressureDataMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {
