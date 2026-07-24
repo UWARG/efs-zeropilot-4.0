@@ -1,5 +1,4 @@
 #include "icp_20100.hpp"
-#include "main.h"
 #include "utils.h"
 
 static constexpr uint32_t OTP_STATUS_POLL_TIMEOUT_MS = 1000U;
@@ -126,10 +125,6 @@ static bool writeRegisterWithVerify(I2C_HandleTypeDef *hi2c, uint16_t memAddress
 
 Barometer::Barometer(I2C_HandleTypeDef *hi2c) :
 	hi2c(hi2c), callbackState(NotStarted), fifoRegister(0) {}
-
-I2C_HandleTypeDef* Barometer::getI2C() {
-    return hi2c;
-}
 	
 bool Barometer::init() {
     // Step 1: Power on ASIC
