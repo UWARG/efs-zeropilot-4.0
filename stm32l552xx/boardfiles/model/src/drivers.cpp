@@ -1,6 +1,6 @@
 #include "drivers.hpp"
 #include "museq.hpp"
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 #include "zp_params.hpp"
 
 #define MOT_TYPE_PWM   0
@@ -69,7 +69,6 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 void initDrivers()
 {
-    
     // Core utilities
     fftHandle = new FFT();
     systemUtilsHandle = new SystemUtils();
@@ -137,5 +136,4 @@ void initDrivers()
     }
 
     mainMotorGroup = {motorInstances, 8};
-    
 }
