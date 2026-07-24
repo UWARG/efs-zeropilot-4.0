@@ -432,6 +432,18 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     tmQueue->push(&attitudeDataMsg);
 }
 
+void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroData) {
+    TMMessage_t pressureDataMsg = scaledPressurePack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        baroData.pressureKPa,
+        0,
+        baroData.temperatureC,
+        0
+    );
+
+    tmQueue->push(&pressureDataMsg);
+}
+
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {
     TMMessage_t servoOutputMsg = servoOutputRawPack(
         systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms

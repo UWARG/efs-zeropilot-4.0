@@ -35,6 +35,13 @@ typedef union TMMessageData_u {
       uint32_t hdgAcc;
       uint16_t yaw;
   } gpsRawData;
+
+  struct {
+    float press_abs;
+    float press_diff;
+    int16_t temperature;
+    int16_t temperature_press_diff;
+  } scaledPressureData;
   struct {
       uint8_t port;
       uint16_t servo1Raw;
@@ -101,7 +108,8 @@ typedef struct TMMessage{
         RC_DATA,
         BATTERY_DATA,
         RAW_IMU_DATA,
-        ATTITUDE_DATA
+        ATTITUDE_DATA,
+        SCALED_PRESSURE_DATA
     } dataType;
     TMMessageData_t tmMessageData;
     uint32_t timeBootMs = 0;
@@ -138,6 +146,17 @@ inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32
         }
     };
     return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, float press_abs, float press_diff, 
+                                    int16_t temperature, int16_t temperature_press_diff) {
+
+    const TMMessageData_t DATA = {
+        .scaledPressureData = {
+            press_abs, press_diff, temperature, temperature_press_diff
+        }
+    };
+    return TMMessage_t{TMMessage_t::SCALED_PRESSURE_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const uint16_t servo_values[16]) {

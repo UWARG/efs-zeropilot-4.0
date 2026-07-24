@@ -105,6 +105,7 @@ private:
     void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+    void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     void sendServoOutputRawToTelemetryManager();
 
     uint8_t profilerId;
