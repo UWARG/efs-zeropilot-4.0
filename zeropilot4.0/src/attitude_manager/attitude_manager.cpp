@@ -45,7 +45,6 @@ AttitudeManager::AttitudeManager(
     armedFlag(false),
     setArmFlag(false),
     lastServoOutputs{0},
-    lastBaroData{0.0f, 0.0f, 0.0f},
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
@@ -97,7 +96,9 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
-    barometerDriver->readData(lastBaroData);
+    BaroData_t baroData;
+    barometerDriver->readData(baroData);
+    (void)baroData; // TODO: Use when we send telemetry.
 
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
