@@ -517,31 +517,6 @@ bool Barometer::readData(BaroData_t &data)
 	return false;
 }
 
-void Barometer::computeAltitude(BaroData_t *data)
-{
-	if (data != nullptr) {
-		/*
-		 * Compute altitude from measured temperature and pressure using the
-		 * international barometric formula
-		 * Steps:
-		 *  - Convert temperature from degrees Celsius to Kelvin: T_k = T_C + 273.15
-		 *  - Divide by the standard temperature lapse rate (0.0065 K/m) to form
-		 *    the scale factor T_k / L (units: meters).
-		 *  - Compute the pressure ratio P / P0 where P0 = 101.325 kPa (sea-level standard).
-		 *  - Raise the ratio to the exponent ~0.190284 (≈ 1/5.25588), which is derived
-		 *    from constants in the barometric equation (R, g, and L).
-		 *  - Altitude (m) = (T_k / L) * (1 - (P / P0)^{exponent}).
-		 *
-		 * Assumptions/notes:
-		 *  - `temperatureC` is in °C and `pressureKPa` is in kPa.
-		 *  - This formula gives altitude in meters relative to sea level and is
-		 *    an approximation valid under standard-atmosphere conditions.
-		 */
-		data->altitude = ((data->temperatureC + ICP20100_KELVIN_OFFSET) / ICP20100_TEMP_LAPSE_RATE) *
-						 (1.0f - powf(data->pressureKPa / ICP20100_SEA_LEVEL_PRESSURE_KPA, ICP20100_BAROMETRIC_EXPONENT));
-	}
-}
-
 I2C_HandleTypeDef* Barometer::getI2C() {
 	return hi2c;
 }
