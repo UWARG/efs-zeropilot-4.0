@@ -88,8 +88,6 @@ private:
 
     uint16_t lastServoOutputs[16];
 
-    BaroData_t lastBaroData;
-
     uint16_t amSchedulingCounter;
 
     int noDataCount;
