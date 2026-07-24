@@ -169,3 +169,32 @@ TEST_F(AttitudeManagerTelemetryTest, ServoOutputRawTelemetrySent) {
 
     EXPECT_EQ(servoOutputCount, AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ);
 }
+
+TEST_F(AttitudeManagerTelemetryTest, ScaledPressureTelemetrySent) {
+    BaroData_t baroData;
+    baroData.pressureKPa = 101.325f;
+    baroData.temperatureC = 25.0f;
+
+    EXPECT_CALL(mockBarometer, readData(_))
+        .WillRepeatedly(Invoke([&baroData](BaroData_t& outData) {
+            outData = baroData;
+            return true;
+        }));
+
+    int pressureCount = 0;
+    EXPECT_CALL(mockTMQueue, push(_))
+        .WillRepeatedly(Invoke([&pressureCount](TMMessage_t* msg) {
+            if (msg->dataType == TMMessage_t::SCALED_PRESSURE_DATA) {
+                pressureCount++;
+            }
+            return 0;
+        }));
+
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+
+    for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
+        am.amUpdate();
+    }
+
+    EXPECT_EQ(pressureCount, AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ);
+}
