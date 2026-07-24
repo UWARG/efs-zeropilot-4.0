@@ -2,11 +2,11 @@
 
 #include <cstdint>
 
-// Pressure and Temp data
+// Pressure and Temperature data
 typedef struct {
     float pressureKPa; // kPa
     float temperatureC; // Celsius
-    float altitude; // M
+    float altitude; // meters
 } BaroData_t;
 
 class IBarometer {
