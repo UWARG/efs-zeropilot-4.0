@@ -22,6 +22,10 @@ KTS_TO_FPS = 1.68781
 FT_TO_M = 0.3048
 FPS_TO_MPS = 0.3048
 FPS_TO_KTS = 0.592484
+PSF_TO_KPA = 0.0478803
+
+def rankine_to_celsius(temp_r):
+    return (temp_r - 491.67) * 5.0 / 9.0
 
 class ZP_PLANE_SITL_JSBSIM:
     def __init__(self, ip, port):
@@ -106,7 +110,9 @@ class ZP_PLANE_SITL_JSBSIM:
                 self.fdm['velocities/vg-fps'] * FPS_TO_MPS,
                 self.fdm['attitude/psi-deg'],
                 self.fdm['propulsion/total-fuel-lbs'],
-                self.fdm['propulsion/engine/propeller-rpm']
+                self.fdm['propulsion/engine/propeller-rpm'],
+                self.fdm['atmosphere/P-psf'] * PSF_TO_KPA,
+                rankine_to_celsius(self.fdm['atmosphere/T-R'])
             )
             
             # 2. Sync RC commands and update logic

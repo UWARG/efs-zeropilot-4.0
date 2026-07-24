@@ -38,7 +38,6 @@ namespace SITL_Driver_Configs {
     };
 
     struct SITL_Barometer_Config {
-        static constexpr float AMBIENT_TEMP_C = 25.0f; // Base ambient room temperature in °C
         static constexpr float KELVIN_OFFSET = 273.15f;
         static constexpr float TEMP_LAPSE_RATE = 0.0065f; // K/m
         static constexpr float SEA_LEVEL_PRESSURE_KPA = 101.325f;
