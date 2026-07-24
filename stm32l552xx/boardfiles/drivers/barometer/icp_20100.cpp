@@ -428,7 +428,6 @@ void Barometer::rxCallback() {
 				callbackState = FIFO_STARTED;
 			} else {
 				callbackState = NOT_STARTED;
-				initiatedRead = false;
 			}
 			break;
 		}
@@ -440,12 +439,10 @@ void Barometer::rxCallback() {
 					callbackState = DATA_READ;
 				} else {
 					callbackState = NOT_STARTED;
-					initiatedRead = false;
 				}
 			} else {
 				// Keep polling FIFO until at least one sample is ready.
 				callbackState = NOT_STARTED;
-				initiatedRead = false;
 			}
 			break;
 		}
@@ -453,16 +450,18 @@ void Barometer::rxCallback() {
 		case DATA_READ: { // Step 3: Burst read complete. Signal data ready.
 			dataFilled = 1;
 			callbackState = NOT_STARTED;
-			initiatedRead = false;
 			break;
 		}
 
 		default: {
 			callbackState = NOT_STARTED;
-			initiatedRead = false;
 			break;
 		}
 	}
+}
+
+void Barometer::errorCallback() {
+	callbackState = NOT_STARTED;
 }
 
 bool Barometer::readData(BaroData_t &data)
@@ -486,24 +485,15 @@ bool Barometer::readData(BaroData_t &data)
 		data.altitude = ((data.temperatureC + ICP20100_KELVIN_OFFSET) / ICP20100_TEMP_LAPSE_RATE) *
 						 (1.0f - powf(data.pressureKPa / ICP20100_SEA_LEVEL_PRESSURE_KPA, ICP20100_BAROMETRIC_EXPONENT));
 		dataFilled = 0;
-		initiatedRead = true;
 		rxCallback();
 		return true;
 	}
 
-	if (callbackState != 0) {
+	if (callbackState != NOT_STARTED || HAL_I2C_GetState(hi2c) != HAL_I2C_STATE_READY) {
 		return false;
 	}
-
-	if (HAL_I2C_GetState(hi2c) != HAL_I2C_STATE_READY) {
-		return false;
-	}
-
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
-	if (!initiatedRead){
-		initiatedRead = true;
-		rxCallback();
-	}
+	rxCallback();
 
 	// Non-blocking: no data ready yet.
 	return false;

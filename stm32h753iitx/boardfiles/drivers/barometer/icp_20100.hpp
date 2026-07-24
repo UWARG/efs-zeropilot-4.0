@@ -19,8 +19,9 @@ class Barometer : public IBarometer {
     public:
         Barometer(I2C_HandleTypeDef *hi2c);
         bool readData(BaroData_t &data);
-        bool init(); 
+        bool init();
         void rxCallback();
+        void errorCallback();
         bool firWarmupPoll();
         I2C_HandleTypeDef* getI2C();
 
@@ -28,7 +29,6 @@ class Barometer : public IBarometer {
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;
         volatile State_e callbackState = NOT_STARTED;
-        volatile bool initiatedRead = false;
         uint8_t pressTempData[6];
         uint8_t fifoRegister;
         float latestTemperatureC = 0.0f;
