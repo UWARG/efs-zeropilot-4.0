@@ -69,7 +69,6 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 void initDrivers()
 {
-    
     // Core utilities
     fftHandle = new FFT();
     systemUtilsHandle = new SystemUtils();
@@ -137,5 +136,4 @@ void initDrivers()
     }
 
     mainMotorGroup = {motorInstances, 8};
-    
 }
