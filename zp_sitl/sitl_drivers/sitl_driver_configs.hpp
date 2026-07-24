@@ -38,7 +38,7 @@ namespace SITL_Driver_Configs {
     };
 
     struct SITL_Barometer_Config {
-        
+        static constexpr float AMBIENT_TEMP_C = 25.0f; // Base ambient room temperature in °C
     };
 
     struct SITL_TELEM_Config {
