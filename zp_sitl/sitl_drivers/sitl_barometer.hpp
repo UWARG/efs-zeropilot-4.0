@@ -14,4 +14,19 @@ class SITL_Barometer : public IBarometer {
             data = baroData;
             return true;
         }
+
+        /**
+         * Simulates the barometer readings based on the physics engine (Plant)
+         * Note: This converts altitude to pressure based on configured temperature
+         */
+        void update_from_plant(double alt_m) {
+            baroData.temperatureC = Config::AMBIENT_TEMP_C;
+            baroData.altitude = static_cast<float>(alt_m);
+
+            const float T_K = Config::AMBIENT_TEMP_C + Config::KELVIN_OFFSET;
+            const float base = 1.0f - (Config::TEMP_LAPSE_RATE * static_cast<float>(alt_m)) / T_K;
+
+            baroData.pressureKPa = Config::SEA_LEVEL_PRESSURE_KPA * 
+                powf(base, 1.0f / Config::BAROMETRIC_EXPONENT);
+        }
 };
