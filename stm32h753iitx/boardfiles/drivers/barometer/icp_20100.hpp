@@ -22,9 +22,8 @@ class Barometer : public IBarometer {
         bool init(); 
         void rxCallback();
         bool firWarmupPoll();
-        void computeAltitude(BaroData_t *data);
         I2C_HandleTypeDef* getI2C();
-       
+
     private:
         I2C_HandleTypeDef *hi2c;
         volatile bool dataFilled = 0;

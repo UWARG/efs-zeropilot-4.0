@@ -128,7 +128,7 @@ void initDrivers()
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
-    barometerHandle = new Barometer(&hi2c1);
+    barometerHandle = new Barometer(&hi2c2);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
