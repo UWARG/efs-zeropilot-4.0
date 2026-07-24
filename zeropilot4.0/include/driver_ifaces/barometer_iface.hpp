@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
+// Pressure and Temp data
 typedef struct {
-    // Press and Temp data
     float pressureKPa; // kPa
     float temperatureC; // Celsius
     float altitude; // M
