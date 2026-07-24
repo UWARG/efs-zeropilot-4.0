@@ -149,12 +149,16 @@ inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32
     return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, float press_abs, float press_diff, 
-                                    int16_t temperature, int16_t temperature_press_diff) {
+inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, float press_abs_kpa, float press_diff_kpa, 
+                                    float temperature_degC, float temperature_press_diff_degC) {
+    float press_abs_hpa = press_abs_kpa * 10.0f; // kPa -> hPa
+    float press_diff_hpa = press_diff_kpa * 10.0f; // kPa -> hPa
+    uint16_t temperature_cdegC = static_cast<int16_t>(temperature_degC * 100.0f); // C -> cC
+    uint16_t temperature_press_diff_cdegC = static_cast<int16_t>(temperature_press_diff_degC * 100.0f); // C -> cC
 
     const TMMessageData_t DATA = {
         .scaledPressureData = {
-            press_abs, press_diff, temperature, temperature_press_diff
+            press_abs_hpa, press_diff_hpa, temperature_cdegC, temperature_press_diff_cdegC
         }
     };
     return TMMessage_t{TMMessage_t::SCALED_PRESSURE_DATA, DATA, time_boot_ms};
