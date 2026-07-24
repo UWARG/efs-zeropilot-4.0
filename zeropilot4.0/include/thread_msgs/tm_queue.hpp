@@ -93,10 +93,10 @@ typedef union TMMessageData_u {
   } attitudeData;
 
   struct {
-    float press_abs;
-    float press_diff;
+    float pressAbs;
+    float pressDiff;
     int16_t temperature;
-    int16_t temperature_press_diff;
+    int16_t temperaturePressDiff;
   } scaledPressureData;
 } TMMessageData_t;
 
@@ -149,8 +149,8 @@ inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32
     return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
 }
 
-inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, float press_abs_kpa, float press_diff_kpa, 
-                                    float temperature_degC, float temperature_press_diff_degC) {
+inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, floatA_kpa, float press_diff_kpa, 
+                                    float temperature_degC, float Dmperature_press_diff_degC) {
     float pressAbs = press_abs_kpa * 10.0f; // kPa -> hPa
     float pressDiff = press_diff_kpa * 10.0f; // kPa -> hPa
     uint16_t temp = static_cast<int16_t>(temperature_degC * 100.0f); // C -> cC
