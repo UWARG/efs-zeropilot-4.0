@@ -130,7 +130,6 @@ bool Barometer::init() {
     // Step 1: Power on ASIC
 
     // Step 2: Write to lock register twice to get access to main registers and initiate communication w/ I2C
-    
     if (!unlockOrLock(hi2c, false)) return false;
     if (!unlockOrLock(hi2c, false)) return false;
 
@@ -153,7 +152,7 @@ bool Barometer::init() {
 	// Mask boot status register to only read the 0th bit
 	bootStatus &= OTP_STATUS2_BOOT_STATUS_BM;
 
-	if(bootStatus == OTP_STATUS2_BOOT_STATUS_VALID){ // Initialization done, barometer did not go through power cycle.
+	if (bootStatus == OTP_STATUS2_BOOT_STATUS_VALID) { // Initialization done, barometer did not go through power cycle.
 		return firWarmupPoll();
 	}
 
@@ -178,13 +177,13 @@ bool Barometer::init() {
 
 	//Step 7: Enable OTP and write switch by setting the config1 register's bits 0 and 1 to 1.
 	uint8_t otpConfig = 0x00;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_CONFIG_1, I2C_MEMADD_SIZE_8BIT, &otpConfig, 1, HAL_MAX_DELAY) != HAL_OK){
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_CONFIG_1, I2C_MEMADD_SIZE_8BIT, &otpConfig, 1, HAL_MAX_DELAY) != HAL_OK) {
 		return false;
 	}
 
 	otpConfig |= (ICP20100_OTP_ENABLE_BOTH); // Sets bits 011
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_CONFIG_1, otpConfig)){
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_CONFIG_1, otpConfig)) {
 		return false;
 	}
 
@@ -193,13 +192,13 @@ bool Barometer::init() {
 	//Step 8: Toggle the OTP_DBG2 register bit 8 (reset bit)
 	uint8_t reset = 0x00;
 
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_DBG2, I2C_MEMADD_SIZE_8BIT, &reset, 1, HAL_MAX_DELAY) != HAL_OK){
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_DBG2, I2C_MEMADD_SIZE_8BIT, &reset, 1, HAL_MAX_DELAY) != HAL_OK) {
 		return false;
 	}
 
 	reset |= (ICP20100_OTP_DBG2_RESET_BM);
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_DBG2, reset)){
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_DBG2, reset)) {
 		return false;
 	}
 
@@ -207,7 +206,7 @@ bool Barometer::init() {
 
 	reset &= ~(ICP20100_OTP_DBG2_RESET_BM);
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_DBG2, reset)){
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_DBG2, reset)) {
 		return false;
 	}
 
@@ -224,59 +223,53 @@ bool Barometer::init() {
 	// STEP 10: Write address content and read command
 	uint8_t commandAddress = ICP20100_OTP_ADDR_OFFSET;
 	// Select the OTP offset-trim address to read from
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, commandAddress)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, commandAddress)) return false; 
 
 	commandAddress = 0x00; //X0010000
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &commandAddress, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &commandAddress, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	commandAddress &= ~ICP20100_OTP_COMMAND_FIELD_MASK;
 	commandAddress |= ICP20100_OTP_COMMAND_READ_REQUEST;
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, commandAddress)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, commandAddress)) return false; 
 
 	// STEP 11: Wait for OTP read to finish
-	if (!waitForOtpStatusClear(hi2c)) {
-		return false;
-	}
+	if (!waitForOtpStatusClear(hi2c)) return false;
 
 	// STEP 12: Read offset from the OTP_RDATA register
-	uint8_t offset = 0x0000;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &offset, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	uint8_t offset = 0;
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &offset, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	// STEP 13: Write next address
-
 	commandAddress = ICP20100_OTP_ADDR_GAIN;
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, commandAddress)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, commandAddress)) return false; 
 
 	commandAddress = 0x00;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &commandAddress, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &commandAddress, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	commandAddress &= ~ICP20100_OTP_COMMAND_FIELD_MASK;
 	commandAddress |= ICP20100_OTP_COMMAND_READ_REQUEST;
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, commandAddress)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, commandAddress)) return false; 
 
 	// STEP 14: Wait for OTP read to finish
-	if (!waitForOtpStatusClear(hi2c)) {
-		return false;
-	}
+	if (!waitForOtpStatusClear(hi2c)) return false;
 
 	// STEP 15: Read gain from OTP_RDATA register
 	uint8_t gain = 0x0000;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &gain, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &gain, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	// Step 16: Write next address content
 
 	commandAddress = ICP20100_OTP_ADDR_HFOSC;
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, commandAddress)){ return false; }
-
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_ADDRESS, commandAddress)) return false; 
 	commandAddress = 0x00; //X0010000
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &commandAddress, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_COMMAND, I2C_MEMADD_SIZE_8BIT, &commandAddress, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
 
 	commandAddress &= ~ICP20100_OTP_COMMAND_FIELD_MASK;
 	commandAddress |= ICP20100_OTP_COMMAND_READ_REQUEST;
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, commandAddress)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_COMMAND, commandAddress)) return false; 
 
 	// STEP 17: Wait for OTP read to finish
 	if (!waitForOtpStatusClear(hi2c)) {
@@ -285,22 +278,21 @@ bool Barometer::init() {
 
 	// STEP 18: Read HFosc
 	uint8_t HFosc = 0x00;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &HFosc, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_RDATA, I2C_MEMADD_SIZE_8BIT, &HFosc, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	// STEP 19: Disable OTP
 
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_CONFIG_1, I2C_MEMADD_SIZE_8BIT, &otpConfig, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
-
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_OTP_CONFIG_1, I2C_MEMADD_SIZE_8BIT, &otpConfig, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 	otpConfig &= ~(ICP20100_OTP_ENABLE_BOTH);
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_CONFIG_1, otpConfig)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_CONFIG_1, otpConfig)) return false; 
 
-	HAL_Delay(ICP20100_SHORT_DELAY_MS); // should be wait 10 microseconds
+	HAL_Delay(ICP20100_SHORT_DELAY_MS); // Needs to wait atleast 10 microseconds, waits 1 milisecond
 
 	// STEP 20: Write offset to main registers
 	uint8_t trimReg;
 
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM1_MSB, I2C_MEMADD_SIZE_8BIT, &trimReg, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM1_MSB, I2C_MEMADD_SIZE_8BIT, &trimReg, 1, HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	// Clear the 6-bit PEFE_OFFSET_TRIM field (bits 5:0)
 	trimReg &= ~ICP20100_TRIM1_MSB_OFFSET_FIELD_MASK;
@@ -309,21 +301,21 @@ bool Barometer::init() {
 	trimReg |= offsetLow;
 
 	// Write back
-	if(!writeRegisterWithVerify(hi2c, ICP20100_TRIM1_MSB, trimReg)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM1_MSB, trimReg)) return false; 
 
 	// STEP 21: Write gain to main registers
-	uint8_t Rdata = 0x00;
-	if(HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM2_MSB,
-				 I2C_MEMADD_SIZE_8BIT, &Rdata, 1, HAL_MAX_DELAY) != HAL_OK){ return false; }
+	uint8_t rData = 0x00;
+	if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_TRIM2_MSB,
+				 I2C_MEMADD_SIZE_8BIT, &Rdata, 1, HAL_MAX_DELAY) != HAL_OK ) return false; 
 
-	Rdata &= ~ICP20100_TRIM2_MSB_GAIN_FIELD_MASK;  // Clear bits 4,5,6
-	gain &= ICP20100_GAIN_VALUE_MASK;  // Mask bits 1,2,3, to extract gain value required, as per datasheet
-	Rdata |= (gain << ICP20100_TRIM2_MSB_GAIN_SHIFT);  // Set bits 4,5,6 to bits 1,2,3 from gain value
+	rData &= ~ICP20100_TRIM2_MSB_GAIN_FIELD_MASK;  // Clear bits 4, 5, 6
+	gain &= ICP20100_GAIN_VALUE_MASK;  // Mask bits 1, 2, 3 to extract gain value required, as per datasheet
+	rData |= (gain << ICP20100_TRIM2_MSB_GAIN_SHIFT);  // Set bits 4, 5, 6 to bits 1, 2, 3 from gain value
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, Rdata)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_MSB, Rdata)) return false; 
 
 	// STEP 22: Write HFosc trim value to main registers
-	if(!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_LSB, HFosc)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_TRIM2_LSB, HFosc)) return false; 
 
 	// STEP 23: Lock main registers
 	if (!unlockOrLock(hi2c, true)) {
@@ -333,36 +325,34 @@ bool Barometer::init() {
 	 // STEP 24: Move to standby
 	uint8_t powerMode = 0;
 
-	if(HAL_I2C_Mem_Read(hi2c,
-		                  ICP20100_I2C_ADDR,
-		                  ICP20100_REG_MODE_SELECT,
-		                  I2C_MEMADD_SIZE_8BIT,
-		                  &powerMode,
-		                  1,
-		                  HAL_MAX_DELAY) != HAL_OK){ return false; }
+	if (HAL_I2C_Mem_Read(hi2c,
+		                 ICP20100_I2C_ADDR,
+		                 ICP20100_REG_MODE_SELECT,
+		                 I2C_MEMADD_SIZE_8BIT,
+		                 &powerMode,
+		                 1,
+		                 HAL_MAX_DELAY) != HAL_OK) return false; 
 
 	powerMode &= ~(ICP20100_MODE_SELECT_POWER_MODE_BM);
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_REG_MODE_SELECT, powerMode)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_REG_MODE_SELECT, powerMode)) return false; 
 
 	// STEP 25: Check boot up status to 1, avoid reintialization
 
 	uint8_t bootConfig = ICP20100_OTP_STATUS2_BOOTUP;
 
-	if(!writeRegisterWithVerify(hi2c, ICP20100_OTP_STATUS2, bootConfig)){ return false; }
+	if (!writeRegisterWithVerify(hi2c, ICP20100_OTP_STATUS2, bootConfig)) return false; 
 
 	return firWarmupPoll();
 }
 
-bool Barometer::firWarmupPoll()
-{
+bool Barometer::firWarmupPoll() {
 	uint8_t modeSelect = ICP20100_MODE_SELECT_MEAS_MODE1_CONTINUOUS;
 	uint8_t fifoFill = 0;
 	uint8_t stopMode = 0x00;
 	uint8_t flushFifo = ICP20100_FIFO_FILL_FLUSH_BM;
 	
 	// Step 1: Configure mode to be in mode 1 and continuous  and start a measuerment
-
 	if (HAL_I2C_Mem_Write(hi2c, ICP20100_I2C_ADDR, ICP20100_REG_MODE_SELECT, I2C_MEMADD_SIZE_8BIT, &modeSelect, 1, ICP20100_FIR_WARMUP_I2C_TIMEOUT_MS) != HAL_OK) {
 		return false;
 	}
@@ -372,9 +362,14 @@ bool Barometer::firWarmupPoll()
 	bool fifoReady = false;
 
 	while ((HAL_GetTick() - startMs) < ICP20100_FIR_WARMUP_TIMEOUT_MS) {
-		if (HAL_I2C_Mem_Read(hi2c, ICP20100_I2C_ADDR, ICP20100_FIFO_FILL, I2C_MEMADD_SIZE_8BIT, &fifoFill, 1, ICP20100_FIR_WARMUP_I2C_TIMEOUT_MS) != HAL_OK) {
-			return false;
-		}
+		if (HAL_I2C_Mem_Read(hi2c, 
+							 ICP20100_I2C_ADDR, 
+							 ICP20100_FIFO_FILL, 
+							 I2C_MEMADD_SIZE_8BIT, 
+							 &fifoFill, 
+							 1, 
+							 ICP20100_FIR_WARMUP_I2C_TIMEOUT_MS) != HAL_OK) return false;
+		
 
 		fifoFill &= ICP20100_FIFO_FILL_COUNT_MASK;
 		if (fifoFill >= ICP20100_FIR_WARMUP_FIFO_THRESHOLD) {
@@ -434,7 +429,7 @@ bool Barometer::writeRegister(
 }
 
 void Barometer::rxCallback() {
-	switch(callbackState) {
+	switch (callbackState) {
 		case NotStarted: { // Step 1: Start FIFO fill register read via DMA
 			dataFilled = 0;
 			if (readRegister(ICP20100_FIFO_FILL, &fifoRegister, 1)) {
@@ -465,13 +460,13 @@ void Barometer::rxCallback() {
 
 		case DataRead: { // Step 3: Burst read complete. Signal data ready.
 			dataFilled = 1;
-			callbackState = NotStarted;
+			callbackState = NOT_STARTED;
 			initiatedRead = false;
 			break;
 		}
 
 		default: {
-			callbackState = NotStarted;
+			callbackState = NOT_STARTED;
 			initiatedRead = false;
 			break;
 		}
@@ -513,7 +508,7 @@ bool Barometer::readData(BaroData_t &data)
 	}
 
 	// Kick off DMA state machine. FIFO polling starts in callback step 1.
-	if(!initiatedRead){
+	if (!initiatedRead){
 		initiatedRead = true;
 		rxCallback();
 	}

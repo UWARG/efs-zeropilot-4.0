@@ -11,9 +11,9 @@ static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | 
 
 class Barometer : public IBarometer {
     enum State_e {
-        NotStarted,
-        FifoStarted,
-        DataRead
+        NOT_STARTED,
+        FIFO_STARTED,
+        DATA_READ
     };
 
     public:
