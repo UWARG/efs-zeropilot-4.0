@@ -28,7 +28,7 @@ static constexpr uint8_t ICP20100_OTP_ADDR_HFOSC = 0xFAU;   // HfOsc trim
 
 // Register Definitions for Mikroe ICP-20100
 
-static constexpr uint16_t ICP20100_I2C_ADDR = (0x63U << 1); // Shift by 1 for HAL
+static constexpr uint16_t ICP20100_I2C_ADDR = (0x64U << 1); // Shift by 1 for HAL
 static constexpr uint8_t ICP20100_REG_MODE_SELECT = 0xC0U;
 static constexpr uint8_t ICP20100_DEVICE_ID = 0x0CU;
 static constexpr uint8_t ICP20100_MASTER_LOCK = 0xBEU;
