@@ -19,12 +19,14 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
 
 // ----------------------------------------------------------------------------
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
@@ -37,6 +39,7 @@ RFD *telemLinkHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
+Barometer *barometerHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -83,6 +86,7 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 void initDrivers() {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
+    mathUtilsHandle = new MathUtils();
     fftHandle = new FFT();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
     loggerHandle = new Logger(); // Initialized later in RTOS task
@@ -118,11 +122,12 @@ void initDrivers() {
     gpsHandle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
-    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_4KHZ);
-    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_4KHZ);
+    IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_1KHZ);
+    IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
     rangefinderHandle = new Rangefinder(&hi2c3);
+    barometerHandle = new Barometer(&hi2c2);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -143,6 +148,7 @@ void initDrivers() {
     imuHandle->init();
     pmHandle->init();
     rangefinderHandle->init();
+    barometerHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {

@@ -8,7 +8,7 @@
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
-#include "MahonyAHRS.hpp"
+#include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
@@ -17,6 +17,7 @@
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
 #include "rangefinder_iface.hpp"
+#include "barometer_iface.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -27,6 +28,8 @@
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
 
+static_assert(AM_CONTROL_LOOP_PERIOD_S != 0.0f, "AM_CONTROL_LOOP_PERIOD_S must be nonzero.");
+
 class AttitudeManager
 {
     friend class AMParamSetup;
@@ -34,14 +37,17 @@ class AttitudeManager
 public:
     AttitudeManager(
         ISystemUtils *systemUtilsDriver,
+        IMathUtils *mathUtilsDriver,
         IGPS *gpsDriver,
         IIMU *imuDriver,
         IFFT *fftDriver,
         IRangefinder *rangefinderDriver,
+        IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
-        MotorGroupInstance_t *mainMotorGroup);
+        MotorGroupInstance_t *mainMotorGroup
+    );
 
     void amUpdate();
 
@@ -55,10 +61,11 @@ private:
     bool gpsUnsent = false;
     IIMU *imuDriver;
     IRangefinder *rangefinderDriver;
+    IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
-    Mahony mahonyFilter;
+    AHRSEKF ekf;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;

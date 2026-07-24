@@ -15,6 +15,10 @@ FLTMODE_AXIS = 6
 # The 6 positions of fltmode buttons on the controller connected to sitl
 FLTMODE_AXIS_VALUES = [-0.8, -0.38, -0.12, 0.0, 0.29, 0.99]
 
+PA_TO_KPA = 0.001
+# AirSim's barometer sensor doesn't report temperature, so assume a fixed ambient.
+BARO_AMBIENT_TEMP_C = 25.0
+
 class ZP_QUAD_SITL_AIRSIM:
     def __init__(self, ip="127.0.0.1", port=14550):
         # Input Setup (Joysticks)
@@ -105,7 +109,9 @@ class ZP_QUAD_SITL_AIRSIM:
         lv = state.kinematics_estimated.linear_velocity
         ground_speed = math.sqrt(lv.x_val**2 + lv.y_val**2)  # horizontal only, m/s
 
-        heading = math.degrees(yaw) % 360 
+        heading = math.degrees(yaw) % 360
+
+        baro = self.client.getBarometerData()
 
         # altitude for rangefinder 
         alt_rangefinder = self.client.getDistanceSensorData().distance
@@ -118,7 +124,9 @@ class ZP_QUAD_SITL_AIRSIM:
             heading,
             0.0,
             0.0,
-            alt_rangefinder
+            alt_rangefinder,
+            baro.pressure * PA_TO_KPA,
+            BARO_AMBIENT_TEMP_C
         )
 
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'],

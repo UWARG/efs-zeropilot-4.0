@@ -1,6 +1,7 @@
 #pragma once
 
 #include "systemutils.hpp"
+#include "mathutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
 #include "motor.hpp"
@@ -19,8 +20,10 @@
 #include "fused_imu.hpp"
 #include "fft.hpp"
 #include "rangefinder.hpp"
+#include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern MathUtils *mathUtilsHandle;
 extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
@@ -34,6 +37,7 @@ extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
 extern Rangefinder *rangefinderHandle;
+extern Barometer *barometerHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

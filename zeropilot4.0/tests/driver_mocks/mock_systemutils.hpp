@@ -11,6 +11,4 @@ public:
     MOCK_METHOD(void, profilerBegin, (uint8_t id), (override));
     MOCK_METHOD(void, profilerEnd, (uint8_t id), (override));
     MOCK_METHOD(void, profilerGetAll, (TaskProfile* out, uint8_t* count), (override));
-    MOCK_METHOD(float, dspSinf, (float x), (override));
-    MOCK_METHOD(float, dspCosf, (float x), (override));
 };

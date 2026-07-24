@@ -35,9 +35,9 @@ public:
 
         // Accelerometer: Gravity projection (assuming 1g static)
         // LSB_PER_G = ACCEL_SCALE (e.g., 2048)
-        float ax = -Config::GRAVITY * sp;
-        float ay =  Config::GRAVITY * sr * cp;
-        float az =  Config::GRAVITY * cr * cp;
+        float ax = Config::GRAVITY * sp;
+        float ay = -Config::GRAVITY * sr * cp;
+        float az = -Config::GRAVITY * cr * cp;
         
         // Convert m/s^2 to LSB: (Value / 9.81) * Scale_Factor
         constexpr float ACCEL_TO_LSB = (float)Config::ACCEL_SCALE / Config::GRAVITY;

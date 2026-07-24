@@ -3,4 +3,3 @@ jsbsim==1.2.0
 aiohttp==3.9.3
 pygame==2.6.1
 pymavlink==2.4.49
-airsim==1.8.1

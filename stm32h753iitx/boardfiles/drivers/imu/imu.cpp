@@ -181,7 +181,7 @@ void IMU::reset() {
 }
 
 uint8_t IMU::whoAmI() {
-    uint8_t buffer;
+    uint8_t buffer = 0;
     readRegister(0, UB0_REG_WHO_AM_I, &buffer);
     return buffer;
 }
@@ -252,10 +252,10 @@ void IMU::processRawData() {
         if ((header & FIFO_HEADER_MSG_BIT) || !(header & FIFO_HEADER_ACCEL_BIT) || !(header & FIFO_HEADER_GYRO_BIT)) {
             break;
         }
-
-        rawData[k].xacc = (int16_t)((imuRxBuffer[base + 1] << 8) | imuRxBuffer[base + 2]);
-        rawData[k].yacc = -(int16_t)((imuRxBuffer[base + 3] << 8) | imuRxBuffer[base + 4]);
-        rawData[k].zacc = (int16_t)((imuRxBuffer[base + 5] << 8) | imuRxBuffer[base + 6]);
+        // FRD
+        rawData[k].xacc = -(int16_t)((imuRxBuffer[base + 1] << 8) | imuRxBuffer[base + 2]);
+        rawData[k].yacc = (int16_t)((imuRxBuffer[base + 3] << 8) | imuRxBuffer[base + 4]);
+        rawData[k].zacc = -(int16_t)((imuRxBuffer[base + 5] << 8) | imuRxBuffer[base + 6]);
         rawData[k].xgyro = -(int16_t)((imuRxBuffer[base + 7] << 8) | imuRxBuffer[base + 8]);
         rawData[k].ygyro = (int16_t)((imuRxBuffer[base + 9] << 8) | imuRxBuffer[base + 10]);
         rawData[k].zgyro = -(int16_t)((imuRxBuffer[base + 11] << 8) | imuRxBuffer[base + 12]);

@@ -181,7 +181,7 @@ void IMU::reset() {
 }
 
 uint8_t IMU::whoAmI() {
-    uint8_t buffer;
+    uint8_t buffer = 0;
     readRegister(0, UB0_REG_WHO_AM_I, &buffer);
     return buffer;
 }

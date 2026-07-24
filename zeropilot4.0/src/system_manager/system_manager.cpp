@@ -118,26 +118,26 @@ void SystemManager::smUpdate() {
 
         for (uint8_t i = 0; i < count; i++) {
             if (strcmp(profiles[i].name, "SM") == 0) {
-                if (profiles[i].deltaExec >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                if (profiles[i].maxExecUs >= (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "SM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.8f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].maxExecUs >= 0.8f * (SM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "SM execution time about to exceed scheduled rate");
                 }
             } else if (strcmp(profiles[i].name, "AM") == 0) {
-                if (profiles[i].deltaExec >= (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                if (profiles[i].maxExecUs >= (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "AM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.8f * (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].maxExecUs >= 0.8f * (AM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "AM execution time about to exceed scheduled rate");
                 }
             } else if (strcmp(profiles[i].name, "TM") == 0) {
-                if (profiles[i].deltaExec >= (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                if (profiles[i].maxExecUs >= (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "TM execution time exceeding scheduled rate");
-                } else if (profiles[i].deltaExec >= 0.8f * (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
+                } else if (profiles[i].maxExecUs >= 0.8f * (TM_UPDATE_LOOP_DELAY_MS * 1000)) {
                     sendStatusTextToTelemetryManager(MAV_SEVERITY_WARNING, "TM execution time about to exceed scheduled rate");
                 }
             }
             #if LOG_TIMING
-            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].deltaExec, profiles[i].deltaPeriod);
+            snprintf((char*)profilerBuf, sizeof(profilerBuf), "%-12s %lu us      %lu hz", profiles[i].name, profiles[i].maxExecUs, profiles[i].avgRateHz);
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, (char*)profilerBuf);
             #endif
         }

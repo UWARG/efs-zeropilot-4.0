@@ -28,8 +28,4 @@ public:
     void profilerEnd(uint8_t id) override { return; }
 
     void profilerGetAll(TaskProfile* out, uint8_t* count) override { return; }
-
-    float dspSinf(float x) override { return sinf(x); };
-
-    float dspCosf(float x) override { return cosf(x); };
 };

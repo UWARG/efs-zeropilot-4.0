@@ -78,9 +78,9 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 		az *= recipNorm;
 
 		// Estimated direction of gravity
-		halfvx = q1 * q3 - q0 * q2;
-		halfvy = q0 * q1 + q2 * q3;
-		halfvz = q0 * q0 - 0.5f + q3 * q3;
+		halfvx = q0 * q2 - q1 * q3;
+		halfvy = -(q0 * q1 + q2 * q3);
+		halfvz = 0.5f - q0 * q0 - q3 * q3;
 
 		// Error is sum of cross product between estimated
 		// and measured direction of gravity

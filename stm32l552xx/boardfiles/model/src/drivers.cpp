@@ -16,12 +16,14 @@ extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
+extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
 
 // ----------------------------------------------------------------------------
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
@@ -32,6 +34,7 @@ GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
+Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 
@@ -64,13 +67,14 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 };
 
 // ----------------------------------------------------------------------------
-// Initialization (no heap allocations)
+// Initialization
 // ----------------------------------------------------------------------------
 void initDrivers()
 {
     // Core utilities
     fftHandle = new FFT();
     systemUtilsHandle = new SystemUtils();
+    mathUtilsHandle = new MathUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
@@ -78,15 +82,15 @@ void initDrivers()
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
     for (int i = 0; i < 8; i++) {
         bool isBLDC = false;
-        #ifdef PLANE
+    #ifdef PLANE
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
-        #endif
-        #ifdef QUADCOPTER
+    #endif
+    #ifdef QUADCOPTER
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1)
                         || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2)
                         || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3)
                         || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
-        #endif
+    #endif
         if (isBLDC) {
             switch (servoType) {
                 case MOT_TYPE_DSHOT: // DShot
@@ -106,9 +110,10 @@ void initDrivers()
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart3);
-    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0, 0, IMU_ODR_4KHZ);
+    imuHandle = new IMU(&hspi2, GPIOD, GPIO_PIN_0, 0, IMU_ODR_1KHZ);
     pmHandle = new PowerModule(&hi2c1);
     rangefinderHandle = new Rangefinder(&hi2c3);
+    barometerHandle = new Barometer(&hi2c2);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -127,6 +132,7 @@ void initDrivers()
     imuHandle->init();
     pmHandle->init();
     rangefinderHandle->init();
+    barometerHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {
