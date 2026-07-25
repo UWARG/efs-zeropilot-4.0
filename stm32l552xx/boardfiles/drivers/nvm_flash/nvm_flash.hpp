@@ -2,19 +2,19 @@
 #pragma once
 
 #include "stm32l5xx_hal.h"
-#include "nvm_flash_message.hpp"
+#include "nvm_flash_iface.hpp"
 
-class NVMFlash {
+class NVMFlash : public INVMFlash {
 public:
 	NVMFlash(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
 
-	int format();
-	int mount();
+	int format() override;
+	int mount() override;
 
-	int write(AbstractMessage *msg);
-	int read(AbstractMessage *msg);
-	int erase(AbstractMessage *msg);
-	int update(AbstractMessage *msg);
+	int write(AbstractMessage *msg) override;
+	int read(AbstractMessage *msg) override;
+	int erase(AbstractMessage *msg) override;
+	int update(AbstractMessage *msg) override;
 
 private:
 	SPI_HandleTypeDef *spiHandle;
