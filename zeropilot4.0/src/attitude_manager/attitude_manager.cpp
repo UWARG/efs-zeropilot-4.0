@@ -11,6 +11,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
+    IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -19,6 +20,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     ekf(mathUtilsDriver),
     amQueue(amQueue),
@@ -94,6 +96,15 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
+    // Read barometer data
+    BaroData_t baroData;
+    barometerDriver->readData(baroData);
+
+    // Send scaled pressure data to TM
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
+        sendPressureDataToTelemetryManager(baroData);
+    }
+
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
@@ -138,6 +149,11 @@ void AttitudeManager::amUpdate() {
         ekf.stateExtrapolation(gyro, dt);
         ekf.correctionAccelerometer(accel);
 
+        GyroBias_t gyroBias = ekf.getGyroBias();
+        droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
+        droneState.pitchRate = (scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
+        droneState.yawRate = (scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD); // TODO: Use gyroBias.z once magnetometer is in use.
+
         break; // for now only use one imu message per am loop
     }
 
@@ -145,13 +161,6 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
-
-    uint8_t scaledImuCount = scaledImuData.count;
-    if (scaledImuCount > 0) { // Use most recent sample in the batch for rates
-        droneState.rollRate = scaledImuData.data[scaledImuCount - 1].xgyro * ZP_UNITS::DEG_TO_RAD;
-        droneState.pitchRate = scaledImuData.data[scaledImuCount - 1].ygyro * ZP_UNITS::DEG_TO_RAD;
-        droneState.yawRate = scaledImuData.data[scaledImuCount - 1].zgyro * ZP_UNITS::DEG_TO_RAD;
-    }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
@@ -426,6 +435,18 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     );
 
     tmQueue->push(&attitudeDataMsg);
+}
+
+void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroData) {
+    TMMessage_t pressureDataMsg = scaledPressurePack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        baroData.pressureKPa,
+        0,
+        baroData.temperatureC,
+        0
+    );
+
+    tmQueue->push(&pressureDataMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {

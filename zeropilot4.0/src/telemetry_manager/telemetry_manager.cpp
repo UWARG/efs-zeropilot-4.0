@@ -123,6 +123,12 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::SCALED_PRESSURE_DATA: {
+                auto scaledPressureData = tmqMessage.tmMessageData.scaledPressureData;
+                mavlink_msg_scaled_pressure_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, scaledPressureData.pressAbs, scaledPressureData.pressDiff, scaledPressureData.temperature, scaledPressureData.temperaturePressDiff);
+                break;
+            }
+
             default: {
                 continue;
             }

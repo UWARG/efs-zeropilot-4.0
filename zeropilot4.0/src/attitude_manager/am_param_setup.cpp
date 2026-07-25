@@ -27,6 +27,8 @@ void AMParamSetup::loadAllParams() {
         ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_TAU),
         ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_IMAX)
     );
+    am->fbwaCLAW.setRollFFConstant(ZP_PARAM::get(ZP_PARAM_ID::RLL2SRV_FF));
+    am->fbwaCLAW.setPitchFFConstant(ZP_PARAM::get(ZP_PARAM_ID::PTCH2SRV_FF));
     am->fbwaCLAW.setYawRudderMixingConstant(ZP_PARAM::get(ZP_PARAM_ID::KFF_RDDRMIX));
     am->fbwaCLAW.setRollLimitDeg(ZP_PARAM::get(ZP_PARAM_ID::ROLL_LIMIT_DEG));
     am->fbwaCLAW.setPitchLimitMaxDeg(ZP_PARAM::get(ZP_PARAM_ID::PTCH_LIM_MAX_DEG));
@@ -125,11 +127,13 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D,             am, updatePIDRollKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU,           am, updatePIDRollTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX,          am, updatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_FF,            am, updatePIDRollFF);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P,            am, updatePIDPitchKp);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I,            am, updatePIDPitchKi);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D,            am, updatePIDPitchKd);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU,          am, updatePIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX,         am, updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_FF,           am, updatePIDPitchFF);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX,           am, updateKffRddrmix);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG,        am, updateRollLimitDeg);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG,      am, updatePitchLimMaxDeg);
@@ -220,6 +224,11 @@ bool AMParamSetup::updatePIDRollIMax(AttitudeManager* ctx, float val) {
     ctx->fbwaCLAW.getRollPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
     return true;
 }
+bool AMParamSetup::updatePIDRollFF(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->fbwaCLAW.setRollFFConstant(val);
+    return true;
+}
 bool AMParamSetup::updatePIDPitchKp(AttitudeManager* ctx, float val) {
     if (val < 0.0f) return false;
     ctx->fbwaCLAW.getPitchPID()->setKp(val);
@@ -244,6 +253,11 @@ bool AMParamSetup::updatePIDPitchIMax(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 100.0f) return false;
     ctx->fbwaCLAW.getPitchPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
     ctx->fbwaCLAW.getPitchPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updatePIDPitchFF(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->fbwaCLAW.setPitchFFConstant(val);
     return true;
 }
 bool AMParamSetup::updateKffRddrmix(AttitudeManager* ctx, float val) {
