@@ -142,6 +142,3 @@ uint8_t Rangefinder::computeChecksum() {
     }
     return sum & 0xFF;
 }
-
-
-

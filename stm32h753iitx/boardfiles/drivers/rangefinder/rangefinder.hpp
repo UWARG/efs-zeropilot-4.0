@@ -27,5 +27,4 @@ class Rangefinder : public IRangefinder {
         void restartTransfer();
         uint8_t computeChecksum();
         uint32_t lastTransferTick = 0;
-
 };
