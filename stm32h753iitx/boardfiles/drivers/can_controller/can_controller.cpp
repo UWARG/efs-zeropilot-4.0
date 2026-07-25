@@ -295,10 +295,10 @@ int16_t CANController::publishDnaAllocationResponse(uint8_t nodeId, const uint8_
 }
 
 void CANController::sendCANTx() {
-	CanardCANFrame* frame = canardPeekTxQueue(&canard);
-	if (frame == nullptr) return;
+	while (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
+		CanardCANFrame* frame = canardPeekTxQueue(&canard);
+		if (frame == nullptr) return;
 
-	if (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
 		FDCAN_TxHeaderTypeDef txHeader;
 		txHeader.Identifier = frame->id & CANARD_CAN_EXT_ID_MASK;
 		txHeader.IdType = FDCAN_EXTENDED_ID;
@@ -315,6 +315,8 @@ void CANController::sendCANTx() {
 
 		if (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan, &txHeader, txData) == HAL_OK) {
 			canardPopTxQueue(&canard);
+		} else {
+			return;
 		}
 	}
 }

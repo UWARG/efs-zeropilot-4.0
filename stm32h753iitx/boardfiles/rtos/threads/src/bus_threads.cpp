@@ -15,8 +15,9 @@ void busMainLoopWrapper(void *arg)
   uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
-    bool success = canControllerHandle->routineTasks();
-    (void)success;
+    if (canControllerHandle) {
+      canControllerHandle->routineTasks();
+    }
 
     nextWakeUp += timeToTicks(BUS_UPDATE_LOOP_DELAY_MS);
     osDelayUntil(nextWakeUp);
