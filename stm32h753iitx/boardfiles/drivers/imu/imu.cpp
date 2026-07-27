@@ -306,8 +306,8 @@ void IMU::setUIFILT() {
     writeRegister(0, UB0_REG_GYRO_CONFIG1, 0b00010010);
     writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b00000101);
 
-    // configure bandwidth, 111.0 Hz for 1khz ODR
-    writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, 0b00110011);
+    // configure bandwidth, 48.8Hz for 1khz ODR
+    writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, 0b01100110);
 }
 
 void IMU::processRawData() {
