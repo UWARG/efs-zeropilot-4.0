@@ -243,6 +243,7 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
     float fuel_lbs, rpm;
+    float rangefinder_alt;
     double baro_pressure_kpa, baro_temp_c;
 
     if (!PyArg_ParseTuple(args, "ddddddddddfffdd",
