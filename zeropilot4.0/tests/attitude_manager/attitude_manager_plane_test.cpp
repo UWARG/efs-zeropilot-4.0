@@ -270,7 +270,7 @@ TEST_F(AttitudeManagerPlaneTest, MotorClampingUpper) {
 
     EXPECT_CALL(mockRollMotor, set(100));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, & mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }

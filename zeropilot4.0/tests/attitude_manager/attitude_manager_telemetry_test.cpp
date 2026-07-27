@@ -193,7 +193,7 @@ TEST_F(AttitudeManagerTelemetryTest, ScaledPressureTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
