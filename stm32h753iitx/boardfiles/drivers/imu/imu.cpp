@@ -16,6 +16,7 @@
 #define UB0_REG_GYRO_ODR          0x4F
 #define UB0_REG_ACCEL_CONFIG0     0x50
 #define UB0_REG_GYRO_CONFIG1      0x51
+#define UB0_REG_ACCEL_CONFIG1      0x53
 #define UB1_REG_GYRO_CONFIG_STATIC2 0x0B
 #define UB1_REG_GYRO_CONFIG_STATIC3 0x0C
 #define UB1_REG_GYRO_CONFIG_STATIC4 0x0D
@@ -298,7 +299,8 @@ void IMU::setAAF() {
 
 void IMU::setUIFILT() {
     // Enable 1st order UI filter 
-    writeRegister(0, UB0_REG_INTF_CONFIG0, 0b00010000);
+    writeRegister(0, UB0_REG_GYRO_CONFIG1, 0b00010000);
+    writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b000011111);
     
 }
 
