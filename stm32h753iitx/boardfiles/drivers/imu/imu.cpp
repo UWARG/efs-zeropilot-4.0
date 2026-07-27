@@ -88,6 +88,7 @@ int IMU::init() {
     reset();
     uint8_t address = whoAmI();
     setAAF();
+    setUIFILT();
     setODR();
     setFIFO();
     flushFIFO();
@@ -114,9 +115,9 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
-        scaledData[i].xgyro = lowPassFilter((float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR, 0);
-        scaledData[i].ygyro = lowPassFilter((float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR, 1);
-        scaledData[i].zgyro = lowPassFilter((float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR, 2);
+        scaledData[i].xgyro = (float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR;
+        scaledData[i].ygyro = (float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR;
+        scaledData[i].zgyro = (float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR;
         scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
     }
     scaledImuDataBatch.count = rawDataBatch.count;
@@ -289,19 +290,20 @@ void IMU::setODR() {
 
 void IMU::setAAF() {
     // 258,  6,   36,   10 for 1khz ODR
-    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, 0b00000110);
-    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, 0b00100100);
-    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, 0b10100000);
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, (6 << 1) | 0b00000001); // ACCEL_AAF_DELT, Set accel AAF bandwidth to 258Hz, enable accel AAF
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, 0b00100100); // ACCEL_AAF_DELTSQR
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, 0b10100000); // ACCEL_AAF_BITSHIFT
 
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, 0b00000110);
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100);
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000);
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, 0b00000110); // GYRO_AAF_DELT
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100); // GYRO_AAF_DELTSQR
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000); // GYRO_AAF_BITSHIFT
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000010); // Enable gyro AAF
 }
 
 void IMU::setUIFILT() {
     // Enable 1st order UI filter 
     writeRegister(0, UB0_REG_GYRO_CONFIG1, 0b00010000);
-    writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b000011111);
+    writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b00001111);
 
     // configure bandwidth, 227.2 Hz for 1khz ODR
     writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, 0b00010001);
