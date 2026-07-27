@@ -259,6 +259,16 @@ void AHRSEKF::stateExtrapolation(const float* gyroNew, float dt) {
 void AHRSEKF::correctionAccelerometer(const float* accelNew) {
     meas.updateAccel(accelNew);
 
+    // Calculate dynamic covariance scaling
+    float accelMag = math->vectorNorm(meas.accelNew, 3);
+    float gError = std::abs(accelMag - 9.81f);
+    float accelScale = 1.0f + (gError * gError * 100.0f); // 100.0f is a tunable gain
+    float dynamicAccelCovMat[9];
+    std::copy(accelCovMat, accelCovMat + 9, dynamicAccelCovMat);
+    for (int i = 0; i < 3; ++i) {
+        dynamicAccelCovMat[i*3 + i] *= accelScale;
+    }
+
     // accel_predicted = i_to_b_frame_rot_matrix(q_new) @ -gravityInertial
     // i_to_b is equivalent to rotating from Inertial to Body
     float qInv[4];
@@ -268,6 +278,7 @@ void AHRSEKF::correctionAccelerometer(const float* accelNew) {
     float accelPred[3];
     math->quatRotateVector(qInv, negGrav, accelPred);
 
+    // Calculate innovation
     float innovation[3];
     for (int i = 0; i < 3; ++i) innovation[i] = meas.accelNew[i] - accelPred[i];
 
@@ -275,7 +286,7 @@ void AHRSEKF::correctionAccelerometer(const float* accelNew) {
     float h0[9];
     math->skewSymmetric(accelPred, h0);
 
-    applyUpdate(innovation, h0, true, accelCovMat, cfg.accelGateThreshold);
+    applyUpdate(innovation, h0, true, dynamicAccelCovMat, cfg.accelGateThreshold);
 }
 
 void AHRSEKF::correctionMagnetometer(const float* magNew) {
