@@ -15,11 +15,54 @@
 #define UB0_REG_SIGNAL_PATH_RESET 0x4B
 #define UB0_REG_GYRO_ODR          0x4F
 #define UB0_REG_ACCEL_CONFIG0     0x50
+#define UB0_REG_GYRO_CONFIG1      0x51
+#define UB1_REG_GYRO_CONFIG_STATIC2 0x0B
+#define UB1_REG_GYRO_CONFIG_STATIC3 0x0C
+#define UB1_REG_GYRO_CONFIG_STATIC4 0x0D
+#define UB1_REG_GYRO_CONFIG_STATIC5 0x0E
+#define UB2_REG_ACCEL_CONFIG_STATIC2 0x03
+#define UB2_REG_ACCEL_CONFIG_STATIC3 0x04
+#define UB2_REG_ACCEL_CONFIG_STATIC4 0x05
+
+
+
 #define FIFO_HEADER_MSG_BIT 0x80
 #define FIFO_HEADER_ACCEL_BIT 0x40
 #define FIFO_HEADER_GYRO_BIT 0x20
 
 #define ICM42688P_IMU_WHOAMI 0x47
+
+// Anti-alias filter config structure
+typedef struct {
+	uint16_t bandwidth;
+	uint8_t delt;
+	uint16_t deltsqr;
+	uint8_t bitshift;
+} AAF_Config;
+
+static const AAF_Config aaf_table[] = {
+    {42,   1,    1,   15}, {84,   2,    4,   13}, {126,  3,    9,   12},
+    {170,  4,   16,   11}, {213,  5,   25,   10}, {258,  6,   36,   10},
+    {303,  7,   49,    9}, {348,  8,   64,    9}, {394,  9,   81,    9},
+    {441, 10,  100,    8}, {488, 11,  122,    8}, {536, 12,  144,    8},
+    {585, 13,  170,    8}, {634, 14,  196,    7}, {684, 15,  224,    7},
+    {734, 16,  256,    7}, {785, 17,  288,    7}, {837, 18,  324,    7},
+    {890, 19,  360,    6}, {943, 20,  400,    6}, {997, 21,  440,    6},
+    {1051,22,  488,    6}, {1107,23,  528,    6}, {1163,24,  576,    6},
+    {1220,25,  624,    6}, {1277,26,  680,    6}, {1336,27,  736,    5},
+    {1395,28,  784,    5}, {1454,29,  848,    5}, {1515,30,  896,    5},
+    {1577,31,  960,    5}, {1639,32, 1024,    5}, {1702,33, 1088,    5},
+    {1766,34, 1152,    5}, {1830,35, 1232,    5}, {1896,36, 1296,    5},
+    {1962,37, 1376,    4}, {2029,38, 1440,    4}, {2097,39, 1536,    4},
+    {2166,40, 1600,    4}, {2235,41, 1696,    4}, {2306,42, 1760,    4},
+    {2377,43, 1856,    4}, {2449,44, 1952,    4}, {2522,45, 2016,    4},
+    {2596,46, 2112,    4}, {2671,47, 2208,    4}, {2746,48, 2304,    4},
+    {2823,49, 2400,    4}, {2900,50, 2496,    4}, {2978,51, 2592,    4},
+    {3057,52, 2720,    4}, {3137,53, 2816,    3}, {3217,54, 2944,    3},
+    {3299,55, 3008,    3}, {3381,56, 3136,    3}, {3464,57, 3264,    3},
+    {3548,58, 3392,    3}, {3633,59, 3456,    3}, {3718,60, 3584,    3},
+    {3805,61, 3712,    3}, {3892,62, 3840,    3}, {3979,63, 3968,    3}
+};
 
 IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig) : 
     spi(spiHandle),
@@ -42,6 +85,7 @@ int IMU::init() {
     SystemUtils::dwtInit();
     reset();
     uint8_t address = whoAmI();
+    setAAF();
     setODR();
     setFIFO();
     flushFIFO();
@@ -239,6 +283,23 @@ void IMU::setFIFO() {
 void IMU::setODR() {
     writeRegister(0, UB0_REG_GYRO_ODR, (uint8_t)imuOdr); // Configure gyro ODR to 4khz
     writeRegister(0, UB0_REG_ACCEL_CONFIG0, (uint8_t)imuOdr); // Configure accelerometer ODR to 4khz
+}
+
+void IMU::setAAF() {
+    // 258,  6,   36,   10 for 1khz ODR
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, 0b00000110);
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, 0b00100100);
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, 0b10100000);
+
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, 0b00000110);
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100);
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000);
+}
+
+void IMU::setUIFILT() {
+    // Enable 1st order UI filter 
+    writeRegister(0, UB0_REG_INTF_CONFIG0, 0b00010000);
+    
 }
 
 void IMU::processRawData() {

@@ -90,6 +90,8 @@ class IMU : public IIMU {
 		void setLowNoiseMode();
 		void setFIFO();
 		void setODR();
+		void setAAF();
+		void setUIFILT();
 		
 		// Processing and filtering
 		void processRawData();
