@@ -118,8 +118,6 @@ private:
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     void sendServoOutputRawToTelemetryManager();
 
-    void sendStatusTextToTelemetryManager(uint16_t severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
-
     uint8_t profilerId;
 
     // Motor mixer output for each motor

@@ -5,8 +5,6 @@
 #include "unit_conversions.hpp"
 #include <limits>
 
-#include <string>
-
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
@@ -182,10 +180,6 @@ void AttitudeManager::amUpdate() {
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
-
-    if (amSchedulingCounter % 100 == 0) {
-        sendStatusTextToTelemetryManager(6, ("FREQ: " + std::to_string(harmonicNotchFilter.firstHarmonicFiltered)).c_str());
-    }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
@@ -495,12 +489,4 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
     );
 
     tmQueue->push(&servoOutputMsg);
-}
-
-
-
-
-void AttitudeManager::sendStatusTextToTelemetryManager(uint16_t severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
-    TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
-    tmQueue->push(&statusTextMsg);
 }
