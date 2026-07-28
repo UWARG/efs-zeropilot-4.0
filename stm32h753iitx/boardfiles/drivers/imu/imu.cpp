@@ -26,15 +26,12 @@
 #define UB2_REG_ACCEL_CONFIG_STATIC3 0x04
 #define UB2_REG_ACCEL_CONFIG_STATIC4 0x05
 
-
-
 #define FIFO_HEADER_MSG_BIT 0x80
 #define FIFO_HEADER_ACCEL_BIT 0x40
 #define FIFO_HEADER_GYRO_BIT 0x20
 
 #define ICM42688P_IMU_WHOAMI 0x47
 
-// Anti-alias filter config structure
 typedef struct {
 	uint16_t bandwidth;
 	uint8_t delt;
@@ -333,7 +330,6 @@ void IMU::setAAF() {
     // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100); // GYRO_AAF_DELTSQR
     // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000); // GYRO_AAF_BITSHIFT
     // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable AAF and disables notch filter
-
 }
 
 float IMU::getUIFiltBWHz(uint8_t bandwidthSelect) {
