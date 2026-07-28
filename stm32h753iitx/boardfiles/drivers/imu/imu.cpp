@@ -66,12 +66,21 @@ static const AAF_Config aaf_table[] = {
     {3805,61, 3712,    3}, {3892,62, 3840,    3}, {3979,63, 3968,    3}
 };
 
-IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig) : 
+IMU::IMU(SPI_HandleTypeDef *spiHandle, 
+        GPIO_TypeDef *csPort, 
+        uint16_t csPin, 
+        uint8_t imuId, 
+        ImuOdrConfig_t odrConfig,
+        float uiFiltCutoffHz, 
+        ImuUiFiltOrder_t uiFiltOrder
+) :
     spi(spiHandle),
     csPort(csPort),
     csPin(csPin),
     imuId(imuId),
     imuOdr(odrConfig),
+    uiFiltCutoffHz(uiFiltCutoffHz),
+    uiFiltOrder(uiFiltOrder),
     alpha(0.1f) {
 
     filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
@@ -88,7 +97,7 @@ int IMU::init() {
     reset();
     uint8_t address = whoAmI();
     setAAF();
-    setUIFILT();
+    setUIFilt();
     setODR();
     setFIFO();
     flushFIFO();
@@ -289,25 +298,87 @@ void IMU::setODR() {
 }
 
 void IMU::setAAF() {
-    // 258,  6,   36,   10 for 1khz ODR
-    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, (6 << 1)); // ACCEL_AAF_DELT, Set accel AAF bandwidth to 258Hz, enable accel AAF
-    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, 0b00100100); // ACCEL_AAF_DELTSQR
-    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, 0b10100000); // ACCEL_AAF_BITSHIFT
+    uint16_t desiredBandwidth = getODRHz() / 4; // Set AAF bandwidth to 1/4 of ODR
+    uint8_t bestIndex = 0;
+    uint16_t bestDistance = UINT16_MAX;
+    // Table is sorted ascending, so distance falls to a minimum then rises again.
+    // Stop as soon as it stops improving. Ties keep the lower bandwidth.
+    for (uint8_t i = 0; i < sizeof(aaf_table) / sizeof(aaf_table[0]); i++) {
+        uint16_t bandwidth = aaf_table[i].bandwidth;
+        uint16_t distance = (bandwidth > desiredBandwidth) ? (bandwidth - desiredBandwidth) : (desiredBandwidth - bandwidth);
+        if (distance >= bestDistance) {
+            break;
+        }
+        bestDistance = distance;
+        bestIndex = i;
+    }
+    uint8_t delt = (uint8_t)(aaf_table[bestIndex].delt & 0b00111111); // only 6 bits are used for delt
+    uint8_t deltsqrLower = (uint8_t)aaf_table[bestIndex].deltsqr;
+    uint8_t deltsqrUpper = (uint8_t)((aaf_table[bestIndex].deltsqr >> 8) & 0xF); // only 4 bits are used for upper deltsqr
+    uint8_t bitshift = (uint8_t)(aaf_table[bestIndex].bitshift & 0xF); // only 4 bits are used for bitshift
+    
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, (delt << 1)); // 6:1 for ACCEL_AAF_DELT, bit 0 is disable accel AAF, defualt enabled
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, deltsqrLower); // ACCEL_AAF_DELTSQR
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, (bitshift << 4) | deltsqrUpper); // ACCEL_AAF_BITSHIFT
 
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, 0b00000110); // GYRO_AAF_DELT
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100); // GYRO_AAF_DELTSQR
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000); // GYRO_AAF_BITSHIFT
-    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable AAF and disables notch filter
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, delt); // 5:0 for GYRO_AAF_DELT, 7:6 reserved
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, deltsqrLower); // GYRO_AAF_DELTSQR
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, (bitshift << 4) | deltsqrUpper); // GYRO_AAF_BITSHIFT
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable gyro AAF and disables notch filter
+    
+    // writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, 0b00100100); // ACCEL_AAF_DELTSQR
+    // writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, 0b10100000); // ACCEL_AAF_BITSHIFT
+
+    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, 0b00000110); // GYRO_AAF_DELT
+    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100); // GYRO_AAF_DELTSQR
+    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000); // GYRO_AAF_BITSHIFT
+    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable AAF and disables notch filter
 
 }
 
-void IMU::setUIFILT() {
-    // Enable 1st order UI filter 
-    writeRegister(0, UB0_REG_GYRO_CONFIG1, 0b00010010);
-    writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b00000101);
+float IMU::getUIFiltBWHz(uint8_t bandwidthSelect) {
+    // Bandwidth = max(400Hz, ODR) / divisor, except setting 0 which is ODR/2
+    // Values 8-13 are reserved and 14-15 are low latency modes, so only 0-7 are valid
+    static const uint8_t divisors[UIFILT_BW_SEL_COUNT] = {2, 4, 5, 8, 10, 16, 20, 40};
+    if (bandwidthSelect >= UIFILT_BW_SEL_COUNT) {
+        return 0.0f;
+    }
+    float odr = getODRHz();
+    float max = (bandwidthSelect == 0 || odr > 400.0f) ? odr : 400.0f;
+    return max / divisors[bandwidthSelect];
+}
 
-    // configure bandwidth, 48.8Hz for 1khz ODR
-    writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, 0b01100110);
+void IMU::setUIFilt() {
+    // 7:5 TEMP_FILT_BW = 0 (default), bit 4 reserved (reset value 1)
+    // 3:2 GYRO_UI_FILT_ORD, 1:0 GYRO_DEC2_M2_ORD = 0b10 (3rd order, only valid setting)
+    writeRegister(0, UB0_REG_GYRO_CONFIG1, (uint8_t)(0b00010000 | (uiFiltOrder << 2) | 0b10));
+    // 7:5 reserved (reset value 0), 4:3 ACCEL_UI_FILT_ORD
+    //2:1 ACCEL_DEC2_M2_ORD = 0b10 (3rd order, only valid setting), bit 0 reserved (reset value 1)
+    writeRegister(0, UB0_REG_ACCEL_CONFIG1, (uint8_t)((uiFiltOrder << 3) | 0b101));
+
+    // Find the closest bandwidth to the requested cutoff frequency
+    uint8_t bestSel = 0; // Value for GYRO_UI_FILT_BW/ACCEL_UI_FILT_BW register (0-7)
+    float bestDistance = -1.0f;
+    for (uint8_t bwSel = 0; bwSel < UIFILT_BW_SEL_COUNT; bwSel++) {
+        float distance = getUIFiltBWHz(bwSel) - uiFiltCutoffHz;
+        if (distance < 0.0f) {
+            distance = -distance;
+        }
+        if (bestDistance < 0.0f || distance < bestDistance) {
+            bestDistance = distance;
+            bestSel = bwSel;
+        }
+    }
+
+    // 7:4 ACCEL_UI_FILT_BW, 3:0 GYRO_UI_FILT_BW
+    writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, (uint8_t)((bestSel << 4) | bestSel));
+
+
+    // // Enable 1st order UI filter 
+    // writeRegister(0, UB0_REG_GYRO_CONFIG1, 0b00010010);
+    // writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b00000101);
+    // // configure bandwidth, 48.8Hz for 1khz ODR
+    // writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, 0b01100110);
 }
 
 void IMU::processRawData() {
