@@ -11,9 +11,15 @@
 #include "stm32h7xx_hal.h"
 #include "cmsis_os2.h"
 #include "museq.hpp"
+#include "systemutils.hpp"
 
 class CANController {
 private:
+	SystemUtils *systemutilsDriver;
+	
+    uint8_t profilerId;
+	
+
 	struct DnaAllocationEntry {
 		uint8_t uniqueId[16];
 		uint8_t nodeId;
@@ -65,7 +71,7 @@ private:
 	static uint32_t lengthToDlc(uint8_t length);
 
 public:
-	CANController(FDCAN_HandleTypeDef *hfdcan);
+	CANController(FDCAN_HandleTypeDef *hfdcan, SystemUtils *systemutilsDriver);
 	
 	~CANController() = delete;
 

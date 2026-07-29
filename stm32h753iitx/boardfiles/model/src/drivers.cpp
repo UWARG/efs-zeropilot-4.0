@@ -23,11 +23,6 @@ extern I2C_HandleTypeDef hi2c2;
 extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
-// Static storage for CAN controller (placement new)
-// ----------------------------------------------------------------------------
-alignas(CANController) static uint8_t canControllerStorage[sizeof(CANController)];
-
-// ----------------------------------------------------------------------------
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
@@ -151,7 +146,7 @@ void initDrivers()
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
 
-    canControllerHandle = new (&canControllerStorage) CANController(&hfdcan1);
+    canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
     FDCAN_FilterTypeDef sFilterConfig;
     sFilterConfig.IdType = FDCAN_EXTENDED_ID;

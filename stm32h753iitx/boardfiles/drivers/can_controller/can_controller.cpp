@@ -17,7 +17,7 @@ static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* outS
 	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, outSig, id, type, src);
 }
 
-CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
+CANController::CANController(FDCAN_HandleTypeDef *hfdcan, SystemUtils *systemutilsDriver) : hfdcan(hfdcan), systemutilsDriver(systemutilsDriver) {
 	static uint8_t canardMemoryPool[CANARD_MEMORY_BUFFER_SIZE];
 
 	canardInit(&canard,
@@ -37,6 +37,8 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan) : hfdcan(hfdcan) {
 
 	// Enable bus off interrupt
 	HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_BUS_OFF, 0);
+
+	systemutilsDriver->profilerRegister("BUS", &profilerId);
 }
 
 bool CANController::CanardShouldAcceptTransfer(
@@ -322,6 +324,7 @@ void CANController::sendCANTx() {
 }
 
 bool CANController::routineTasks() {
+	systemutilsDriver->profilerBegin(profilerId);
 	sendCANTx();
 
 	uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
@@ -330,6 +333,8 @@ bool CANController::routineTasks() {
 		last1HzTick = tick;
 		process1HzTasks();
 	}
+
+	systemutilsDriver->profilerEnd(profilerId);
 
 	return true;
 }
