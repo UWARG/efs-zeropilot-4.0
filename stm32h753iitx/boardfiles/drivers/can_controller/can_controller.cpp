@@ -90,14 +90,43 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
     }
 }
 
-void CANController::handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t * rxData) {
+bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data) {
+	const uint32_t head = canRxHead;
+	const uint32_t nextHead = (head + 1U) % CAN_RX_RING_SLOTS;
+
+	if (nextHead == canRxTail) {
+		return false;
+	}
+
+	RawCanFrame &slot = canRxRing[head];
+	slot.id = id;
+	slot.dlc = static_cast<uint8_t>(dlc);
+	memcpy(slot.data, data, 8);
+	__DMB();
+	canRxHead = nextHead;
+	return true;
+}
+
+bool CANController::popRxFrame(RawCanFrame *frame) {
+	const uint32_t tail = canRxTail;
+	if (tail == canRxHead) {
+		return false;
+	}
+
+	__DMB();
+	*frame = canRxRing[tail];
+	__DMB();
+	canRxTail = (tail + 1U) % CAN_RX_RING_SLOTS;
+	return true;
+}
+
+void CANController::handleRxFrame(const RawCanFrame &rxFrame) {
 	const uint64_t timestampUsec = systemUtilsHandle->getCurrentTimestampMs() * 1000ULL;
 
 	CanardCANFrame frame;
-	frame.id = rxHeader->Identifier;
-	frame.id |= (1UL << CAN_FRAME_EFF_BIT);
-	frame.data_len = dlcToLength(rxHeader->DataLength);
-	memcpy(frame.data, rxData, frame.data_len);
+	frame.id = rxFrame.id | (1UL << CAN_FRAME_EFF_BIT);
+	frame.data_len = dlcToLength(rxFrame.dlc);
+	memcpy(frame.data, rxFrame.data, frame.data_len);
 
 	canardHandleRxFrame(&canard, &frame, timestampUsec);
 }
@@ -325,6 +354,10 @@ void CANController::sendCANTx() {
 
 bool CANController::routineTasks() {
 	systemutilsDriver->profilerBegin(profilerId);
+	RawCanFrame frame;
+	while (popRxFrame(&frame)) {
+		handleRxFrame(frame);
+	}
 	sendCANTx();
 
 	uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();

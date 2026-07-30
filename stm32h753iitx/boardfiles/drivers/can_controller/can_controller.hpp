@@ -41,6 +41,18 @@ private:
 	FDCAN_HandleTypeDef *hfdcan;
 	CanardInstance canard;
 
+	struct RawCanFrame {
+		uint32_t id;
+		uint8_t dlc; 
+		uint8_t data[8];
+	};
+
+	static constexpr uint32_t CAN_RX_QUEUE_CAPACITY = 32;
+	static constexpr uint32_t CAN_RX_RING_SLOTS = CAN_RX_QUEUE_CAPACITY + 1;
+	RawCanFrame canRxRing[CAN_RX_RING_SLOTS] {};
+	volatile uint32_t canRxHead = 0; // write idx
+	volatile uint32_t canRxTail = 0; // read idx
+
 	CanNode canNodes[CANARD_MAX_NODE_ID + 1];
 	uint8_t nextAvailableID = CANARD_MIN_NODE_ID + 1;
 	DnaAllocationEntry allocationTable[MAX_ALLOCATION_ENTRIES];
@@ -69,6 +81,8 @@ private:
 	
 	static uint8_t dlcToLength(uint32_t dlc);
 	static uint32_t lengthToDlc(uint8_t length);
+	bool popRxFrame(RawCanFrame *frame);
+	void handleRxFrame(const RawCanFrame &frame);
 
 public:
 	CANController(FDCAN_HandleTypeDef *hfdcan, SystemUtils *systemutilsDriver);
@@ -87,7 +101,7 @@ public:
 	// Called as much as possible
 	bool routineTasks();
 
-	void handleRxFrame(FDCAN_RxHeaderTypeDef *rxHeader, uint8_t *rxData);
+	bool enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data);
 
 	int16_t broadcastObj(
 		CanardTxTransfer* transfer
