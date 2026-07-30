@@ -110,10 +110,9 @@ bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *dat
 bool CANController::popRxFrame(RawCanFrame *frame) {
 	const uint32_t tail = canRxTail;
 	if (tail == canRxHead) {
-		return false;
+		return false; //drop the frame
 	}
 
-	__DMB();
 	*frame = canRxRing[tail];
 	__DMB();
 	canRxTail = (tail + 1U) % CAN_RX_RING_SLOTS;
