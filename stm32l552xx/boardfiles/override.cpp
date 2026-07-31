@@ -129,7 +129,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
     FDCAN_RxHeaderTypeDef rxHeader;
     uint8_t rxData[8];
 
-    if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, rxData) == HAL_OK
+    uint32_t count = HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0);
+    while (count-- && HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, rxData) == HAL_OK
         && canControllerHandle) {
       (void)canControllerHandle->enqueueRxFrame(rxHeader.Identifier, rxHeader.DataLength, rxData);
     }
