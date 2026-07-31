@@ -18,6 +18,7 @@
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fft.hpp"
+#include "mlx90393.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -33,6 +34,7 @@ extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
+extern Magnetometer *magHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
