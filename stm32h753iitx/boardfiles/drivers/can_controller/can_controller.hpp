@@ -28,7 +28,8 @@ private:
 
 	struct RawCanFrame {
 		uint32_t id;
-		uint8_t dlc; 
+		uint32_t timestampMs;
+		uint8_t dlc;
 		uint8_t data[8];
 	};
 

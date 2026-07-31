@@ -113,6 +113,7 @@ bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *dat
 
 	RawCanFrame &slot = canRxRing[head];
 	slot.id = id;
+	slot.timestampMs = systemUtilsHandle->getCurrentTimestampMs();
 	slot.dlc = static_cast<uint8_t>(dlc);
 	memcpy(slot.data, data, 8);
 	__DMB();
@@ -135,7 +136,7 @@ bool CANController::dequeueRxFrame(RawCanFrame *frame) {
 }
 
 void CANController::handleRxFrame(const RawCanFrame &rxFrame) {
-	const uint64_t timestampUsec = systemUtilsHandle->getCurrentTimestampMs() * 1000ULL;
+	const uint64_t timestampUsec = rxFrame.timestampMs * 1000ULL;
 
 	CanardCANFrame frame;
 	frame.id = rxFrame.id | (1UL << CAN_FRAME_EFF_BIT);
@@ -146,7 +147,7 @@ void CANController::handleRxFrame(const RawCanFrame &rxFrame) {
 }
 
 void CANController::handleNodeStatus(CanardRxTransfer *transfer) {
-	uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
+	uint32_t tick = static_cast<uint32_t>(transfer->timestamp_usec / 1000ULL);
 
 	uavcan_protocol_NodeStatus status {};
 
@@ -171,7 +172,7 @@ void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
 
 	if (uavcan_protocol_dynamic_node_id_Allocation_decode(transfer, &msg)) return;
 
-	const uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
+	const uint32_t tick = static_cast<uint32_t>(transfer->timestamp_usec / 1000ULL);
 
 	// If timeout, reset stage
 	if (tick > dnaLastAcceptedTick + 10 * UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
