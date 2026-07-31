@@ -157,7 +157,7 @@ void CANController::handleNodeAllocation(CanardRxTransfer *transfer){
 	const uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
 
 	// If timeout, reset stage
-	if (tick > dnaLastAcceptedTick + UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
+	if (tick > dnaLastAcceptedTick + 10 * UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
 		resetDnaInProgress();
 	}
 
