@@ -2,24 +2,18 @@
 #include "can_controller.hpp"
 #include "drivers.hpp"
 
-static constexpr size_t CANARD_MEMORY_BUFFER_SIZE = 1024;
 static constexpr uint32_t CAN_FRAME_EFF_BIT = 31U;
+
+// DroneCAN reserves 126 and 127
+static constexpr uint8_t MAX_DYNAMIC_NODE_ID = 125;
 
 uint8_t CANController::nodeStatusTransferId = 0;
 uint8_t CANController::dnaAllocationTransferId = 0;
 
-static void staticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
-    CANController* self = static_cast<CANController*>(ins->user_reference);
-    self->CanardOnTransferReception(ins, transfer);
-}
-
-static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* outSig, uint16_t id, CanardTransferType type, uint8_t src) {
-	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, outSig, id, type, src);
-}
+static void staticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer);
+static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* outSig, uint16_t id, CanardTransferType type, uint8_t src);
 
 CANController::CANController(FDCAN_HandleTypeDef *hfdcan, SystemUtils *systemutilsDriver) : hfdcan(hfdcan), systemutilsDriver(systemutilsDriver) {
-	static uint8_t canardMemoryPool[CANARD_MEMORY_BUFFER_SIZE];
-
 	canardInit(&canard,
 		canardMemoryPool,
 		sizeof(canardMemoryPool),
@@ -35,10 +29,30 @@ CANController::CANController(FDCAN_HandleTypeDef *hfdcan, SystemUtils *systemuti
 
 	canard.node_id = CANController::NODE_ID;
 
-	// Enable bus off interrupt
+	// Enable RX filter
+	enableFilter();
+
+	// Enable bus off interrupt and FIFO interrupt
 	HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_BUS_OFF, 0);
+	HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
+
+	if (HAL_FDCAN_Start(hfdcan) != HAL_OK) {
+  		Error_Handler();
+  	}
 
 	systemutilsDriver->profilerRegister("BUS", &profilerId);
+}
+
+void CANController::enableFilter() {
+	FDCAN_FilterTypeDef sFilterConfig;
+    sFilterConfig.IdType = FDCAN_EXTENDED_ID;
+    sFilterConfig.FilterIndex = 0;
+    sFilterConfig.FilterType = FDCAN_FILTER_MASK;
+    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+    sFilterConfig.FilterID1 = 0x000;
+    sFilterConfig.FilterID2 = 0x000;  // Mask=0 accepts everything
+
+    HAL_FDCAN_ConfigFilter(hfdcan, &sFilterConfig);
 }
 
 bool CANController::CanardShouldAcceptTransfer(
@@ -46,8 +60,8 @@ bool CANController::CanardShouldAcceptTransfer(
     uint64_t* outDataTypeSignature,
     uint16_t dataTypeId,
     CanardTransferType transferType,
-    uint8_t sourceNodeId)
-{
+    uint8_t sourceNodeId
+) {
     (void)ins;
     (void)sourceNodeId;
     (void)transferType;
@@ -70,8 +84,7 @@ bool CANController::CanardShouldAcceptTransfer(
 }
 
 void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
-    switch (transfer->data_type_id)
-    {
+    switch (transfer->data_type_id) {
         case UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID: {
             if (transfer->transfer_type == CanardTransferTypeBroadcast) {
 				handleNodeAllocation(transfer);
@@ -107,13 +120,15 @@ bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *dat
 	return true;
 }
 
-bool CANController::popRxFrame(RawCanFrame *frame) {
+bool CANController::dequeueRxFrame(RawCanFrame *frame) {
 	const uint32_t tail = canRxTail;
+	
 	if (tail == canRxHead) {
-		return false; //drop the frame
+		// Drop the frame
+		return false;
 	}
 
-	*frame = canRxRing[tail];
+	if (frame) *frame = canRxRing[tail];
 	__DMB();
 	canRxTail = (tail + 1U) % CAN_RX_RING_SLOTS;
 	return true;
@@ -210,8 +225,6 @@ bool CANController::isNodeIdAllocated(uint8_t nodeId) const {
 }
 
 int8_t CANController::allocateNode() {
-	// DroneCAN reserves 126 and 127
-	static constexpr uint8_t MAX_DYNAMIC_NODE_ID = 125;
 
 	// Check if previously assigned
 	int8_t existingId = lookupAllocation(dnaCurrentUniqueId);
@@ -324,7 +337,7 @@ int16_t CANController::publishDnaAllocationResponse(uint8_t nodeId, const uint8_
 	);
 }
 
-void CANController::sendCANTx() {
+void CANController::sendCanTx() {
 	while (HAL_FDCAN_GetTxFifoFreeLevel(hfdcan) > 0) {
 		CanardCANFrame* frame = canardPeekTxQueue(&canard);
 		if (frame == nullptr) return;
@@ -354,10 +367,11 @@ void CANController::sendCANTx() {
 bool CANController::routineTasks() {
 	systemutilsDriver->profilerBegin(profilerId);
 	RawCanFrame frame;
-	while (popRxFrame(&frame)) {
+	while (dequeueRxFrame(&frame)) {
 		handleRxFrame(frame);
 	}
-	sendCANTx();
+
+	sendCanTx();
 
 	uint32_t tick = systemUtilsHandle->getCurrentTimestampMs();
 
@@ -488,4 +502,13 @@ uint32_t CANController::lengthToDlc(uint8_t len) {
         case 8: return FDCAN_DLC_BYTES_8;
         default: return FDCAN_DLC_BYTES_0;
     }
+}
+
+static void staticOnTransferReception(CanardInstance* ins, CanardRxTransfer* transfer) {
+    CANController* self = static_cast<CANController*>(ins->user_reference);
+    self->CanardOnTransferReception(ins, transfer);
+}
+
+static bool staticShouldAcceptTransfer(const CanardInstance* ins, uint64_t* outSig, uint16_t id, CanardTransferType type, uint8_t src) {
+	return static_cast<CANController*>(ins->user_reference)->CanardShouldAcceptTransfer(ins, outSig, id, type, src);
 }

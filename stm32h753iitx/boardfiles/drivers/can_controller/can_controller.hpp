@@ -2,7 +2,6 @@
 #pragma once
 
 #include <cstdint>
-#include <cstring>
 
 #include "can_node.hpp"
 #include "canard.h"
@@ -15,31 +14,17 @@
 
 class CANController {
 private:
-	SystemUtils *systemutilsDriver;
-	
-    uint8_t profilerId;
-	
-
 	struct DnaAllocationEntry {
 		uint8_t uniqueId[16];
 		uint8_t nodeId;
 	};
 
-	enum class DnaStage : int8_t {
+	enum DnaStage {
 		INVALID = 0,
 		FIRST_UNIQUE_ID_PART = 1,
 		SECOND_UNIQUE_ID_PART = 2,
 		FINAL_UNIQUE_ID_PART = 3,
 	};
-
-	static constexpr uint8_t NODE_ID = CANARD_MIN_NODE_ID;
-	static constexpr uint8_t MAX_ALLOCATION_ENTRIES = 125;
-	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;
-	static uint8_t nodeStatusTransferId;
-	static uint8_t dnaAllocationTransferId;
-
-	FDCAN_HandleTypeDef *hfdcan;
-	CanardInstance canard;
 
 	struct RawCanFrame {
 		uint32_t id;
@@ -47,11 +32,25 @@ private:
 		uint8_t data[8];
 	};
 
+	static constexpr size_t CANARD_MEMORY_BUFFER_SIZE = 1024;
+	static constexpr uint8_t NODE_ID = CANARD_MIN_NODE_ID;
+	static constexpr uint8_t MAX_ALLOCATION_ENTRIES = 125;
+	static constexpr uint8_t UAVCAN_UNIQUE_ID_LENGTH = 16;
+	static uint8_t nodeStatusTransferId;
+	static uint8_t dnaAllocationTransferId;
+
 	static constexpr uint32_t CAN_RX_QUEUE_CAPACITY = 32;
 	static constexpr uint32_t CAN_RX_RING_SLOTS = CAN_RX_QUEUE_CAPACITY + 1;
 	RawCanFrame canRxRing[CAN_RX_RING_SLOTS] {};
-	volatile uint32_t canRxHead = 0; // write idx
-	volatile uint32_t canRxTail = 0; // read idx
+	volatile uint32_t canRxHead = 0; // Write idx
+	volatile uint32_t canRxTail = 0; // Read idx
+
+	FDCAN_HandleTypeDef *hfdcan;
+	CanardInstance canard;
+	uint8_t canardMemoryPool[CANARD_MEMORY_BUFFER_SIZE];
+
+	SystemUtils *systemutilsDriver;
+    uint8_t profilerId;
 
 	CanNode canNodes[CANARD_MAX_NODE_ID + 1];
 	uint8_t nextAvailableID = CANARD_MIN_NODE_ID + 1;
@@ -67,7 +66,7 @@ private:
 	uint32_t dnaLastAcceptedTick = 0;
 
 	void sendNodeStatus();
-	void sendCANTx();
+	void sendCanTx();
 	void handleNodeAllocation(CanardRxTransfer* transfer);
 	void handleNodeStatus(CanardRxTransfer* transfer);
 	int8_t allocateNode();
@@ -78,15 +77,16 @@ private:
 	DnaStage getExpectedDnaStage() const;
 	void resetDnaInProgress();
 	int16_t publishDnaAllocationResponse(uint8_t nodeId, const uint8_t* unique_id, uint8_t unique_id_len);
+	void enableFilter();
+
+	bool dequeueRxFrame(RawCanFrame *frame);
+	void handleRxFrame(const RawCanFrame &frame);
 	
 	static uint8_t dlcToLength(uint32_t dlc);
 	static uint32_t lengthToDlc(uint8_t length);
-	bool popRxFrame(RawCanFrame *frame);
-	void handleRxFrame(const RawCanFrame &frame);
 
 public:
 	CANController(FDCAN_HandleTypeDef *hfdcan, SystemUtils *systemutilsDriver);
-	
 	~CANController() = delete;
 
 	bool CanardShouldAcceptTransfer(const CanardInstance* ins,

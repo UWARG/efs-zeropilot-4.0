@@ -2,7 +2,6 @@
 #include "managers.hpp"
 #include "utils.h"
 
-
 osThreadId_t smMainHandle;
 
 static const osThreadAttr_t smMainLoopAttr = {

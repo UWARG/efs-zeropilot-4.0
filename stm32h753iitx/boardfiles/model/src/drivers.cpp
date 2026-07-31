@@ -148,20 +148,6 @@ void initDrivers()
 
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
-    FDCAN_FilterTypeDef sFilterConfig;
-    sFilterConfig.IdType = FDCAN_EXTENDED_ID;
-    sFilterConfig.FilterIndex = 0;
-    sFilterConfig.FilterType = FDCAN_FILTER_MASK;
-    sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
-    sFilterConfig.FilterID1 = 0x000;
-    sFilterConfig.FilterID2 = 0x000;  // mask=0 accepts everything
-    HAL_FDCAN_ConfigFilter(&hfdcan1, &sFilterConfig);
-
-    if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK) {
-  		Error_Handler();
-  	}
-    HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0);
-
     rcHandle->init();
     gpsHandle->init();
     imuHandle->init();
