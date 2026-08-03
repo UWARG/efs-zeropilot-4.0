@@ -56,6 +56,7 @@ I2C_HandleTypeDef hi2c3;
 DMA_HandleTypeDef hdma_i2c1_rx;
 DMA_HandleTypeDef hdma_i2c1_tx;
 DMA_HandleTypeDef hdma_i2c2_rx;
+DMA_HandleTypeDef hdma_i2c3_rx;
 
 IWDG_HandleTypeDef hiwdg1;
 
@@ -117,9 +118,9 @@ static void MX_USART3_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_IWDG1_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_FDCAN1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
-static void MX_FDCAN1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -181,9 +182,9 @@ int main(void)
   MX_FATFS_Init();
   MX_IWDG1_Init();
   MX_I2C1_Init();
+  MX_FDCAN1_Init();
   MX_I2C2_Init();
   MX_I2C3_Init();
-  MX_FDCAN1_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -1333,6 +1334,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
   /* DMA1_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
@@ -1392,7 +1396,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOI_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
