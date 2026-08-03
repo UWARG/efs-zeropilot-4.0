@@ -10,5 +10,6 @@ class MotorMixing{
         #endif
         #ifdef QUADCOPTER
         static void quadMotorMixer(const RCMotorControlMessage_t outputControlMsg, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        static void quadGroundIdle(MotorGroupInstance_t *mainMotorGroup, float* motorPercent, float motSpinArm);
         #endif
 };

@@ -94,6 +94,13 @@ private:
     int noDataCount;
     bool failsafeTriggered;
 
+    float motSpinMin;
+    float motSpinMax;
+    float motSpinArm;
+
+    static constexpr float MOT_GND_IDLE_THR = 0.02f;
+    bool groundIdlePrev;
+
     static constexpr uint16_t MAX_TIMESTAMP = 65535;
     static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
     uint32_t lastTimestamp;
@@ -101,7 +108,7 @@ private:
 
     bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-    void outputToMotors(RCMotorControlMessage_t outputControlMsg);
+    void outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
 
     void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);

@@ -48,6 +48,7 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
+    groundIdlePrev(false),
     lastTimestamp(0),
     haveLastImuTimestamp(false),
     profilerId(0),
@@ -216,7 +217,7 @@ void AttitudeManager::amUpdate() {
                 failsafeTriggered = true;
             }
             
-            outputToMotors(motorOutputs);
+            outputToMotors(motorOutputs, false);
 
             systemUtilsDriver->profilerEnd(profilerId);
             return;
@@ -267,8 +268,20 @@ void AttitudeManager::amUpdate() {
         currentFlightMode = controlMsg.flightMode;
     }
 
-    // Run the active control law
-    RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
+    bool groundIdle = false;
+    #ifdef QUADCOPTER
+    bool groundIdle = armedFlag && !failsafeTriggered && ((controlMsg.throttle / 100.0f) <= MOT_GND_IDLE_THR);
+    if (groundIdlePrev && !groundIdle) {
+        activeCLAW->activateFlightMode(); // Clean PID state on ground idle exit
+    }
+    groundIdlePrev = groundIdle;
+    #endif
+    #ifdef PLANE
+    groundIdle = false; // Hardcode to false for plane, they dont have a ground idle mode
+    #endif
+
+    // Run the active control law (skip while armed but grounded idle)
+    RCMotorControlMessage_t motorOutputs = groundIdle ? controlMsg : activeCLAW->runControl(controlMsg, droneState);
 
     // Disarm logic
     if (!armedFlag) {
@@ -283,7 +296,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Output to motors
-    outputToMotors(motorOutputs);
+    outputToMotors(motorOutputs, groundIdle);
 
     setArmFlag = false;
     
@@ -299,14 +312,18 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg) {
+void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg, bool groundIdle) {
 
     #ifdef PLANE
         MotorMixing::fixedWingMoterMixer(outputControlMsg, mainMotorGroup, motorPercent);
     #endif
 
     #ifdef QUADCOPTER
-        MotorMixing::quadMotorMixer(outputControlMsg, mainMotorGroup, motorPercent);
+        if (groundIdle) {
+            MotorMixing::quadGroundIdle(mainMotorGroup, motorPercent, motSpinArm);
+        } else {
+            MotorMixing::quadMotorMixer(outputControlMsg, mainMotorGroup, motorPercent);
+        }
     #endif
 
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
@@ -319,12 +336,6 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
 
         float percent = motorPercent[i];
 
-        #ifdef QUADCOPTER
-        if (!armedFlag || failsafeTriggered) {
-            percent = 0;
-        }
-        #endif
-
         uint32_t cmd = 0;
 
         #ifdef PLANE
@@ -336,8 +347,18 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
             // Scale [50, 100] to [trim, max]
             cmd = motor->trim + ((percent - 50.0f) / 50.0f) * (motor->max - motor->trim);
         }
+        #endif
+        
+        #ifdef QUADCOPTER
+        if (!armedFlag || failsafeTriggered) {
+            percent = 0;
+        } else if (!groundIdle) {
+            percent = motSpinMin + percent * (motSpinMax - motSpinMin);
+        }
+        cmd = percent * 100;
+        #endif
 
-        // Clamp cmd to [0, 100]
+        // Clamp cmd to [0, 100], safety check
         if (cmd > 100) {
             cmd = 100;
         } else if (cmd < 0) {
@@ -348,13 +369,6 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         if (motor->isInverted) {
             cmd = 100 - cmd;
         }
-        #endif
-
-        #ifdef QUADCOPTER
-        cmd = percent * 100;
-        if (cmd > 100.0f) cmd = 100.0f; 
-        else if (cmd < 0.0f) cmd = 0.0f; 
-        #endif
 
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry

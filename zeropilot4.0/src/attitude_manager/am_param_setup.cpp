@@ -77,6 +77,9 @@ void AMParamSetup::loadAllParams() {
         ZP_PARAM::get(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX)
     );
     am->stabilizeCLAW.setRollPitchLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::ATC_ANGLE_MAX));
+    am->motSpinMin = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_MIN);
+    am->motSpinMax = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_MAX);
+    am->motSpinArm = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_ARM);
     #endif
 
     // FFT Harmonic Notch Filter params 
@@ -169,6 +172,9 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_TAU,      am, updateAngPIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX,     am, updateAngPIDPitchIMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANGLE_MAX,         am, updateRollPitchLimitAng);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_MIN,          am, updateMotSpinMin);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_MAX,          am, updateMotSpinMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_ARM,          am, updateMotSpinArm);
     #endif
 
     // FFT Harmonic Notch Filter params
@@ -429,6 +435,23 @@ bool AMParamSetup::updateAngPIDPitchIMax(AttitudeManager* ctx, float val) {
 bool AMParamSetup::updateRollPitchLimitAng(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 45.0f) return false;
     ctx->stabilizeCLAW.setRollPitchLimitAngle(val);
+    return true;
+}
+static constexpr float MOT_SPIN_RANGE_MIN_SEPARATION = 0.05f; // Guard against motSpinMin == motSpinMax, which would give no RPY authority
+
+bool AMParamSetup::updateMotSpinMin(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f || val > ctx->motSpinMax - MOT_SPIN_RANGE_MIN_SEPARATION) return false;
+    ctx->motSpinMin = val;
+    return true;
+}
+bool AMParamSetup::updateMotSpinMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f || val < ctx->motSpinMin + MOT_SPIN_RANGE_MIN_SEPARATION) return false;
+    ctx->motSpinMax = val;
+    return true;
+}
+bool AMParamSetup::updateMotSpinArm(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f) return false;
+    ctx->motSpinArm = val;
     return true;
 }
 #endif
