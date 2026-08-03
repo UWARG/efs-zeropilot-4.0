@@ -270,7 +270,7 @@ void AttitudeManager::amUpdate() {
 
     bool groundIdle = false;
     #ifdef QUADCOPTER
-    bool groundIdle = armedFlag && !failsafeTriggered && ((controlMsg.throttle / 100.0f) <= MOT_GND_IDLE_THR);
+    groundIdle = armedFlag && !failsafeTriggered && ((controlMsg.throttle / 100.0f) <= MOT_GND_IDLE_THR);
     if (groundIdlePrev && !groundIdle) {
         activeCLAW->activateFlightMode(); // Clean PID state on ground idle exit
     }
