@@ -32,6 +32,16 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>dronecan</name>
+			<type>2</type>
+			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/generated/src</location>
+		</link>
+		<link>
+			<name>libcanard</name>
+			<type>2</type>
+			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/libcanard</location>
+		</link>
+		<link>
 			<name>boardfiles/CommonTables.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/external/CMSIS-DSP/Source/CommonTables/CommonTables.c</locationURI>

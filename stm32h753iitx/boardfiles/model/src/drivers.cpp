@@ -21,6 +21,7 @@ extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
+extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
 // Global handles
@@ -33,6 +34,7 @@ Logger *loggerHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
+CANController *canControllerHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
@@ -141,6 +143,8 @@ void initDrivers() {
     }
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
+
+    canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
     rcHandle->init();
     telemLinkHandle->init();
