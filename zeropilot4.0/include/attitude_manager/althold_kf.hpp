@@ -32,12 +32,20 @@ public:
 
 private:
     IMathUtils* math;
-
-    static constexpr uint16_t STATE_SIZE = 5;
-    float states[STATE_SIZE];
+    
     AltholdConfig config;
+    static constexpr uint16_t STATE_SIZE = 5;
+    /*
+        z: altitutude from takeoff 
+        vz: vertical velocity
+        b_accel: accelerometer bias
+        b_baro: barometer bias
+        h_terrain: terrain height relative to takeoff point 
+                   (for rangefinder: rangefinder measurement = z - h_terrain)
+    */
+    float states[STATE_SIZE];
 
-    float P[STATE_SIZE * STATE_SIZE]; // Covariance matrix
+    float P[STATE_SIZE * STATE_SIZE] = {}; // Covariance matrix
 
     // H
     const float measMatRangefinder[STATE_SIZE] = {1.0f, 0, 0, 0, -1.0f};
@@ -45,13 +53,13 @@ private:
     const float measMatGPSAlt[STATE_SIZE] = {1.0f, 0, 0, 0, 0};
     const float measMatGPSVel[STATE_SIZE] = {0, 1.0f, 0, 0, 0};
 
-    float F[STATE_SIZE * STATE_SIZE]; // State transition matrix
-    float B[STATE_SIZE]; // Control input matrix
-    float Q[STATE_SIZE * STATE_SIZE]; // Process noise covariance
+    float F[STATE_SIZE * STATE_SIZE] = {}; // State transition matrix
+    float B[STATE_SIZE] = {}; // Control input matrix
+    float Q[STATE_SIZE * STATE_SIZE] = {}; // Process noise covariance
 
-    uint32_t dtPrev;
-    uint32_t dtMin;
-    uint32_t dtMax;
+    float dtPrev;
+    // float dtMin;
+    // float dtMax;
 
     uint8_t rangefinderRejectCount = 0;
     uint8_t barometerRejectCount = 0;

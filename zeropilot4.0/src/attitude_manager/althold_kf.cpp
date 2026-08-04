@@ -12,13 +12,18 @@ void AltholdKF::init(AltholdConfig config) {
         B[i] = 0.0f; // Initialize B to zero for later use
     }
     dtPrev = 0;
+    // dtMin = 0;
+    // dtMax = 1000000; // 1 second in microseconds
 }
 
 void AltholdKF::predict(float u, float dt) {
+    // dt = std::max(dtMin, std::min(dtMax, dt)); // Clamp dt to [dtMin, dtMax] so big dt dont blow up Q
     if (dtPrev != dt) { // Avoid rebuilding F, B, Q if dt hasn't changed
         rebuildFBQ(dt);
         dtPrev = dt;
     }
+    // dtMin = 0.5f * dt;
+    // dtMax = 5.0f * dt;
 
     // State prediction using vertical acceleration as control input
     float fx[STATE_SIZE * 1];
@@ -151,12 +156,12 @@ void AltholdKF::update(float measurement,const float *H, float R, uint8_t &rejec
     math->matrixTranspose(K, STATE_SIZE, 1, Kt); // K^T
     float KRKt[STATE_SIZE * STATE_SIZE];
     math->matrixMult(KR, STATE_SIZE, 1, Kt, STATE_SIZE, KRKt); // K * R * K^T
-    float Ptemp[STATE_SIZE * STATE_SIZE];
-    math->matrixAdd(IKHPIKHt, KRKt, Ptemp, STATE_SIZE, STATE_SIZE); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
-    float ptempT[STATE_SIZE * STATE_SIZE];
-    math->matrixTranspose(Ptemp, STATE_SIZE, STATE_SIZE, ptempT); // Ptemp^T
-    math->matrixAdd(Ptemp, ptempT, P, STATE_SIZE, STATE_SIZE); // (Ptemp + Ptemp^T)
-    math->matrixScale(P, 0.5f, P, STATE_SIZE, STATE_SIZE); // P = 0.5 * (Ptemp + Ptemp^T) to ensure symmetry
+    math->matrixAdd(IKHPIKHt, KRKt, P, STATE_SIZE, STATE_SIZE); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
+    math->ensureSymmetric(P, STATE_SIZE);
+    // float ptempT[STATE_SIZE * STATE_SIZE];
+    // math->matrixTranspose(Ptemp, STATE_SIZE, STATE_SIZE, ptempT); // Ptemp^T
+    // math->matrixAdd(Ptemp, ptempT, P, STATE_SIZE, STATE_SIZE); // (Ptemp + Ptemp^T)
+    // math->matrixScale(P, 0.5f, P, STATE_SIZE, STATE_SIZE); // P = 0.5 * (Ptemp + Ptemp^T) to ensure symmetry
     return;
 }
 
@@ -164,7 +169,7 @@ void AltholdKF::rangefinderGatingWrapper(uint8_t &rangefinderRejectCount) {
     rangefinderRejectCount++;
     if (rangefinderRejectCount > 50) { // 0.5 seconds at 100 Hz
         // Inflate terrainAlt cov to signal that we no longer know it well
-        P[23] = 10.0f;
+        P[24] = 10.0f;
         rangefinderRejectCount = 0;
     }
 }
