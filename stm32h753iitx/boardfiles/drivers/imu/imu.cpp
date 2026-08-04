@@ -175,6 +175,7 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         scaledData[i].ygyro = (float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR;
         scaledData[i].zgyro = (float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR;
         scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
+        scaledData[i].imuId = rawDataBatch.data[i].imuId;
     }
     scaledImuDataBatch.count = rawDataBatch.count;
     scaledImuDataBatch.data = scaledData;
