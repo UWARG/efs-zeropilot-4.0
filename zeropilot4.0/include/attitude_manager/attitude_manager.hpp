@@ -17,6 +17,7 @@
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
 #include "barometer_iface.hpp"
+#include "althold_kf.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -64,6 +65,7 @@ private:
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
     AHRSEKF ekf;
+    AltholdKF altholdKF;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;
