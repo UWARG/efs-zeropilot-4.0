@@ -341,7 +341,7 @@ void IMU::setUIFilt() {
     // 3:2 GYRO_UI_FILT_ORD, 1:0 GYRO_DEC2_M2_ORD = 0b10 (3rd order, only valid setting)
     writeRegister(0, UB0_REG_GYRO_CONFIG1, (uint8_t)(0b00010000 | (uiFiltOrder << 2) | 0b10));
     // 7:5 reserved (reset value 0), 4:3 ACCEL_UI_FILT_ORD
-    //2:1 ACCEL_DEC2_M2_ORD = 0b10 (3rd order, only valid setting), bit 0 reserved (reset value 1)
+    // 2:1 ACCEL_DEC2_M2_ORD = 0b10 (3rd order, only valid setting), bit 0 reserved (reset value 1)
     writeRegister(0, UB0_REG_ACCEL_CONFIG1, (uint8_t)((uiFiltOrder << 3) | 0b101));
 
     // Find the closest bandwidth to the requested cutoff frequency
