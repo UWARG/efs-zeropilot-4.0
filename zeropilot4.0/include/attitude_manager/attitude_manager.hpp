@@ -115,6 +115,9 @@ private:
     void sendServoOutputRawToTelemetryManager();
 
     float altitude;
+    BaroData_t baroData;
+    RangefinderData_t rangefinderData;
+    GpsData_t gpsData;
     uint8_t profilerId;
 
     // Motor mixer output for each motor

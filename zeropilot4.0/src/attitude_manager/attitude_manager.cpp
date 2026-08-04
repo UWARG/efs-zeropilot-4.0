@@ -180,11 +180,11 @@ void AttitudeManager::amUpdate() {
     }
 
     // Read barometer data
-    BaroData_t baroData;
+    // BaroData_t baroData;
     barometerDriver->readData(baroData);
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / 25) == 0) { // 25hz update rate
-        altholdKF.updateBarometer(baroData.altitude);
+        // altholdKF.updateBarometer(baroData.altitude);
     }
 
     // Send scaled pressure data to TM
@@ -193,7 +193,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get GPS data
-    GpsData_t gpsData = gpsDriver->readData();
+    gpsData = gpsDriver->readData();
     if (gpsData.isNew) {
         lastValidGps = gpsData;
         altholdKF.updateGPSAlt(gpsData.altitude);
@@ -209,8 +209,11 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get rangefinder data
-    RangefinderData_t rangefinderData = rangefinderDriver->readData();
-    
+    rangefinderData = rangefinderDriver->readData();
+    if (rangefinderData.isNew && rangefinderData.isValid) {
+        altholdKF.updateRangefinder(rangefinderData.distance);
+    }
+
     altitude = altholdKF.getEstimatedAltitude();
 
     // Get data from Queue and motor outputs
