@@ -80,15 +80,15 @@ AttitudeManager::AttitudeManager(
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
 
-        AltholdKF::AltholdConfig altholdCfg = {
+        AltholdConfig altholdCfg = {
             .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.001f,
             .processNoiseBiasBaro = 0.001f,
             .processNoiseTerrainAlt = 0.055f,
-            .measurementNoiseBaro = 1.0f,
-            .measurementNoiseRangefinder = 0.01f,
-            .measurementNoiseGPSAlt = 25.0f,
-            .measurementNoiseGPSVel = 0.03f
+            .measNoiseBarometer = 1.0f,
+            .measNoiseRangefinder = 0.01f,
+            .measNoiseGPSAlt = 25.0f,
+            .measNoiseGPSVel = 0.03f
         };
         altholdKF.init(altholdCfg);
 
