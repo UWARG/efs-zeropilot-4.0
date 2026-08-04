@@ -111,6 +111,7 @@ private:
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     void sendServoOutputRawToTelemetryManager();
 
+    float altitude;
     uint8_t profilerId;
 
     // Motor mixer output for each motor

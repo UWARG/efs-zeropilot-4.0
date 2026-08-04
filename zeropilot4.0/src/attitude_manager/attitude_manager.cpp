@@ -109,15 +109,6 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
-    // Read barometer data
-    BaroData_t baroData;
-    barometerDriver->readData(baroData);
-
-    // Send scaled pressure data to TM
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
-        sendPressureDataToTelemetryManager(baroData);
-    }
-
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
@@ -163,6 +154,7 @@ void AttitudeManager::amUpdate() {
         if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
             ekf.correctionAccelerometer(accel);
         }
+        altholdKF.predict(accel[2], dt);
 
         GyroBias_t gyroBias = ekf.getGyroBias();
         droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
@@ -185,6 +177,19 @@ void AttitudeManager::amUpdate() {
         sendAttitudeDataToTelemetryManager(attitude);
     }
 
+    // Read barometer data
+    BaroData_t baroData;
+    barometerDriver->readData(baroData);
+
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / 25) == 0) { // 25hz update rate
+        altholdKF.updateBarometer(baroData.altitude);
+    }
+
+    // Send scaled pressure data to TM
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
+        sendPressureDataToTelemetryManager(baroData);
+    }
+
     // Get GPS data
     GpsData_t gpsData = gpsDriver->readData();
     if (gpsData.isNew) {
@@ -200,6 +205,8 @@ void AttitudeManager::amUpdate() {
             lastValidGps.isNew = false; // Mark as sent to telemetry manager, so if no new GPS data is valid the same data is not sent again
         }
     }
+
+    altitude = altholdKF.getEstimatedAltitude();
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);

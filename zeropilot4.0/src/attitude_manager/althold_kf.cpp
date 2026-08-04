@@ -14,7 +14,7 @@ void AltholdKF::init(AltholdConfig config) {
     dtPrev = 0;
 }
 
-void AltholdKF::predict(float* u, uint32_t dt) {
+void AltholdKF::predict(float u, float dt) {
     if (dtPrev != dt) { // Avoid rebuilding F, B, Q if dt hasn't changed
         rebuildFBQ(dt);
         dtPrev = dt;
@@ -24,7 +24,7 @@ void AltholdKF::predict(float* u, uint32_t dt) {
     float fx[STATE_SIZE * 1];
     math->matrixMult(F, STATE_SIZE, STATE_SIZE, states, 1, fx); // F * x
     float bu[STATE_SIZE * 1];
-    math->matrixMult(B, STATE_SIZE, 1, u, 1, bu); // B * u
+    math->matrixMult(B, STATE_SIZE, 1, &u, 1, bu); // B * u
     math->matrixAdd(fx, bu, states, STATE_SIZE, 1); // x = F * x + B * u
     
     // Uncertainty prediction
@@ -53,7 +53,11 @@ void AltholdKF::updateGPSVel(float verticalVelocity) {
     update(verticalVelocity, measMatGPSVel, config.measNoiseGPSVel, gpsVelRejectCount, nullptr);
 }
 
-void AltholdKF::rebuildFBQ(uint32_t dt) {
+float AltholdKF::getEstimatedAltitude() {
+    return states[0];
+}
+
+void AltholdKF::rebuildFBQ(float dt) {
     /*
     [1, dt, -0.5*dt**2, 0, 0],
     [0, 1, -dt, 0, 0],
@@ -109,7 +113,11 @@ void AltholdKF::update(float measurement,const float *H, float R, uint8_t &rejec
     float nis = y * y / S[0];
     if (nis > 16.0f) {
         // Reject
-        (this->*gatingWrapper)(rejectCount);
+        if (gatingWrapper != nullptr) {
+            (this->*gatingWrapper)(rejectCount);
+        } else {
+            rejectCount++;
+        }
         return;
     }
     rejectCount = 0;
