@@ -11,6 +11,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
+    IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
@@ -19,6 +20,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     ekf(mathUtilsDriver),
     amQueue(amQueue),
@@ -61,13 +63,13 @@ AttitudeManager::AttitudeManager(
             .gyroCov = 4.78e-6f,
             .accelCov = 9.41e-4f,
             .magCov = 3.6e-5f,
-            .gyroBiasCov = 1.0e-10f,
-            .accelBiasCov = 1.0e-8f,
+            .gyroBiasCov = 1.0e-6f,
+            .accelBiasCov = 0.0f,
             .accelGateThreshold = std::numeric_limits<float>::max(), // Turning off gating bc if start position is not leveled, then gating prevents convergence
             .magGateThreshold = 16.3f,
             .pInitAtt = 1e-2f,
-            .pInitBiasGyro = 1e-4f,
-            .pInitBiasAccel = 1e-6f, // Assume P is a diagonal matrix
+            .pInitBiasGyro = 1e-3f,
+            .pInitBiasAccel = 0.0f, // Assume P is a diagonal matrix
             .gravityInertial = {0, 0, 9.81f},
             .magInertial = {1, 0, 0}
         };
@@ -92,6 +94,15 @@ void AttitudeManager::amUpdate() {
     // Send servo output raw data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         sendServoOutputRawToTelemetryManager();
+    }
+
+    // Read barometer data
+    BaroData_t baroData;
+    barometerDriver->readData(baroData);
+
+    // Send scaled pressure data to TM
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
+        sendPressureDataToTelemetryManager(baroData);
     }
 
     // Send IMU raw data to telemetry manager
@@ -136,7 +147,9 @@ void AttitudeManager::amUpdate() {
         };
 
         ekf.stateExtrapolation(gyro, dt);
-        ekf.correctionAccelerometer(accel);
+        if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
+            ekf.correctionAccelerometer(accel);
+        }
 
         GyroBias_t gyroBias = ekf.getGyroBias();
         GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
@@ -425,6 +438,18 @@ void AttitudeManager::sendAttitudeDataToTelemetryManager(const Attitude_t &attit
     );
 
     tmQueue->push(&attitudeDataMsg);
+}
+
+void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroData) {
+    TMMessage_t pressureDataMsg = scaledPressurePack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        baroData.pressureKPa,
+        0,
+        baroData.temperatureC,
+        0
+    );
+
+    tmQueue->push(&pressureDataMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {

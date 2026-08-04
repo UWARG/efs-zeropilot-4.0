@@ -7,18 +7,18 @@ static constexpr uint8_t TM_QUEUE_RC_CHANNELS_COUNT = 18;
 static constexpr uint8_t TM_QUEUE_BATTERY_VOLTAGES_COUNT = 10;
 
 typedef union TMMessageData_u {
-  struct{
+  struct {
       uint8_t baseMode;
       uint32_t customMode;
       uint8_t systemStatus;
   } heartbeatData;
-  struct{
+  struct {
       uint8_t severity;
       char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT];
       uint16_t id;
       uint8_t chunkSeq;
   } statusTextData;
-  struct{
+  struct {
       uint8_t fixType;
       int32_t lat;
       int32_t lon;
@@ -35,6 +35,7 @@ typedef union TMMessageData_u {
       uint32_t hdgAcc;
       uint16_t yaw;
   } gpsRawData;
+
   struct {
       uint8_t port;
       uint16_t servo1Raw;
@@ -54,11 +55,11 @@ typedef union TMMessageData_u {
       uint16_t servo15Raw;
       uint16_t servo16Raw;
   } servoOutputRawData;
-  struct{
+  struct {
       uint8_t channelCount;
       uint16_t channels[TM_QUEUE_RC_CHANNELS_COUNT];
   } rcData;
-  struct{
+  struct {
       uint8_t batteryId;
       int16_t temperature;
       uint16_t voltages[TM_QUEUE_BATTERY_VOLTAGES_COUNT];
@@ -69,7 +70,7 @@ typedef union TMMessageData_u {
       int32_t timeRemaining;
       uint8_t chargeState; // MAV_BATTERY_CHARGE_STATE
   } batteryData;
-  struct{
+  struct {
       int16_t xacc;
       int16_t yacc;
       int16_t zacc;
@@ -82,7 +83,7 @@ typedef union TMMessageData_u {
       uint8_t id;
       int16_t temperature;
   } rawImuData;
-  struct{
+  struct {
       float roll;
       float pitch;
       float yaw;
@@ -90,6 +91,13 @@ typedef union TMMessageData_u {
       float pitchspeed;
       float yawspeed;
   } attitudeData;
+
+  struct {
+    float pressAbs;
+    float pressDiff;
+    int16_t temperature;
+    int16_t temperaturePressDiff;
+  } scaledPressureData;
 } TMMessageData_t;
 
 typedef struct TMMessage{
@@ -101,7 +109,8 @@ typedef struct TMMessage{
         RC_DATA,
         BATTERY_DATA,
         RAW_IMU_DATA,
-        ATTITUDE_DATA
+        ATTITUDE_DATA,
+        SCALED_PRESSURE_DATA
     } dataType;
     TMMessageData_t tmMessageData;
     uint32_t timeBootMs = 0;
@@ -138,6 +147,21 @@ inline TMMessage_t gpsRawDataPack(uint32_t time_boot_ms, uint8_t fix_type, int32
         }
     };
     return TMMessage_t{TMMessage_t::GPS_RAW_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, float press_abs_kpa, float press_diff_kpa, 
+                                    float temperature_degC, float temperature_press_diff_degC) {
+    float pressAbs = press_abs_kpa * 10.0f; // kPa -> hPa
+    float pressDiff = press_diff_kpa * 10.0f; // kPa -> hPa
+    int16_t temp = static_cast<int16_t>(temperature_degC * 100.0f); // C -> cC
+    int16_t tempPressDiff = static_cast<int16_t>(temperature_press_diff_degC * 100.0f); // C -> cC
+
+    const TMMessageData_t DATA = {
+        .scaledPressureData = {
+            pressAbs, pressDiff, temp, tempPressDiff
+        }
+    };
+    return TMMessage_t{TMMessage_t::SCALED_PRESSURE_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const uint16_t servo_values[16]) {

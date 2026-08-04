@@ -13,11 +13,13 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
+#include "can_controller.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fft.hpp"
+#include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -28,11 +30,13 @@ extern Logger *loggerHandle;
 
 extern IMotorControl *motorHandles[8];
 
+extern CANController *canControllerHandle;
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
+extern Barometer *barometerHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
