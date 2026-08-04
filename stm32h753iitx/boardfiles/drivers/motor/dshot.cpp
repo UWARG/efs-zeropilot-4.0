@@ -1,12 +1,11 @@
 #include "dshot.hpp"
 #include <cstring>
 
-static constexpr uint16_t DSHOT_1_CCR =	600;    // CCR for dshot300 logic 1 
-static constexpr uint16_t DSHOT_0_CCR = 300;    // CCR for dshot300 logic 0 
+static constexpr uint16_t DSHOT_1_CCR =	600; // CCR for dshot300 logic 1 
+static constexpr uint16_t DSHOT_0_CCR = 300; // CCR for dshot300 logic 0 
 
-static constexpr uint16_t MAX_THROTTLE = 2047;  // 11 bit max val
-static constexpr uint16_t OFFSET = 100;     // Armed standby throttle
-static constexpr uint16_t MIN_THROTTLE = 48 + OFFSET;    // 0-47 reserved for special commands
+static constexpr uint16_t MAX_THROTTLE = 2047; // 11 bit max val
+static constexpr uint16_t MIN_THROTTLE = 48; // 0-47 reserved for special commands
 
 static constexpr uint16_t THROTTLE_MASK = 0x7FF;
 static constexpr uint8_t THROTTLE_SHIFT = 5;

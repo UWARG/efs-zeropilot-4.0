@@ -64,6 +64,9 @@ class AMParamSetup : public IParamSetup {
     static bool updateAngPIDPitchTau(AttitudeManager* ctx, float val);
     static bool updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
     static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
+    static bool updateMotSpinMin(AttitudeManager* ctx, float val);
+    static bool updateMotSpinMax(AttitudeManager* ctx, float val);
+    static bool updateMotSpinArm(AttitudeManager* ctx, float val);
     #endif
 
     // FFT Harmonic Notch Filter param callbacks
