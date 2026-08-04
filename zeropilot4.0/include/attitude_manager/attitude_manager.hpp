@@ -118,6 +118,9 @@ private:
     BaroData_t baroData;
     RangefinderData_t rangefinderData;
     GpsData_t gpsData;
+    float baroHomeAltitude;
+    bool baroHomeInitialized;
+
     uint8_t profilerId;
 
     // Motor mixer output for each motor

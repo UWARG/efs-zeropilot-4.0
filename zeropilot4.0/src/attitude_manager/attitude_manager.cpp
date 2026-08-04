@@ -53,6 +53,8 @@ AttitudeManager::AttitudeManager(
     failsafeTriggered(false),
     lastTimestamp(0),
     haveLastImuTimestamp(false),
+    baroHomeAltitude(0.0f),
+    baroHomeInitialized(false),
     profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
@@ -185,6 +187,20 @@ void AttitudeManager::amUpdate() {
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / 25) == 0) { // 25hz update rate
         // altholdKF.updateBarometer(baroData.altitude);
+        if (!armedFlag) {
+            if (!baroHomeInitialized) {
+                baroHomeAltitude = baroData.altitude; // seed directly, don't LPF in from 0
+                baroHomeInitialized = true;
+            } else {
+                constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f;
+                constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f;
+                constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
+                baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
+            }
+        }
+        if (baroHomeInitialized) {
+            altholdKF.updateBarometer(baroData.altitude - baroHomeAltitude);
+        }
     }
 
     // Send scaled pressure data to TM
