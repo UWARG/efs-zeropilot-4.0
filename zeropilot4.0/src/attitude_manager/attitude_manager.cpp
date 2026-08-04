@@ -154,9 +154,9 @@ void AttitudeManager::amUpdate() {
 
         GyroBias_t gyroBias = ekf.getGyroBias();
         GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
-        droneState.rollRate = scaledImuData.data[i].xgyro - gyroBias.x;
-        droneState.pitchRate = scaledImuData.data[i].ygyro - gyroBias.y;
-        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z; // TODO: Use gyroBias.z once magnetometer is in use.
+        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
+        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
+        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
 
         break; // for now only use one imu message per am loop
     }
