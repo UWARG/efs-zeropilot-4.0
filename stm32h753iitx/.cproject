@@ -118,6 +118,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
@@ -289,6 +290,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
@@ -453,6 +455,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
@@ -617,6 +620,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>

@@ -16,6 +16,7 @@
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
+#include "rangefinder_iface.hpp"
 #include "barometer_iface.hpp"
 #include "althold_kf.hpp"
 
@@ -42,6 +43,7 @@ public:
         IGPS *gpsDriver,
         IIMU *imuDriver,
         IFFT *fftDriver,
+        IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
@@ -60,6 +62,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    IRangefinder *rangefinderDriver;
     IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
@@ -72,14 +75,14 @@ private:
     IMessageQueue<char[100]> *smLoggerQueue;
 
     Flightmode *activeCLAW; // Pointer to current active Control Law
-#ifdef PLANE
+    #ifdef PLANE
     DirectMapping manualCLAW; // Manual Control Law (Direct Passthrough)
     FBWAMapping fbwaCLAW;     // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
-#endif
-#ifdef QUADCOPTER
+    #endif
+    #ifdef QUADCOPTER
     AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
     StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
-#endif
+    #endif
     RCMotorControlMessage_t controlMsg;
     FlightMode_e currentFlightMode;
     DroneState_t droneState;

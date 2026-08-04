@@ -21,6 +21,7 @@ void initManagers()
         gpsHandle,
         imuHandle,
         fftHandle,
+        rangefinderHandle,
         barometerHandle,
         amRCQueueHandle, 
         tmQueueHandle, 

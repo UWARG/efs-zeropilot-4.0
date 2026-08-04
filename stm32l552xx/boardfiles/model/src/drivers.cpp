@@ -17,6 +17,7 @@ extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
+extern I2C_HandleTypeDef hi2c3;
 extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
@@ -37,6 +38,7 @@ RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Rangefinder *rangefinderHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -115,6 +117,7 @@ void initDrivers()
     telemLinkHandle = new RFD(&huart3);
     imuHandle = new IMU(&hspi2, GPIOF, GPIO_PIN_12, 0, IMU_ODR_1KHZ);
     pmHandle = new PowerModule(&hi2c1);
+    rangefinderHandle = new Rangefinder(&hi2c3);
     barometerHandle = new Barometer(&hi2c2);
 
     // Queues
@@ -129,11 +132,12 @@ void initDrivers()
     }
 
     rcHandle->init();
+    telemLinkHandle->init();
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
+    rangefinderHandle->init();
     barometerHandle->init();
-    telemLinkHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {

@@ -15,18 +15,69 @@
 #define UB0_REG_SIGNAL_PATH_RESET 0x4B
 #define UB0_REG_GYRO_ODR          0x4F
 #define UB0_REG_ACCEL_CONFIG0     0x50
+#define UB0_REG_GYRO_CONFIG1      0x51
+#define UB0_REG_ACCEL_CONFIG1      0x53
+#define UB0_REG_GYRO_ACCEL_CONFIG0 0x52
+#define UB1_REG_GYRO_CONFIG_STATIC2 0x0B
+#define UB1_REG_GYRO_CONFIG_STATIC3 0x0C
+#define UB1_REG_GYRO_CONFIG_STATIC4 0x0D
+#define UB1_REG_GYRO_CONFIG_STATIC5 0x0E
+#define UB2_REG_ACCEL_CONFIG_STATIC2 0x03
+#define UB2_REG_ACCEL_CONFIG_STATIC3 0x04
+#define UB2_REG_ACCEL_CONFIG_STATIC4 0x05
+
 #define FIFO_HEADER_MSG_BIT 0x80
 #define FIFO_HEADER_ACCEL_BIT 0x40
 #define FIFO_HEADER_GYRO_BIT 0x20
 
 #define ICM42688P_IMU_WHOAMI 0x47
 
-IMU::IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig) : 
+typedef struct {
+	uint16_t bandwidth;
+	uint8_t delt;
+	uint16_t deltsqr;
+	uint8_t bitshift;
+} AAF_Config;
+
+static const AAF_Config aaf_table[] = {
+    {42,   1,    1,   15}, {84,   2,    4,   13}, {126,  3,    9,   12},
+    {170,  4,   16,   11}, {213,  5,   25,   10}, {258,  6,   36,   10},
+    {303,  7,   49,    9}, {348,  8,   64,    9}, {394,  9,   81,    9},
+    {441, 10,  100,    8}, {488, 11,  122,    8}, {536, 12,  144,    8},
+    {585, 13,  170,    8}, {634, 14,  196,    7}, {684, 15,  224,    7},
+    {734, 16,  256,    7}, {785, 17,  288,    7}, {837, 18,  324,    7},
+    {890, 19,  360,    6}, {943, 20,  400,    6}, {997, 21,  440,    6},
+    {1051,22,  488,    6}, {1107,23,  528,    6}, {1163,24,  576,    6},
+    {1220,25,  624,    6}, {1277,26,  680,    6}, {1336,27,  736,    5},
+    {1395,28,  784,    5}, {1454,29,  848,    5}, {1515,30,  896,    5},
+    {1577,31,  960,    5}, {1639,32, 1024,    5}, {1702,33, 1088,    5},
+    {1766,34, 1152,    5}, {1830,35, 1232,    5}, {1896,36, 1296,    5},
+    {1962,37, 1376,    4}, {2029,38, 1440,    4}, {2097,39, 1536,    4},
+    {2166,40, 1600,    4}, {2235,41, 1696,    4}, {2306,42, 1760,    4},
+    {2377,43, 1856,    4}, {2449,44, 1952,    4}, {2522,45, 2016,    4},
+    {2596,46, 2112,    4}, {2671,47, 2208,    4}, {2746,48, 2304,    4},
+    {2823,49, 2400,    4}, {2900,50, 2496,    4}, {2978,51, 2592,    4},
+    {3057,52, 2720,    4}, {3137,53, 2816,    3}, {3217,54, 2944,    3},
+    {3299,55, 3008,    3}, {3381,56, 3136,    3}, {3464,57, 3264,    3},
+    {3548,58, 3392,    3}, {3633,59, 3456,    3}, {3718,60, 3584,    3},
+    {3805,61, 3712,    3}, {3892,62, 3840,    3}, {3979,63, 3968,    3}
+};
+
+IMU::IMU(SPI_HandleTypeDef *spiHandle, 
+        GPIO_TypeDef *csPort, 
+        uint16_t csPin, 
+        uint8_t imuId, 
+        ImuOdrConfig_t odrConfig,
+        float uiFiltCutoffHz, 
+        ImuUiFiltOrder_t uiFiltOrder
+) :
     spi(spiHandle),
     csPort(csPort),
     csPin(csPin),
     imuId(imuId),
     imuOdr(odrConfig),
+    uiFiltCutoffHz(uiFiltCutoffHz),
+    uiFiltOrder(uiFiltOrder),
     alpha(0.1f) {
 
     filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
@@ -42,6 +93,8 @@ int IMU::init() {
     SystemUtils::dwtInit();
     reset();
     uint8_t address = whoAmI();
+    setAAF();
+    setUIFilt();
     setODR();
     setFIFO();
     flushFIFO();
@@ -68,9 +121,9 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
-        scaledData[i].xgyro = lowPassFilter((float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR, 0);
-        scaledData[i].ygyro = lowPassFilter((float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR, 1);
-        scaledData[i].zgyro = lowPassFilter((float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR, 2);
+        scaledData[i].xgyro = (float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR;
+        scaledData[i].ygyro = (float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR;
+        scaledData[i].zgyro = (float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR;
         scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
     }
     scaledImuDataBatch.count = rawDataBatch.count;
@@ -239,6 +292,74 @@ void IMU::setFIFO() {
 void IMU::setODR() {
     writeRegister(0, UB0_REG_GYRO_ODR, (uint8_t)imuOdr); // Configure gyro ODR to 4khz
     writeRegister(0, UB0_REG_ACCEL_CONFIG0, (uint8_t)imuOdr); // Configure accelerometer ODR to 4khz
+}
+
+void IMU::setAAF() {
+    uint16_t desiredBandwidth = getODRHz() / 4; // Set AAF bandwidth to 1/4 of ODR
+    uint8_t bestIndex = 0;
+    uint16_t bestDistance = UINT16_MAX;
+    // Table is sorted ascending, so distance falls to a minimum then rises again.
+    // Stop as soon as it stops improving. Ties keep the lower bandwidth.
+    for (uint8_t i = 0; i < sizeof(aaf_table) / sizeof(aaf_table[0]); i++) {
+        uint16_t bandwidth = aaf_table[i].bandwidth;
+        uint16_t distance = (bandwidth > desiredBandwidth) ? (bandwidth - desiredBandwidth) : (desiredBandwidth - bandwidth);
+        if (distance >= bestDistance) {
+            break;
+        }
+        bestDistance = distance;
+        bestIndex = i;
+    }
+    uint8_t delt = (uint8_t)(aaf_table[bestIndex].delt & 0b00111111); // only 6 bits are used for delt
+    uint8_t deltsqrLower = (uint8_t)aaf_table[bestIndex].deltsqr;
+    uint8_t deltsqrUpper = (uint8_t)((aaf_table[bestIndex].deltsqr >> 8) & 0xF); // only 4 bits are used for upper deltsqr
+    uint8_t bitshift = (uint8_t)(aaf_table[bestIndex].bitshift & 0xF); // only 4 bits are used for bitshift
+    
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, (delt << 1)); // 6:1 for ACCEL_AAF_DELT, bit 0 is disable accel AAF, defualt enabled
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, deltsqrLower); // ACCEL_AAF_DELTSQR
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, (bitshift << 4) | deltsqrUpper); // ACCEL_AAF_BITSHIFT
+
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, delt); // 5:0 for GYRO_AAF_DELT, 7:6 reserved
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, deltsqrLower); // GYRO_AAF_DELTSQR
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, (bitshift << 4) | deltsqrUpper); // GYRO_AAF_BITSHIFT
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable gyro AAF and disables notch filter
+}
+
+float IMU::getUIFiltBWHz(uint8_t bandwidthSelect) {
+    // Bandwidth = max(400Hz, ODR) / divisor, except setting 0 which is ODR/2
+    // Values 8-13 are reserved and 14-15 are low latency modes, so only 0-7 are valid
+    static const uint8_t divisors[UIFILT_BW_SEL_COUNT] = {2, 4, 5, 8, 10, 16, 20, 40};
+    if (bandwidthSelect >= UIFILT_BW_SEL_COUNT) {
+        return 0.0f;
+    }
+    float odr = getODRHz();
+    float max = (bandwidthSelect == 0 || odr > 400.0f) ? odr : 400.0f;
+    return max / divisors[bandwidthSelect];
+}
+
+void IMU::setUIFilt() {
+    // 7:5 TEMP_FILT_BW = 0 (default), bit 4 reserved (reset value 1)
+    // 3:2 GYRO_UI_FILT_ORD, 1:0 GYRO_DEC2_M2_ORD = 0b10 (3rd order, only valid setting)
+    writeRegister(0, UB0_REG_GYRO_CONFIG1, (uint8_t)(0b00010000 | (uiFiltOrder << 2) | 0b10));
+    // 7:5 reserved (reset value 0), 4:3 ACCEL_UI_FILT_ORD
+    // 2:1 ACCEL_DEC2_M2_ORD = 0b10 (3rd order, only valid setting), bit 0 reserved (reset value 1)
+    writeRegister(0, UB0_REG_ACCEL_CONFIG1, (uint8_t)((uiFiltOrder << 3) | 0b101));
+
+    // Find the closest bandwidth to the requested cutoff frequency
+    uint8_t bestSel = 0; // Value for GYRO_UI_FILT_BW/ACCEL_UI_FILT_BW register (0-7)
+    float bestDistance = -1.0f;
+    for (uint8_t bwSel = 0; bwSel < UIFILT_BW_SEL_COUNT; bwSel++) {
+        float distance = getUIFiltBWHz(bwSel) - uiFiltCutoffHz;
+        if (distance < 0.0f) {
+            distance = -distance;
+        }
+        if (bestDistance < 0.0f || distance < bestDistance) {
+            bestDistance = distance;
+            bestSel = bwSel;
+        }
+    }
+
+    // 7:4 ACCEL_UI_FILT_BW, 3:0 GYRO_UI_FILT_BW
+    writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, (uint8_t)((bestSel << 4) | bestSel));
 }
 
 void IMU::processRawData() {

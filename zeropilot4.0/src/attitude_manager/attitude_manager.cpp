@@ -11,6 +11,7 @@ AttitudeManager::AttitudeManager(
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
+    IRangefinder *rangefinderDriver,
     IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
@@ -20,6 +21,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     ekf(mathUtilsDriver),
@@ -206,6 +208,9 @@ void AttitudeManager::amUpdate() {
         }
     }
 
+    // Get rangefinder data
+    RangefinderData_t rangefinderData = rangefinderDriver->readData();
+    
     altitude = altholdKF.getEstimatedAltitude();
 
     // Get data from Queue and motor outputs

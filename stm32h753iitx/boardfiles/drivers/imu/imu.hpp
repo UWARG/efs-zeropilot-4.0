@@ -21,9 +21,16 @@ typedef enum : uint8_t {
 	IMU_ODR_12HZ5 = 0b1011
 } ImuOdrConfig_t;
 
+typedef enum : uint8_t {
+	IMU_UI_FILT_ORD_1ST = 0b00,
+	IMU_UI_FILT_ORD_2ND = 0b01,
+	IMU_UI_FILT_ORD_3RD = 0b10
+} ImuUiFiltOrder_t;
+
 class IMU : public IIMU {
 	public:
-		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig);
+		IMU(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t imuId, ImuOdrConfig_t odrConfig,
+			float uiFiltCutoffHz = 50.0f, ImuUiFiltOrder_t uiFiltOrder = IMU_UI_FILT_ORD_1ST);
 	
 		// Initialization
 		int init() override;
@@ -44,6 +51,7 @@ class IMU : public IIMU {
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2
 		static constexpr uint8_t MAX_PACKETS = 128; // User defined max packet reads per batch, has to be <= FIFO_HW_MAX_PACKETS
+		static constexpr uint8_t UIFILT_BW_SEL_COUNT = 8; // Usable GYRO/ACCEL_UI_FILT_BW values, 8-15 are reserved or low latency
 		
 	private:
 		SPI_HandleTypeDef *spi;
@@ -51,13 +59,14 @@ class IMU : public IIMU {
 		uint16_t csPin;
 		const uint8_t imuId;
 		const ImuOdrConfig_t imuOdr;
-		
+		const float uiFiltCutoffHz;
+		const ImuUiFiltOrder_t uiFiltOrder;
+
 		static constexpr uint8_t PACKET_SIZE = 16;
 		static constexpr uint8_t FIFO_HW_MAX_PACKETS = 128; // Hardware FIFO packet limit
 		static constexpr uint16_t RX_BUFFER_SIZE = MAX_PACKETS * PACKET_SIZE + 1;
 
-		typedef enum
-		{
+		typedef enum {
 			COUNT,
 			DATA
 		} RxStates_e;
@@ -90,10 +99,14 @@ class IMU : public IIMU {
 		void setLowNoiseMode();
 		void setFIFO();
 		void setODR();
+		void setAAF();
+		void setUIFilt();
 		
 		// Processing and filtering
 		void processRawData();
 		float lowPassFilter(float rawValue, int select);
+
+		float getUIFiltBWHz(uint8_t bandwidth);
 
 		// Internal variables
 		float alpha;

@@ -101,7 +101,7 @@ class ZP_QUAD_SITL_AIRSIM:
         q_rad = ang_vel.y_val
         r_rad = ang_vel.z_val
 
-        # latitude, longtitude, altitude
+        # latitude, longtitude, altitude from gps
         lat_deg = state.gps_location.latitude
         long_deg = state.gps_location.longitude
         alt_deg = state.gps_location.altitude
@@ -113,6 +113,9 @@ class ZP_QUAD_SITL_AIRSIM:
 
         baro = self.client.getBarometerData()
 
+        # altitude for rangefinder 
+        alt_rangefinder = self.client.getDistanceSensorData().distance
+
         self.zp.update_from_plant(
             roll, pitch,
             p_rad, q_rad, r_rad,
@@ -121,6 +124,7 @@ class ZP_QUAD_SITL_AIRSIM:
             heading,
             0.0,
             0.0,
+            alt_rangefinder,
             baro.pressure * PA_TO_KPA,
             BARO_AMBIENT_TEMP_C
         )
