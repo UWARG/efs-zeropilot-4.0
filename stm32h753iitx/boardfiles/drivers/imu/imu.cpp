@@ -322,14 +322,6 @@ void IMU::setAAF() {
     writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, deltsqrLower); // GYRO_AAF_DELTSQR
     writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, (bitshift << 4) | deltsqrUpper); // GYRO_AAF_BITSHIFT
     writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable gyro AAF and disables notch filter
-    
-    // writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, 0b00100100); // ACCEL_AAF_DELTSQR
-    // writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, 0b10100000); // ACCEL_AAF_BITSHIFT
-
-    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, 0b00000110); // GYRO_AAF_DELT
-    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, 0b00100100); // GYRO_AAF_DELTSQR
-    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, 0b10100000); // GYRO_AAF_BITSHIFT
-    // writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable AAF and disables notch filter
 }
 
 float IMU::getUIFiltBWHz(uint8_t bandwidthSelect) {
@@ -368,13 +360,6 @@ void IMU::setUIFilt() {
 
     // 7:4 ACCEL_UI_FILT_BW, 3:0 GYRO_UI_FILT_BW
     writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, (uint8_t)((bestSel << 4) | bestSel));
-
-
-    // // Enable 1st order UI filter 
-    // writeRegister(0, UB0_REG_GYRO_CONFIG1, 0b00010010);
-    // writeRegister(0, UB0_REG_ACCEL_CONFIG1, 0b00000101);
-    // // configure bandwidth, 48.8Hz for 1khz ODR
-    // writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, 0b01100110);
 }
 
 void IMU::processRawData() {
