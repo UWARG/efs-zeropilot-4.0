@@ -13,8 +13,8 @@ typedef struct {
     float processNoiseBiasAccel;
     float processNoiseBiasBaro;
     float processNoiseTerrainAlt;
-    float measNoiseRangefinder;
     float measNoiseBarometer;
+    float measNoiseRangefinder;
     float measNoiseGPSAlt;
     float measNoiseGPSVel;
 } AltholdConfig;
@@ -54,7 +54,14 @@ private:
     uint32_t dtMax;
 
     uint8_t rangefinderRejectCount = 0;
+    uint8_t barometerRejectCount = 0;
+    uint8_t gpsAltRejectCount = 0;
+    uint8_t gpsVelRejectCount = 0;
     
+    void rebuildFBQ(uint32_t dt);
+    void update(float measurement,const float *H, float R, uint8_t &rejectCount, void (AltholdKF::*gatingWrapper)(uint8_t &rejectCount));
+    
+    void rangefinderGatingWrapper(uint8_t &rangefinderRejectCount);
     
 
 

@@ -1,8 +1,5 @@
 #include "althold_kf.hpp"
 
-static void rebuildFBQ(uint32_t dt);
-static void calcInnovationCov(const float* H, const float* P, float R, float* S);
-
 AltholdKF::AltholdKF(IMathUtils* mathUtils) : 
     math(mathUtils) {}
 
@@ -41,28 +38,22 @@ void AltholdKF::predict(float* u, uint32_t dt) {
 }
 
 void AltholdKF::updateRangefinder(float altitude) {
-    float S[STATE_SIZE * STATE_SIZE];
-    calcInnovationCov(measMatRangefinder, P, config.measNoiseRangefinder, S);
-
-    float hx;
-    math->matrixMult(measMatRangefinder, 1, STATE_SIZE, states, 1, &hx); // H * x
-    // Innovation
-    float y = altitude - hx; // y = z - Hx
-    
-    // Gating
-    float nis = y * y / S[0];
-    if (nis > 16.0f) {
-        // Reject
-        rangefinderRejectCount++;
-        if (rangefinderRejectCount > 50) { // 0.5 seconds at 100 Hz
-            // Inflate terrainAlt cov to signal that we no longer know it well
-            P[23] = 10.0f;
-            rangefinderRejectCount = 0;
-        }
-    } 
+    update(altitude, measMatRangefinder, config.measNoiseRangefinder, rangefinderRejectCount, &AltholdKF::rangefinderGatingWrapper);
 }
 
-static void rebuildFBQ(uint32_t dt) {
+void AltholdKF::updateBarometer(float altitude) {
+    update(altitude, measMatBaro, config.measNoiseBarometer, barometerRejectCount, nullptr);
+}
+
+void AltholdKF::updateGPSAlt(float altitude) {
+    update(altitude, measMatGPSAlt, config.measNoiseGPSAlt, gpsAltRejectCount, nullptr);
+}
+
+void AltholdKF::updateGPSVel(float verticalVelocity) {
+    update(verticalVelocity, measMatGPSVel, config.measNoiseGPSVel, gpsVelRejectCount, nullptr);
+}
+
+void AltholdKF::rebuildFBQ(uint32_t dt) {
     /*
     [1, dt, -0.5*dt**2, 0, 0],
     [0, 1, -dt, 0, 0],
@@ -94,12 +85,78 @@ static void rebuildFBQ(uint32_t dt) {
     Q[1] = config.processNoiseAccel * dt * dt * dt / 2.0f;
     Q[5] = config.processNoiseAccel * dt * dt * dt / 2.0f;
     Q[6] = config.processNoiseAccel * dt * dt;
-    Q[11] = config.processNoiseBiasAccel * dt;
+    Q[12] = config.processNoiseBiasAccel * dt;
     Q[18] = config.processNoiseBiasBaro * dt;
     Q[24] = config.processNoiseTerrainAlt * dt;
 }
 
-static void calcInnovationCov(const float* H, const float* P, float R, float* S) {
-    float 
+void AltholdKF::update(float measurement,const float *H, float R, uint8_t &rejectCount, void (AltholdKF::*gatingWrapper)(uint8_t &rejectCount)) {
+    float Ht[STATE_SIZE * 1];
+    math->matrixTranspose(H, 1, STATE_SIZE, Ht); // H^T
+    float PHt[STATE_SIZE * 1];
+    math->matrixMult(P, STATE_SIZE, STATE_SIZE, Ht, 1, PHt); // P * H^T
+    float HPHt[1 * 1];
+    math->matrixMult(H, 1, STATE_SIZE, PHt, 1, HPHt); // H * P * H^T
+    float S[1 * 1];
+    math->matrixAdd(HPHt, &R, S, 1, 1); // S = H * P * H^T + R
+
+    float Hx[1 * 1];
+    math->matrixMult(H, 1, STATE_SIZE, states, 1, Hx); // H * x
+    // Innovation
+    float y = measurement - Hx[0]; // y = z - Hx
+    
+    // Gating
+    float nis = y * y / S[0];
+    if (nis > 16.0f) {
+        // Reject
+        (this->*gatingWrapper)(rejectCount);
+        return;
+    }
+    rejectCount = 0;
+
+    float Sinv[1 * 1];
+    math->matrixInverse(S, 1, Sinv); // S^-1
+    float K[STATE_SIZE* 1];
+    math->matrixMult(PHt, STATE_SIZE, 1, Sinv, 1, K); // K = P * H^T * S^-1
+    float Ky[STATE_SIZE * 1];
+    math->matrixMult(K, STATE_SIZE, 1, &y, 1, Ky); // K * y
+    math->matrixAdd(states, Ky, states, STATE_SIZE, 1); // x = x + K * y
+
+    // Covariance update (Joseph form)
+    float I[STATE_SIZE * STATE_SIZE] = {};
+    for (int i = 0; i < STATE_SIZE; ++i) {
+        I[i * STATE_SIZE + i] = 1.0f;
+    }
+    float KH[STATE_SIZE * STATE_SIZE];
+    math->matrixMult(K, STATE_SIZE, 1, H, STATE_SIZE, KH); // K * H
+    float IKH[STATE_SIZE * STATE_SIZE];
+    math->matrixSub(I, KH, IKH, STATE_SIZE, STATE_SIZE); // I - K * H
+    float IKHP[STATE_SIZE * STATE_SIZE];
+    math->matrixMult(IKH, STATE_SIZE, STATE_SIZE, P, STATE_SIZE, IKHP); // (I - K * H) * P
+    float IKHt[STATE_SIZE * STATE_SIZE];
+    math->matrixTranspose(IKH, STATE_SIZE, STATE_SIZE, IKHt); // (I - K * H)^T
+    float IKHPIKHt[STATE_SIZE * STATE_SIZE];
+    math->matrixMult(IKHP, STATE_SIZE, STATE_SIZE, IKHt, STATE_SIZE, IKHPIKHt); // (I - K * H) * P * (I - K * H)^T
+    float KR[STATE_SIZE * 1];
+    math->matrixMult(K, STATE_SIZE, 1, &R, 1, KR); // K * R
+    float Kt[1 * STATE_SIZE];
+    math->matrixTranspose(K, STATE_SIZE, 1, Kt); // K^T
+    float KRKt[STATE_SIZE * STATE_SIZE];
+    math->matrixMult(KR, STATE_SIZE, 1, Kt, STATE_SIZE, KRKt); // K * R * K^T
+    float Ptemp[STATE_SIZE * STATE_SIZE];
+    math->matrixAdd(IKHPIKHt, KRKt, Ptemp, STATE_SIZE, STATE_SIZE); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
+    float ptempT[STATE_SIZE * STATE_SIZE];
+    math->matrixTranspose(Ptemp, STATE_SIZE, STATE_SIZE, ptempT); // Ptemp^T
+    math->matrixAdd(Ptemp, ptempT, P, STATE_SIZE, STATE_SIZE); // (Ptemp + Ptemp^T)
+    math->matrixScale(P, 0.5f, P, STATE_SIZE, STATE_SIZE); // P = 0.5 * (Ptemp + Ptemp^T) to ensure symmetry
+    return;
 }
 
+void AltholdKF::rangefinderGatingWrapper(uint8_t &rangefinderRejectCount) {
+    rangefinderRejectCount++;
+    if (rangefinderRejectCount > 50) { // 0.5 seconds at 100 Hz
+        // Inflate terrainAlt cov to signal that we no longer know it well
+        P[23] = 10.0f;
+        rangefinderRejectCount = 0;
+    }
+}
