@@ -23,18 +23,18 @@ static constexpr uint16_t DIST_WEAK_SIGNAL = 4500;
 Rangefinder::Rangefinder(I2C_HandleTypeDef *hi2c) : hi2c(hi2c) {}
 
 int Rangefinder::init() {
-    uint8_t recieveBuffer[6] = {0}; // Size 6 is the max response size for the rangefinder commands
+    uint8_t receiveBuffer[6] = {0}; // Size 6 is the max response size for the rangefinder commands
     
     // Check firmware version to see if ithe rangefinder is present and alive
     if (HAL_I2C_Master_Transmit(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)FIRMWARE_VERSION_CMD, sizeof(FIRMWARE_VERSION_CMD), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
     HAL_Delay(100); // Wait for the rangefinder to process the command, 100ms as suggested in the datasheet
-    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, recieveBuffer, sizeof(FIRMWARE_VERSION_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
+    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(FIRMWARE_VERSION_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
     for (int i = 0; i < sizeof(FIRMWARE_VERSION_RESPONSE); i++) {
-        if (recieveBuffer[i] != FIRMWARE_VERSION_RESPONSE[i]) {
+        if (receiveBuffer[i] != FIRMWARE_VERSION_RESPONSE[i]) {
             return -1; // Firmware version response does not match expected response
         }
     }
@@ -44,11 +44,11 @@ int Rangefinder::init() {
         return -1;
     }
     HAL_Delay(100);
-    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, recieveBuffer, sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
+    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
     for (int i = 0; i < sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE); i++) {
-        if (recieveBuffer[i] != OUTPUT_FORMAT_CM_SUCCESS_RESPONSE[i]) {
+        if (receiveBuffer[i] != OUTPUT_FORMAT_CM_SUCCESS_RESPONSE[i]) {
             return -1;
         }
     }
@@ -60,11 +60,11 @@ int Rangefinder::init() {
         return -1;
     }
     HAL_Delay(100);
-    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, recieveBuffer, sizeof(SAVE_CONFIG_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
+    if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(SAVE_CONFIG_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
     for (int i = 0; i < sizeof(SAVE_CONFIG_SUCCESS_RESPONSE); i++) {
-        if (recieveBuffer[i] != SAVE_CONFIG_SUCCESS_RESPONSE[i]) {
+        if (receiveBuffer[i] != SAVE_CONFIG_SUCCESS_RESPONSE[i]) {
             return -1;
         }
     }
@@ -90,7 +90,7 @@ RangefinderData_t Rangefinder::readData() {
 
         /* 
         Check if the received frame is valid: 
-            Checksum doesnt match, the data is corrupted
+            Checksum doesn't match, the data is corrupted
             When encountering a measured object with high reflectivity, strength = 65535 and the distance value will become 65534
             When the signal strength is insufficient and lower than 60, the distance value will become the maximum value of 4500
         */
