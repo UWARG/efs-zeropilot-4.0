@@ -22,7 +22,7 @@ AttitudeManager::AttitudeManager(
     imuDriver(imuDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
-    ekf(mathUtilsDriver),
+    // ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -58,6 +58,7 @@ AttitudeManager::AttitudeManager(
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
 
+        /* TODO: Uncomment once using EKF
         // Init the EKF
         AHRSEKF::Config ekfCfg = {
             .gyroCov = 4.78e-6f,
@@ -78,6 +79,7 @@ AttitudeManager::AttitudeManager(
         float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
+        */
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -117,12 +119,15 @@ void AttitudeManager::amUpdate() {
         harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         */
        
+        /* TODO: Uncomment once using EKF
         if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
+        */
 
-        /**
-         * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
-         * and the delta for double IMU will be necessarily less than uint16_t max value.
-         */
+        /*
+        We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
+        and the delta for double IMU will be necessarily less than uint16_t max value.
+        */
+        
         uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp;
 
         lastTimestamp = scaledImuData.data[i].timestamp;
@@ -134,7 +139,18 @@ void AttitudeManager::amUpdate() {
         }
 
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+        
+        mahonyFilter.updateIMU(
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro,
+            scaledImuData.data[i].xacc,
+            scaledImuData.data[i].yacc,
+            scaledImuData.data[i].zacc,
+            dt
+        );
 
+        /* TODO: Uncomment once using EKF
         float gyro[3] = {
             scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD,
             scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD,
@@ -150,16 +166,19 @@ void AttitudeManager::amUpdate() {
         if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
             ekf.correctionAccelerometer(accel);
         }
-
         GyroBias_t gyroBias = ekf.getGyroBias();
+        */
+
         droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
         droneState.pitchRate = (scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
         droneState.yawRate = (scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD); // TODO: Use gyroBias.z once magnetometer is in use.
 
+        /* TODO: Uncomment once using EKF
         break; // for now only use one imu message per am loop
+        */
     }
 
-    Attitude_t attitude = ekf.getAttitudeRadians();
+    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
