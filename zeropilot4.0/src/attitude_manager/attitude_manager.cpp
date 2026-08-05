@@ -54,7 +54,13 @@ AttitudeManager::AttitudeManager(
     lastTimestamp(0),
     haveLastImuTimestamp(false),
     baroHomeAltitude(0.0f),
+    rangefinderHomeAltitude(0.0f),
+    gpsHomeAltitude(0.0f),
     baroHomeInitialized(false),
+    rangefinderHomeInitialized(false),
+    gpsHomeInitialized(false),
+    baroHomeCalibStartMs(0.0f),
+    gpsHomeCalibStartMs(0.0f),
     profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
@@ -309,6 +315,8 @@ void AttitudeManager::amUpdate() {
                 armedFlag = true;
                 activeCLAW->activateFlightMode();
             }
+        } else {
+            armedFlag = false;
         }
     }
 

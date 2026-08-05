@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "mavlink.h"
 #include "systemutils_iface.hpp"
 #include "direct_mapping.hpp"
 #include "fbwa_mapping.hpp"
@@ -113,7 +114,7 @@ private:
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     void sendServoOutputRawToTelemetryManager();
-    void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq);
+    void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 
     float altitude;
 
@@ -125,14 +126,16 @@ private:
     float rangefinderHomeAltitude;
     float gpsHomeAltitude;
     bool baroHomeInitialized;
-    bool gpsHomeInitialized;
     bool rangefinderHomeInitialized;
+    bool gpsHomeInitialized;
 
     static constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
     static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
     static constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
     static constexpr float BARO_HOME_SETTLE_TIME_MS = 3 * BARO_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
     float baroHomeCalibStartMs;
+
+    float gpsHomeCalibStartMs;
 
     uint8_t profilerId;
 
