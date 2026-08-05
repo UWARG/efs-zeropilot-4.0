@@ -19,6 +19,7 @@ using ::testing::AtLeast;
 using ::testing::Invoke;
 using ::testing::NiceMock;
 using ::testing::AnyNumber;
+using ::testing::Ge;
 using ::testing::Gt;
 
 class AttitudeManagerQuadTest : public ::testing::Test {
@@ -193,10 +194,11 @@ TEST_F(AttitudeManagerQuadTest, MotorClampingUpper) {
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
 
-    EXPECT_CALL(motor1, set(100));
-    EXPECT_CALL(motor2, set(100));
-    EXPECT_CALL(motor3, set(100));
-    EXPECT_CALL(motor4, set(100));
+    // We use Ge(90) here because the motor output is clamped to 95% nominally due to ESC headroom
+    EXPECT_CALL(motor1, set(Ge(90)));
+    EXPECT_CALL(motor2, set(Ge(90)));
+    EXPECT_CALL(motor3, set(Ge(90)));
+    EXPECT_CALL(motor4, set(Ge(90)));
 
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 

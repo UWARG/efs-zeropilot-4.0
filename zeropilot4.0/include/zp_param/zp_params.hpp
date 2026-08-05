@@ -127,6 +127,9 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     ATC_ANG_PTCH_TAU,
     ATC_ANG_PTCH_IMAX,
     ATC_ANGLE_MAX,
+    MOT_SPIN_MIN,
+    MOT_SPIN_MAX,
+    MOT_SPIN_ARM,
     #endif
     FLTMODE1,
     FLTMODE2,
