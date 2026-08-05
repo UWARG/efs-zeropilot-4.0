@@ -129,14 +129,19 @@ private:
     bool rangefinderHomeInitialized;
     bool gpsHomeInitialized;
 
+    bool baroHomeSettled;
+    bool gpsHomeSettled;
+
     static constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
     static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
     static constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
     static constexpr float BARO_HOME_SETTLE_TIME_MS = 3 * BARO_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
-    float baroHomeCalibStartMs;
-
-    float gpsHomeCalibStartMs;
-
+    uint32_t baroHomeCalibStartMs;
+    static constexpr float GPS_HOME_TIME_CONSTANT_S = 15.0f;
+    static constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
+    static constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
+    static constexpr float GPS_HOME_SETTLE_TIME_MS = 3 * GPS_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
+    uint32_t gpsHomeCalibStartMs;
     uint8_t profilerId;
 
     // Motor mixer output for each motor

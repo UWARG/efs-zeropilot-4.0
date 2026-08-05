@@ -59,8 +59,10 @@ AttitudeManager::AttitudeManager(
     baroHomeInitialized(false),
     rangefinderHomeInitialized(false),
     gpsHomeInitialized(false),
-    baroHomeCalibStartMs(0.0f),
-    gpsHomeCalibStartMs(0.0f),
+    baroHomeSettled(false),
+    gpsHomeSettled(false),
+    baroHomeCalibStartMs(0),
+    gpsHomeCalibStartMs(0),
     profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
@@ -202,10 +204,7 @@ void AttitudeManager::amUpdate() {
                 baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
             }
         }
-        bool baroHomeSettled = baroHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS;
-        if (!baroHomeSettled) {
-            
-        }
+        baroHomeSettled = baroHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS;
         // Update altholdKF with barometer data 
         if (baroHomeInitialized) {
             altholdKF.updateBarometer(baroData.altitude - baroHomeAltitude);
@@ -225,15 +224,14 @@ void AttitudeManager::amUpdate() {
             if (gpsData.numSatellites >= 5) {
                 if (!gpsHomeInitialized) {
                     gpsHomeAltitude = gpsData.altitude;
+                    gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
                     gpsHomeInitialized = true;
                 } else {
-                    constexpr float GPS_HOME_TIME_CONSTANT_S = 15.0f;
-                    constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
-                    constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
                     gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
                 }
             }
         }
+        gpsHomeSettled = gpsHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS;
         if (gpsHomeInitialized) {
             altholdKF.updateGPSAlt(gpsData.altitude - gpsHomeAltitude);
         }
@@ -304,12 +302,11 @@ void AttitudeManager::amUpdate() {
     // Update armedFlag and activateFlightMode() on rising edge
     if (controlMsg.arm != armedFlag) {
         setArmFlag = true;
-        // armedFlag = controlMsg.arm;
         if (controlMsg.arm) {
             // Wanting to arm, check if arming requirements are met
-            if (!baroHomeInitialized) {
+            if (!baroHomeSettled) {
                 sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, barometer home not initialized");
-            } else if (!gpsHomeInitialized) {
+            } else if (!gpsHomeSettled) {
                 sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, GPS home not initialized");
             } else {
                 armedFlag = true;
