@@ -169,9 +169,9 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
-        scaledData[i].xgyro = (float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR;
-        scaledData[i].ygyro = (float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR;
-        scaledData[i].zgyro = (float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR;
+        scaledData[i].xgyro = (float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].ygyro = (float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].zgyro = (float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
         scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
         scaledData[i].imuId = rawDataBatch.data[i].imuId;
     }
