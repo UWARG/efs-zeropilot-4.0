@@ -217,7 +217,9 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft,
+            self->sysUtils, self->mathUtils, self->gps, self->imu,
+            nullptr, // No magnetometer in SITL; the plant does not model a magnetic field
+            self->fft,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
