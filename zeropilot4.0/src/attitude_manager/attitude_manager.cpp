@@ -184,18 +184,23 @@ void AttitudeManager::amUpdate() {
     // Read barometer data
     // BaroData_t baroData;
     if (barometerDriver->readData(baroData)) {
+        // Update barometer home altitude if not armed, freezes the home when armed
         if (!armedFlag) {
             if (!baroHomeInitialized) {
-                baroHomeAltitude = baroData.altitude; // seed directly, don't LPF in from 0
+                baroHomeAltitude = baroData.altitude; // Seed first sample, need an initial sample for EMA
+                baroHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
                 baroHomeInitialized = true;
+
             } else {
                 // EMA so an actual baro drift gets accounted for when the drone is powered on with a long not armed period
-                constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; 
-                constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
-                constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
                 baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
             }
         }
+        bool baroHomeSettled = baroHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS;
+        if (!baroHomeSettled) {
+            
+        }
+        // Update altholdKF with barometer data 
         if (baroHomeInitialized) {
             altholdKF.updateBarometer(baroData.altitude - baroHomeAltitude);
         }
@@ -208,10 +213,24 @@ void AttitudeManager::amUpdate() {
 
     // Get GPS data
     gpsData = gpsDriver->readData();
-    if (gpsData.isNew) {
-        lastValidGps = gpsData;
-        
-        altholdKF.updateGPSAlt(gpsData.altitude);
+    if (gpsData.isNew && gpsData.altitude != -1) {
+        if (!armedFlag) {
+            // Update GPS home altitude if not armed, freezes the home when armed
+            if (gpsData.numSatellites >= 5) {
+                if (!gpsHomeInitialized) {
+                    gpsHomeAltitude = gpsData.altitude;
+                    gpsHomeInitialized = true;
+                } else {
+                    constexpr float GPS_HOME_TIME_CONSTANT_S = 15.0f;
+                    constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
+                    constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
+                    gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
+                }
+            }
+        }
+        if (gpsHomeInitialized) {
+            altholdKF.updateGPSAlt(gpsData.altitude - gpsHomeAltitude);
+        }
         altholdKF.updateGPSVel(gpsData.vz);
     }
     
@@ -279,9 +298,17 @@ void AttitudeManager::amUpdate() {
     // Update armedFlag and activateFlightMode() on rising edge
     if (controlMsg.arm != armedFlag) {
         setArmFlag = true;
-        armedFlag = controlMsg.arm;
-        if (armedFlag) {
-            activeCLAW->activateFlightMode();
+        // armedFlag = controlMsg.arm;
+        if (controlMsg.arm) {
+            // Wanting to arm, check if arming requirements are met
+            if (!baroHomeInitialized) {
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, barometer home not initialized");
+            } else if (!gpsHomeInitialized) {
+                sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, GPS home not initialized");
+            } else {
+                armedFlag = true;
+                activeCLAW->activateFlightMode();
+            }
         }
     }
 
@@ -504,4 +531,9 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
     );
 
     tmQueue->push(&servoOutputMsg);
+}
+
+void AttitudeManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+    TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
+    tmQueue->push(&statusTextMsg);
 }

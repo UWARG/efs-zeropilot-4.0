@@ -113,13 +113,26 @@ private:
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     void sendServoOutputRawToTelemetryManager();
+    void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq);
 
     float altitude;
+
     BaroData_t baroData;
     RangefinderData_t rangefinderData;
     GpsData_t gpsData;
+
     float baroHomeAltitude;
+    float rangefinderHomeAltitude;
+    float gpsHomeAltitude;
     bool baroHomeInitialized;
+    bool gpsHomeInitialized;
+    bool rangefinderHomeInitialized;
+
+    static constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
+    static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
+    static constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
+    static constexpr float BARO_HOME_SETTLE_TIME_MS = 3 * BARO_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
+    float baroHomeCalibStartMs;
 
     uint8_t profilerId;
 
