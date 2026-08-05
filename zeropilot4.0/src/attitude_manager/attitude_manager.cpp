@@ -183,17 +183,15 @@ void AttitudeManager::amUpdate() {
 
     // Read barometer data
     // BaroData_t baroData;
-    barometerDriver->readData(baroData);
-
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / 25) == 0) { // 25hz update rate
-        // altholdKF.updateBarometer(baroData.altitude);
+    if (barometerDriver->readData(baroData)) {
         if (!armedFlag) {
             if (!baroHomeInitialized) {
                 baroHomeAltitude = baroData.altitude; // seed directly, don't LPF in from 0
                 baroHomeInitialized = true;
             } else {
-                constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f;
-                constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f;
+                // EMA so an actual baro drift gets accounted for when the drone is powered on with a long not armed period
+                constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; 
+                constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
                 constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
                 baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
             }
@@ -212,6 +210,7 @@ void AttitudeManager::amUpdate() {
     gpsData = gpsDriver->readData();
     if (gpsData.isNew) {
         lastValidGps = gpsData;
+        
         altholdKF.updateGPSAlt(gpsData.altitude);
         altholdKF.updateGPSVel(gpsData.vz);
     }
