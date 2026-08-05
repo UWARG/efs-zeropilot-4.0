@@ -23,7 +23,7 @@
 
 #define GYRO_SAMPLE_COUNT 1000
 #define GYRO_CAL_RETRY_LIMIT 10
-#define GYRO_MOVING_THRESHOLD_LSB 33
+#define GYRO_MOVING_THRESHOLD_LSB 33 // Corresponds to ~2 deg/s
 
 #define UB0_REG_GYRO_CONFIG1      0x51
 #define UB0_REG_ACCEL_CONFIG1      0x53
