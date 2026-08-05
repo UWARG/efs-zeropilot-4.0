@@ -139,12 +139,17 @@ void AttitudeManager::amUpdate() {
             continue;
         }
 
+        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
+        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
+        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
+        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
+
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
         
         mahonyFilter.updateIMU(
-            scaledImuData.data[i].xgyro,
-            scaledImuData.data[i].ygyro,
-            scaledImuData.data[i].zgyro,
+            scaledImuData.data[i].xgyro - startupGyroBias.x,
+            scaledImuData.data[i].ygyro - startupGyroBias.y,
+            scaledImuData.data[i].zgyro - startupGyroBias.z,
             scaledImuData.data[i].xacc,
             scaledImuData.data[i].yacc,
             scaledImuData.data[i].zacc,
@@ -168,14 +173,7 @@ void AttitudeManager::amUpdate() {
             ekf.correctionAccelerometer(accel);
         }
         GyroBias_t gyroBias = ekf.getGyroBias();
-        */
-       
-        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
-        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
-        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
-        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
 
-        /* TODO: Uncomment once using EKF
         break; // for now only use one imu message per am loop
         */
     }
