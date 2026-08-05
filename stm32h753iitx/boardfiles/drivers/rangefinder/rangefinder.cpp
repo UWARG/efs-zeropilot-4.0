@@ -33,7 +33,7 @@ int Rangefinder::init() {
     if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(FIRMWARE_VERSION_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
-    for (int i = 0; i < sizeof(FIRMWARE_VERSION_RESPONSE); i++) {
+    for (uint8_t i = 0; i < sizeof(FIRMWARE_VERSION_RESPONSE); i++) {
         if (receiveBuffer[i] != FIRMWARE_VERSION_RESPONSE[i]) {
             return -1; // Firmware version response does not match expected response
         }
@@ -47,7 +47,7 @@ int Rangefinder::init() {
     if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
-    for (int i = 0; i < sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE); i++) {
+    for (uint8_t i = 0; i < sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE); i++) {
         if (receiveBuffer[i] != OUTPUT_FORMAT_CM_SUCCESS_RESPONSE[i]) {
             return -1;
         }
@@ -63,7 +63,7 @@ int Rangefinder::init() {
     if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(SAVE_CONFIG_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
-    for (int i = 0; i < sizeof(SAVE_CONFIG_SUCCESS_RESPONSE); i++) {
+    for (uint8_t i = 0; i < sizeof(SAVE_CONFIG_SUCCESS_RESPONSE); i++) {
         if (receiveBuffer[i] != SAVE_CONFIG_SUCCESS_RESPONSE[i]) {
             return -1;
         }
