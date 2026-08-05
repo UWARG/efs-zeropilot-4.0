@@ -17,6 +17,7 @@
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
 #include "sitl_drivers/sitl_fft.hpp"
+#include "sitl_drivers/sitl_rangefinder.hpp"
 #include <functional>
 #include <string>
 #include <queue>
@@ -65,6 +66,7 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
+    SITL_Rangefinder *rangefinder;
     SITL_Barometer* barometer;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
@@ -95,6 +97,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
+    delete self->rangefinder;
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -130,6 +133,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
+        self->rangefinder = new SITL_Rangefinder();
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
@@ -221,7 +225,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->barometer,
+            self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->rangefinder, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
@@ -239,19 +243,22 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
     float fuel_lbs, rpm;
+    float rangefinder_alt;
     double baro_pressure_kpa, baro_temp_c;
 
-    if (!PyArg_ParseTuple(args, "ddddddddddffdd",
+    if (!PyArg_ParseTuple(args, "ddddddddddfffdd",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
         &fuel_lbs, &rpm,
+        &rangefinder_alt,
         &baro_pressure_kpa, &baro_temp_c))
         return NULL;
 
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
     self->pm->update_from_plant(fuel_lbs, rpm);
+    self->rangefinder->update_from_plant(rangefinder_alt);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);
     
     Py_RETURN_NONE;

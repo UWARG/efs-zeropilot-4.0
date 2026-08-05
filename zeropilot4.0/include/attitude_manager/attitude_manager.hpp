@@ -16,6 +16,7 @@
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
+#include "rangefinder_iface.hpp"
 #include "barometer_iface.hpp"
 #include "MahonyAHRS.hpp"
 
@@ -42,6 +43,7 @@ public:
         IGPS *gpsDriver,
         IIMU *imuDriver,
         IFFT *fftDriver,
+        IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
@@ -60,6 +62,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    IRangefinder *rangefinderDriver;
     IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
