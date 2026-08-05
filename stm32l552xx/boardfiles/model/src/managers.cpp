@@ -22,6 +22,7 @@ void initManagers()
         imuHandle,
         magHandle,
         fftHandle,
+        barometerHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 

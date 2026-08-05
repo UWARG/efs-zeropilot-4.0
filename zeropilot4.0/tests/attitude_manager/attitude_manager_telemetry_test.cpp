@@ -10,6 +10,7 @@
 #include "mock_motor.hpp"
 #include "mock_fft.hpp"
 #include "mock_mathutils.hpp"
+#include "mock_barometer.hpp"
 
 using ::testing::_;
 using ::testing::Return;
@@ -24,6 +25,7 @@ protected:
     NiceMock<MockGPS> mockGPS;
     NiceMock<MockIMU> mockIMU;
     NiceMock<MockMagnetometer> mockMag;
+    NiceMock<MockBarometer> mockBarometer;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
@@ -51,6 +53,7 @@ protected:
         ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImuBatch_t{})); // Empty batch, count 0
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
         ON_CALL(mockMag, readData()).WillByDefault(Return(MagData_t{})); // isNew false
+        ON_CALL(mockBarometer, readData(_)).WillByDefault(Return(true));
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
         ON_CALL(mockFFT, init(_)).WillByDefault(Return(true));
@@ -78,7 +81,7 @@ TEST_F(AttitudeManagerTelemetryTest, RawIMUTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -108,7 +111,7 @@ TEST_F(AttitudeManagerTelemetryTest, AttitudeTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -142,7 +145,7 @@ TEST_F(AttitudeManagerTelemetryTest, RawGPSTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -161,11 +164,40 @@ TEST_F(AttitudeManagerTelemetryTest, ServoOutputRawTelemetrySent) {
             return 0;
         }));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
     }
 
     EXPECT_EQ(servoOutputCount, AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ);
+}
+
+TEST_F(AttitudeManagerTelemetryTest, ScaledPressureTelemetrySent) {
+    BaroData_t baroData;
+    baroData.pressureKPa = 101.325f;
+    baroData.temperatureC = 25.0f;
+
+    EXPECT_CALL(mockBarometer, readData(_))
+        .WillRepeatedly(Invoke([&baroData](BaroData_t& outData) {
+            outData = baroData;
+            return true;
+        }));
+
+    int pressureCount = 0;
+    EXPECT_CALL(mockTMQueue, push(_))
+        .WillRepeatedly(Invoke([&pressureCount](TMMessage_t* msg) {
+            if (msg->dataType == TMMessage_t::SCALED_PRESSURE_DATA) {
+                pressureCount++;
+            }
+            return 0;
+        }));
+
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+
+    for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
+        am.amUpdate();
+    }
+
+    EXPECT_EQ(pressureCount, AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ);
 }

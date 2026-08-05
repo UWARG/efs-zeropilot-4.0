@@ -1,17 +1,32 @@
 #include "fbwa_mapping.hpp"
 #include "unit_conversions.hpp"
+#include <algorithm>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
 
 FBWAMapping::FBWAMapping(float control_iter_period_s) noexcept :
+    controlIterPeriod(control_iter_period_s),
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
         OUTPUT_MIN, OUTPUT_MAX, 100,
         control_iter_period_s),
     pitchPID(0.0f, 0.0f, 0.0f, 0.0f, 
         OUTPUT_MIN, OUTPUT_MAX, 100,
         control_iter_period_s),
+    rollFF(0.0f),
+    pitchFF(0.0f),
+    // alpha = (2pi * fc * dt) / (1 + 2pi * fc * dt)
+    ffLpfAlpha((2 * M_PI * FF_LPF_CUTOFF_FREQ * control_iter_period_s) /
+                (1 + (2 * M_PI * FF_LPF_CUTOFF_FREQ * control_iter_period_s))),
     yawRudderMixingConst(0.0f),
     rollLimitRad(0.0f),
     pitchLimitMaxRad(0.0f),
-    pitchLimitMinRad(0.0f)
+    pitchLimitMinRad(0.0f),
+    prevRollSetpoint(0.0f),
+    prevPitchSetpoint(0.0f),
+    prevFilteredRollRate(0.0f),
+    prevFilteredPitchRate(0.0f)
 {
     rollPID.pidInitState();
     pitchPID.pidInitState();
@@ -27,10 +42,24 @@ void FBWAMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, fl
     pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
+// Setter for *roll* FF const
+void FBWAMapping::setRollFFConstant(float newRollFFConst) noexcept {
+    rollFF = newRollFFConst;
+}
+
+// Setter for *pitch* FF const
+void FBWAMapping::setPitchFFConstant(float newPitchFFConst) noexcept {
+    pitchFF = newPitchFFConst;
+}
+
 // Resetter for both roll and pitch PIDs (needed for unit testing)
 void FBWAMapping::resetControlLoopState() noexcept {
     rollPID.pidInitState();
     pitchPID.pidInitState();
+    prevRollSetpoint = 0.0f;
+    prevPitchSetpoint = 0.0f;
+    prevFilteredRollRate = 0.0f;
+    prevFilteredPitchRate = 0.0f;
 }
 
 // Setter for *yaw* rudder mixing const
@@ -75,12 +104,39 @@ RCMotorControlMessage_t FBWAMapping::runControl(RCMotorControlMessage_t controlI
     float rollMeasured = droneState.roll;
     float pitchMeasured = droneState.pitch;
 
-    // Currently, roll & pitch outputs receive absolute roll & pitch angles, not relative to current position.
-    float rollOutput = rollPID.pidOutput(rollSetpoint, rollMeasured);
-    float pitchOutput = pitchPID.pidOutput(pitchSetpoint, pitchMeasured);
+    // Calculate raw roll/pitch SP rates
+    float rawRollSetpointRate = (rollSetpoint - prevRollSetpoint) / controlIterPeriod;
+    float rawPitchSetpointRate = (pitchSetpoint - prevPitchSetpoint) / controlIterPeriod;
 
-    controlInputs.roll = (rollOutput * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired roll angle, adding 50 to shift to [0,100] range
-    controlInputs.pitch = (pitchOutput * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired pitch angle, adding 50 to shift to [0,100] range
+    // Apply First-Order Low-Pass Filter
+    float filteredRollRate = (ffLpfAlpha * rawRollSetpointRate) + ((1.0f - ffLpfAlpha) * prevFilteredRollRate);
+    float filteredPitchRate = (ffLpfAlpha * rawPitchSetpointRate) + ((1.0f - ffLpfAlpha) * prevFilteredPitchRate);
+
+    // Save current SP values and filtered rates into prev trackers
+    prevRollSetpoint = rollSetpoint;
+    prevPitchSetpoint = pitchSetpoint;
+    prevFilteredRollRate = filteredRollRate;
+    prevFilteredPitchRate = filteredPitchRate;
+
+    // Calculate PID outputs for roll/pitch
+    float rollPIDOut = rollPID.pidOutput(rollSetpoint, rollMeasured);
+    float pitchPIDOut = pitchPID.pidOutput(pitchSetpoint, pitchMeasured);
+
+    // Add feedforward term for responsiveness using the filtered rates
+    float rollTotalOut = rollPIDOut + (rollFF * filteredRollRate);
+    float pitchTotalOut = pitchPIDOut + (pitchFF * filteredPitchRate);
+
+    // Clamp total roll output to [-1.0, 1.0] before shifting/scaling
+    if (rollTotalOut > OUTPUT_MAX) rollTotalOut = OUTPUT_MAX;
+    else if (rollTotalOut < OUTPUT_MIN) rollTotalOut = OUTPUT_MIN;
+    
+    // Clamp total pitch output to [-1.0, 1.0] before shifting/scaling
+    if (pitchTotalOut > OUTPUT_MAX) pitchTotalOut = OUTPUT_MAX;
+    else if (pitchTotalOut < OUTPUT_MIN) pitchTotalOut = OUTPUT_MIN;
+
+    // Set output signals
+    controlInputs.roll = (rollTotalOut * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired roll angle, adding 50 to shift to [0,100] range
+    controlInputs.pitch = (pitchTotalOut * FBWA_PID_OUTPUT_SCALE) + FBWA_PID_OUTPUT_SHIFT; // setting desired pitch angle, adding 50 to shift to [0,100] range
 
     // Yaw control via rudder mixing
     float aileronSignalCentered = controlInputs.roll - (MAX_RC_INPUT_VAL / 2.0f); // Centering aileron signal around 0 for mixing calculation

@@ -162,6 +162,19 @@ TEST_F(TelemetryManagerTest, AttitudeDataProcessing) {
     tm.tmUpdate();
 }
 
+TEST_F(TelemetryManagerTest, ScaledPressureDataProcessing) {
+    TMMessage_t pressMsg = scaledPressurePack(1000, 101.325f, 0.0f, 25.0f, 0.0f);
+    
+    EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(1)).WillRepeatedly(Return(0));
+    EXPECT_CALL(mockTMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(pressMsg), Return(0)));
+    EXPECT_CALL(mockPackedMsgBuffer, push(_)).Times(1);
+    EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
+    EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
+    
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    tm.tmUpdate();
+}
+
 TEST_F(TelemetryManagerTest, TransmitWhenBufferNotEmpty) {
     mavlink_message_t testMsg = {};
     testMsg.len = 10;

@@ -17,15 +17,19 @@
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
+#include "barometer_iface.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
+#define AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ 5
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
 #define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
+
+static_assert(AM_CONTROL_LOOP_PERIOD_S != 0.0f, "AM_CONTROL_LOOP_PERIOD_S must be nonzero.");
 
 class AttitudeManager
 {
@@ -39,6 +43,7 @@ public:
         IIMU *imuDriver,
         IMagnetometer *magDriver,
         IFFT *fftDriver,
+        IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
@@ -57,6 +62,7 @@ private:
     bool gpsUnsent = false;
     IIMU *imuDriver;
     IMagnetometer *magDriver;
+    IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
@@ -91,6 +97,13 @@ private:
     int noDataCount;
     bool failsafeTriggered;
 
+    float motSpinMin;
+    float motSpinMax;
+    float motSpinArm;
+
+    static constexpr float MOT_GND_IDLE_THR = 0.02f;
+    bool groundIdlePrev;
+
     static constexpr uint16_t MAX_TIMESTAMP = 65535;
     static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
     uint32_t lastTimestamp;
@@ -98,11 +111,12 @@ private:
 
     bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-    void outputToMotors(RCMotorControlMessage_t outputControlMsg);
+    void outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
 
     void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+    void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     void sendServoOutputRawToTelemetryManager();
 
     uint8_t profilerId;

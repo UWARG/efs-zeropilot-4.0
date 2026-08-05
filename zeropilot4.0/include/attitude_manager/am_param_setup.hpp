@@ -22,11 +22,13 @@ class AMParamSetup : public IParamSetup {
     static bool updatePIDRollKd(AttitudeManager* ctx, float val);
     static bool updatePIDRollTau(AttitudeManager* ctx, float val);
     static bool updatePIDRollIMax(AttitudeManager* ctx, float val);
+    static bool updatePIDRollFF(AttitudeManager* ctx, float val);
     static bool updatePIDPitchKp(AttitudeManager* ctx, float val);
     static bool updatePIDPitchKi(AttitudeManager* ctx, float val);
     static bool updatePIDPitchKd(AttitudeManager* ctx, float val);
     static bool updatePIDPitchTau(AttitudeManager* ctx, float val);
     static bool updatePIDPitchIMax(AttitudeManager* ctx, float val);
+    static bool updatePIDPitchFF(AttitudeManager* ctx, float val);
     static bool updateKffRddrmix(AttitudeManager* ctx, float val);
     static bool updateRollLimitDeg(AttitudeManager* ctx, float val);
     static bool updatePitchLimMaxDeg(AttitudeManager* ctx, float val);
@@ -62,6 +64,9 @@ class AMParamSetup : public IParamSetup {
     static bool updateAngPIDPitchTau(AttitudeManager* ctx, float val);
     static bool updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
     static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
+    static bool updateMotSpinMin(AttitudeManager* ctx, float val);
+    static bool updateMotSpinMax(AttitudeManager* ctx, float val);
+    static bool updateMotSpinArm(AttitudeManager* ctx, float val);
     #endif
 
     // FFT Harmonic Notch Filter param callbacks
