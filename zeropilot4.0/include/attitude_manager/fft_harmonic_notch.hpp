@@ -24,8 +24,6 @@ struct FFTHarmonicNotchConfig {
 
 class FFTHarmonicNotch {
     public:
-        float firstHarmonicFiltered = 0;
-
         FFTHarmonicNotch(IMathUtils *mathUtilsDriver, IFFT *fftDriver);
         
         // Initialize filters, compute Hanning window, setup FFT handler

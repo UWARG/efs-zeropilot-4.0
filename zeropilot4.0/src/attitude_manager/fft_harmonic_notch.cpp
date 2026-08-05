@@ -132,7 +132,6 @@ bool FFTHarmonicNotch::pushSample(float gx, float gy, float gz) {
         // 5. Convert to Hz and update coefficients
         float peakFreq = (float)peakBin * (config.sampleFreqHz / config.fftWindowSize);
         updateFilters(peakFreq);
-        firstHarmonicFiltered = peakFreq;
 
         // 6. Reset buffer index for next cycle
         fftIndex = 0; // Reset buffer
