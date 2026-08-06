@@ -19,6 +19,7 @@
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fft.hpp"
+#include "mlx90393.hpp"
 #include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
@@ -36,6 +37,7 @@ extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
+extern Magnetometer *magHandle;
 extern Barometer *barometerHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;

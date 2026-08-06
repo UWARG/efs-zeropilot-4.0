@@ -13,6 +13,7 @@
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
+#include "sitl_drivers/sitl_magnetometer.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
@@ -23,6 +24,7 @@
 #include <mutex>
 
 static constexpr int SITL_NUM_MOTORS = 6;
+static constexpr double DEG_TO_RAD = 0.017453292519943295;
 
 std::queue<std::string> telemTxMessages;
 std::queue<std::string> telemRxMessages;
@@ -65,6 +67,7 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
+    SITL_Magnetometer* mag;
     SITL_Barometer* barometer;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
@@ -95,6 +98,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
+    delete self->mag;
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -130,6 +134,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
+        self->mag = new SITL_Magnetometer();
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
@@ -221,7 +226,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->barometer,
+            self->sysUtils, self->mathUtils, self->gps, self->imu, self->mag, self->fft, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
@@ -251,6 +256,8 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
 
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
+    // course_deg is the plant's heading (attitude/psi-deg), so it doubles as yaw here
+    self->mag->update_from_plant(roll_rad, pitch_rad, course_deg * DEG_TO_RAD);
     self->pm->update_from_plant(fuel_lbs, rpm);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);
     

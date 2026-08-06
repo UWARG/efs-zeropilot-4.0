@@ -39,6 +39,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Magnetometer *magHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -130,6 +131,7 @@ void initDrivers()
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
+    magHandle = new Magnetometer(&hi2c2);
     barometerHandle = new Barometer(&hi2c2);
 
     // Queues
@@ -153,6 +155,7 @@ void initDrivers()
     imuHandle->init();
     telemLinkHandle->init();
     pmHandle->init();
+    magHandle->init();
     barometerHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()

@@ -20,6 +20,7 @@
 #include "dshot.hpp"
 #include "fused_imu.hpp"
 #include "fft.hpp"
+#include "mlx90393.hpp"
 #include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
@@ -37,6 +38,7 @@ extern GPS *gpsHandle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
+extern Magnetometer *magHandle;
 extern Barometer *barometerHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;

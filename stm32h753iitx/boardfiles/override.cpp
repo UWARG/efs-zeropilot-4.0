@@ -122,12 +122,31 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   }
 }
 
+/*
+ * The MLX90393 is command driven rather than register addressed, so its
+ * transfers are plain master transmit/receive and land in these callbacks
+ * instead of the Mem ones the power module uses.
+ */
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == magHandle->getI2C()) {
+      magHandle->masterTxCpltCallback();
+    }
+}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+    if (hi2c == magHandle->getI2C()) {
+      magHandle->masterRxCpltCallback();
+    }
+}
+
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == pmHandle->getI2C()) {
-    pmHandle->I2C_ErrorCallback();
-  } else if (hi2c == barometerHandle->getI2C()) {
-    barometerHandle->errorCallback();
-  }
+    if (hi2c == pmHandle->getI2C()) {
+      pmHandle->I2C_ErrorCallback();
+    } else if (hi2c == magHandle->getI2C()) {
+      magHandle->errorCallback();
+    } else if (hi2c == barometerHandle->getI2C()) {
+      barometerHandle->errorCallback();
+    }
 }
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
