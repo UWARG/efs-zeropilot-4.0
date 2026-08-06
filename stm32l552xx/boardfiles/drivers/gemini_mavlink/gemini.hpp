@@ -25,7 +25,6 @@ class GeminiMavlink: public IRCReceiver, public ITelemLink {
 
         // RC
         RCControl getRCData() override;
-        void parse();
         void startDMA();
 
         void forcePushMAVLinkRC(RCControl rcData) override;
