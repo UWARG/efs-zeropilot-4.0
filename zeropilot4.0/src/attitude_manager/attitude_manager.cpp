@@ -24,7 +24,7 @@ AttitudeManager::AttitudeManager(
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
-    ekf(mathUtilsDriver),
+    // ekf(mathUtilsDriver),
     altholdKF(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
@@ -51,6 +51,7 @@ AttitudeManager::AttitudeManager(
     amSchedulingCounter(0),
     noDataCount(0),
     failsafeTriggered(false),
+    groundIdlePrev(false),
     lastTimestamp(0),
     haveLastImuTimestamp(false),
     baroHomeAltitude(0.0f),
@@ -77,6 +78,7 @@ AttitudeManager::AttitudeManager(
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
 
+        /* TODO: Uncomment once using EKF
         // Init the EKF
         AHRSEKF::Config ekfCfg = {
             .gyroCov = 4.78e-6f,
@@ -97,6 +99,7 @@ AttitudeManager::AttitudeManager(
         float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
+        */
 
         AltholdConfig altholdCfg = {
             .processNoiseAccel = 1.0f,
@@ -145,20 +148,21 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
-        /* TODO: Uncomment once timing issues are resolved.
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
             harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         }
         // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
         harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-        */
        
+        /* TODO: Uncomment once using EKF
         if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
+        */
 
-        /**
-         * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
-         * and the delta for double IMU will be necessarily less than uint16_t max value.
-         */
+        /*
+        We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
+        and the delta for double IMU will be necessarily less than uint16_t max value.
+        */
+        
         uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp;
 
         lastTimestamp = scaledImuData.data[i].timestamp;
@@ -169,12 +173,30 @@ void AttitudeManager::amUpdate() {
             continue;
         }
 
-        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
+        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
+        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
+        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
 
+        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+        
+        mahonyFilter.updateIMU(
+            scaledImuData.data[i].xgyro - startupGyroBias.x,
+            scaledImuData.data[i].ygyro - startupGyroBias.y,
+            scaledImuData.data[i].zgyro - startupGyroBias.z,
+            scaledImuData.data[i].xacc,
+            scaledImuData.data[i].yacc,
+            scaledImuData.data[i].zacc,
+            dt
+        );
+        
+        altholdKF.predict(accel[2], dt);
+
+        /* TODO: Uncomment once using EKF
         float gyro[3] = {
-            scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD,
-            scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD,
-            scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro
         };
         float accel[3] = {
             scaledImuData.data[i].xacc, 
@@ -186,17 +208,14 @@ void AttitudeManager::amUpdate() {
         if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
             ekf.correctionAccelerometer(accel);
         }
-        altholdKF.predict(accel[2], dt);
 
         GyroBias_t gyroBias = ekf.getGyroBias();
-        droneState.rollRate = (scaledImuData.data[i].xgyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.x;
-        droneState.pitchRate = (scaledImuData.data[i].ygyro * ZP_UNITS::DEG_TO_RAD) - gyroBias.y;
-        droneState.yawRate = (scaledImuData.data[i].zgyro * ZP_UNITS::DEG_TO_RAD); // TODO: Use gyroBias.z once magnetometer is in use.
 
         break; // for now only use one imu message per am loop
+        */
     }
 
-    Attitude_t attitude = ekf.getAttitudeRadians();
+    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
@@ -325,7 +344,7 @@ void AttitudeManager::amUpdate() {
                 failsafeTriggered = true;
             }
             
-            outputToMotors(motorOutputs);
+            outputToMotors(motorOutputs, false);
 
             systemUtilsDriver->profilerEnd(profilerId);
             return;
@@ -387,8 +406,20 @@ void AttitudeManager::amUpdate() {
         currentFlightMode = controlMsg.flightMode;
     }
 
-    // Run the active control law
-    RCMotorControlMessage_t motorOutputs = activeCLAW->runControl(controlMsg, droneState);
+    bool groundIdle = false;
+    #ifdef QUADCOPTER
+    groundIdle = armedFlag && !failsafeTriggered && ((controlMsg.throttle / 100.0f) <= MOT_GND_IDLE_THR);
+    if (groundIdlePrev && !groundIdle) {
+        activeCLAW->activateFlightMode(); // Clean PID state on ground idle exit
+    }
+    groundIdlePrev = groundIdle;
+    #endif
+    #ifdef PLANE
+    groundIdle = false; // Hardcode to false for plane, they dont have a ground idle mode
+    #endif
+
+    // Run the active control law (skip while armed but grounded idle)
+    RCMotorControlMessage_t motorOutputs = groundIdle ? controlMsg : activeCLAW->runControl(controlMsg, droneState);
 
     // Disarm logic
     if (!armedFlag) {
@@ -403,7 +434,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Output to motors
-    outputToMotors(motorOutputs);
+    outputToMotors(motorOutputs, groundIdle);
 
     setArmFlag = false;
     
@@ -419,14 +450,18 @@ bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     return true;
 }
 
-void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg) {
+void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControlMsg, bool groundIdle) {
 
     #ifdef PLANE
         MotorMixing::fixedWingMoterMixer(outputControlMsg, mainMotorGroup, motorPercent);
     #endif
 
     #ifdef QUADCOPTER
-        MotorMixing::quadMotorMixer(outputControlMsg, mainMotorGroup, motorPercent);
+        if (groundIdle) {
+            MotorMixing::quadGroundIdle(mainMotorGroup, motorPercent, motSpinArm);
+        } else {
+            MotorMixing::quadMotorMixer(outputControlMsg, mainMotorGroup, motorPercent);
+        }
     #endif
 
     for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
@@ -439,12 +474,6 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
 
         float percent = motorPercent[i];
 
-        #ifdef QUADCOPTER
-        if (!armedFlag || failsafeTriggered) {
-            percent = 0;
-        }
-        #endif
-
         uint32_t cmd = 0;
 
         #ifdef PLANE
@@ -456,8 +485,18 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
             // Scale [50, 100] to [trim, max]
             cmd = motor->trim + ((percent - 50.0f) / 50.0f) * (motor->max - motor->trim);
         }
+        #endif
+        
+        #ifdef QUADCOPTER
+        if (!armedFlag || failsafeTriggered) {
+            percent = 0;
+        } else if (!groundIdle) {
+            percent = motSpinMin + percent * (motSpinMax - motSpinMin);
+        }
+        cmd = percent * 100;
+        #endif
 
-        // Clamp cmd to [0, 100]
+        // Clamp cmd to [0, 100], safety check
         if (cmd > 100) {
             cmd = 100;
         } else if (cmd < 0) {
@@ -468,13 +507,6 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         if (motor->isInverted) {
             cmd = 100 - cmd;
         }
-        #endif
-
-        #ifdef QUADCOPTER
-        cmd = percent * 100;
-        if (cmd > 100.0f) cmd = 100.0f; 
-        else if (cmd < 0.0f) cmd = 0.0f; 
-        #endif
 
         // Store for telemetry output
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry

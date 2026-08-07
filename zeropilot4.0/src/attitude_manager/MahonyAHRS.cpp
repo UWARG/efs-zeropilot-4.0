@@ -28,8 +28,8 @@
 // Definitions
 
 #define DEFAULT_SAMPLE_FREQ	512.0f	// sample frequency in Hz
-#define TWO_KP_DEF	(30.0f)	// proportional gain
-#define TWO_KI_DEF	(2.0f)	// integral gain
+#define TWO_KP_DEF	(1.0f)	// proportional gain
+#define TWO_KI_DEF	(0.05f)	// integral gain
 
 
 //============================================================================================
@@ -61,11 +61,6 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 	float halfvx, halfvy, halfvz;
 	float halfex, halfey, halfez;
 	float qa, qb, qc;
-
-	// Convert gyroscope degrees/sec to radians/sec
-	gx *= 0.0174533f;
-	gy *= 0.0174533f;
-	gz *= 0.0174533f;
 
 	// Compute feedback only if accelerometer measurement valid
 	// (avoids NaN in accelerometer normalisation)

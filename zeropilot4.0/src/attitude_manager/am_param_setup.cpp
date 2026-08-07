@@ -77,6 +77,9 @@ void AMParamSetup::loadAllParams() {
         ZP_PARAM::get(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX)
     );
     am->stabilizeCLAW.setRollPitchLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::ATC_ANGLE_MAX));
+    am->motSpinMin = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_MIN);
+    am->motSpinMax = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_MAX);
+    am->motSpinArm = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_ARM);
     #endif
 
     // FFT Harmonic Notch Filter params 
@@ -122,62 +125,65 @@ void AMParamSetup::loadAllParams() {
 void AMParamSetup::bindAllParamCallbacks() {
     // FBWA
     #ifdef PLANE
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P,             am, updatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I,             am, updatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D,             am, updatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU,           am, updatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX,          am, updatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_FF,            am, updatePIDRollFF);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P,            am, updatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I,            am, updatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D,            am, updatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU,          am, updatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX,         am, updatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_FF,           am, updatePIDPitchFF);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX,           am, updateKffRddrmix);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG,        am, updateRollLimitDeg);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG,      am, updatePitchLimMaxDeg);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG,      am, updatePitchLimMinDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_P,           am, updatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_I,           am, updatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_D,           am, updatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_TAU,         am, updatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_IMAX,        am, updatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::RLL2SRV_FF,          am, updatePIDRollFF);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_P,          am, updatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_I,          am, updatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_D,          am, updatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_TAU,        am, updatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_IMAX,       am, updatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH2SRV_FF,         am, updatePIDPitchFF);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::KFF_RDDRMIX,         am, updateKffRddrmix);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ROLL_LIMIT_DEG,      am, updateRollLimitDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MAX_DEG,    am, updatePitchLimMaxDeg);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PTCH_LIM_MIN_DEG,    am, updatePitchLimMinDeg);
     #endif
     #ifdef QUADCOPTER
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_P,         am, updateRatePIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_I,         am, updateRatePIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_D,         am, updateRatePIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_TAU,       am, updateRatePIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_IMAX,      am, updateRatePIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_P,         am, updateRatePIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_I,         am, updateRatePIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_D,         am, updateRatePIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_TAU,       am, updateRatePIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_IMAX,      am, updateRatePIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_P,         am, updateRatePIDYawKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_I,         am, updateRatePIDYawKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_D,         am, updateRatePIDYawKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_TAU,       am, updateRatePIDYawTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_IMAX,      am, updateRatePIDYawIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_RP_RATE,          am, updateRollPitchLimitRate);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_Y_RATE,           am, updateYawLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_P,       am, updateRatePIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_I,       am, updateRatePIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_D,       am, updateRatePIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_TAU,     am, updateRatePIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_RLL_IMAX,    am, updateRatePIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_P,       am, updateRatePIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_I,       am, updateRatePIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_D,       am, updateRatePIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_TAU,     am, updateRatePIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_PIT_IMAX,    am, updateRatePIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_P,       am, updateRatePIDYawKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_I,       am, updateRatePIDYawKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_D,       am, updateRatePIDYawKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_TAU,     am, updateRatePIDYawTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_RAT_YAW_IMAX,    am, updateRatePIDYawIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_RP_RATE,        am, updateRollPitchLimitRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ACRO_Y_RATE,         am, updateYawLimitRate);
 
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_P,         am, updateAngPIDRollKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_I,         am, updateAngPIDRollKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_D,         am, updateAngPIDRollKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_TAU,       am, updateAngPIDRollTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_IMAX,      am, updateAngPIDRollIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_P,        am, updateAngPIDPitchKp);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_I,        am, updateAngPIDPitchKi);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_D,        am, updateAngPIDPitchKd);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_TAU,      am, updateAngPIDPitchTau);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX,     am, updateAngPIDPitchIMax);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANGLE_MAX,         am, updateRollPitchLimitAng);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_P,       am, updateAngPIDRollKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_I,       am, updateAngPIDRollKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_D,       am, updateAngPIDRollKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_TAU,     am, updateAngPIDRollTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_RLL_IMAX,    am, updateAngPIDRollIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_P,      am, updateAngPIDPitchKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_I,      am, updateAngPIDPitchKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_D,      am, updateAngPIDPitchKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_TAU,    am, updateAngPIDPitchTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX,   am, updateAngPIDPitchIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANGLE_MAX,       am, updateRollPitchLimitAng);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_MIN,        am, updateMotSpinMin);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_MAX,        am, updateMotSpinMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_ARM,        am, updateMotSpinArm);
     #endif
 
     // FFT Harmonic Notch Filter params
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_ENABLE,         am, updateHarmonicNotchEnabled);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_WINDOW_LEN,     am, updateHarmonicNotchWindowSize);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_MINHZ,          am, updateHarmonicNotchMinFreqHz);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_BW,       am, updateHarmonicNotchBandwidthHz);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_ATT,      am, updateHarmonicNotchAttenuationDB);
-    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_HMNCS,    am, updateHarmonicNotchHarmonicsMask);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_ENABLE,          am, updateHarmonicNotchEnabled);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_WINDOW_LEN,      am, updateHarmonicNotchWindowSize);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::FFT_MINHZ,           am, updateHarmonicNotchMinFreqHz);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_BW,        am, updateHarmonicNotchBandwidthHz);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_ATT,       am, updateHarmonicNotchAttenuationDB);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::INS_HNTCH_HMNCS,     am, updateHarmonicNotchHarmonicsMask);
 
     // Servo params: each AM_PARAM_SETUP_BIND_SERVO_CB expands to 5 bindCallback calls
     AM_PARAM_SETUP_BIND_SERVO_CB(1)
@@ -429,6 +435,23 @@ bool AMParamSetup::updateAngPIDPitchIMax(AttitudeManager* ctx, float val) {
 bool AMParamSetup::updateRollPitchLimitAng(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 45.0f) return false;
     ctx->stabilizeCLAW.setRollPitchLimitAngle(val);
+    return true;
+}
+static constexpr float MOT_SPIN_RANGE_MIN_SEPARATION = 0.05f; // Guard against motSpinMin == motSpinMax, which would give no RPY authority
+
+bool AMParamSetup::updateMotSpinMin(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f || val > ctx->motSpinMax - MOT_SPIN_RANGE_MIN_SEPARATION) return false;
+    ctx->motSpinMin = val;
+    return true;
+}
+bool AMParamSetup::updateMotSpinMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f || val < ctx->motSpinMin + MOT_SPIN_RANGE_MIN_SEPARATION) return false;
+    ctx->motSpinMax = val;
+    return true;
+}
+bool AMParamSetup::updateMotSpinArm(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 1.0f) return false;
+    ctx->motSpinArm = val;
     return true;
 }
 #endif
