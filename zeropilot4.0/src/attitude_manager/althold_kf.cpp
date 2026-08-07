@@ -3,10 +3,10 @@
 AltholdKF::AltholdKF(IMathUtils* mathUtils) : 
     math(mathUtils) {}
 
-void AltholdKF::init(AltholdConfig config) {
+void AltholdKF::init(AltholdConfig config, float initStates[5]) {
     this->config = config;
     for (int i = 0; i < STATE_SIZE; ++i) {
-        states[i] = 0.0f; // Initialize states to zero
+        states[i] = initStates[i]; // Initialize states to the provided initial values
         P[i * STATE_SIZE + i] = 1.0f; // Initialize covariance matrix to identity matrix
         F[i * STATE_SIZE + i] = 1.0f; // Initialize F to identity matrix for later use
         B[i] = 0.0f; // Initialize B to zero for later use
@@ -43,14 +43,17 @@ void AltholdKF::predict(float u, float dt) {
 }
 
 void AltholdKF::updateRangefinder(float altitude) {
+    rangeUpdateCount++;
     update(altitude, measMatRangefinder, config.measNoiseRangefinder, rangefinderRejectCount, &AltholdKF::rangefinderGatingWrapper);
 }
 
 void AltholdKF::updateBarometer(float altitude) {
+    baroUpdateCount++;
     update(altitude, measMatBaro, config.measNoiseBarometer, barometerRejectCount, nullptr);
 }
 
 void AltholdKF::updateGPSAlt(float altitude) {
+    gpsUpdateCount++;
     update(altitude, measMatGPSAlt, config.measNoiseGPSAlt, gpsAltRejectCount, nullptr);
 }
 
@@ -95,7 +98,7 @@ void AltholdKF::rebuildFBQ(float dt) {
     Q[5] = config.processNoiseAccel * dt * dt * dt / 2.0f;
     Q[6] = config.processNoiseAccel * dt * dt;
     Q[12] = config.processNoiseBiasAccel * dt;
-    Q[18] = config.processNoiseBiasBaro * dt;
+    Q[18] = baroBiasEnabled ? config.processNoiseBiasBaro * dt : 0.0f;
     Q[24] = config.processNoiseTerrainAlt * dt;
 }
 
@@ -172,4 +175,32 @@ void AltholdKF::rangefinderGatingWrapper(uint8_t &rangefinderRejectCount) {
         P[24] = 10.0f;
         rangefinderRejectCount = 0;
     }
+}
+
+void AltholdKF::setBaroBiasEnabled(bool enabled) {
+    if (enabled == baroBiasEnabled) return;
+
+    // if disabled, rebuildRBQ() will set biasBaro's process noise to zero to temporarily freeze it, 
+    // so alt and vertical velocity can be still observable (2 sensors with 2 biases is not observable)
+    baroBiasEnabled = enabled;
+    dtPrev = -1.0f;  // force rebuildFBQ() next predict so Q[18] is refreshed
+    if (!enabled) {
+        // Freeze biasBaro's covariance, zero row 3 and col 3 of P
+        // This means the filter now believes it knows baro bias exactly, and will not update it anymore
+        for (int i = 0; i < STATE_SIZE; ++i) {
+            P[3 * STATE_SIZE + i] = 0.0f;  // Row 3
+            P[i * STATE_SIZE + 3] = 0.0f;  // Col 3
+        }
+    } else {
+        // Enable, give it initial uncertainty so it can be estimated again
+        P[3 * STATE_SIZE + 3] = 1.0f;
+    }
+}
+
+void AltholdKF::setRangefinderBiasEnabled(bool enabled) {
+    
+}
+
+void AltholdKF::setGPSBiasEnabled(bool enabled) {
+    
 }

@@ -142,6 +142,22 @@ private:
     static constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
     static constexpr float GPS_HOME_SETTLE_TIME_MS = 3 * GPS_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
     uint32_t gpsHomeCalibStartMs;
+
+    uint32_t baroLostStartMs;
+    uint32_t rangefinderLostStartMs;
+    uint32_t gpsLostStartMs;
+
+    bool baroLost;
+    bool rangefinderLost;
+    bool gpsLost;
+
+    static constexpr uint32_t BARO_LOST_TIMEOUT_MS = 5000; // 2 seconds
+    static constexpr uint32_t RANGFINDER_LOST_TIMEOUT_MS = 5000; // 2 seconds
+    static constexpr uint32_t GPS_LOST_TIMEOUT_MS = 5000; // 5 seconds
+
+    float baroZ;
+    float gpsZ;
+
     uint8_t profilerId;
 
     // Motor mixer output for each motor

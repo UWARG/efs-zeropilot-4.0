@@ -63,6 +63,12 @@ AttitudeManager::AttitudeManager(
     gpsHomeSettled(false),
     baroHomeCalibStartMs(0),
     gpsHomeCalibStartMs(0),
+    baroLostStartMs(0),
+    rangefinderLostStartMs(0),
+    gpsLostStartMs(0),
+    baroLost(false),
+    rangefinderLost(false),
+    gpsLost(false),
     profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
@@ -95,14 +101,28 @@ AttitudeManager::AttitudeManager(
         AltholdConfig altholdCfg = {
             .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.001f,
-            .processNoiseBiasBaro = 0.001f,
+            .processNoiseBiasBaro = 0.0001f,
             .processNoiseTerrainAlt = 0.055f,
             .measNoiseBarometer = 1.0f,
             .measNoiseRangefinder = 0.01f,
             .measNoiseGPSAlt = 25.0f,
             .measNoiseGPSVel = 0.03f
         };
-        altholdKF.init(altholdCfg);
+        float initAltHoldStates[5] = {0.0f, 0.0f, -9.9f, 0.0f, 0.0f};
+        ScaledImuBatch_t scaledImuData;
+        for (int i = 0; i < 2; ++i) {
+            RawImuBatch_t imuData = imuDriver->readRawData();
+            scaledImuData = imuDriver->scaleIMUData(imuData);
+        }
+        if (scaledImuData.count > 0) {
+            initAltHoldStates[2] = scaledImuData.data[scaledImuData.count - 1].zacc; // Use the last IMU sample's z-accel for initialization
+        }
+        altholdKF.init(altholdCfg, initAltHoldStates);
+        // Freeze b_baro at 0. Baro is home-referenced, so its true bias is ~0. Without a strong
+        // absolute reference (GPS-alt is only sigma ~5 m) b_baro is unobservable and drifts, so we
+        // pin it and let baro act as a direct, unbiased measurement of z. Re-enable with
+        // setBaroBiasEnabled(true) only once GPS-alt is trusted strongly enough to observe the bias.
+        altholdKF.setBaroBiasEnabled(false);
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -204,11 +224,21 @@ void AttitudeManager::amUpdate() {
                 baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
             }
         }
-        baroHomeSettled = baroHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS;
         // Update altholdKF with barometer data 
         if (baroHomeInitialized) {
-            altholdKF.updateBarometer(baroData.altitude - baroHomeAltitude);
+            baroZ = baroData.altitude - baroHomeAltitude;
+            altholdKF.updateBarometer(baroZ);
         }
+        baroHomeSettled = baroHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS;
+    } else {
+        // if (!baroLost) {
+        //     baroLostStartMs = systemUtilsDriver->getCurrentTimestampMs();
+        //     baroLost = true;
+        // }
+        // if (baroLost && (systemUtilsDriver->getCurrentTimestampMs() - baroLostStartMs) >= BARO_LOST_TIMEOUT_MS) {
+        //     altholdKF.setBaroBiasEnabled(false); // Disable barometer bias correction if barometer is lost for a long time
+        //     baroHomeSettled = false;
+        // }
     }
 
     // Send scaled pressure data to TM
@@ -219,7 +249,9 @@ void AttitudeManager::amUpdate() {
     // Get GPS data
     gpsData = gpsDriver->readData();
     if (gpsData.isNew && gpsData.altitude != -1) {
-        if (!armedFlag) {
+        // altholdKF.setBaroBiasEnabled(true); // Enable barometer bias correction, GPS is valid
+        // gpsLost = false;
+        if (!armedFlag && !gpsHomeInitialized) {
             // Update GPS home altitude if not armed, freezes the home when armed
             if (gpsData.numSatellites >= 5) {
                 if (!gpsHomeInitialized) {
@@ -231,11 +263,20 @@ void AttitudeManager::amUpdate() {
                 }
             }
         }
-        gpsHomeSettled = gpsHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS;
         if (gpsHomeInitialized) {
-            altholdKF.updateGPSAlt(gpsData.altitude - gpsHomeAltitude);
+            gpsZ = gpsData.altitude - gpsHomeAltitude;
+            altholdKF.updateGPSAlt(gpsZ);
+            altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down); KF vz is positive up
         }
-        altholdKF.updateGPSVel(gpsData.vz);
+    } else {
+        // if (!gpsLost) {
+        //     gpsLostStartMs = systemUtilsDriver->getCurrentTimestampMs();
+        //     gpsLost = true;
+        // }
+        // if (gpsLost && (systemUtilsDriver->getCurrentTimestampMs() - gpsLostStartMs) >= GPS_LOST_TIMEOUT_MS) {
+        //     altholdKF.setBaroBiasEnabled(false); // Disable baro bias correction if GPS is lost for a long time
+        //     gpsHomeSettled = false;
+        // }
     }
     
     // Send GPS data to telemetry manager
@@ -306,9 +347,11 @@ void AttitudeManager::amUpdate() {
             // Wanting to arm, check if arming requirements are met
             if (!baroHomeSettled) {
                 sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, barometer home not initialized");
-            } else if (!gpsHomeSettled) {
-                sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, GPS home not initialized");
-            } else {
+            } 
+            // else if (!gpsHomeSettled) {
+            //     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, GPS home not initialized");
+            // } 
+            else {
                 armedFlag = true;
                 activeCLAW->activateFlightMode();
             }
