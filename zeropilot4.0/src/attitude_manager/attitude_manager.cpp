@@ -103,10 +103,10 @@ AttitudeManager::AttitudeManager(
 
         AltholdConfig altholdCfg = {
             .processNoiseAccel = 1.0f,
-            .processNoiseBiasAccel = 0.001f,
+            .processNoiseBiasAccel = 0.02f,
             .processNoiseBiasBaro = 0.0001f,
             .processNoiseTerrainAlt = 0.005f,
-            .measNoiseBarometer = 0.5f,
+            .measNoiseBarometer = 0.2f,
             .measNoiseRangefinder = 0.01f,
             .measNoiseGPSAlt = 25.0f,
             .measNoiseGPSVel = 0.03f
