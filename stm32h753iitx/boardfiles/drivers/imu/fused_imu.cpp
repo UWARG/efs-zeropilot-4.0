@@ -156,3 +156,17 @@ float FusedIMU::getODRHz() {
 GyroBias_t FusedIMU::getGyroStartupBias(uint8_t imuId) {
     return imu[imuId]->getGyroStartupBias(imuId);
 }
+
+void FusedIMU::flush() {
+    // Flush each IMU and reset the fusion state so the next read starts clean
+    for (int i = 0; i < NUM_IMU; i++) {
+        imu[i]->flush();
+        imuFilled[i] = false;
+        rawImuBatch[i].count = 0;
+    }
+    active_imu = 0;
+    haveEmitted = false;
+    lastEmittedTimestamp = 0;
+    rawFusedImuBatch.count = 0;
+    scaledFusedImuBatch.count = 0;
+}

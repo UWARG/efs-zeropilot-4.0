@@ -47,6 +47,7 @@ AttitudeManager::AttitudeManager(
     #endif
     droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
+    firstIteration(true),
     armedFlag(false),
     armStateChanged(false),
     armRejectedNotified(false),
@@ -115,14 +116,14 @@ AttitudeManager::AttitudeManager(
             .measNoiseGPSVel = 0.03f
         };
         float initAltHoldStates[5] = {0.0f, 0.0f, -9.9f, 0.0f, 0.0f};
-        ScaledImuBatch_t scaledImuData;
-        for (int i = 0; i < 2; ++i) {
-            RawImuBatch_t imuData = imuDriver->readRawData();
-            scaledImuData = imuDriver->scaleIMUData(imuData);
-        }
-        if (scaledImuData.count > 0) {
-            initAltHoldStates[2] = scaledImuData.data[scaledImuData.count - 1].zacc; // Use the last IMU sample's z-accel for initialization
-        }
+        // ScaledImuBatch_t scaledImuData;
+        // for (int i = 0; i < 2; ++i) {
+        //     RawImuBatch_t imuData = imuDriver->readRawData();
+        //     scaledImuData = imuDriver->scaleIMUData(imuData);
+        // }
+        // if (scaledImuData.count > 0) {
+        //     initAltHoldStates[2] = scaledImuData.data[scaledImuData.count - 1].zacc; // Use the last IMU sample's z-accel for initialization
+        // }
         altholdKF.init(altholdCfg, initAltHoldStates);
         // Freeze b_baro at 0. Baro is home-referenced, so its true bias is ~0. Without a strong
         // absolute reference (GPS-alt is only sigma ~5 m) b_baro is unobservable and drifts, so we
@@ -137,8 +138,12 @@ AttitudeManager::AttitudeManager(
 }
 
 void AttitudeManager::amUpdate() {
-
     systemUtilsDriver->profilerBegin(profilerId);
+
+    if (firstIteration) {
+        imuDriver->flush();
+        firstIteration = false;
+    }
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 

@@ -95,6 +95,8 @@ private:
 
     MotorGroupInstance_t *mainMotorGroup;
 
+    bool firstIteration;
+    
     bool armedFlag;
     bool armStateChanged;
     bool armRejectedNotified;

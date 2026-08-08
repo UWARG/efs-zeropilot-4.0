@@ -48,6 +48,7 @@ class IMU : public IIMU {
 		RawImuBatch_t getBatch();
 		float getODRHz() override;
 		GyroBias_t getGyroStartupBias(uint8_t imuId) override;
+		void flush() override;
 		
 		static constexpr float GYRO_SEN_SCALE_FACTOR = 16.4f;			 // Determined by GYRO_FS_SEL, page 11
 		static constexpr float ACCEL_SEN_SCALE_FACTOR = 2048.0f / 9.81f; // Determined by ACCEL_FS_SEL, page 12, scale to m/s^2

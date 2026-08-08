@@ -15,4 +15,5 @@ public:
 	virtual ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) = 0;
 	virtual float getODRHz() = 0;
 	virtual GyroBias_t getGyroStartupBias(uint8_t imuId) = 0;
+	virtual void flush() {}
 };
