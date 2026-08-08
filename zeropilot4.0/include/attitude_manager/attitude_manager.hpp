@@ -8,6 +8,7 @@
 #include "motor_datatype.hpp"
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
+#include "arming_status.hpp"
 #include "imu_iface.hpp"
 #include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
@@ -50,7 +51,8 @@ public:
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
-        MotorGroupInstance_t *mainMotorGroup
+        MotorGroupInstance_t *mainMotorGroup,
+        ArmingStatus *armingStatus
     );
 
     void amUpdate();
@@ -76,6 +78,7 @@ private:
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;
     IMessageQueue<char[100]> *smLoggerQueue;
+    ArmingStatus *armingStatus;
 
     Flightmode *activeCLAW; // Pointer to current active Control Law
     #ifdef PLANE
@@ -93,7 +96,8 @@ private:
     MotorGroupInstance_t *mainMotorGroup;
 
     bool armedFlag;
-    bool setArmFlag;
+    bool armStateChanged;
+    bool armRejectedNotified;
 
     uint16_t lastServoOutputs[16];
 

@@ -14,7 +14,8 @@ SystemManager::SystemManager(
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *smLoggerQueue,
+    ArmingStatus *armingStatus) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
@@ -23,6 +24,7 @@ SystemManager::SystemManager(
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
+        armingStatus(armingStatus),
         smSchedulingCounter(0),
         flightModes{},
         oldDataCount(0),
@@ -72,8 +74,8 @@ void SystemManager::smUpdate() {
         sendRCDataToTelemetryManager(rcData);
     }
 
-    // Set armed status based on SM_RC_ARM_THRESHOLD
-    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
+    bool armed = armingStatus->armed;
+    bool readyToArm = armingStatus->readyToArm;
 
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
@@ -81,11 +83,12 @@ void SystemManager::smUpdate() {
         baseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
     }
 
-    // Determine system status based on RC connection and arm state
-    MAV_STATE systemStatus = MAV_STATE_ACTIVE;
+    MAV_STATE systemStatus;
     if (!rcConnected) {
         systemStatus = MAV_STATE_CRITICAL;
-    } else if (!armed) {
+    } else if (armed) {
+        systemStatus = MAV_STATE_ACTIVE;
+    } else {
         systemStatus = MAV_STATE_STANDBY;
     }
 
@@ -93,9 +96,10 @@ void SystemManager::smUpdate() {
     FlightMode_e flightMode = decodeRawFlightMode(rcData.fltModeRaw);
     uint32_t customMode = static_cast<uint32_t>(flightMode);
 
-    // Send Heartbeat data to TM at a 1Hz rate
+    // Send Heartbeat and SYS_STATUS to TM at a 1Hz rate
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
         sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
+        sendSysStatusToTelemetryManager(readyToArm);
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
@@ -214,6 +218,15 @@ void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
 void SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus) {
     TMMessage_t hbDataMsg = heartbeatPack(systemUtilsDriver->getCurrentTimestampMs(), baseMode, customMode, systemStatus);
     tmQueue->push(&hbDataMsg);
+}
+
+void SystemManager::sendSysStatusToTelemetryManager(bool readyToArm) {
+    // TODO: update to reflect actual sensor presence, enabled, and health status. Only ready-to-arm is currently reported via SYS_STATUS
+    const uint32_t sensorsPresent = MAV_SYS_STATUS_PREARM_CHECK;
+    const uint32_t sensorsEnabled = MAV_SYS_STATUS_PREARM_CHECK;
+    const uint32_t sensorsHealth = readyToArm ? MAV_SYS_STATUS_PREARM_CHECK : 0;
+    TMMessage_t sysStatusMsg = sysStatusPack(systemUtilsDriver->getCurrentTimestampMs(), sensorsPresent, sensorsEnabled, sensorsHealth);
+    tmQueue->push(&sysStatusMsg);
 }
 
 void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {

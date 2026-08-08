@@ -8,6 +8,7 @@
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
 #include "tm_queue.hpp"
+#include "arming_status.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
 #include "sm_param_setup.hpp"
@@ -45,7 +46,8 @@ class SystemManager {
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue
+            IMessageQueue<char[100]> *smLoggerQueue,
+            ArmingStatus *armingStatus
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
@@ -61,6 +63,7 @@ class SystemManager {
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
         IMessageQueue<char[100]> *smLoggerQueue; // Queue driver for rx communication from other modules to the System Manager for logging
+        ArmingStatus *armingStatus; // Shared arming/readiness state published by the Attitude Manager
 
         uint8_t smSchedulingCounter;
 
@@ -78,6 +81,7 @@ class SystemManager {
         void sendRCDataToAttitudeManager(const RCControl &rcData);
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
+        void sendSysStatusToTelemetryManager(bool readyToArm);
         void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId);
         void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 

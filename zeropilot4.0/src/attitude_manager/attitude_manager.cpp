@@ -16,7 +16,8 @@ AttitudeManager::AttitudeManager(
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    MotorGroupInstance_t *mainMotorGroup
+    MotorGroupInstance_t *mainMotorGroup,
+    ArmingStatus *armingStatus
 ) :
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
@@ -29,6 +30,7 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
+    armingStatus(armingStatus),
     #ifdef PLANE
     activeCLAW(&manualCLAW),
     manualCLAW(),
@@ -46,7 +48,8 @@ AttitudeManager::AttitudeManager(
     droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
     armedFlag(false),
-    setArmFlag(false),
+    armStateChanged(false),
+    armRejectedNotified(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
@@ -278,9 +281,10 @@ void AttitudeManager::amUpdate() {
                 gpsHomeInitialized = true;
             } else {
                 gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
-                if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS) {
-                    gpsHomeSettled = true;
-                }
+            }
+
+            if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS) {
+                gpsHomeSettled = true;
             }
         }
 
@@ -316,6 +320,10 @@ void AttitudeManager::amUpdate() {
 
     // altitude = altholdKF.getEstimatedAltitude();
     droneState.altitude = altitude;
+
+    // Publish arming/readiness state for SM
+    armingStatus->readyToArm = baroHomeSettled;
+    armingStatus->armed = armedFlag;
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
@@ -364,22 +372,30 @@ void AttitudeManager::amUpdate() {
 
     // Update armedFlag and activateFlightMode() on rising edge
     if (controlMsg.arm != armedFlag) {
-        setArmFlag = true;
         if (controlMsg.arm) {
             // Wanting to arm, check if arming requirements are met
             if (!baroHomeSettled) {
-                sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, barometer home not initialized");
+                if (!armRejectedNotified) {
+                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "PreArm: barometer home not initialized");
+                    armRejectedNotified = true;
+                }
             } 
             // else if (!gpsHomeSettled) {
             //     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, GPS home not initialized");
             // } 
-            else {
+            else { // All requirements are met
                 armedFlag = true;
+                armStateChanged = true;
                 activeCLAW->activateFlightMode();
             }
         } else {
             armedFlag = false;
+            armStateChanged = true;
         }
+    }
+    // Clear the rejection latch whenever arm is no longer requested, so the next arm attempt notifies again
+    if (!controlMsg.arm) {
+        armRejectedNotified = false;
     }
 
     // Update current flightmode if changed
@@ -439,8 +455,6 @@ void AttitudeManager::amUpdate() {
     // Output to motors
     outputToMotors(motorOutputs, groundIdle);
 
-    setArmFlag = false;
-    
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
@@ -515,7 +529,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
         // Set arm flag for throttle motors, only on arm/disarm edges
-        if (setArmFlag) {
+        if (armStateChanged) {
 
             #ifdef PLANE
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
@@ -532,6 +546,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         // Send command to motor
         motor->motorInstance->set(cmd);
     }
+    armStateChanged = false;
 }
 
 

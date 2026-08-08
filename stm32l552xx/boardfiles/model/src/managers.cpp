@@ -12,6 +12,9 @@ AttitudeManager *amHandle = nullptr;
 SystemManager *smHandle = nullptr;
 TelemetryManager *tmHandle = nullptr;
 
+// Shared arming/readiness state: written by AM, read by SM
+static ArmingStatus armingStatus;
+
 void initManagers()
 {
     // AM initialization
@@ -26,7 +29,8 @@ void initManagers()
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 
-        &mainMotorGroup
+        &mainMotorGroup,
+        &armingStatus
     );
 
     // SM initialization
@@ -38,7 +42,8 @@ void initManagers()
         pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle
+        smLoggerQueueHandle,
+        &armingStatus
     );
 
     // TM initialization

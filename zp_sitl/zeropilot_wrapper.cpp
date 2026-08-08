@@ -72,7 +72,9 @@ typedef struct {
     
     MotorInstance_t motors[SITL_NUM_MOTORS];
     MotorGroupInstance_t motorGroup;
-    
+
+    ArmingStatus armingStatus; // Shared arming/readiness state: written by AM, read by SM
+
     uint32_t sitlRateHz;
     uint32_t smCounter;
     uint32_t tmCounter;
@@ -217,7 +219,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
 
         self->sm = new SystemManager(
             self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
-            self->amQueue, self->tmQueue, self->logQueue
+            self->amQueue, self->tmQueue, self->logQueue, &self->armingStatus
         );
         
         self->tm = new TelemetryManager(
@@ -227,7 +229,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->am = new AttitudeManager(
             self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->rangefinder, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
-            &self->motorGroup
+            &self->motorGroup, &self->armingStatus
         );
         
         self->sitlRateHz = sitlRateHz;
