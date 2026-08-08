@@ -18,6 +18,7 @@
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 #define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
+#define SM_TELEMETRY_PREARM_STATUS_PERIOD_S 5 // How often to re-send the prearm reason while not ready to arm
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
 
@@ -66,6 +67,7 @@ class SystemManager {
         ArmingStatus *armingStatus; // Shared arming/readiness state published by the Attitude Manager
 
         uint8_t smSchedulingCounter;
+        uint8_t preArmStatusCounterS; // Seconds counter for the prearm reason STATUSTEXT
 
         FlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
 
@@ -82,6 +84,7 @@ class SystemManager {
         void sendRCDataToTelemetryManager(const RCControl &rcData);
         void sendHeartbeatDataToTelemetryManager(uint8_t baseMode, uint32_t customMode, MAV_STATE systemStatus);
         void sendSysStatusToTelemetryManager(bool readyToArm);
+        void sendPrearmReasonToTelemetryManager(PrearmReason reason);
         void sendBatteryDataToTelemetryManager(const BatteryData_t &batteryData, const uint8_t batteryId);
         void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 

@@ -50,7 +50,6 @@ AttitudeManager::AttitudeManager(
     firstIteration(true),
     armedFlag(false),
     armStateChanged(false),
-    armRejectedNotified(false),
     lastServoOutputs{0},
     amSchedulingCounter(0),
     noDataCount(0),
@@ -329,6 +328,7 @@ void AttitudeManager::amUpdate() {
     // Publish arming/readiness state for SM
     armingStatus->readyToArm = baroHomeSettled;
     armingStatus->armed = armedFlag;
+    armingStatus->prearmReason = baroHomeSettled ? PrearmReason::NONE : PrearmReason::BARO_NOT_SETTLED;
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
@@ -375,20 +375,11 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Update armedFlag and activateFlightMode() on rising edge
+    // Update armedFlag and activateFlightMode() on the arm/disarm edge
     if (controlMsg.arm != armedFlag) {
         if (controlMsg.arm) {
-            // Wanting to arm, check if arming requirements are met
-            if (!baroHomeSettled) {
-                if (!armRejectedNotified) {
-                    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "PreArm: barometer home not initialized");
-                    armRejectedNotified = true;
-                }
-            } 
-            // else if (!gpsHomeSettled) {
-            //     sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "Cannot arm, GPS home not initialized");
-            // } 
-            else { // All requirements are met
+            // Only arm if all requirements are met
+            if (baroHomeSettled) {
                 armedFlag = true;
                 armStateChanged = true;
                 activeCLAW->activateFlightMode();
@@ -397,10 +388,6 @@ void AttitudeManager::amUpdate() {
             armedFlag = false;
             armStateChanged = true;
         }
-    }
-    // Clear the rejection latch whenever arm is no longer requested, so the next arm attempt notifies again
-    if (!controlMsg.arm) {
-        armRejectedNotified = false;
     }
 
     // Update current flightmode if changed

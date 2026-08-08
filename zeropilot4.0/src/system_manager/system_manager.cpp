@@ -26,6 +26,7 @@ SystemManager::SystemManager(
         smLoggerQueue(smLoggerQueue),
         armingStatus(armingStatus),
         smSchedulingCounter(0),
+        preArmStatusCounterS(0),
         flightModes{},
         oldDataCount(0),
         rcConnected(false),
@@ -100,6 +101,15 @@ void SystemManager::smUpdate() {
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
         sendHeartbeatDataToTelemetryManager(baseMode, customMode, systemStatus);
         sendSysStatusToTelemetryManager(readyToArm);
+
+        if (!readyToArm) {
+            if (preArmStatusCounterS == 0) {
+                sendPrearmReasonToTelemetryManager(armingStatus->prearmReason);
+            }
+            preArmStatusCounterS = (preArmStatusCounterS + 1) % SM_TELEMETRY_PREARM_STATUS_PERIOD_S;
+        } else {
+            preArmStatusCounterS = 0;
+        }
     }
 
     // Monitor Battery State and send Battery Data to TM at a 1Hz rate
@@ -227,6 +237,22 @@ void SystemManager::sendSysStatusToTelemetryManager(bool readyToArm) {
     const uint32_t sensorsHealth = readyToArm ? MAV_SYS_STATUS_PREARM_CHECK : 0;
     TMMessage_t sysStatusMsg = sysStatusPack(systemUtilsDriver->getCurrentTimestampMs(), sensorsPresent, sensorsEnabled, sensorsHealth);
     tmQueue->push(&sysStatusMsg);
+}
+
+void SystemManager::sendPrearmReasonToTelemetryManager(PrearmReason reason) {
+    // Map the reason published by AM to "PreArm:" message
+    const char *text = nullptr;
+    switch (reason) {
+        case PrearmReason::BARO_NOT_SETTLED:
+            text = "PreArm: barometer home not initialized";
+            break;
+        // case PrearmReason::GPS_NOT_SETTLED:
+        //     text = "PreArm: GPS home not initialized";
+        //     break;
+        default:
+            return; // NONE or unknown: nothing to report
+    }
+    sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, text);
 }
 
 void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {

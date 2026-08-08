@@ -96,10 +96,9 @@ private:
     MotorGroupInstance_t *mainMotorGroup;
 
     bool firstIteration;
-    
+
     bool armedFlag;
     bool armStateChanged;
-    bool armRejectedNotified;
 
     uint16_t lastServoOutputs[16];
 
