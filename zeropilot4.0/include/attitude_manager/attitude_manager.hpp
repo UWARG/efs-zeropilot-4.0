@@ -146,7 +146,7 @@ private:
     static constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
     static constexpr float BARO_HOME_SETTLE_TIME_MS = 3 * BARO_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
     uint32_t baroHomeCalibStartMs;
-    static constexpr float GPS_HOME_TIME_CONSTANT_S = 15.0f;
+    static constexpr float GPS_HOME_TIME_CONSTANT_S = 3.0f;
     static constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
     static constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
     static constexpr float GPS_HOME_SETTLE_TIME_MS = 3 * GPS_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)

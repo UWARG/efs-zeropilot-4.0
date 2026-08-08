@@ -105,8 +105,8 @@ AttitudeManager::AttitudeManager(
             .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.001f,
             .processNoiseBiasBaro = 0.0001f,
-            .processNoiseTerrainAlt = 0.055f,
-            .measNoiseBarometer = 1.0f,
+            .processNoiseTerrainAlt = 0.005f,
+            .measNoiseBarometer = 0.5f,
             .measNoiseRangefinder = 0.01f,
             .measNoiseGPSAlt = 25.0f,
             .measNoiseGPSVel = 0.03f
@@ -190,7 +190,7 @@ void AttitudeManager::amUpdate() {
             dt
         );
         
-        altholdKF.predict(accel[2], dt);
+        altholdKF.predict(scaledImuData.data[i].zacc, dt);
 
         /* TODO: Uncomment once using EKF
         float gyro[3] = {
@@ -231,16 +231,17 @@ void AttitudeManager::amUpdate() {
     // Read barometer data
     // BaroData_t baroData;
     if (barometerDriver->readData(baroData)) {
-        // Update barometer home altitude if not armed, freezes the home when armed
-        if (!armedFlag) {
+        if (!armedFlag && !baroHomeSettled) {
             if (!baroHomeInitialized) {
                 baroHomeAltitude = baroData.altitude; // Seed first sample, need an initial sample for EMA
                 baroHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
                 baroHomeInitialized = true;
-
             } else {
-                // EMA so an actual baro drift gets accounted for when the drone is powered on with a long not armed period
                 baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
+            }
+
+            if ((systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS) {
+                baroHomeSettled = true;
             }
         }
         // Update altholdKF with barometer data 
@@ -248,7 +249,6 @@ void AttitudeManager::amUpdate() {
             baroZ = baroData.altitude - baroHomeAltitude;
             altholdKF.updateBarometer(baroZ);
         }
-        baroHomeSettled = baroHomeInitialized && (systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS;
     } else {
         // if (!baroLost) {
         //     baroLostStartMs = systemUtilsDriver->getCurrentTimestampMs();
@@ -267,21 +267,23 @@ void AttitudeManager::amUpdate() {
 
     // Get GPS data
     gpsData = gpsDriver->readData();
-    if (gpsData.isNew && gpsData.altitude != -1) {
+    if (gpsData.isNew && gpsData.altitude != -1 && gpsData.numSatellites >= 5) {
         // altholdKF.setBaroBiasEnabled(true); // Enable barometer bias correction, GPS is valid
         // gpsLost = false;
-        if (!armedFlag && !gpsHomeInitialized) {
+        if (!armedFlag && !gpsHomeSettled) {
             // Update GPS home altitude if not armed, freezes the home when armed
-            if (gpsData.numSatellites >= 5) {
-                if (!gpsHomeInitialized) {
-                    gpsHomeAltitude = gpsData.altitude;
-                    gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
-                    gpsHomeInitialized = true;
-                } else {
-                    gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
+            if (!gpsHomeInitialized) {
+                gpsHomeAltitude = gpsData.altitude;
+                gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
+                gpsHomeInitialized = true;
+            } else {
+                gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
+                if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS) {
+                    gpsHomeSettled = true;
                 }
             }
         }
+
         if (gpsHomeInitialized) {
             gpsZ = gpsData.altitude - gpsHomeAltitude;
             altholdKF.updateGPSAlt(gpsZ);
@@ -309,10 +311,11 @@ void AttitudeManager::amUpdate() {
     // Get rangefinder data
     rangefinderData = rangefinderDriver->readData();
     if (rangefinderData.isNew && rangefinderData.isValid) {
-        altholdKF.updateRangefinder(rangefinderData.distance);
+        // altholdKF.updateRangefinder(rangefinderData.distance);
     }
 
-    altitude = altholdKF.getEstimatedAltitude();
+    // altitude = altholdKF.getEstimatedAltitude();
+    droneState.altitude = altitude;
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
