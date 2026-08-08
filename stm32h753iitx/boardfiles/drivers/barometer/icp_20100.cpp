@@ -65,7 +65,8 @@ static constexpr uint8_t LOCK_VALUE = ICP20100_MASTER_LOCK_KEY;
 
 // MODE_SELECT register field definitions
 static constexpr uint8_t ICP20100_MODE_SELECT_POWER_MODE_BM = (1U << 2);      // POWER_MODE bit (active vs standby)
-static constexpr uint8_t ICP20100_MODE_SELECT_MEAS_MODE1_CONTINUOUS = 0x28U;  // MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
+static constexpr uint8_t ICP20100_MODE_SELECT_MEAS_MODE1_CONTINUOUS = 0x28U;  // MEAS_CONFIG=001(mode 1), FORCED_MEAS_TRIGGER=0, MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
+static constexpr uint8_t ICP20100_MODE_SELECT_MEAS_MODE0_CONTINUOUS = 0x08U;  // MEAS_CONFIG=0(mode 0), FORCED_MEAS_TRIGGER=0, MEAS_MODE=1, POWER_MODE=0, FIFO_READOUT=0
 
 // TRIM1_MSB register: PEFE_OFFSET_TRIM field occupies bits 5:0
 static constexpr uint8_t ICP20100_TRIM1_MSB_OFFSET_FIELD_MASK = 0x3FU;
@@ -108,10 +109,15 @@ static constexpr float ICP20100_TEMP_LAPSE_RATE = 0.0065f;          // K/m
 static constexpr float ICP20100_SEA_LEVEL_PRESSURE_KPA = 101.325f;
 static constexpr float ICP20100_BAROMETRIC_EXPONENT = 0.190284f;
 
+// Use a FIXED sea-level reference temperature (288.15 K) for the altitude formula, NOT
+// the live temperature. Altitude scales linearly with the temperature, which self-heats after power-on, 
+// so feeding it in makes the reported altitude drift upward at constant pressure
+static constexpr float ICP20100_STD_SEA_LEVEL_TEMP_K = 288.15f;
+
 // Timing
 static constexpr uint32_t ICP20100_POWER_MODE_DELAY_MS = 4U;        // Settle after entering power mode (datasheet)
 static constexpr uint32_t ICP20100_SHORT_DELAY_MS = 1U;             // Brief settle / poll delay
-static constexpr uint32_t ICP20100_FIR_WARMUP_TIMEOUT_MS = 200U;    // FIR warm-up FIFO-fill timeout
+static constexpr uint32_t ICP20100_FIR_WARMUP_TIMEOUT_MS = 1000U;    // FIR warm-up FIFO-fill timeout
 static constexpr uint8_t  ICP20100_FIR_WARMUP_FIFO_THRESHOLD = 14U; // Samples to accumulate during warm-up
 static constexpr uint32_t ICP20100_FIR_WARMUP_I2C_TIMEOUT_MS = 10U; // Blocking I2C timeout during warm-up
 
@@ -172,8 +178,7 @@ bool Barometer::init() {
 	HAL_Delay(ICP20100_POWER_MODE_DELAY_MS); // blocking delay, as required by data sheet
 
 	// Step 6: Unlock main registers by setting the Master_Lock register to 0x1f
-
-	if (!unlockOrLock(hi2c, true)) return false;
+	if (!unlockOrLock(hi2c, false)) return false;
 
 	//Step 7: Enable OTP and write switch by setting the config1 register's bits 0 and 1 to 1.
 	uint8_t otpConfig = 0x00;
@@ -347,7 +352,7 @@ bool Barometer::init() {
 }
 
 bool Barometer::firWarmupPoll() {
-	uint8_t modeSelect = ICP20100_MODE_SELECT_MEAS_MODE1_CONTINUOUS;
+	uint8_t modeSelect = ICP20100_MODE_SELECT_MEAS_MODE0_CONTINUOUS;
 	uint8_t fifoFill = 0;
 	uint8_t stopMode = 0x00;
 	uint8_t flushFifo = ICP20100_FIFO_FILL_FLUSH_BM;
@@ -482,7 +487,7 @@ bool Barometer::readData(BaroData_t &data)
 
 		data.temperatureC = (float)(((double)tempSigned * ICP20100_TEMP_SPAN_C) / ICP20100_TEMP_DIVISOR + ICP20100_TEMP_OFFSET_C);
 		data.pressureKPa = (float)(((double)pressSigned * ICP20100_PRESS_SPAN_KPA) / ICP20100_PRESS_DIVISOR + ICP20100_PRESS_OFFSET_KPA);
-		data.altitude = ((data.temperatureC + ICP20100_KELVIN_OFFSET) / ICP20100_TEMP_LAPSE_RATE) *
+		data.altitude = (ICP20100_STD_SEA_LEVEL_TEMP_K / ICP20100_TEMP_LAPSE_RATE) *
 						 (1.0f - powf(data.pressureKPa / ICP20100_SEA_LEVEL_PRESSURE_KPA, ICP20100_BAROMETRIC_EXPONENT));
 		dataFilled = 0;
 		rxCallback();

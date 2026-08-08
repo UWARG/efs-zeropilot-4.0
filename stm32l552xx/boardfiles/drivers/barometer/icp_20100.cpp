@@ -108,6 +108,11 @@ static constexpr float ICP20100_TEMP_LAPSE_RATE = 0.0065f;          // K/m
 static constexpr float ICP20100_SEA_LEVEL_PRESSURE_KPA = 101.325f;
 static constexpr float ICP20100_BAROMETRIC_EXPONENT = 0.190284f;
 
+// Use a FIXED sea-level reference temperature (288.15 K) for the altitude formula, NOT
+// the live temperature. Altitude scales linearly with the temperature, which self-heats after power-on, 
+// so feeding it in makes the reported altitude drift upward at constant pressure
+static constexpr float ICP20100_STD_SEA_LEVEL_TEMP_K = 288.15f;
+
 // Timing
 static constexpr uint32_t ICP20100_POWER_MODE_DELAY_MS = 4U;        // Settle after entering power mode (datasheet)
 static constexpr uint32_t ICP20100_SHORT_DELAY_MS = 1U;             // Brief settle / poll delay
@@ -482,7 +487,7 @@ bool Barometer::readData(BaroData_t &data)
 
 		data.temperatureC = (float)(((double)tempSigned * ICP20100_TEMP_SPAN_C) / ICP20100_TEMP_DIVISOR + ICP20100_TEMP_OFFSET_C);
 		data.pressureKPa = (float)(((double)pressSigned * ICP20100_PRESS_SPAN_KPA) / ICP20100_PRESS_DIVISOR + ICP20100_PRESS_OFFSET_KPA);
-		data.altitude = ((data.temperatureC + ICP20100_KELVIN_OFFSET) / ICP20100_TEMP_LAPSE_RATE) *
+		data.altitude = (ICP20100_STD_SEA_LEVEL_TEMP_K / ICP20100_TEMP_LAPSE_RATE) *
 						 (1.0f - powf(data.pressureKPa / ICP20100_SEA_LEVEL_PRESSURE_KPA, ICP20100_BAROMETRIC_EXPONENT));
 		dataFilled = 0;
 		rxCallback();
