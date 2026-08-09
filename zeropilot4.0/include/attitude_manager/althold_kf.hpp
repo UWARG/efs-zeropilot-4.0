@@ -32,6 +32,7 @@ public:
     void setRangefinderBiasEnabled(bool enabled);
     void setGPSBiasEnabled(bool enabled);
     float getEstimatedAltitude();
+    float getAltTerrain();
 
 private:
     IMathUtils* math;

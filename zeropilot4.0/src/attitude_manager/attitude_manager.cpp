@@ -33,7 +33,6 @@ AttitudeManager::AttitudeManager(
     armingStatus(armingStatus),
     #ifdef PLANE
     activeCLAW(&manualCLAW),
-    manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
     currentFlightMode(FlightMode_e::MANUAL),
@@ -45,37 +44,7 @@ AttitudeManager::AttitudeManager(
     controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
     currentFlightMode(FlightMode_e::STABILIZE),
     #endif
-    droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
-    firstIteration(true),
-    armedFlag(false),
-    armStateChanged(false),
-    lastServoOutputs{0},
-    amSchedulingCounter(0),
-    noDataCount(0),
-    failsafeTriggered(false),
-    groundIdlePrev(false),
-    lastTimestamp(0),
-    haveLastImuTimestamp(false),
-    baroHomeAltitude(0.0f),
-    rangefinderHomeAltitude(0.0f),
-    gpsHomeAltitude(0.0f),
-    baroHomeInitialized(false),
-    rangefinderHomeInitialized(false),
-    gpsHomeInitialized(false),
-    baroHomeSettled(false),
-    gpsHomeSettled(false),
-    rangefinderHomeSettled(false),
-    baroHomeCalibStartMs(0),
-    gpsHomeCalibStartMs(0),
-    rangefinderHomeCalibStartMs(0),
-    baroLostStartMs(0),
-    rangefinderLostStartMs(0),
-    gpsLostStartMs(0),
-    baroLost(false),
-    rangefinderLost(false),
-    gpsLost(false),
-    profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
@@ -276,28 +245,31 @@ void AttitudeManager::amUpdate() {
 
     // Get GPS data
     gpsData = gpsDriver->readData();
-    if (gpsData.isNew && gpsData.altitude != -1 && gpsData.numSatellites >= 5) {
-        // altholdKF.setBaroBiasEnabled(true); // Enable barometer bias correction, GPS is valid
-        // gpsLost = false;
-        if (!armedFlag && !gpsHomeSettled) {
-            // Update GPS home altitude if not armed, freezes the home when armed
-            if (!gpsHomeInitialized) {
-                gpsHomeAltitude = gpsData.altitude;
-                gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
-                gpsHomeInitialized = true;
-            } else {
-                gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
+    if (gpsData.isNew) {
+        lastValidGps = gpsData;
+        if (gpsData.altitude != -1 && gpsData.numSatellites >= 5) {
+            // altholdKF.setBaroBiasEnabled(true); // Enable barometer bias correction, GPS is valid
+            // gpsLost = false;
+            if (!armedFlag && !gpsHomeSettled) {
+                // Update GPS home altitude if not armed, freezes the home when armed
+                if (!gpsHomeInitialized) {
+                    gpsHomeAltitude = gpsData.altitude;
+                    gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
+                    gpsHomeInitialized = true;
+                } else {
+                    gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
+                }
+    
+                if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS) {
+                    gpsHomeSettled = true;
+                }
             }
-
-            if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS) {
-                gpsHomeSettled = true;
+    
+            if (gpsHomeInitialized) {
+                gpsZ = gpsData.altitude - gpsHomeAltitude;
+                altholdKF.updateGPSAlt(gpsZ);
+                altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down); KF vz is positive up
             }
-        }
-
-        if (gpsHomeInitialized) {
-            gpsZ = gpsData.altitude - gpsHomeAltitude;
-            altholdKF.updateGPSAlt(gpsZ);
-            altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down); KF vz is positive up
         }
     } else {
         // if (!gpsLost) {
@@ -321,6 +293,7 @@ void AttitudeManager::amUpdate() {
     // Get rangefinder data
     rangefinderData = rangefinderDriver->readData();
     if (rangefinderData.isNew && rangefinderData.isValid) {
+        lastValidClearance = rangefinderData.distance;
         if (!armedFlag && !rangefinderHomeSettled && rangefinderData.distance <= RANGEFINDER_HOME_MAX_STANDOFF_M) {
             if (!rangefinderHomeInitialized) {
                 rangefinderHomeAltitude = rangefinderData.distance; // Seed first sample, need an initial sample for EMA
@@ -344,6 +317,17 @@ void AttitudeManager::amUpdate() {
 
     altitude = altholdKF.getEstimatedAltitude();
     droneState.altitude = altitude;
+
+    // Send altitude data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ALTITUDE_DATA_RATE_HZ) == 0) {
+        float altAMSL = (gpsData.altitude != -1) ? lastValidGps.altitude : -1.0f;
+        sendAltitudeDataToTelemetryManager(
+            altAMSL, // altitude_amsl: GPS MSL altitude
+            altitude, // altitude_relative: KF altitude above takeoff
+            altholdKF.getAltTerrain(), // altitude_terrain: KF altitude above terrain
+            lastValidClearance
+        );
+    }
 
     // Publish arming/readiness state for SM
     armingStatus->readyToArm = baroHomeSettled;
@@ -631,6 +615,18 @@ void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroD
     );
 
     tmQueue->push(&pressureDataMsg);
+}
+
+void AttitudeManager::sendAltitudeDataToTelemetryManager(float altitudeAmsl, float altitudeRelative, float altitudeTerrain, float bottomClearance) {
+    TMMessage_t altitudeDataMsg = altitudeDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        altitudeAmsl,
+        altitudeRelative,
+        altitudeTerrain,
+        bottomClearance
+    );
+
+    tmQueue->push(&altitudeDataMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {

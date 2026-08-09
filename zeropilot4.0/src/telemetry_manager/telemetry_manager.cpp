@@ -129,6 +129,18 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::ALTITUDE_DATA: {
+                auto altitudeData = tmqMessage.tmMessageData.altitudeData;
+                mavlink_msg_altitude_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
+                    0, // altitude_monotonic: unused
+                    altitudeData.altitudeAmsl,
+                    0, // altitude_local: unused
+                    altitudeData.altitudeRelative,
+                    altitudeData.altitudeTerrain,
+                    altitudeData.bottomClearance);
+                break;
+            }
+
             case TMMessage_t::SYS_STATUS_DATA: {
                 auto& s = tmqMessage.tmMessageData.sysStatusData;
                 mavlink_msg_sys_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage,

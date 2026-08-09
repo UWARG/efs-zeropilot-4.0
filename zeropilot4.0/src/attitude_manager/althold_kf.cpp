@@ -65,6 +65,10 @@ float AltholdKF::getEstimatedAltitude() {
     return states[0];
 }
 
+float AltholdKF::getAltTerrain() {
+    return states[0] - states[4];
+}
+
 void AltholdKF::rebuildFBQ(float dt) {
     /*
     [1, dt, -0.5*dt**2, 0, 0],
