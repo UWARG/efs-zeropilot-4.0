@@ -12,7 +12,7 @@ typedef struct {
     float processNoiseAccel;
     float processNoiseBiasAccel;
     float processNoiseBiasBaro;
-    float processNoiseTerrainAlt;
+    float processNoiseTerrainAlt; // Lower to around 5e-5 if flying over flat terrain, increase to around 5e-3 if flying somewhere with steep terrain changes
     float measNoiseBarometer;
     float measNoiseRangefinder;
     float measNoiseGPSAlt;

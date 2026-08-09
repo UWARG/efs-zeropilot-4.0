@@ -65,8 +65,10 @@ AttitudeManager::AttitudeManager(
     gpsHomeInitialized(false),
     baroHomeSettled(false),
     gpsHomeSettled(false),
+    rangefinderHomeSettled(false),
     baroHomeCalibStartMs(0),
     gpsHomeCalibStartMs(0),
+    rangefinderHomeCalibStartMs(0),
     baroLostStartMs(0),
     rangefinderLostStartMs(0),
     gpsLostStartMs(0),
@@ -108,7 +110,7 @@ AttitudeManager::AttitudeManager(
             .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.02f,
             .processNoiseBiasBaro = 0.0001f,
-            .processNoiseTerrainAlt = 0.005f,
+            .processNoiseTerrainAlt = 0.00005f,
             .measNoiseBarometer = 0.2f,
             .measNoiseRangefinder = 0.01f,
             .measNoiseGPSAlt = 25.0f,
@@ -319,10 +321,28 @@ void AttitudeManager::amUpdate() {
     // Get rangefinder data
     rangefinderData = rangefinderDriver->readData();
     if (rangefinderData.isNew && rangefinderData.isValid) {
-        // altholdKF.updateRangefinder(rangefinderData.distance);
+        if (!armedFlag && !rangefinderHomeSettled && rangefinderData.distance <= RANGEFINDER_HOME_MAX_STANDOFF_M) {
+            if (!rangefinderHomeInitialized) {
+                rangefinderHomeAltitude = rangefinderData.distance; // Seed first sample, need an initial sample for EMA
+                rangefinderHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
+                rangefinderHomeInitialized = true;
+            } else {
+                rangefinderHomeAltitude += RANGEFINDER_HOME_ALPHA * (rangefinderData.distance - rangefinderHomeAltitude);
+            }
+
+            if ((systemUtilsDriver->getCurrentTimestampMs() - rangefinderHomeCalibStartMs) >= RANGEFINDER_HOME_SETTLE_TIME_MS) {
+                rangefinderHomeSettled = true;
+            }
+        }
+
+        if (rangefinderHomeInitialized) {
+            rangefinderZ = rangefinderData.distance - rangefinderHomeAltitude;
+            rangefinderZ *= cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
+            altholdKF.updateRangefinder(rangefinderZ);
+        }
     }
 
-    // altitude = altholdKF.getEstimatedAltitude();
+    altitude = altholdKF.getEstimatedAltitude();
     droneState.altitude = altitude;
 
     // Publish arming/readiness state for SM

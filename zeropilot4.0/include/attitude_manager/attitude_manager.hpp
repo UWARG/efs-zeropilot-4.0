@@ -145,6 +145,7 @@ private:
 
     bool baroHomeSettled;
     bool gpsHomeSettled;
+    bool rangefinderHomeSettled;
 
     static constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
     static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
@@ -156,6 +157,12 @@ private:
     static constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
     static constexpr float GPS_HOME_SETTLE_TIME_MS = 3 * GPS_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
     uint32_t gpsHomeCalibStartMs;
+    static constexpr float RANGEFINDER_HOME_TIME_CONSTANT_S = 2.0f;
+    static constexpr float RANGEFINDER_UPDATE_DT_S = 1.0f / 100.0f; // 100hz
+    static constexpr float RANGEFINDER_HOME_ALPHA = RANGEFINDER_UPDATE_DT_S / (RANGEFINDER_HOME_TIME_CONSTANT_S + RANGEFINDER_UPDATE_DT_S);
+    static constexpr float RANGEFINDER_HOME_SETTLE_TIME_MS = 3 * RANGEFINDER_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
+    static constexpr float RANGEFINDER_HOME_MAX_STANDOFF_M = 1.0f; // Reject home samples beyond this (eg. powered on while held)
+    uint32_t rangefinderHomeCalibStartMs;
 
     uint32_t baroLostStartMs;
     uint32_t rangefinderLostStartMs;
@@ -171,6 +178,7 @@ private:
 
     float baroZ;
     float gpsZ;
+    float rangefinderZ;
 
     uint8_t profilerId;
 
