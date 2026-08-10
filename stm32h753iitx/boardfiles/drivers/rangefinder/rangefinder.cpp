@@ -53,7 +53,7 @@ int Rangefinder::init() {
         }
     }
 
-    // Maybe configrue the frame rate, but the default is 100Hz which is fine for now
+    // Maybe configure the frame rate, but the default is 100Hz which is fine for now
 
     // Save configs
     if (HAL_I2C_Master_Transmit(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)SAVE_CONFIG_CMD, sizeof(SAVE_CONFIG_CMD), HAL_MAX_DELAY) != HAL_OK) {
