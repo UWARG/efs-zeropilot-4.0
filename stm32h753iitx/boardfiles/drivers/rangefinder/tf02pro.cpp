@@ -1,4 +1,4 @@
-#include "rangefinder.hpp"
+#include "tf02pro.hpp"
 
 static constexpr uint8_t RANGEFINDER_I2C_ADDR = 0x10 << 1; // 7-bit address for the TF02-Pro rangefinder, shifted left by 1 for the HAL functions
 
@@ -16,20 +16,22 @@ static constexpr uint8_t READ_CMD_LEN = sizeof(I2C_READ_CMD);
 
 static constexpr uint8_t DATA_FRAME_HEADER = 0x59;
 
-static constexpr uint16_t STRGENTH_SATURATED = 65535;
+static constexpr uint16_t STRENGTH_SATURATED = 65535;
 static constexpr uint16_t DIST_SATURATED = 65534;
 static constexpr uint16_t DIST_WEAK_SIGNAL = 4500;
+
+static constexpr uint32_t HW_TF02_PROCESS_CMD_DELAY = 100; // Wait time for TF02-Pro to process the command, as suggested in the datasheet
 
 Rangefinder::Rangefinder(I2C_HandleTypeDef *hi2c) : hi2c(hi2c) {}
 
 int Rangefinder::init() {
     uint8_t receiveBuffer[6] = {0}; // Size 6 is the max response size for the rangefinder commands
     
-    // Check firmware version to see if ithe rangefinder is present and alive
+    // Check firmware version to see if the rangefinder is present and alive
     if (HAL_I2C_Master_Transmit(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)FIRMWARE_VERSION_CMD, sizeof(FIRMWARE_VERSION_CMD), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
-    HAL_Delay(100); // Wait for the rangefinder to process the command, 100ms as suggested in the datasheet
+    HAL_Delay(HW_TF02_PROCESS_CMD_DELAY);
     if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(FIRMWARE_VERSION_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
@@ -43,7 +45,7 @@ int Rangefinder::init() {
     if (HAL_I2C_Master_Transmit(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)OUTPUT_FORMAT_CM_CMD, sizeof(OUTPUT_FORMAT_CM_CMD), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
-    HAL_Delay(100);
+    HAL_Delay(HW_TF02_PROCESS_CMD_DELAY);
     if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
@@ -53,13 +55,13 @@ int Rangefinder::init() {
         }
     }
 
-    // Maybe configrue the frame rate, but the default is 100Hz which is fine for now
+    // Maybe configure the frame rate, but the default is 100Hz which is fine for now
 
     // Save configs
     if (HAL_I2C_Master_Transmit(hi2c, RANGEFINDER_I2C_ADDR, (uint8_t*)SAVE_CONFIG_CMD, sizeof(SAVE_CONFIG_CMD), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
-    HAL_Delay(100);
+    HAL_Delay(HW_TF02_PROCESS_CMD_DELAY);
     if (HAL_I2C_Master_Receive(hi2c, RANGEFINDER_I2C_ADDR, receiveBuffer, sizeof(SAVE_CONFIG_SUCCESS_RESPONSE), HAL_MAX_DELAY) != HAL_OK) {
         return -1;
     }
@@ -94,10 +96,10 @@ RangefinderData_t Rangefinder::readData() {
             When encountering a measured object with high reflectivity, strength = 65535 and the distance value will become 65534
             When the signal strength is insufficient and lower than 60, the distance value will become the maximum value of 4500
         */
-        data.isValid = (computeChecksum() == rxBuffer[8]) && (rawStrength != STRGENTH_SATURATED)
+        data.isValid = (computeChecksum() == rxBuffer[8]) && (rawStrength != STRENGTH_SATURATED)
                         && (rawDistance != DIST_SATURATED) && (rawDistance != DIST_WEAK_SIGNAL);
         data.isNew = true;
-        data.distance = (float)rawDistance / 100.0f;
+        data.distance = (float)rawDistance / 100.0f; // Convert cm to m
         data.signalStrength = rawStrength;
         data.temp = rawTemp;
     } else {
