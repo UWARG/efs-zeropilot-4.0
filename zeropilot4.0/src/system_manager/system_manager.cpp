@@ -246,9 +246,9 @@ void SystemManager::sendPrearmReasonToTelemetryManager(PrearmReason reason) {
         case PrearmReason::BARO_NOT_SETTLED:
             text = "PreArm: barometer home not initialized";
             break;
-        // case PrearmReason::GPS_NOT_SETTLED:
-        //     text = "PreArm: GPS home not initialized";
-        //     break;
+        case PrearmReason::GPS_NOT_SETTLED:
+            text = "PreArm: GPS home not initialized";
+            break;
         default:
             return; // NONE or unknown: nothing to report
     }

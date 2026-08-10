@@ -79,7 +79,7 @@ AttitudeManager::AttitudeManager(
         AltholdConfig altholdCfg = {
             .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.02f,
-            .processNoiseBiasBaro = 0.0001f,
+            .processNoiseBiasBaro = 0.000001f,
             .processNoiseTerrainAlt = 0.00005f,
             .measNoiseBarometer = 0.2f,
             .measNoiseRangefinder = 0.01f,
@@ -334,10 +334,13 @@ void AttitudeManager::amUpdate() {
         );
     }
 
-    // Publish arming/readiness state for SM
-    armingStatus->readyToArm = baroHomeSettled;
+    // Publish arming/readiness state for SM. GPS only gates modes that actually need it.
+    bool gpsReadyForMode = !activeCLAW->requiresGPS() || gpsHomeSettled;
+    armingStatus->readyToArm = baroHomeSettled && gpsReadyForMode;
     armingStatus->armed = armedFlag;
-    armingStatus->prearmReason = baroHomeSettled ? PrearmReason::NONE : PrearmReason::BARO_NOT_SETTLED;
+    armingStatus->prearmReason = !baroHomeSettled ? PrearmReason::BARO_NOT_SETTLED
+                                : !gpsReadyForMode ? PrearmReason::GPS_NOT_SETTLED
+                                : PrearmReason::NONE;
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);

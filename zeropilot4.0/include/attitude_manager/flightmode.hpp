@@ -13,4 +13,7 @@ class Flightmode {
 
         virtual void activateFlightMode() = 0;
         virtual RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) = 0;
+
+        // Whether the active flight mode needs GPS to arm/operate.
+        virtual bool requiresGPS() const { return false; }
 };
