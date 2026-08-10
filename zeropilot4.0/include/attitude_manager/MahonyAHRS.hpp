@@ -44,6 +44,12 @@ public:
 	Attitude_t getAttitudeRadians() {
 		return {roll, pitch, yaw};
 	}
+
+	float getVerticalAccel(float ax, float ay, float az) const {
+		return (2.0f * (q1 * q3 - q0 * q2)) * ax
+		     + (2.0f * (q0 * q1 + q2 * q3)) * ay
+		     + (1.0f - 2.0f * (q1 * q1 + q2 * q2)) * az;
+	}
 };
 
 #endif

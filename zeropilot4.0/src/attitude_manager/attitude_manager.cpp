@@ -4,6 +4,7 @@
 #include "motor_functions.hpp"
 #include "unit_conversions.hpp"
 #include <limits>
+#include <cmath>
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -95,10 +96,6 @@ AttitudeManager::AttitudeManager(
         //     initAltHoldStates[2] = scaledImuData.data[scaledImuData.count - 1].zacc; // Use the last IMU sample's z-accel for initialization
         // }
         altholdKF.init(altholdCfg, initAltHoldStates);
-        // Freeze b_baro at 0. Baro is home-referenced, so its true bias is ~0. Without a strong
-        // absolute reference (GPS-alt is only sigma ~5 m) b_baro is unobservable and drifts, so we
-        // pin it and let baro act as a direct, unbiased measurement of z. Re-enable with
-        // setBaroBiasEnabled(true) only once GPS-alt is trusted strongly enough to observe the bias.
         altholdKF.setBaroBiasEnabled(false);
 
         // Activate the activeCLAW
@@ -247,20 +244,28 @@ void AttitudeManager::amUpdate() {
     gpsData = gpsDriver->readData();
     if (gpsData.isNew) {
         lastValidGps = gpsData;
-        if (gpsData.altitude != -1 && gpsData.numSatellites >= 5) {
+        if (gpsData.altitude != -1 && gpsData.numSatellites >= GPS_MIN_SATELLITES && gpsData.vAcc <= GPS_HOME_VACC_MAX_M) {
             // altholdKF.setBaroBiasEnabled(true); // Enable barometer bias correction, GPS is valid
             // gpsLost = false;
             if (!armedFlag && !gpsHomeSettled) {
-                // Update GPS home altitude if not armed, freezes the home when armed
+                // Capture GPS home (EMA) while disarmed, freeze once the fix has stayed stable
                 if (!gpsHomeInitialized) {
                     gpsHomeAltitude = gpsData.altitude;
                     gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
                     gpsHomeInitialized = true;
                 } else {
-                    gpsHomeAltitude += GPS_HOME_ALPHA * (gpsData.altitude - gpsHomeAltitude);
+                    float residual = gpsData.altitude - gpsHomeAltitude;
+                    // Ignore spikes far from the current home estimate
+                    if (fabsf(residual) <= GPS_HOME_OUTLIER_M) {
+                        gpsHomeAltitude += GPS_HOME_ALPHA * residual;
+                    }
+                    // Restart the cpature whenever the fix is still drifting from home
+                    if (fabsf(residual) > GPS_HOME_STABLE_DELTA_M) {
+                        gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
+                    }
                 }
     
-                if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_SETTLE_TIME_MS) {
+                if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_STABLE_TIME_MS) {
                     gpsHomeSettled = true;
                 }
             }
@@ -311,7 +316,7 @@ void AttitudeManager::amUpdate() {
         if (rangefinderHomeInitialized) {
             rangefinderZ = rangefinderData.distance - rangefinderHomeAltitude;
             rangefinderZ *= cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
-            altholdKF.updateRangefinder(rangefinderZ);
+            // altholdKF.updateRangefinder(rangefinderZ);
         }
     }
 

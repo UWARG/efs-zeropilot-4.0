@@ -148,8 +148,12 @@ private:
     static constexpr float GPS_HOME_TIME_CONSTANT_S = 3.0f;
     static constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
     static constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
-    static constexpr float GPS_HOME_SETTLE_TIME_MS = 3 * GPS_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
-    uint32_t gpsHomeCalibStartMs = 0;
+    static constexpr uint8_t  GPS_MIN_SATELLITES      = 8;
+    static constexpr float    GPS_HOME_VACC_MAX_M     = 3.0f;
+    static constexpr float    GPS_HOME_OUTLIER_M      = 5.0f;
+    static constexpr float    GPS_HOME_STABLE_DELTA_M = 1.0f; 
+    static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 30000;
+    uint32_t gpsHomeCalibStartMs = 0; 
     static constexpr float RANGEFINDER_HOME_TIME_CONSTANT_S = 2.0f;
     static constexpr float RANGEFINDER_UPDATE_DT_S = 1.0f / 100.0f; // 100hz
     static constexpr float RANGEFINDER_HOME_ALPHA = RANGEFINDER_UPDATE_DT_S / (RANGEFINDER_HOME_TIME_CONSTANT_S + RANGEFINDER_UPDATE_DT_S);
