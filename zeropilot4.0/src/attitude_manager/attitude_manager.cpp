@@ -338,9 +338,12 @@ void AttitudeManager::amUpdate() {
     bool gpsReadyForMode = !activeCLAW->requiresGPS() || gpsHomeSettled;
     armingStatus->readyToArm = baroHomeSettled && gpsReadyForMode;
     armingStatus->armed = armedFlag;
-    armingStatus->prearmReason = !baroHomeSettled ? PrearmReason::BARO_NOT_SETTLED
-                                : !gpsReadyForMode ? PrearmReason::GPS_NOT_SETTLED
-                                : PrearmReason::NONE;
+    armingStatus->prearmReason = PrearmReason::NONE;
+    if (!baroHomeSettled) {
+        armingStatus->prearmReason = PrearmReason::BARO_NOT_SETTLED;
+    } else if (!gpsReadyForMode) {
+        armingStatus->prearmReason = PrearmReason::GPS_NOT_SETTLED;
+    }
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
