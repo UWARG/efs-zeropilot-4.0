@@ -222,6 +222,37 @@ RawImuBatch_t IMU::getBatch() {
     return rawImuDataBatch;
 }
 
+float IMU::getODRHz() {
+    switch (imuOdr) {
+        case IMU_ODR_32KHZ: return 32000.0f;
+        case IMU_ODR_16KHZ: return 16000.0f;
+        case IMU_ODR_8KHZ:  return 8000.0f;
+        case IMU_ODR_4KHZ:  return 4000.0f;
+        case IMU_ODR_2KHZ:  return 2000.0f;
+        case IMU_ODR_1KHZ:  return 1000.0f;
+        case IMU_ODR_500HZ: return 500.0f;
+        case IMU_ODR_200HZ: return 200.0f;
+        case IMU_ODR_100HZ: return 100.0f;
+        case IMU_ODR_50HZ:  return 50.0f;
+        case IMU_ODR_25HZ:  return 25.0f;
+        case IMU_ODR_12HZ5: return 12.5f;
+        default:            return 0.0f;
+    }
+}
+
+GyroBias_t IMU::getGyroStartupBias(uint8_t imuId) {
+    return (this->imuId == imuId) ? gyroBias : GyroBias_t{0.0f, 0.0f, 0.0f};
+}
+
+void IMU::flush() {
+    // Discard queued FIFO data and reset the DMA state machine
+    flushFIFO();
+    rxFlag = COUNT;
+    dmaDone = true;
+    fifoSize = 0;
+    rawImuDataBatch.count = 0;
+}
+
 HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
     HAL_StatusTypeDef status = setBank(bank);
     if (status != HAL_OK) {
@@ -452,26 +483,4 @@ void IMU::processRawData() {
 float IMU::lowPassFilter(float rawValue, int select) {
     filteredGyro[select] = alpha * rawValue + (1 - alpha) * filteredGyro[select];
     return filteredGyro[select];
-}
-
-float IMU::getODRHz() {
-    switch (imuOdr) {
-        case IMU_ODR_32KHZ: return 32000.0f;
-        case IMU_ODR_16KHZ: return 16000.0f;
-        case IMU_ODR_8KHZ:  return 8000.0f;
-        case IMU_ODR_4KHZ:  return 4000.0f;
-        case IMU_ODR_2KHZ:  return 2000.0f;
-        case IMU_ODR_1KHZ:  return 1000.0f;
-        case IMU_ODR_500HZ: return 500.0f;
-        case IMU_ODR_200HZ: return 200.0f;
-        case IMU_ODR_100HZ: return 100.0f;
-        case IMU_ODR_50HZ:  return 50.0f;
-        case IMU_ODR_25HZ:  return 25.0f;
-        case IMU_ODR_12HZ5: return 12.5f;
-        default:            return 0.0f;
-    }
-}
-
-GyroBias_t IMU::getGyroStartupBias(uint8_t imuId) {
-    return (this->imuId == imuId) ? gyroBias : GyroBias_t{0.0f, 0.0f, 0.0f};
 }

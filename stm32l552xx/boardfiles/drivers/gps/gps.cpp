@@ -557,6 +557,8 @@ bool GPS::parsePVT(uint16_t &idx) {
 
     // Skip hAcc(4) and vAcc(4) fields
     if (!incrementProcessBufferIndex(idx, 8)) return false;
+    tempData.hAcc = readInt32LE((uint8_t*)processBuffer, idx - 8) / 1000.0f; // mm to m
+    tempData.vAcc = readInt32LE((uint8_t*)processBuffer, idx - 4) / 1000.0f; // mm to m
 
     // Consume the NED velocities velN(4), velE(4), velD(4)
     if (!incrementProcessBufferIndex(idx, 12)) return false;
