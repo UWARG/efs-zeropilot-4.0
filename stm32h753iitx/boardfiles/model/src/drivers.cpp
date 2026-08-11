@@ -147,9 +147,9 @@ void initDrivers() {
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
     rcHandle->init();
-    telemLinkHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    telemLinkHandle->init();
     pmHandle->init();
     rangefinderHandle->init();
     barometerHandle->init();
