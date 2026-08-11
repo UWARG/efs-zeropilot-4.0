@@ -1,4 +1,4 @@
-#pragma once
+    #pragma once
 
 #include <cstdint>
 
@@ -35,6 +35,8 @@ typedef struct {
     float vx; // m/s
     float vy; // m/s
     float vz; // m/s
+    float hAcc; // m
+    float vAcc; // m
     bool isNew;
 } GpsData_t;
 
