@@ -32,10 +32,10 @@ typedef struct {
     uint8_t numSatellites;
     float altitude; // m, -1 if not valid
     float trackAngle; // deg
-    bool isNew;
     float vx; // m/s
     float vy; // m/s
     float vz; // m/s
+    bool isNew;
 } GpsData_t;
 
 
