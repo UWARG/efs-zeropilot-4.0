@@ -8,6 +8,7 @@
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
+#include "magnetometer_iface.hpp"
 #include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
@@ -41,6 +42,7 @@ public:
         IMathUtils *mathUtilsDriver,
         IGPS *gpsDriver,
         IIMU *imuDriver,
+        IMagnetometer *magDriver,
         IFFT *fftDriver,
         IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
@@ -60,6 +62,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    IMagnetometer *magDriver;
     IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
