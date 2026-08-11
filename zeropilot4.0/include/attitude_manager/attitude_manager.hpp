@@ -98,7 +98,7 @@ private:
     bool armedFlag = false;
     bool armStateChanged = false;
 
-    uint16_t lastServoOutputs[16] = {0};
+    uint16_t lastServoOutputs[16] = {};
 
     uint16_t amSchedulingCounter = 0;
 
@@ -136,7 +136,7 @@ private:
     bool gpsHomeInitialized = false;
     bool gpsHomeSettled = false;
 
-    static constexpr float BARO_HOME_TIME_CONSTANT_S = 5.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
+    static constexpr float BARO_HOME_TIME_CONSTANT_S = 2.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
     static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
     static constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
     static constexpr float BARO_HOME_SETTLE_TIME_MS = 3 * BARO_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
@@ -148,7 +148,7 @@ private:
     static constexpr float GPS_HOME_VACC_MAX_M = 3.0f;
     static constexpr float GPS_HOME_OUTLIER_M = 5.0f;
     static constexpr float GPS_HOME_STABLE_DELTA_M = 1.0f; 
-    static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 30000;
+    static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 10000;
     uint32_t gpsHomeCalibStartMs = 0; 
 
     float baroZ = 0.0f;
