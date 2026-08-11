@@ -98,6 +98,12 @@ typedef union TMMessageData_u {
     int16_t temperature;
     int16_t temperaturePressDiff;
   } scaledPressureData;
+
+  struct {
+      float altitudeAmsl;
+      float altitudeRelative;
+  } globalPositionIntData;
+  
 } TMMessageData_t;
 
 typedef struct TMMessage{
@@ -110,7 +116,8 @@ typedef struct TMMessage{
         BATTERY_DATA,
         RAW_IMU_DATA,
         ATTITUDE_DATA,
-        SCALED_PRESSURE_DATA
+        SCALED_PRESSURE_DATA,
+        GLOBAL_POSITION_INT_DATA
     } dataType;
     TMMessageData_t tmMessageData;
     uint32_t timeBootMs = 0;
@@ -162,6 +169,11 @@ inline TMMessage_t scaledPressurePack(uint32_t time_boot_ms, float press_abs_kpa
         }
     };
     return TMMessage_t{TMMessage_t::SCALED_PRESSURE_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t globalPositionIntPack(uint32_t time_boot_ms, float altitude_amsl, float altitude_relative) {
+    const TMMessageData_t DATA = {.globalPositionIntData = {altitude_amsl, altitude_relative}};
+    return TMMessage_t{TMMessage_t::GLOBAL_POSITION_INT_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t servoOutputRawPack(uint32_t time_boot_ms, uint8_t port, const uint16_t servo_values[16]) {
