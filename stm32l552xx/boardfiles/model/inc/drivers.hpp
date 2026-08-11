@@ -19,7 +19,7 @@
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fft.hpp"
-#include "rangefinder.hpp"
+#include "tf02pro.hpp"
 #include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
