@@ -28,19 +28,22 @@ Rangefinder::Rangefinder(I2C_HandleTypeDef *hi2c) : hi2c(hi2c) {}
 
 int Rangefinder::init() {
     // Check firmware version to see if the rangefinder is present and alive
-    if (!sendCmdCheckResp(FIRMWARE_VERSION_CMD, sizeof(FIRMWARE_VERSION_CMD), FIRMWARE_VERSION_RESPONSE, sizeof(FIRMWARE_VERSION_RESPONSE))) {
+    if (sendCmdCheckResp(FIRMWARE_VERSION_CMD, sizeof(FIRMWARE_VERSION_CMD), 
+                        FIRMWARE_VERSION_RESPONSE, sizeof(FIRMWARE_VERSION_RESPONSE)) != HAL_OK) {
         return -1;
     }
 
     // Configure output format to centimeters
-    if (!sendCmdCheckResp(OUTPUT_FORMAT_CM_CMD, sizeof(OUTPUT_FORMAT_CM_CMD), OUTPUT_FORMAT_CM_SUCCESS_RESPONSE, sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE))) {
+    if (sendCmdCheckResp(OUTPUT_FORMAT_CM_CMD, sizeof(OUTPUT_FORMAT_CM_CMD), 
+                        OUTPUT_FORMAT_CM_SUCCESS_RESPONSE, sizeof(OUTPUT_FORMAT_CM_SUCCESS_RESPONSE)) != HAL_OK) {
         return -1;
     }
 
     // Maybe configure the frame rate, but the default is 100Hz which is fine for now
 
     // Save configs
-    if (!sendCmdCheckResp(SAVE_CONFIG_CMD, sizeof(SAVE_CONFIG_CMD), SAVE_CONFIG_SUCCESS_RESPONSE, sizeof(SAVE_CONFIG_SUCCESS_RESPONSE))) {
+    if (sendCmdCheckResp(SAVE_CONFIG_CMD, sizeof(SAVE_CONFIG_CMD), 
+                        SAVE_CONFIG_SUCCESS_RESPONSE, sizeof(SAVE_CONFIG_SUCCESS_RESPONSE)) != HAL_OK) {
         return -1;
     }
     return 0;
@@ -142,22 +145,26 @@ HAL_StatusTypeDef Rangefinder::readDataBlocking(uint8_t* receiveBuffer, uint16_t
     return HAL_OK;
 }
 
-bool Rangefinder::sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize,
-                                    const uint8_t *expectedResp, uint16_t expectedRespSize) {
+HAL_StatusTypeDef Rangefinder::sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize,
+                                                const uint8_t *expectedResp, uint16_t expectedRespSize) {
     uint8_t receiveBuffer[MAX_CMD_RESPONSE_LENGTH] = {0};
 
-    if (writeDataBlocking((uint8_t*)cmd, cmdSize, HAL_MAX_DELAY) != HAL_OK) {
-        return false;
+    HAL_StatusTypeDef status = writeDataBlocking((uint8_t*)cmd, cmdSize, HAL_MAX_DELAY);
+    if (status != HAL_OK) {
+        return status;
     }
+
     HAL_Delay(TF02PRO_PROCESS_CMD_DELAY_MS);
-    if (readDataBlocking(receiveBuffer, expectedRespSize, HAL_MAX_DELAY) != HAL_OK) {
-        return false;
+
+    status = readDataBlocking(receiveBuffer, expectedRespSize, HAL_MAX_DELAY);
+    if (status != HAL_OK) {
+        return status;
     }
 
     for (uint8_t i = 0; i < expectedRespSize; i++) {
         if (receiveBuffer[i] != expectedResp[i]) {
-            return false;
+            return HAL_ERROR; // Device responded but does not match the expected response
         }
     }
-    return true;
+    return HAL_OK;
 }
