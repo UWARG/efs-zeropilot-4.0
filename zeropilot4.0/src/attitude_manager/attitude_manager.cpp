@@ -206,7 +206,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get rangefinder data
-    RangefinderData_t rangefinderData;
+    RangefinderData_t rangefinderData = {0};
     if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
         rangefinderData = rangefinderDriver->readData();
     }
