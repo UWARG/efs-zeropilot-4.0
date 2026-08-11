@@ -12,6 +12,7 @@ public:
 
     void update_from_plant(float sim_altitude) {
         data.distance = sim_altitude;
+        data.signalStrength = 65535;
         data.isValid = true;
         data.isNew = true;
     }
