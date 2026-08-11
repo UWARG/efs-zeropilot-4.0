@@ -136,7 +136,9 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
-    rangefinderHandle->init();
+    if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
+        rangefinderHandle->init();
+    }
     barometerHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()

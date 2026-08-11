@@ -206,7 +206,10 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get rangefinder data
-    RangefinderData_t rangefinderData = rangefinderDriver->readData();
+    RangefinderData_t rangefinderData;
+    if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
+        rangefinderData = rangefinderDriver->readData();
+    }
 
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
