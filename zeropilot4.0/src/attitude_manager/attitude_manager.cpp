@@ -206,7 +206,7 @@ void AttitudeManager::amUpdate() {
     }
 
     // Get rangefinder data
-    RangefinderData_t rangefinderData = {0};
+    RangefinderData_t rangefinderData = {};
     if (rangefinderDriver != nullptr) {
         rangefinderData = rangefinderDriver->readData();
     }
