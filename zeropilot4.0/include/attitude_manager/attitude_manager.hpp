@@ -132,10 +132,6 @@ private:
     bool baroHomeInitialized = false;
     bool baroHomeSettled = false;
 
-    float rangefinderHomeAltitude = 0.0f;
-    bool rangefinderHomeInitialized = false;
-    bool rangefinderHomeSettled = false;
-
     float gpsHomeAltitude = 0.0f;
     bool gpsHomeInitialized = false;
     bool gpsHomeSettled = false;
@@ -154,24 +150,6 @@ private:
     static constexpr float GPS_HOME_STABLE_DELTA_M = 1.0f; 
     static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 30000;
     uint32_t gpsHomeCalibStartMs = 0; 
-    static constexpr float RANGEFINDER_HOME_TIME_CONSTANT_S = 2.0f;
-    static constexpr float RANGEFINDER_UPDATE_DT_S = 1.0f / 100.0f; // 100hz
-    static constexpr float RANGEFINDER_HOME_ALPHA = RANGEFINDER_UPDATE_DT_S / (RANGEFINDER_HOME_TIME_CONSTANT_S + RANGEFINDER_UPDATE_DT_S);
-    static constexpr float RANGEFINDER_HOME_SETTLE_TIME_MS = 3 * RANGEFINDER_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
-    static constexpr float RANGEFINDER_HOME_MAX_STANDOFF_M = 1.0f; // Reject home samples beyond this (eg. powered on while held)
-    uint32_t rangefinderHomeCalibStartMs = 0;
-
-    uint32_t baroLostStartMs = 0;
-    uint32_t rangefinderLostStartMs = 0;
-    uint32_t gpsLostStartMs = 0;
-
-    bool baroLost = false;
-    bool rangefinderLost = false;
-    bool gpsLost = false;
-
-    static constexpr uint32_t BARO_LOST_TIMEOUT_MS = 5000; // 2 seconds
-    static constexpr uint32_t RANGFINDER_LOST_TIMEOUT_MS = 5000; // 2 seconds
-    static constexpr uint32_t GPS_LOST_TIMEOUT_MS = 5000; // 5 seconds
 
     float baroZ = 0.0f;
     float gpsZ = 0.0f;

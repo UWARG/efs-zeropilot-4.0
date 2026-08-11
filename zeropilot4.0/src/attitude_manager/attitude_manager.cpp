@@ -96,7 +96,7 @@ AttitudeManager::AttitudeManager(
         //     initAltHoldStates[2] = scaledImuData.data[scaledImuData.count - 1].zacc; // Use the last IMU sample's z-accel for initialization
         // }
         altholdKF.init(altholdCfg, initAltHoldStates);
-        altholdKF.setBaroBiasEnabled(false);
+        altholdKF.setBaroBiasEnabled(false); // Enable later when we have RTK GPS so GPS altitude can be used to correct barometer bias
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -224,15 +224,6 @@ void AttitudeManager::amUpdate() {
             baroZ = baroData.altitude - baroHomeAltitude;
             altholdKF.updateBarometer(baroZ);
         }
-    } else {
-        // if (!baroLost) {
-        //     baroLostStartMs = systemUtilsDriver->getCurrentTimestampMs();
-        //     baroLost = true;
-        // }
-        // if (baroLost && (systemUtilsDriver->getCurrentTimestampMs() - baroLostStartMs) >= BARO_LOST_TIMEOUT_MS) {
-        //     altholdKF.setBaroBiasEnabled(false); // Disable barometer bias correction if barometer is lost for a long time
-        //     baroHomeSettled = false;
-        // }
     }
 
     // Send scaled pressure data to TM
@@ -276,15 +267,6 @@ void AttitudeManager::amUpdate() {
                 altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down); KF vz is positive up
             }
         }
-    } else {
-        // if (!gpsLost) {
-        //     gpsLostStartMs = systemUtilsDriver->getCurrentTimestampMs();
-        //     gpsLost = true;
-        // }
-        // if (gpsLost && (systemUtilsDriver->getCurrentTimestampMs() - gpsLostStartMs) >= GPS_LOST_TIMEOUT_MS) {
-        //     altholdKF.setBaroBiasEnabled(false); // Disable baro bias correction if GPS is lost for a long time
-        //     gpsHomeSettled = false;
-        // }
     }
     
     // Send GPS data to telemetry manager
@@ -298,26 +280,8 @@ void AttitudeManager::amUpdate() {
     // Get rangefinder data
     rangefinderData = rangefinderDriver->readData();
     if (rangefinderData.isNew && rangefinderData.isValid) {
+        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
         lastValidClearance = rangefinderData.distance;
-        if (!armedFlag && !rangefinderHomeSettled && rangefinderData.distance <= RANGEFINDER_HOME_MAX_STANDOFF_M) {
-            if (!rangefinderHomeInitialized) {
-                rangefinderHomeAltitude = rangefinderData.distance; // Seed first sample, need an initial sample for EMA
-                rangefinderHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
-                rangefinderHomeInitialized = true;
-            } else {
-                rangefinderHomeAltitude += RANGEFINDER_HOME_ALPHA * (rangefinderData.distance - rangefinderHomeAltitude);
-            }
-
-            if ((systemUtilsDriver->getCurrentTimestampMs() - rangefinderHomeCalibStartMs) >= RANGEFINDER_HOME_SETTLE_TIME_MS) {
-                rangefinderHomeSettled = true;
-            }
-        }
-
-        if (rangefinderHomeInitialized) {
-            rangefinderZ = rangefinderData.distance - rangefinderHomeAltitude;
-            rangefinderZ *= cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
-            // altholdKF.updateRangefinder(rangefinderZ);
-        }
     }
 
     altitude = altholdKF.getEstimatedAltitude();
@@ -329,7 +293,7 @@ void AttitudeManager::amUpdate() {
         sendAltitudeDataToTelemetryManager(
             altAMSL, // altitude_amsl: GPS MSL altitude
             altitude, // altitude_relative: KF altitude above takeoff
-            altholdKF.getAltTerrain(), // altitude_terrain: KF altitude above terrain
+            0.0f, // altitude_terrain: 
             lastValidClearance
         );
     }

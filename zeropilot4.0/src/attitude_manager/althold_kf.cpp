@@ -3,7 +3,7 @@
 AltholdKF::AltholdKF(IMathUtils* mathUtils) : 
     math(mathUtils) {}
 
-void AltholdKF::init(AltholdConfig config, float initStates[5]) {
+void AltholdKF::init(AltholdConfig config, float initStates[4]) {
     this->config = config;
     for (int i = 0; i < STATE_SIZE; ++i) {
         states[i] = initStates[i]; // Initialize states to the provided initial values
@@ -12,8 +12,6 @@ void AltholdKF::init(AltholdConfig config, float initStates[5]) {
         B[i] = 0.0f; // Initialize B to zero for later use
     }
     dtPrev = 0;
-    // dtMin = 0;
-    // dtMax = 1000000; // 1 second in microseconds
 }
 
 void AltholdKF::predict(float u, float dt) {
@@ -42,48 +40,37 @@ void AltholdKF::predict(float u, float dt) {
     math->matrixAdd(FPFt, Q, P, STATE_SIZE, STATE_SIZE); // P = F * P * F^T + Q
 }
 
-void AltholdKF::updateRangefinder(float altitude) {
-    rangeUpdateCount++;
-    update(altitude, measMatRangefinder, config.measNoiseRangefinder, rangefinderRejectCount, &AltholdKF::rangefinderGatingWrapper);
-}
-
 void AltholdKF::updateBarometer(float altitude) {
     baroUpdateCount++;
-    update(altitude, measMatBaro, config.measNoiseBarometer, barometerRejectCount, nullptr);
+    update(altitude, measMatBaro, config.measNoiseBarometer);
 }
 
 void AltholdKF::updateGPSAlt(float altitude) {
     gpsUpdateCount++;
-    update(altitude, measMatGPSAlt, config.measNoiseGPSAlt, gpsAltRejectCount, nullptr);
+    update(altitude, measMatGPSAlt, config.measNoiseGPSAlt);
 }
 
 void AltholdKF::updateGPSVel(float verticalVelocity) {
-    update(verticalVelocity, measMatGPSVel, config.measNoiseGPSVel, gpsVelRejectCount, nullptr);
+    update(verticalVelocity, measMatGPSVel, config.measNoiseGPSVel);
 }
 
 float AltholdKF::getEstimatedAltitude() {
     return states[0];
 }
 
-float AltholdKF::getAltTerrain() {
-    return states[0] - states[4];
-}
-
 void AltholdKF::rebuildFBQ(float dt) {
     /*
-    [1, dt, -0.5*dt**2, 0, 0],
-    [0, 1, -dt, 0, 0],
-    [0, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 1]
+    [1, dt, -0.5*dt**2, 0],
+    [0, 1, -dt, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1]
     */
     F[1] = dt;
     F[2] = -0.5 * dt * dt;
-    F[7] = -dt;
+    F[6] = -dt;
     /*
     [0.5 * dt**2],
     [dt],
-    [0],
     [0],
     [0]
     */
@@ -91,22 +78,20 @@ void AltholdKF::rebuildFBQ(float dt) {
     B[1] = dt;
 
     /*
-    [0.25*dt**4 * self.accel_var, 0.5*dt**3 * self.accel_var, 0, 0, 0],
-    [0.5*dt**3 * self.accel_var, dt**2 * self.accel_var, 0, 0, 0],
-    [0, 0, dt * self.accel_bias_var, 0, 0],
-    [0, 0, 0, dt * self.baro_bias_var, 0],
-    [0, 0, 0, 0, dt * self.h_terrain_var]
+    [0.25*dt**4 * self.accel_var, 0.5*dt**3 * self.accel_var, 0, 0],
+    [0.5*dt**3 * self.accel_var, dt**2 * self.accel_var, 0, 0],
+    [0, 0, dt * self.accel_bias_var, 0],
+    [0, 0, 0, dt * self.baro_bias_var]
     */
-    Q[0] = config.processNoiseAccel * dt * dt * dt * dt / 4.0f;
-    Q[1] = config.processNoiseAccel * dt * dt * dt / 2.0f;
-    Q[5] = config.processNoiseAccel * dt * dt * dt / 2.0f;
-    Q[6] = config.processNoiseAccel * dt * dt;
-    Q[12] = config.processNoiseBiasAccel * dt;
-    Q[18] = baroBiasEnabled ? config.processNoiseBiasBaro * dt : 0.0f;
-    Q[24] = config.processNoiseTerrainAlt * dt;
+    Q[0]  = config.processNoiseAccel * dt * dt * dt * dt / 4.0f;
+    Q[1]  = config.processNoiseAccel * dt * dt * dt / 2.0f;
+    Q[4]  = config.processNoiseAccel * dt * dt * dt / 2.0f;
+    Q[5]  = config.processNoiseAccel * dt * dt;
+    Q[10] = config.processNoiseBiasAccel * dt;
+    Q[15] = baroBiasEnabled ? config.processNoiseBiasBaro * dt : 0.0f; 
 }
 
-void AltholdKF::update(float measurement,const float *H, float R, uint8_t &rejectCount, void (AltholdKF::*gatingWrapper)(uint8_t &rejectCount)) {
+void AltholdKF::update(float measurement, const float *H, float R) {
     float Ht[STATE_SIZE * 1];
     math->matrixTranspose(H, 1, STATE_SIZE, Ht); // H^T
     float PHt[STATE_SIZE * 1];
@@ -125,14 +110,8 @@ void AltholdKF::update(float measurement,const float *H, float R, uint8_t &rejec
     float nis = y * y / S[0];
     if (nis > 16.0f) {
         // Reject
-        if (gatingWrapper != nullptr) {
-            (this->*gatingWrapper)(rejectCount);
-        } else {
-            rejectCount++;
-        }
         return;
     }
-    rejectCount = 0;
 
     float Sinv[1 * 1];
     math->matrixInverse(S, 1, Sinv); // S^-1
@@ -165,20 +144,7 @@ void AltholdKF::update(float measurement,const float *H, float R, uint8_t &rejec
     math->matrixMult(KR, STATE_SIZE, 1, Kt, STATE_SIZE, KRKt); // K * R * K^T
     math->matrixAdd(IKHPIKHt, KRKt, P, STATE_SIZE, STATE_SIZE); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
     math->ensureSymmetric(P, STATE_SIZE);
-    // float ptempT[STATE_SIZE * STATE_SIZE];
-    // math->matrixTranspose(Ptemp, STATE_SIZE, STATE_SIZE, ptempT); // Ptemp^T
-    // math->matrixAdd(Ptemp, ptempT, P, STATE_SIZE, STATE_SIZE); // (Ptemp + Ptemp^T)
-    // math->matrixScale(P, 0.5f, P, STATE_SIZE, STATE_SIZE); // P = 0.5 * (Ptemp + Ptemp^T) to ensure symmetry
     return;
-}
-
-void AltholdKF::rangefinderGatingWrapper(uint8_t &rangefinderRejectCount) {
-    rangefinderRejectCount++;
-    if (rangefinderRejectCount > 50) { // 0.5 seconds at 100 Hz
-        // Inflate terrainAlt cov to signal that we no longer know it well
-        P[24] = 10.0f;
-        rangefinderRejectCount = 0;
-    }
 }
 
 void AltholdKF::setBaroBiasEnabled(bool enabled) {
@@ -187,7 +153,7 @@ void AltholdKF::setBaroBiasEnabled(bool enabled) {
     // if disabled, rebuildRBQ() will set biasBaro's process noise to zero to temporarily freeze it, 
     // so alt and vertical velocity can be still observable (2 sensors with 2 biases is not observable)
     baroBiasEnabled = enabled;
-    dtPrev = -1.0f;  // force rebuildFBQ() next predict so Q[18] is refreshed
+    dtPrev = -1.0f;  // force rebuildFBQ() next predict so Q[15] (baro bias) is refreshed
     if (!enabled) {
         // Freeze biasBaro's covariance, zero row 3 and col 3 of P
         // This means the filter now believes it knows baro bias exactly, and will not update it anymore
@@ -199,12 +165,4 @@ void AltholdKF::setBaroBiasEnabled(bool enabled) {
         // Enable, give it initial uncertainty so it can be estimated again
         P[3 * STATE_SIZE + 3] = 1.0f;
     }
-}
-
-void AltholdKF::setRangefinderBiasEnabled(bool enabled) {
-    
-}
-
-void AltholdKF::setGPSBiasEnabled(bool enabled) {
-    
 }
