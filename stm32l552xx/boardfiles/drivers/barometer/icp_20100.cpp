@@ -109,6 +109,7 @@ static constexpr float ICP20100_KELVIN_OFFSET = 273.15f;
 static constexpr float ICP20100_TEMP_LAPSE_RATE = 0.0065f;          // K/m
 static constexpr float ICP20100_SEA_LEVEL_PRESSURE_KPA = 101.325f;
 static constexpr float ICP20100_BAROMETRIC_EXPONENT = 0.190284f;
+static constexpr float ICP20100_STD_SEA_LEVEL_TEMP_K = 288.15f;
 
 // Use a FIXED sea-level reference temperature (288.15 K) for the altitude formula, NOT
 // the live temperature. Altitude scales linearly with the temperature, which self-heats after power-on, 
