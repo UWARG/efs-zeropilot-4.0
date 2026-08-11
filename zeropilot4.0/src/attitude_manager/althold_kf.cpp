@@ -3,7 +3,7 @@
 AltholdKF::AltholdKF(IMathUtils* mathUtils) : 
     math(mathUtils) {}
 
-void AltholdKF::init(AltholdConfig config, float initStates[4]) {
+void AltholdKF::init(AltholdConfig_t config, float initStates[4]) {
     this->config = config;
     for (int i = 0; i < STATE_SIZE; ++i) {
         states[i] = initStates[i]; // Initialize states to the provided initial values
@@ -15,13 +15,11 @@ void AltholdKF::init(AltholdConfig config, float initStates[4]) {
 }
 
 void AltholdKF::predict(float u, float dt) {
-    // dt = std::max(dtMin, std::min(dtMax, dt)); // Clamp dt to [dtMin, dtMax] so big dt dont blow up Q
+    // NOLINTBEGIN(readability-identifier-naming) 
     if (dtPrev != dt) { // Avoid rebuilding F, B, Q if dt hasn't changed
         rebuildFBQ(dt);
         dtPrev = dt;
     }
-    // dtMin = 0.5f * dt;
-    // dtMax = 5.0f * dt;
 
     // State prediction using vertical acceleration as control input
     float fx[STATE_SIZE * 1];
@@ -38,27 +36,29 @@ void AltholdKF::predict(float u, float dt) {
     float FPFt[STATE_SIZE * STATE_SIZE];
     math->matrixMult(FP, STATE_SIZE, STATE_SIZE, Ft, STATE_SIZE, FPFt); // F * P * F^T
     math->matrixAdd(FPFt, Q, P, STATE_SIZE, STATE_SIZE); // P = F * P * F^T + Q
+    // NOLINTEND(readability-identifier-naming)
 }
 
 void AltholdKF::updateBarometer(float altitude) {
     baroUpdateCount++;
-    update(altitude, measMatBaro, config.measNoiseBarometer);
+    update(altitude, H_BARO, config.measNoiseBarometer);
 }
 
 void AltholdKF::updateGPSAlt(float altitude) {
     gpsUpdateCount++;
-    update(altitude, measMatGPSAlt, config.measNoiseGPSAlt);
+    update(altitude, H_GPS_ALT, config.measNoiseGPSAlt);
 }
 
 void AltholdKF::updateGPSVel(float verticalVelocity) {
-    update(verticalVelocity, measMatGPSVel, config.measNoiseGPSVel);
+    update(verticalVelocity, H_GPS_VEL, config.measNoiseGPSVel);
 }
 
 float AltholdKF::getEstimatedAltitude() {
-    return states[0];
+    return states[ALTHOLD_STATE_ALTITUDE];
 }
 
 void AltholdKF::rebuildFBQ(float dt) {
+    // NOLINTBEGIN(readability-identifier-naming)
     /*
     [1, dt, -0.5*dt**2, 0],
     [0, 1, -dt, 0],
@@ -89,9 +89,11 @@ void AltholdKF::rebuildFBQ(float dt) {
     Q[5]  = config.processNoiseAccel * dt * dt;
     Q[10] = config.processNoiseBiasAccel * dt;
     Q[15] = baroBiasEnabled ? config.processNoiseBiasBaro * dt : 0.0f; 
+    // NOLINTEND(readability-identifier-naming)
 }
 
 void AltholdKF::update(float measurement, const float *H, float R) {
+    // NOLINTBEGIN(readability-identifier-naming)
     float Ht[STATE_SIZE * 1];
     math->matrixTranspose(H, 1, STATE_SIZE, Ht); // H^T
     float PHt[STATE_SIZE * 1];
@@ -144,14 +146,13 @@ void AltholdKF::update(float measurement, const float *H, float R) {
     math->matrixMult(KR, STATE_SIZE, 1, Kt, STATE_SIZE, KRKt); // K * R * K^T
     math->matrixAdd(IKHPIKHt, KRKt, P, STATE_SIZE, STATE_SIZE); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
     math->ensureSymmetric(P, STATE_SIZE);
+    // NOLINTEND(readability-identifier-naming)
     return;
 }
 
 void AltholdKF::setBaroBiasEnabled(bool enabled) {
     if (enabled == baroBiasEnabled) return;
 
-    // if disabled, rebuildRBQ() will set biasBaro's process noise to zero to temporarily freeze it, 
-    // so alt and vertical velocity can be still observable (2 sensors with 2 biases is not observable)
     baroBiasEnabled = enabled;
     dtPrev = -1.0f;  // force rebuildFBQ() next predict so Q[15] (baro bias) is refreshed
     if (!enabled) {

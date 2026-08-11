@@ -1,12 +1,12 @@
 #include "mathutils_iface.hpp"
 
-typedef struct {
-    float altitude;
-    float verticalVelocity;
-    float biasAccel;
-    float biasBaro;
-    float terrainAlt;
-} AltholdStates;
+// Unscoped on purpose: these are used directly as indices into states[].
+enum AltholdStatesIdx_e {
+    ALTHOLD_STATE_ALTITUDE,
+    ALTHOLD_STATE_VERTICAL_VELOCITY,
+    ALTHOLD_STATE_BIAS_ACCEL,
+    ALTHOLD_STATE_BIAS_BARO
+};
 
 typedef struct {
     float processNoiseAccel;
@@ -17,12 +17,12 @@ typedef struct {
     float measNoiseRangefinder;
     float measNoiseGPSAlt;
     float measNoiseGPSVel;
-} AltholdConfig;
+} AltholdConfig_t;
 
 class AltholdKF {
 public:
     AltholdKF(IMathUtils* mathUtils);
-    void init(AltholdConfig config, float initStates[4]);
+    void init(AltholdConfig_t config, float initStates[4]);
     void predict(float u, float dt);
     void updateBarometer(float altitude);
     void updateGPSAlt(float altitude);
@@ -33,7 +33,7 @@ public:
 private:
     IMathUtils* math;
     
-    AltholdConfig config;
+    AltholdConfig_t config;
     static constexpr uint16_t STATE_SIZE = 4;
     /*
     z: altitude from takeoff 
@@ -43,17 +43,19 @@ private:
     */
     float states[STATE_SIZE] = {};
 
+    // NOLINTBEGIN(readability-identifier-naming)
     float P[STATE_SIZE * STATE_SIZE] = {}; // Covariance matrix
 
     // H
-    const float measMatBaro[STATE_SIZE] = {1.0f, 0, 0, 1.0f};
-    const float measMatGPSAlt[STATE_SIZE] = {1.0f, 0, 0, 0};
-    const float measMatGPSVel[STATE_SIZE] = {0, 1.0f, 0, 0};
+    const float H_BARO[STATE_SIZE] = {1.0f, 0, 0, 1.0f};
+    const float H_GPS_ALT[STATE_SIZE] = {1.0f, 0, 0, 0};
+    const float H_GPS_VEL[STATE_SIZE] = {0, 1.0f, 0, 0};
 
     float F[STATE_SIZE * STATE_SIZE] = {}; // State transition matrix
     float B[STATE_SIZE] = {}; // Control input matrix
     float Q[STATE_SIZE * STATE_SIZE] = {}; // Process noise covariance
-
+    // NOLINTEND(readability-identifier-naming)
+    
     float dtPrev;
 
     bool baroBiasEnabled = true;

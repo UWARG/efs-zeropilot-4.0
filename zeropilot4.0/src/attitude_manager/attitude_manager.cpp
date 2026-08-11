@@ -74,7 +74,7 @@ AttitudeManager::AttitudeManager(
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
         */
 
-        AltholdConfig altholdCfg = {
+        AltholdConfig_t altholdCfg = {
             .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.02f,
             .processNoiseBiasBaro = 0.000001f,
