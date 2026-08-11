@@ -30,4 +30,5 @@ private:
 
     HAL_StatusTypeDef writeDataBlocking(uint8_t* cmd, uint16_t cmdSize, uint32_t delay);
     HAL_StatusTypeDef readDataBlocking(uint8_t* receiveBuffer, uint16_t size, uint32_t delay);
+    bool sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize, const uint8_t *expectedResp, uint16_t expectedRespSize);
 };
