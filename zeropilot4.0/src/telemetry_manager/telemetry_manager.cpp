@@ -129,15 +129,17 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
-            case TMMessage_t::ALTITUDE_DATA: {
-                auto altitudeData = tmqMessage.tmMessageData.altitudeData;
-                mavlink_msg_altitude_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
-                    0, // altitude_monotonic: unused
-                    altitudeData.altitudeAmsl,
-                    0, // altitude_local: unused
-                    altitudeData.altitudeRelative,
-                    altitudeData.altitudeTerrain,
-                    altitudeData.bottomClearance);
+            case TMMessage_t::GLOBAL_POSITION_INT_DATA: {
+                auto globalPositionIntData = tmqMessage.tmMessageData.globalPositionIntData;
+                mavlink_msg_global_position_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs,
+                    0, // lat: unused, add when EKF supports these
+                    0, // lon: unused, add when EKF supports these
+                    (int32_t)(globalPositionIntData.altitudeAmsl * 1000.0f), // alt (MSL) in mm
+                    (int32_t)(globalPositionIntData.altitudeRelative * 1000.0f), // relative_alt (above home) in mm
+                    0, // vx: unused, add when EKF supports these
+                    0, // vy: unused, add when EKF supports these
+                    0, // vz: unused, add when EKF supports these
+                    UINT16_MAX); // vz: unused, add when EKF supports these
                 break;
             }
 

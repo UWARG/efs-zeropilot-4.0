@@ -29,7 +29,7 @@
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
 #define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
-#define AM_TELEMETRY_ALTITUDE_DATA_RATE_HZ 10
+#define AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ 10
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
@@ -170,7 +170,7 @@ private:
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
-    void sendAltitudeDataToTelemetryManager(float altitudeAmsl, float altitudeRelative, float altitudeTerrain, float bottomClearance);
+    void sendGlobalPositionIntToTelemetryManager(float altitudeAmsl, float altitudeRelative);
     void sendServoOutputRawToTelemetryManager();
     void sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id = 0, uint8_t chunk_seq = 0);
 };

@@ -287,14 +287,12 @@ void AttitudeManager::amUpdate() {
     altitude = altholdKF.getEstimatedAltitude();
     droneState.altitude = altitude;
 
-    // Send altitude data to telemetry manager
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ALTITUDE_DATA_RATE_HZ) == 0) {
+    // Send global position (altitude) data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ) == 0) {
         float altAMSL = (gpsData.altitude != -1) ? lastValidGps.altitude : -1.0f;
-        sendAltitudeDataToTelemetryManager(
+        sendGlobalPositionIntToTelemetryManager(
             altAMSL, // altitude_amsl: GPS MSL altitude
-            altitude, // altitude_relative: KF altitude above takeoff
-            0.0f, // altitude_terrain: 
-            lastValidClearance
+            altitude // altitude_relative: KF altitude above takeoff
         );
     }
 
@@ -592,16 +590,14 @@ void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroD
     tmQueue->push(&pressureDataMsg);
 }
 
-void AttitudeManager::sendAltitudeDataToTelemetryManager(float altitudeAmsl, float altitudeRelative, float altitudeTerrain, float bottomClearance) {
-    TMMessage_t altitudeDataMsg = altitudeDataPack(
+void AttitudeManager::sendGlobalPositionIntToTelemetryManager(float altitudeAmsl, float altitudeRelative) {
+    TMMessage_t globalPositionIntMsg = globalPositionIntPack(
         systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
         altitudeAmsl,
-        altitudeRelative,
-        altitudeTerrain,
-        bottomClearance
+        altitudeRelative
     );
 
-    tmQueue->push(&altitudeDataMsg);
+    tmQueue->push(&globalPositionIntMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {

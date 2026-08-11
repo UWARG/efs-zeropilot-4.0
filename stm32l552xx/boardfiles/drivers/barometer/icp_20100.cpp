@@ -111,11 +111,6 @@ static constexpr float ICP20100_SEA_LEVEL_PRESSURE_KPA = 101.325f;
 static constexpr float ICP20100_BAROMETRIC_EXPONENT = 0.190284f;
 static constexpr float ICP20100_STD_SEA_LEVEL_TEMP_K = 288.15f;
 
-// Use a FIXED sea-level reference temperature (288.15 K) for the altitude formula, NOT
-// the live temperature. Altitude scales linearly with the temperature, which self-heats after power-on, 
-// so feeding it in makes the reported altitude drift upward at constant pressure
-static constexpr float ICP20100_STD_SEA_LEVEL_TEMP_K = 288.15f;
-
 // Timing
 static constexpr uint32_t ICP20100_POWER_MODE_DELAY_MS = 4U;        // Settle after entering power mode (datasheet)
 static constexpr uint32_t ICP20100_SHORT_DELAY_MS = 1U;             // Brief settle / poll delay

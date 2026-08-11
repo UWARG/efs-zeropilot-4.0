@@ -36,7 +36,7 @@ private:
     AltholdConfig config;
     static constexpr uint16_t STATE_SIZE = 4;
     /*
-    z: altitutude from takeoff 
+    z: altitude from takeoff 
     vz: vertical velocity
     b_accel: accelerometer bias
     b_baro: barometer bias
