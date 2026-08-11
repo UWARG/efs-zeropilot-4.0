@@ -131,7 +131,7 @@ void TelemetryManager::processTXMsgQueue() {
 
             case TMMessage_t::DISTANCE_SENSOR_DATA: {
                 auto distanceSensorData = tmqMessage.tmMessageData.distanceSensorData;
-                mavlink_msg_distance_sensor_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, distanceSensorData.min_distance, distanceSensorData.max_distance, distanceSensorData.current_distance, MAV_DISTANCE_SENSOR_LASER, distanceSensorData.id, MAV_SENSOR_ROTATION_PITCH_270, distanceSensorData.covariance, distanceSensorData.horizontal_fov, distanceSensorData.vertical_fov, distanceSensorData.quaternion, distanceSensorData.signal_quality);
+                mavlink_msg_distance_sensor_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, distanceSensorData.minDistance, distanceSensorData.maxDistance, distanceSensorData.currentDistance, MAV_DISTANCE_SENSOR_LASER, distanceSensorData.id, MAV_SENSOR_ROTATION_PITCH_270, distanceSensorData.covariance, distanceSensorData.horizontalFov, distanceSensorData.verticalFov, distanceSensorData.quaternion, distanceSensorData.signalQuality);
                 break;
             }
 

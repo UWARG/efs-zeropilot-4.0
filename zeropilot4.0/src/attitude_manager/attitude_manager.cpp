@@ -501,7 +501,7 @@ void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroD
 }
 
 void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData) {
-    float invalid_quaternion[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    float invalidQuaternion[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
     TMMessage_t rangefinderDataMsg = distanceSensorDataPack(
         systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
@@ -510,10 +510,10 @@ void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderDat
         rangefinderData.distance,
         1, // id
         0.01f, // covariance from datasheet of TF02
-        0, // horizontal_fov: invalid
-        0, // vertical_fov: invalid
-        invalid_quaternion,
-        rangefinderData.isValid ? (rangefinderData.signalStrength / 65535.0f) : 1 // % signal quality, 1 = no signal
+        0, // horizontalFov: invalid
+        0, // verticalFov: invalid
+        invalidQuaternion,
+        rangefinderData.isValid ? ((rangefinderData.signalStrength / 65535.0f) * 100.0f) : 1 // % signalQuality, 1 = no signal
     );
 
     tmQueue->push(&rangefinderDataMsg);

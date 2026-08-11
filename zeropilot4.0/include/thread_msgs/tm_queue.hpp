@@ -100,15 +100,15 @@ typedef union TMMessageData_u {
   } scaledPressureData;
 
   struct {
-    uint16_t min_distance;
-    uint16_t max_distance;
-    uint16_t current_distance;
+    uint16_t minDistance;
+    uint16_t maxDistance;
+    uint16_t currentDistance;
     uint8_t id;
     uint8_t covariance;
-    float horizontal_fov;
-    float vertical_fov;
+    float horizontalFov;
+    float verticalFov;
     float quaternion[4];
-    uint8_t signal_quality;
+    uint8_t signalQuality;
   } distanceSensorData;
 } TMMessageData_t;
 
