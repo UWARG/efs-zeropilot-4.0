@@ -204,22 +204,32 @@ void AttitudeManager::amUpdate() {
     // Read barometer data
     // BaroData_t baroData;
     if (barometerDriver->readData(baroData)) {
-        if (!armedFlag && !baroHomeSettled) {
-            if (!baroHomeInitialized) {
-                baroHomeAltitude = baroData.altitude; // Seed first sample, need an initial sample for EMA
-                baroHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
-                baroHomeInitialized = true;
-            } else {
-                baroHomeAltitude += BARO_HOME_ALPHA * (baroData.altitude - baroHomeAltitude);
-            }
+        uint32_t baroNowMs = systemUtilsDriver->getCurrentTimestampMs();
+        if (!baroHomeStarted) {
+            baroHomeStartMs = baroNowMs;
+            baroHomeStarted = true;
+        }
+        uint32_t baroElapsedMs = baroNowMs - baroHomeStartMs;
 
-            if ((systemUtilsDriver->getCurrentTimestampMs() - baroHomeCalibStartMs) >= BARO_HOME_SETTLE_TIME_MS) {
+        // Capture home pressure while disarmed, skipping the first 1s warmup transient
+        // The baroHomePressureKPa keeps refining past baroHomeSettled (baro can drift), until drone is armed
+        if (!armedFlag && baroElapsedMs >= BARO_HOME_WARMUP_MS) {
+            baroHomeSampleCount++;
+
+            // fmax of 1/n and BARO_HOME_ALPHA_MIN so that the running mean becomes an EMA after 60s 
+            // and forgets old samples if the prearm time is long, which helps track drift
+            float alpha = fmaxf(1.0f / (float)baroHomeSampleCount, BARO_HOME_ALPHA_MIN);
+            baroHomePressureKPa += alpha * (baroData.pressureKPa - baroHomePressureKPa);
+
+            if (baroElapsedMs >= BARO_HOME_WARMUP_MS + BARO_HOME_AVERAGE_MS) {
+                // Mark the home pressure as accurate enough to arm on, but keeps refining until armed
                 baroHomeSettled = true;
             }
         }
-        // Update altholdKF with barometer data 
-        if (baroHomeInitialized) {
-            baroZ = baroData.altitude - baroHomeAltitude;
+
+        // Update altholdKF with barometer data
+        if (baroHomeStarted) {
+            baroZ = BARO_ALT_SCALE_M * (1.0f - powf(baroData.pressureKPa / baroHomePressureKPa, BARO_EXPONENT));
             altholdKF.updateBarometer(baroZ);
         }
     }
@@ -234,36 +244,43 @@ void AttitudeManager::amUpdate() {
     if (gpsData.isNew) {
         lastValidGps = gpsData;
         if (gpsData.altitude != -1 && gpsData.numSatellites >= GPS_MIN_SATELLITES && gpsData.vAcc <= GPS_HOME_VACC_MAX_M) {
-            // altholdKF.setBaroBiasEnabled(true); // Enable barometer bias correction, GPS is valid
-            // gpsLost = false;
             if (!armedFlag && !gpsHomeSettled) {
-                // Capture GPS home (EMA) while disarmed, freeze once the fix has stayed stable
-                if (!gpsHomeInitialized) {
+                // Capture GPS home while disarmed, freeze once the fix has stayed stable 
+                uint32_t gpsNowMs = systemUtilsDriver->getCurrentTimestampMs();
+                if (gpsHomeSampleCount == 0) {
                     gpsHomeAltitude = gpsData.altitude;
-                    gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
-                    gpsHomeInitialized = true;
+                    gpsHomeSampleCount = 1;
+                    gpsHomeCalibStartMs = gpsNowMs;
+                    gpsHomeFirstSampleMs = gpsNowMs;
                 } else {
                     float residual = gpsData.altitude - gpsHomeAltitude;
                     // Ignore spikes far from the current home estimate
                     if (fabsf(residual) <= GPS_HOME_OUTLIER_M) {
-                        gpsHomeAltitude += GPS_HOME_ALPHA * residual;
+                        gpsHomeSampleCount++;
+                        float alpha = fmaxf(1.0f / (float)gpsHomeSampleCount, GPS_HOME_ALPHA_MIN);
+                        gpsHomeAltitude += alpha * residual;
                     }
-                    // Restart the cpature whenever the fix is still drifting from home
-                    if (fabsf(residual) > GPS_HOME_STABLE_DELTA_M) {
-                        gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
+                    // Restart the capture if the fix is misbehaving
+                    if (fabsf(residual) > GPS_HOME_STABLE_SIGMA * gpsData.vAcc) {
+                        gpsHomeCalibStartMs = gpsNowMs;
                     }
                 }
-    
-                if ((systemUtilsDriver->getCurrentTimestampMs() - gpsHomeCalibStartMs) >= GPS_HOME_STABLE_TIME_MS) {
+
+                // Settles in 5s if have a good fix and 30s hard cap if bad fix
+                if ((gpsNowMs - gpsHomeCalibStartMs) >= GPS_HOME_STABLE_TIME_MS ||
+                    (gpsNowMs - gpsHomeFirstSampleMs) >= GPS_HOME_MAX_CAPTURE_MS) {
                     gpsHomeSettled = true;
                 }
             }
-    
-            if (gpsHomeInitialized) {
+
+            if (gpsHomeSampleCount > 0) {
                 gpsZ = gpsData.altitude - gpsHomeAltitude;
                 altholdKF.updateGPSAlt(gpsZ);
-                altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down); KF vz is positive up
+                altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down) but KF vz is positive up
             }
+        } else if (!armedFlag && !gpsHomeSettled && gpsHomeSampleCount > 0) {
+            // Reset the GPS home capture if the fix is lost or becomes invalid
+            gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
         }
     }
     

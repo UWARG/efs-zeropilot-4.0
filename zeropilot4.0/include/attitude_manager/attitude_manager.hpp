@@ -124,28 +124,40 @@ private:
     RangefinderData_t rangefinderData = {};
     GpsData_t gpsData = {};
 
-    float baroHomeAltitude = 0.0f;
-    bool baroHomeInitialized = false;
+    float baroHomePressureKPa = 0.0f;
+    uint32_t baroHomeSampleCount = 0;
+    uint32_t baroHomeStartMs = 0;
+    bool baroHomeStarted = false;
     bool baroHomeSettled = false;
 
     float gpsHomeAltitude = 0.0f;
-    bool gpsHomeInitialized = false;
+    uint32_t gpsHomeSampleCount = 0;
     bool gpsHomeSettled = false;
 
-    static constexpr float BARO_HOME_TIME_CONSTANT_S = 2.0f; // Tuned tradeoff: smooths baro sample noise but still tracks real drift over a long pre-arm wait
-    static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // Sample period is 25hz
-    static constexpr float BARO_HOME_ALPHA = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
-    static constexpr float BARO_HOME_SETTLE_TIME_MS = 3 * BARO_HOME_TIME_CONSTANT_S * 1000.0f; // 3 time constants to settle the EMA (x1000 to convert to ms)
-    uint32_t baroHomeCalibStartMs = 0;
-    static constexpr float GPS_HOME_TIME_CONSTANT_S = 3.0f;
+    static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // 25hz
+    static constexpr float BARO_HOME_TIME_CONSTANT_S = 60.0f;
+    static constexpr float BARO_HOME_ALPHA_MIN = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
+    static constexpr uint32_t BARO_HOME_WARMUP_MS = 1000;
+    static constexpr uint32_t BARO_HOME_AVERAGE_MS = 1500;
+
+    // Standard atmosphere, for relative altitude against the captured ground pressure
+    static constexpr float BARO_LAPSE_RATE_K_PER_M = 0.0065f;
+    static constexpr float BARO_REF_TEMP_K = 288.15f;
+    static constexpr float BARO_EXPONENT = 0.190284f;
+    static constexpr float BARO_ALT_SCALE_M = BARO_REF_TEMP_K / BARO_LAPSE_RATE_K_PER_M;
+
     static constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
-    static constexpr float GPS_HOME_ALPHA = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
+    static constexpr float GPS_HOME_TIME_CONSTANT_S = 30.0f;
+    static constexpr float GPS_HOME_ALPHA_MIN = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
     static constexpr uint8_t  GPS_MIN_SATELLITES = 8;
     static constexpr float GPS_HOME_VACC_MAX_M = 3.0f;
     static constexpr float GPS_HOME_OUTLIER_M = 5.0f;
-    static constexpr float GPS_HOME_STABLE_DELTA_M = 1.0f; 
-    static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 10000;
-    uint32_t gpsHomeCalibStartMs = 0; 
+    static constexpr float GPS_HOME_STABLE_SIGMA = 3.0f;
+    static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 5000;
+    static constexpr uint32_t GPS_HOME_MAX_CAPTURE_MS = 30000;
+
+    uint32_t gpsHomeCalibStartMs = 0;
+    uint32_t gpsHomeFirstSampleMs = 0;
 
     float baroZ = 0.0f;
     float gpsZ = 0.0f;
