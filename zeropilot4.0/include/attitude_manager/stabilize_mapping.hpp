@@ -7,7 +7,7 @@
 
 class StabilizeMapping : public Flightmode{
     public: 
-        StabilizeMapping(float control_iter_period_s, AcroMapping &acro) noexcept;
+        StabilizeMapping(float controlPeriodS, AcroMapping &acro) noexcept;
 
         void activateFlightMode() override;
 

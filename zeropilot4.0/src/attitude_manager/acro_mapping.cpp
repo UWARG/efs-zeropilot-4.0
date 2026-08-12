@@ -2,16 +2,16 @@
 #include "acro_mapping.hpp"
 #include "unit_conversions.hpp"
 
-AcroMapping::AcroMapping(float control_iter_period_s) noexcept : 
+AcroMapping::AcroMapping(float controlPeriodS) noexcept : 
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
         OUTPUT_MIN, OUTPUT_MAX, 100,
-        control_iter_period_s),
+        controlPeriodS),
     pitchPID(0.0f, 0.0f, 0.0f, 0.0f,
         OUTPUT_MIN, OUTPUT_MAX, 100,
-        control_iter_period_s),
+        controlPeriodS),
     yawPID(0.0f, 0.0f, 0.0f, 0.0f,
         OUTPUT_MIN, OUTPUT_MAX, 100,
-        control_iter_period_s),
+        controlPeriodS),
     rollLimitRate(0.0f),
     pitchLimitRate(0.0f),
     yawLimitRate(0.0f) {

@@ -2,13 +2,13 @@
 #include "stabilize_mapping.hpp"
 #include "unit_conversions.hpp"
 
-StabilizeMapping::StabilizeMapping(float control_iter_period_s, AcroMapping &acro) noexcept : 
+StabilizeMapping::StabilizeMapping(float controlPeriodS, AcroMapping &acro) noexcept : 
     rollPID(0.0f, 0.0f, 0.0f, 0.0f,
             OUTPUT_MIN, OUTPUT_MAX, 100,
-            control_iter_period_s / ANGLE_LOOP_TO_INNER_LOOP_RATIO),
+            controlPeriodS * ANGLE_LOOP_TO_INNER_LOOP_RATIO),
     pitchPID(0.0f, 0.0f, 0.0f, 0.0f,
             OUTPUT_MIN, OUTPUT_MAX, 100,
-            control_iter_period_s / ANGLE_LOOP_TO_INNER_LOOP_RATIO),
+            controlPeriodS * ANGLE_LOOP_TO_INNER_LOOP_RATIO),
     rollPitchLimitAngle(0.0f),
     acroCLAW(acro),
     decimationCounter(0),

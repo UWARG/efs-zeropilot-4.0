@@ -6,7 +6,7 @@
 
 class AcroMapping : public Flightmode{
     public: 
-        AcroMapping(float control_iter_period_s) noexcept;
+        AcroMapping(float controlPeriodS) noexcept;
 
         void activateFlightMode() override;
 
