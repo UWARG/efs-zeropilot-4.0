@@ -191,7 +191,11 @@ void AttitudeManager::amUpdate() {
         break; // for now only use one imu message per am loop
         */
     }
-    if (scaledImuData.count > 0) droneState.verticalAcc = scaledImuData.data[scaledImuData.count - 1].zacc;
+    if (scaledImuData.count > 0) {
+        ScaledImu_t last = scaledImuData.data[scaledImuData.count - 1];
+        // Remove gravity, make it positive-up, and tilt compensate the latest attitude estimate
+        droneState.verticalAcc = -mahonyFilter.getVerticalAccel(last.xacc, last.yacc, last.zacc) - GRAVITY;
+    }
 
     Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
