@@ -84,7 +84,7 @@ AttitudeManager::AttitudeManager(
             .measNoiseGPSAlt = 25.0f,
             .measNoiseGPSVel = 0.03f
         };
-        float initAltHoldStates[5] = {0.0f, 0.0f, -9.9f, 0.0f, 0.0f};
+        float initAltHoldStates[5] = {0.0f, 0.0f, 9.9f, 0.0f, 0.0f};
         // ScaledImuBatch_t scaledImuData;
         // for (int i = 0; i < 2; ++i) {
         //     RawImuBatch_t imuData = imuDriver->readRawData();
@@ -167,7 +167,7 @@ void AttitudeManager::amUpdate() {
         float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
                                                         scaledImuData.data[i].yacc, 
                                                         scaledImuData.data[i].zacc);
-        altholdKF.predict(vertAccel, dt);
+        altholdKF.predict(-vertAccel, dt);
 
         /* TODO: Uncomment once using EKF
         float gyro[3] = {
