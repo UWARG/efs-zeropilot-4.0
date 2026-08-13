@@ -134,6 +134,8 @@ private:
     uint32_t gpsHomeSampleCount = 0;
     bool gpsHomeSettled = false;
 
+    static constexpr float GRAVITY = 9.81f;
+
     static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // 25hz
     static constexpr float BARO_HOME_TIME_CONSTANT_S = 60.0f;
     static constexpr float BARO_HOME_ALPHA_MIN = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
