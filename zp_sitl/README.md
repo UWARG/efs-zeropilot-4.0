@@ -72,6 +72,32 @@ python sitl_quad_airsim.py     # Start the simulation
 ```
 Download Blocks.zip @ https://github.com/Microsoft/AirSim/releases. Open Blocks.exe and select "No" for quadcopter simulation. Connect a controller to your laptop for controls.
 
+#### AirSim settings.json
+
+`sitl_quad_airsim.py` reads a rangefinder via `getDistanceSensorData()`, but AirSim's default vehicle (SimpleFlight) doesn't include a distance sensor unless one is declared. Edit AirSim's `settings.json` (not part of this repo):
+- Windows: `Documents\AirSim\settings.json`
+- macOS/Linux: `~/Documents/AirSim/settings.json`
+
+```json
+{
+  "SettingsVersion": 1.2,
+  "SimMode": "Multirotor",
+  "Vehicles": {
+    "SimpleFlight": {
+      "VehicleType": "SimpleFlight",
+      "Sensors": {
+        "Distance": {
+          "SensorType": 5,
+          "Enabled": true
+        }
+      }
+    }
+  }
+}
+```
+
+Restart Blocks.exe after saving for the change to take effect. If a `Vehicles` block already exists, merge the `Sensors.Distance` entry into it instead of replacing the file. Without this, `sitl_quad_airsim.py` fails with `No distance sensor with name ... exist on vehicle`.
+
 ### button_testing.py
 
 Run the test to determine which channel on the controller corresponds to which channel in pygame when connecting to a new controller.
