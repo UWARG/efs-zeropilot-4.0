@@ -40,6 +40,7 @@ AttitudeManager::AttitudeManager(
     activeCLAW(&stabilizeCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
     stabilizeCLAW(AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
+    altholdCLAW(AM_CONTROL_LOOP_PERIOD_S, stabilizeCLAW),
     controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
     currentFlightMode(FlightMode_e::STABILIZE),
     #endif
@@ -389,6 +390,9 @@ void AttitudeManager::amUpdate() {
                 break;
             case FlightMode_e::STABILIZE:
                 activeCLAW = &stabilizeCLAW;
+                break;
+            case FlightMode_e::ALTHOLD:
+                activeCLAW = &altholdCLAW;
                 break;
             #endif
             

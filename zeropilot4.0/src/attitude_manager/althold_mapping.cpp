@@ -23,8 +23,8 @@ AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize
         accelPID.pidInitState();
 }
 
-void AltholdMapping::activateFlightMode(const DroneState_t &droneState) {
-    targetAlt = droneState.altitude;
+void AltholdMapping::activateFlightMode() {
+    needTargetAltInit = true;  // Initialize target altitude on first runControl loop
     wasInDeadzone = true;  // Start in hold mode, not climbing
     resetControlLoopState();
     stabilizeCLAW.resetControlLoopState();
@@ -34,21 +34,65 @@ void AltholdMapping::resetControlLoopState() noexcept {
     positionPID.pidInitState();
     velocityPID.pidInitState();
     accelPID.pidInitState();
+
+    posLoopCounter = 0;
+    velLoopCounter = 0;
+    accelLoopCounter = 0;
+
+    velocityCmd = 0.0f;
+    accelCmd = 0.0f;
+    throttleCmd = hoverThrottle * 100.0f; // Convert to [0, 100] range
+
+    lastDesiredRate = 0.0f;
+}
+
+void AltholdMapping::setPositionPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    positionPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+}
+
+void AltholdMapping::setVelocityPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    velocityPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+}
+
+void AltholdMapping::setAccelPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
+    accelPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 void AltholdMapping::setMaxClimbRate(float newMaxClimbRate) noexcept {
     maxClimbRate = newMaxClimbRate;
 }
 
-void AltholdMapping::setMaxDownRate(float newMaxDescendRate) noexcept {
+void AltholdMapping::setMaxDescendRate(float newMaxDescendRate) noexcept {
     maxDescendRate = newMaxDescendRate;
+}
+
+void AltholdMapping::setPilotAccelRate(float newPilotAccelRate) noexcept {
+    pilotAccelRate = newPilotAccelRate;
+    maxRateChange = pilotAccelRate * controlPeriodS;
 }
 
 void AltholdMapping::setHoverThrottle(float newHoverThrottle) noexcept {
     hoverThrottle = newHoverThrottle;
 }
 
+PID *AltholdMapping::getPosPID() noexcept {
+    return &positionPID;
+}
+
+PID *AltholdMapping::getVelPID() noexcept {
+    return &velocityPID;
+}
+
+PID *AltholdMapping::getAccelPID() noexcept {
+    return &accelPID;
+}
+
 RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) {
+    if (needTargetAltInit) {
+        targetAlt = droneState.altitude;
+        needTargetAltInit = false;
+    }
+
     // Check throttle input every loop to determine the altitude to hold
     float throttleCentered = (controlInput.throttle / 100.0f) - 0.5f; // Convert throttle from [0, 100] to [-0.5, 0.5]
     if (fabsf(throttleCentered) < THROTTLE_DEADZONE) {
@@ -60,11 +104,17 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         }
     } else {
         // Outside the deadzone, adjust the target altitude based on throttle input
+        float targetRate = 0.0f;
         if (throttleCentered > 0) { // [0, 0.5], climb
-            targetAlt += (throttleCentered * 2.0f) * maxClimbRate * controlPeriodS; // *2.0f to scale to [0, 1] range
+            targetRate = (throttleCentered * 2.0f) * maxClimbRate; // *2.0f to scale to [0, 1] range
         } else  { // [-0.5, 0], Descend
-            targetAlt += (throttleCentered * 2.0f) * maxDescendRate * controlPeriodS; // *2.0f to scale to [-1, 0] range
+            targetRate = (throttleCentered * 2.0f) * maxDescendRate; // *2.0f to scale to [-1, 0] range
         }
+        // Limit the rate change to the pilot's desired acceleration rate
+        float rateChange = constrain(targetRate - lastDesiredRate, -maxRateChange, maxRateChange);
+        lastDesiredRate += rateChange; // lastDesiredRate now represents the desired rate thhis loop
+        targetAlt += lastDesiredRate * controlPeriodS;
+
         wasInDeadzone = false;
     }
 
@@ -91,7 +141,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
     if (accelLoopCounter == 0) {
         float accelSetpoint = accelCmd;
         float accelMeasured = droneState.verticalAcc;
-        float throttleCmd = hoverThrottle + accelPID.pidOutput(accelSetpoint, accelMeasured);
+        throttleCmd = hoverThrottle + accelPID.pidOutput(accelSetpoint, accelMeasured);
 
         // Update hover throttle based on current throttle (before tilt compansation as we want the leveled throttle)
         updateHoverThrottle(throttleCmd, droneState.verticalVel, droneState.verticalAcc);
@@ -101,8 +151,9 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         throttleCmd /= (cosf(droneState.roll) * cosf(droneState.pitch));
         
         // Convert back to [0, 100] range
-        controlInput.throttle = constrain(throttleCmd, minThrottle, maxThrottle) * 100.0f;
+        throttleCmd = constrain(throttleCmd, minThrottle, maxThrottle) * 100.0f;
     }
+    controlInput.throttle = throttleCmd;
 
     posLoopCounter = (posLoopCounter + 1) % posLoopRatio;
     velLoopCounter = (velLoopCounter + 1) % velLoopRatio;

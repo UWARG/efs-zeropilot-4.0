@@ -77,6 +77,34 @@ void AMParamSetup::loadAllParams() {
         ZP_PARAM::get(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX)
     );
     am->stabilizeCLAW.setRollPitchLimitAngle(ZP_PARAM::get(ZP_PARAM_ID::ATC_ANGLE_MAX));
+
+    // Althold params
+    am->altholdCLAW.setPositionPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_POSZ_P),
+        0.0f, // No I or D for position loop
+        0.0f,
+        0.0f,
+        0.0f
+    );
+    am->altholdCLAW.setVelocityPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_VELZ_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_VELZ_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_VELZ_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_VELZ_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_VELZ_IMAX)
+    );
+    am->altholdCLAW.setAccelPIDConstants(
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_ACCZ_P),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_ACCZ_I),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_ACCZ_D),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_ACCZ_TAU),
+        ZP_PARAM::get(ZP_PARAM_ID::PSC_ACCZ_IMAX)
+    );
+    am->altholdCLAW.setMaxClimbRate(ZP_UNITS::cm2m(ZP_PARAM::get(ZP_PARAM_ID::PILOT_SPEED_UP)));
+    am->altholdCLAW.setMaxDescendRate(ZP_UNITS::cm2m(ZP_PARAM::get(ZP_PARAM_ID::PILOT_SPEED_DN)));
+    am->altholdCLAW.setPilotAccelRate(ZP_UNITS::cm2m(ZP_PARAM::get(ZP_PARAM_ID::PILOT_ACCEL_Z)));
+    am->altholdCLAW.setHoverThrottle(ZP_PARAM::get(ZP_PARAM_ID::MOT_THST_HOVER));
+
     am->motSpinMin = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_MIN);
     am->motSpinMax = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_MAX);
     am->motSpinArm = ZP_PARAM::get(ZP_PARAM_ID::MOT_SPIN_ARM);
@@ -172,6 +200,23 @@ void AMParamSetup::bindAllParamCallbacks() {
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_TAU,    am, updateAngPIDPitchTau);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANG_PTCH_IMAX,   am, updateAngPIDPitchIMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::ATC_ANGLE_MAX,       am, updateRollPitchLimitAng);
+
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_POSZ_P,          am, updateAltholdPosPIDKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_VELZ_P,          am, updateAltholdVelPIDKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_VELZ_I,          am, updateAltholdVelPIDKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_VELZ_D,          am, updateAltholdVelPIDKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_VELZ_TAU,        am, updateAltholdVelPIDTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_VELZ_IMAX,       am, updateAltholdVelPIDIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_ACCZ_P,          am, updateAltholdAccPIDKp);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_ACCZ_I,          am, updateAltholdAccPIDKi);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_ACCZ_D,          am, updateAltholdAccPIDKd);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_ACCZ_TAU,        am, updateAltholdAccPIDTau);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PSC_ACCZ_IMAX,       am, updateAltholdAccPIDIMax);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PILOT_SPEED_UP,      am, updateAltholdMaxClimbRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PILOT_SPEED_DN,      am, updateAltholdMaxDescendRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::PILOT_ACCEL_Z,       am, updateAltholdPilotAccelRate);
+    ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_THST_HOVER,      am, updateAltholdHoverThrottle);
+
     ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_MIN,        am, updateMotSpinMin);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_MAX,        am, updateMotSpinMax);
     ZP_PARAM::bindCallback(ZP_PARAM_ID::MOT_SPIN_ARM,        am, updateMotSpinArm);
@@ -437,8 +482,87 @@ bool AMParamSetup::updateRollPitchLimitAng(AttitudeManager* ctx, float val) {
     ctx->stabilizeCLAW.setRollPitchLimitAngle(val);
     return true;
 }
-static constexpr float MOT_SPIN_RANGE_MIN_SEPARATION = 0.05f; // Guard against motSpinMin == motSpinMax, which would give no RPY authority
 
+// Althold callbacks
+bool AMParamSetup::updateAltholdPosPIDKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getPosPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdVelPIDKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getVelPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdVelPIDKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getVelPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdVelPIDKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getVelPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdVelPIDTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getVelPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdVelPIDIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->altholdCLAW.getVelPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->altholdCLAW.getVelPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updateAltholdAccPIDKp(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getAccelPID()->setKp(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdAccPIDKi(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getAccelPID()->setKi(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdAccPIDKd(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getAccelPID()->setKd(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdAccPIDTau(AttitudeManager* ctx, float val) {
+    if (val < 0.0f) return false;
+    ctx->altholdCLAW.getAccelPID()->setTau(val);
+    return true;
+}
+bool AMParamSetup::updateAltholdAccPIDIMax(AttitudeManager* ctx, float val) {
+    if (val < 0.0f || val > 100.0f) return false;
+    ctx->altholdCLAW.getAccelPID()->setIntegralMinLimPct(static_cast<uint8_t>(val));
+    ctx->altholdCLAW.getAccelPID()->setIntegralMaxLimPct(static_cast<uint8_t>(val));
+    return true;
+}
+bool AMParamSetup::updateAltholdMaxClimbRate(AttitudeManager* ctx, float val) {
+    if (val < 50.0f || val > 500.0f) return false;
+    ctx->altholdCLAW.setMaxClimbRate(ZP_UNITS::cm2m(val));
+    return true;
+}
+bool AMParamSetup::updateAltholdMaxDescendRate(AttitudeManager* ctx, float val) {
+    if (val < 50.0f || val > 500.0f) return false;
+    ctx->altholdCLAW.setMaxDescendRate(ZP_UNITS::cm2m(val));
+    return true;
+}
+bool AMParamSetup::updateAltholdPilotAccelRate(AttitudeManager* ctx, float val) {
+    if (val < 50.0f || val > 500.0f) return false;
+    ctx->altholdCLAW.setPilotAccelRate(ZP_UNITS::cm2m(val));
+    return true;
+}
+bool AMParamSetup::updateAltholdHoverThrottle(AttitudeManager* ctx, float val) {
+    if (val < 0.2f || val > 0.8f) return false;
+    ctx->altholdCLAW.setHoverThrottle(val);
+    return true;
+}
+
+static constexpr float MOT_SPIN_RANGE_MIN_SEPARATION = 0.05f; // Guard against motSpinMin == motSpinMax, which would give no RPY authority
 bool AMParamSetup::updateMotSpinMin(AttitudeManager* ctx, float val) {
     if (val < 0.0f || val > 1.0f || val > ctx->motSpinMax - MOT_SPIN_RANGE_MIN_SEPARATION) return false;
     ctx->motSpinMin = val;

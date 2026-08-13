@@ -64,6 +64,23 @@ class AMParamSetup : public IParamSetup {
     static bool updateAngPIDPitchTau(AttitudeManager* ctx, float val);
     static bool updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
     static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
+
+    static bool updateAltholdPosPIDKp(AttitudeManager* ctx, float val);
+    static bool updateAltholdVelPIDKp(AttitudeManager* ctx, float val);
+    static bool updateAltholdVelPIDKi(AttitudeManager* ctx, float val);
+    static bool updateAltholdVelPIDKd(AttitudeManager* ctx, float val);
+    static bool updateAltholdVelPIDTau(AttitudeManager* ctx, float val);
+    static bool updateAltholdVelPIDIMax(AttitudeManager* ctx, float val);
+    static bool updateAltholdAccPIDKp(AttitudeManager* ctx, float val);
+    static bool updateAltholdAccPIDKi(AttitudeManager* ctx, float val);
+    static bool updateAltholdAccPIDKd(AttitudeManager* ctx, float val);
+    static bool updateAltholdAccPIDTau(AttitudeManager* ctx, float val);
+    static bool updateAltholdAccPIDIMax(AttitudeManager* ctx, float val);
+    static bool updateAltholdMaxClimbRate(AttitudeManager* ctx, float val);
+    static bool updateAltholdMaxDescendRate(AttitudeManager* ctx, float val);
+    static bool updateAltholdPilotAccelRate(AttitudeManager* ctx, float val);
+    static bool updateAltholdHoverThrottle(AttitudeManager* ctx, float val);
+
     static bool updateMotSpinMin(AttitudeManager* ctx, float val);
     static bool updateMotSpinMax(AttitudeManager* ctx, float val);
     static bool updateMotSpinArm(AttitudeManager* ctx, float val);

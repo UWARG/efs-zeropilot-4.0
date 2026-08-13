@@ -20,6 +20,7 @@
 #include "barometer_iface.hpp"
 #include "MahonyAHRS.hpp"
 #include "althold_kf.hpp"
+#include "althold_mapping.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -81,7 +82,8 @@ private:
 #endif
 #ifdef QUADCOPTER
     AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
-    StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
+    StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Outer Roll and Pitch PID, innter Acro Roll, Pitch and Yaw PID)
+    AltholdMapping altholdCLAW;     // Althold Control Law (Position, velocity and acceleration PID loops for throttle and Stabilize for Roll, Pitch and Yaw)
 #endif
     RCMotorControlMessage_t controlMsg;
     FlightMode_e currentFlightMode;

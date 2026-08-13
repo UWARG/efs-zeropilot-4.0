@@ -9,7 +9,8 @@ enum class FlightMode_e : uint32_t {
     #endif
     #ifdef QUADCOPTER
     STABILIZE = 0,
-    ACRO = 1
+    ACRO = 1,
+    ALTHOLD = 2
     #endif
 };
 
@@ -22,6 +23,7 @@ inline bool isValidFlightMode(uint32_t val) {
         #ifdef QUADCOPTER
         case FlightMode_e::ACRO:
         case FlightMode_e::STABILIZE:
+        case FlightMode_e::ALTHOLD:
         #endif
             return true;
         default:

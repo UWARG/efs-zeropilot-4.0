@@ -8,22 +8,29 @@ class AltholdMapping : public Flightmode {
 public:
     AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize) noexcept;
 
-    void activateFlightMode(const DroneState_t &droneState) override;
+    void activateFlightMode() override;
 
     RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
-
-    /*
-    Setters
-    */
-
-    void setMaxClimbRate(float newMaxClimbRate) noexcept;
-    void setMaxDownRate(float newMaxDescendRate) noexcept;
-    void setHoverThrottle(float newHoverThrottle) noexcept;
 
     // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
     void resetControlLoopState() noexcept;
 
+    /*
+    Setters
+    */
+    void setPositionPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+    void setVelocityPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+    void setAccelPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
+
+    void setMaxClimbRate(float newMaxClimbRate) noexcept;
+    void setMaxDescendRate(float newMaxDescendRate) noexcept;
+    void setPilotAccelRate(float newPilotAccelRate) noexcept;
+    void setHoverThrottle(float newHoverThrottle) noexcept;
+
     // Getter for PID objects
+    PID *getPosPID() noexcept;
+    PID *getVelPID() noexcept;
+    PID *getAccelPID() noexcept;
 
     // Destructor
     ~AltholdMapping() noexcept override = default;
@@ -53,13 +60,14 @@ private:
 
     float controlPeriodS;
 
-    float targetAlt;
-    
-    float velocityCmd;
-    float accelCmd;
+    bool needTargetAltInit = true;
+    float targetAlt = 0.0f;
 
     float maxClimbRate = 2.5f;
     float maxDescendRate = 2.5f;
+    float pilotAccelRate = 2.5f; // How aggressively can the pilot's stick input change the climb rate
+    float maxRateChange = 0.0f;
+    float lastDesiredRate = 0.0f;
     
     // Constrain throttle to not span the entire range to reserve space for motor mixing
     static constexpr float minThrottle = 0.1f;
@@ -71,6 +79,10 @@ private:
     float hoverThrottle = 0.3f;
 
     static constexpr float ALT_LEASH = 5.0f;
+
+    float velocityCmd = 0.0f;
+    float accelCmd = 0.0f;
+    float throttleCmd = 0.0f;
     
     void updateHoverThrottle(float currentThrottle, float verticalVel, float verticalAcc);
 };
