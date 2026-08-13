@@ -163,7 +163,11 @@ void AttitudeManager::amUpdate() {
             dt
         );
         
-        altholdKF.predict(scaledImuData.data[i].zacc, dt);
+        // Tilt compensation for vertical acceleration
+        float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
+                                                        scaledImuData.data[i].yacc, 
+                                                        scaledImuData.data[i].zacc);
+        altholdKF.predict(vertAccel, dt);
 
         /* TODO: Uncomment once using EKF
         float gyro[3] = {
