@@ -17,6 +17,14 @@ private:
     static constexpr float RAD_TO_DEG = 57.2957795f;
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
+
+    // Convert a float value to a 16-bit signed integer, clamping the value if it's out of range
+    static int16_t toRawCount(float value) {
+        if (value > 32767.0f) return 32767;
+        if (value < -32768.0f) return -32768;
+        return (int16_t)value;
+    }
+
 public:
     int init() override {
         rawData.timestamp = 0; // Initialize timestamp
@@ -26,34 +34,34 @@ public:
     /**
      * Simulates the IMU readings based on the physics engine (Plant)
      * Note: This converts physical SI units into "Raw" LSB counts
-     */
-    void update_from_plant(double roll_rad, double pitch_rad, double p_rad_s, double q_rad_s, double r_rad_s) {
+    void update_from_plant(double roll_rad, double pitch_rad, double p_rad_s, double q_rad_s, double r_rad_s,
+                           double ax_body = 0.0, double ay_body = 0.0, double az_body = 0.0) {
         // Pre-calculate trig to save cycles
         float sr = std::sin(roll_rad);
         float cr = std::cos(roll_rad);
         float sp = std::sin(pitch_rad);
         float cp = std::cos(pitch_rad);
 
-        // Accelerometer: Gravity projection (assuming 1g static)
+        // Accelerometer: Gravity projection
         // LSB_PER_G = ACCEL_SCALE (e.g., 2048)
-        float ax = Config::GRAVITY * sp;
-        float ay = -Config::GRAVITY * sr * cp;
-        float az = -Config::GRAVITY * cr * cp;
-        
+        float ax = (float)ax_body + Config::GRAVITY * sp;
+        float ay = (float)ay_body - Config::GRAVITY * sr * cp;
+        float az = (float)az_body - Config::GRAVITY * cr * cp;
+
         // Convert m/s^2 to LSB: (Value / 9.81) * Scale_Factor
         constexpr float ACCEL_TO_LSB = (float)Config::ACCEL_SCALE / Config::GRAVITY;
-        rawData.xacc = (int16_t)(ax * ACCEL_TO_LSB);
-        rawData.yacc = (int16_t)(ay * ACCEL_TO_LSB);
-        rawData.zacc = (int16_t)(az * ACCEL_TO_LSB);
+        rawData.xacc = toRawCount(ax * ACCEL_TO_LSB);
+        rawData.yacc = toRawCount(ay * ACCEL_TO_LSB);
+        rawData.zacc = toRawCount(az * ACCEL_TO_LSB);
 
         // Gyro: Convert rad/s to deg/s then to LSB
         float p_deg_s = (float)p_rad_s * RAD_TO_DEG;
         float q_deg_s = (float)q_rad_s * RAD_TO_DEG;
         float r_deg_s = (float)r_rad_s * RAD_TO_DEG;
 
-        rawData.xgyro = (int16_t)(p_deg_s * Config::GYRO_SCALE);
-        rawData.ygyro = (int16_t)(q_deg_s * Config::GYRO_SCALE);
-        rawData.zgyro = (int16_t)(r_deg_s * Config::GYRO_SCALE);
+        rawData.xgyro = toRawCount(p_deg_s * Config::GYRO_SCALE);
+        rawData.ygyro = toRawCount(q_deg_s * Config::GYRO_SCALE);
+        rawData.zgyro = toRawCount(r_deg_s * Config::GYRO_SCALE);
 
         rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
     }

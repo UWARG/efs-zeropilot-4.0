@@ -81,6 +81,21 @@ class ZP_QUAD_SITL_AIRSIM:
 
     def axis_to_fltmode(self, value):
         return min(range(len(FLTMODE_AXIS_VALUES)), key=lambda i: abs(FLTMODE_AXIS_VALUES[i] - value))
+
+    @staticmethod
+    def world_to_body(q, vx, vy, vz):
+        """Rotate a world-frame (NED) vector into the body frame.
+
+        AirSim's orientation quaternion maps body -> world, so its conjugate maps
+        world -> body. Applies v' = v + 2w(u x v) + 2u x (u x v) with u = (x, y, z).
+        """
+        w, x, y, z = q.w_val, -q.x_val, -q.y_val, -q.z_val
+        tx = 2.0 * (y * vz - z * vy)
+        ty = 2.0 * (z * vx - x * vz)
+        tz = 2.0 * (x * vy - y * vx)
+        return (vx + w * tx + (y * tz - z * ty),
+                vy + w * ty + (z * tx - x * tz),
+                vz + w * tz + (x * ty - y * tx))
     
     def reset_to_air(self):
         self.client.reset()
@@ -101,6 +116,10 @@ class ZP_QUAD_SITL_AIRSIM:
         q_rad = ang_vel.y_val
         r_rad = ang_vel.z_val
 
+        # Linear acceleration, NED and gravity-free
+        la = state.kinematics_estimated.linear_acceleration
+        ax_body, ay_body, az_body = self.world_to_body(q, la.x_val, la.y_val, la.z_val)
+
         # latitude, longtitude, altitude from gps
         lat_deg = state.gps_location.latitude
         long_deg = state.gps_location.longitude
@@ -113,12 +132,13 @@ class ZP_QUAD_SITL_AIRSIM:
 
         baro = self.client.getBarometerData()
 
-        # altitude for rangefinder 
+        # altitude for rangefinder
         alt_rangefinder = self.client.getDistanceSensorData().distance
 
         self.zp.update_from_plant(
             roll, pitch,
             p_rad, q_rad, r_rad,
+            ax_body, ay_body, az_body,
             lat_deg, long_deg, alt_deg,
             ground_speed,
             heading,

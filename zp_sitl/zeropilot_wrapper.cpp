@@ -241,21 +241,23 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
 static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double roll_rad, pitch_rad;
     double p_rad_s, q_rad_s, r_rad_s;
+    double ax_body, ay_body, az_body;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
     float fuel_lbs, rpm;
     float rangefinder_alt;
     double baro_pressure_kpa, baro_temp_c;
 
-    if (!PyArg_ParseTuple(args, "ddddddddddfffdd",
+    if (!PyArg_ParseTuple(args, "dddddddddddddfffdd",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
+        &ax_body, &ay_body, &az_body,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
         &fuel_lbs, &rpm,
         &rangefinder_alt,
         &baro_pressure_kpa, &baro_temp_c))
         return NULL;
 
-    self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
+    self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s, ax_body, ay_body, az_body);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
     self->pm->update_from_plant(fuel_lbs, rpm);
     self->rangefinder->update_from_plant(rangefinder_alt);
