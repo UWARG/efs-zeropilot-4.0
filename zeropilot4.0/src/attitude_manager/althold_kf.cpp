@@ -40,12 +40,10 @@ void AltholdKF::predict(float u, float dt) {
 }
 
 void AltholdKF::updateBarometer(float altitude) {
-    baroUpdateCount++;
     update(altitude, H_BARO, config.measNoiseBarometer);
 }
 
 void AltholdKF::updateGPSAlt(float altitude) {
-    gpsUpdateCount++;
     update(altitude, H_GPS_ALT, config.measNoiseGPSAlt);
 }
 
