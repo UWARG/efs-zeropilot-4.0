@@ -143,6 +143,7 @@ class ZP_QUAD_SITL_AIRSIM:
         sim_s = "\033[1;33mPAUSED  \033[0m" if self.paused else "\033[1;32mRUNNING \033[0m"
         
         state = self.client.getMultirotorState()
+        alt_rangefinder = self.client.getDistanceSensorData().distance
         m1, m2, m3, m4 = self.zp.get_motor_outputs()
 
         dash = [
@@ -154,7 +155,7 @@ class ZP_QUAD_SITL_AIRSIM:
             f" FltMode: {self.fltmode_index + 1}",
             "----------------------------------------------",
             f" Alt GPS:  {state.gps_location.altitude:>6.1f} m",
-            f" Alt Range: {state.distance_sensor.distance:>6.1f} m",
+            f" Alt Range: {alt_rangefinder:>6.1f} m",
             f" Pos:  ({state.gps_location.latitude:.4f}, {state.gps_location.longitude:.4f})",
             "==============================================",
             f" M1: {m1:>7.3f} | M2: {m2:>7.3f} | M3: {m3:>7.3f} | M4: {m4:>7.3f}",
