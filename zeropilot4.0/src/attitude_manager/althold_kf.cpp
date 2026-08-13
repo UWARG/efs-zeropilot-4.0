@@ -5,10 +5,10 @@ AltholdKF::AltholdKF(IMathUtils* mathUtils) :
 
 void AltholdKF::init(AltholdConfig_t config, float initStates[4]) {
     this->config = config;
-    for (int i = 0; i < STATE_SIZE; ++i) {
+    for (int i = 0; i < altholdStateCount; ++i) {
         states[i] = initStates[i]; // Initialize states to the provided initial values
-        P[i * STATE_SIZE + i] = 1.0f; // Initialize covariance matrix to identity matrix
-        F[i * STATE_SIZE + i] = 1.0f; // Initialize F to identity matrix for later use
+        P[i * altholdStateCount + i] = 1.0f; // Initialize covariance matrix to identity matrix
+        F[i * altholdStateCount + i] = 1.0f; // Initialize F to identity matrix for later use
         B[i] = 0.0f; // Initialize B to zero for later use
     }
     dtPrev = 0;
@@ -22,20 +22,20 @@ void AltholdKF::predict(float u, float dt) {
     }
 
     // State prediction using vertical acceleration as control input
-    float fx[STATE_SIZE * 1];
-    math->matrixMult(F, STATE_SIZE, STATE_SIZE, states, 1, fx); // F * x
-    float bu[STATE_SIZE * 1];
-    math->matrixMult(B, STATE_SIZE, 1, &u, 1, bu); // B * u
-    math->matrixAdd(fx, bu, states, STATE_SIZE, 1); // x = F * x + B * u
+    float fx[altholdStateCount * 1];
+    math->matrixMult(F, altholdStateCount, altholdStateCount, states, 1, fx); // F * x
+    float bu[altholdStateCount * 1];
+    math->matrixMult(B, altholdStateCount, 1, &u, 1, bu); // B * u
+    math->matrixAdd(fx, bu, states, altholdStateCount, 1); // x = F * x + B * u
     
     // Uncertainty prediction
-    float Ft[STATE_SIZE * STATE_SIZE];
-    math->matrixTranspose(F, STATE_SIZE, STATE_SIZE, Ft); // F^T
-    float FP[STATE_SIZE * STATE_SIZE];
-    math->matrixMult(F, STATE_SIZE, STATE_SIZE, P, STATE_SIZE, FP); // F * P
-    float FPFt[STATE_SIZE * STATE_SIZE];
-    math->matrixMult(FP, STATE_SIZE, STATE_SIZE, Ft, STATE_SIZE, FPFt); // F * P * F^T
-    math->matrixAdd(FPFt, Q, P, STATE_SIZE, STATE_SIZE); // P = F * P * F^T + Q
+    float Ft[altholdStateCount * altholdStateCount];
+    math->matrixTranspose(F, altholdStateCount, altholdStateCount, Ft); // F^T
+    float FP[altholdStateCount * altholdStateCount];
+    math->matrixMult(F, altholdStateCount, altholdStateCount, P, altholdStateCount, FP); // F * P
+    float FPFt[altholdStateCount * altholdStateCount];
+    math->matrixMult(FP, altholdStateCount, altholdStateCount, Ft, altholdStateCount, FPFt); // F * P * F^T
+    math->matrixAdd(FPFt, Q, P, altholdStateCount, altholdStateCount); // P = F * P * F^T + Q
     // NOLINTEND(readability-identifier-naming)
 }
 
@@ -54,7 +54,11 @@ void AltholdKF::updateGPSVel(float verticalVelocity) {
 }
 
 float AltholdKF::getEstimatedAltitude() {
-    return states[ALTHOLD_STATE_ALTITUDE];
+    return states[altholdStateAltIdx];
+}
+
+float AltholdKF::getEstimatedVerticalVel() {
+    return states[altholdStateVelIdx];
 }
 
 void AltholdKF::rebuildFBQ(float dt) {
@@ -94,17 +98,17 @@ void AltholdKF::rebuildFBQ(float dt) {
 
 void AltholdKF::update(float measurement, const float *H, float R) {
     // NOLINTBEGIN(readability-identifier-naming)
-    float Ht[STATE_SIZE * 1];
-    math->matrixTranspose(H, 1, STATE_SIZE, Ht); // H^T
-    float PHt[STATE_SIZE * 1];
-    math->matrixMult(P, STATE_SIZE, STATE_SIZE, Ht, 1, PHt); // P * H^T
+    float Ht[altholdStateCount * 1];
+    math->matrixTranspose(H, 1, altholdStateCount, Ht); // H^T
+    float PHt[altholdStateCount * 1];
+    math->matrixMult(P, altholdStateCount, altholdStateCount, Ht, 1, PHt); // P * H^T
     float HPHt[1 * 1];
-    math->matrixMult(H, 1, STATE_SIZE, PHt, 1, HPHt); // H * P * H^T
+    math->matrixMult(H, 1, altholdStateCount, PHt, 1, HPHt); // H * P * H^T
     float S[1 * 1];
     math->matrixAdd(HPHt, &R, S, 1, 1); // S = H * P * H^T + R
 
     float Hx[1 * 1];
-    math->matrixMult(H, 1, STATE_SIZE, states, 1, Hx); // H * x
+    math->matrixMult(H, 1, altholdStateCount, states, 1, Hx); // H * x
     // Innovation
     float y = measurement - Hx[0]; // y = z - Hx
     
@@ -117,35 +121,35 @@ void AltholdKF::update(float measurement, const float *H, float R) {
 
     float Sinv[1 * 1];
     math->matrixInverse(S, 1, Sinv); // S^-1
-    float K[STATE_SIZE* 1];
-    math->matrixMult(PHt, STATE_SIZE, 1, Sinv, 1, K); // K = P * H^T * S^-1
-    float Ky[STATE_SIZE * 1];
-    math->matrixMult(K, STATE_SIZE, 1, &y, 1, Ky); // K * y
-    math->matrixAdd(states, Ky, states, STATE_SIZE, 1); // x = x + K * y
+    float K[altholdStateCount* 1];
+    math->matrixMult(PHt, altholdStateCount, 1, Sinv, 1, K); // K = P * H^T * S^-1
+    float Ky[altholdStateCount * 1];
+    math->matrixMult(K, altholdStateCount, 1, &y, 1, Ky); // K * y
+    math->matrixAdd(states, Ky, states, altholdStateCount, 1); // x = x + K * y
 
     // Covariance update (Joseph form)
-    float I[STATE_SIZE * STATE_SIZE] = {};
-    for (int i = 0; i < STATE_SIZE; ++i) {
-        I[i * STATE_SIZE + i] = 1.0f;
+    float I[altholdStateCount * altholdStateCount] = {};
+    for (int i = 0; i < altholdStateCount; ++i) {
+        I[i * altholdStateCount + i] = 1.0f;
     }
-    float KH[STATE_SIZE * STATE_SIZE];
-    math->matrixMult(K, STATE_SIZE, 1, H, STATE_SIZE, KH); // K * H
-    float IKH[STATE_SIZE * STATE_SIZE];
-    math->matrixSub(I, KH, IKH, STATE_SIZE, STATE_SIZE); // I - K * H
-    float IKHP[STATE_SIZE * STATE_SIZE];
-    math->matrixMult(IKH, STATE_SIZE, STATE_SIZE, P, STATE_SIZE, IKHP); // (I - K * H) * P
-    float IKHt[STATE_SIZE * STATE_SIZE];
-    math->matrixTranspose(IKH, STATE_SIZE, STATE_SIZE, IKHt); // (I - K * H)^T
-    float IKHPIKHt[STATE_SIZE * STATE_SIZE];
-    math->matrixMult(IKHP, STATE_SIZE, STATE_SIZE, IKHt, STATE_SIZE, IKHPIKHt); // (I - K * H) * P * (I - K * H)^T
-    float KR[STATE_SIZE * 1];
-    math->matrixMult(K, STATE_SIZE, 1, &R, 1, KR); // K * R
-    float Kt[1 * STATE_SIZE];
-    math->matrixTranspose(K, STATE_SIZE, 1, Kt); // K^T
-    float KRKt[STATE_SIZE * STATE_SIZE];
-    math->matrixMult(KR, STATE_SIZE, 1, Kt, STATE_SIZE, KRKt); // K * R * K^T
-    math->matrixAdd(IKHPIKHt, KRKt, P, STATE_SIZE, STATE_SIZE); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
-    math->ensureSymmetric(P, STATE_SIZE);
+    float KH[altholdStateCount * altholdStateCount];
+    math->matrixMult(K, altholdStateCount, 1, H, altholdStateCount, KH); // K * H
+    float IKH[altholdStateCount * altholdStateCount];
+    math->matrixSub(I, KH, IKH, altholdStateCount, altholdStateCount); // I - K * H
+    float IKHP[altholdStateCount * altholdStateCount];
+    math->matrixMult(IKH, altholdStateCount, altholdStateCount, P, altholdStateCount, IKHP); // (I - K * H) * P
+    float IKHt[altholdStateCount * altholdStateCount];
+    math->matrixTranspose(IKH, altholdStateCount, altholdStateCount, IKHt); // (I - K * H)^T
+    float IKHPIKHt[altholdStateCount * altholdStateCount];
+    math->matrixMult(IKHP, altholdStateCount, altholdStateCount, IKHt, altholdStateCount, IKHPIKHt); // (I - K * H) * P * (I - K * H)^T
+    float KR[altholdStateCount * 1];
+    math->matrixMult(K, altholdStateCount, 1, &R, 1, KR); // K * R
+    float Kt[1 * altholdStateCount];
+    math->matrixTranspose(K, altholdStateCount, 1, Kt); // K^T
+    float KRKt[altholdStateCount * altholdStateCount];
+    math->matrixMult(KR, altholdStateCount, 1, Kt, altholdStateCount, KRKt); // K * R * K^T
+    math->matrixAdd(IKHPIKHt, KRKt, P, altholdStateCount, altholdStateCount); // P = (I - K * H) * P * (I - K * H)^T + K * R * K^T
+    math->ensureSymmetric(P, altholdStateCount);
     // NOLINTEND(readability-identifier-naming)
     return;
 }
@@ -158,12 +162,12 @@ void AltholdKF::setBaroBiasEnabled(bool enabled) {
     if (!enabled) {
         // Freeze biasBaro's covariance, zero row 3 and col 3 of P
         // This means the filter now believes it knows baro bias exactly, and will not update it anymore
-        for (int i = 0; i < STATE_SIZE; ++i) {
-            P[3 * STATE_SIZE + i] = 0.0f;  // Row 3
-            P[i * STATE_SIZE + 3] = 0.0f;  // Col 3
+        for (int i = 0; i < altholdStateCount; ++i) {
+            P[3 * altholdStateCount + i] = 0.0f;  // Row 3
+            P[i * altholdStateCount + 3] = 0.0f;  // Col 3
         }
     } else {
         // Enable, give it initial uncertainty so it can be estimated again
-        P[3 * STATE_SIZE + 3] = 1.0f;
+        P[3 * altholdStateCount + 3] = 1.0f;
     }
 }

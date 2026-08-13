@@ -1,11 +1,11 @@
 #include "mathutils_iface.hpp"
 
-// Unscoped on purpose: these are used directly as indices into states[].
 enum AltholdStatesIdx_e {
-    ALTHOLD_STATE_ALTITUDE,
-    ALTHOLD_STATE_VERTICAL_VELOCITY,
-    ALTHOLD_STATE_BIAS_ACCEL,
-    ALTHOLD_STATE_BIAS_BARO
+    altholdStateAltIdx,
+    altholdStateVelIdx,
+    altholdStateBiasAccelIdx,
+    altholdStateBiasBaroIdx,
+    altholdStateCount
 };
 
 typedef struct {
@@ -29,31 +29,31 @@ public:
     void updateGPSVel(float verticalVelocity);
     void setBaroBiasEnabled(bool enabled);
     float getEstimatedAltitude();
+    float getEstimatedVerticalVel();
 
 private:
     IMathUtils* math;
     
     AltholdConfig_t config;
-    static constexpr uint16_t STATE_SIZE = 4;
     /*
     z: altitude from takeoff 
     vz: vertical velocity
     b_accel: accelerometer bias
     b_baro: barometer bias
     */
-    float states[STATE_SIZE] = {};
+    float states[altholdStateCount] = {};
 
     // NOLINTBEGIN(readability-identifier-naming)
-    float P[STATE_SIZE * STATE_SIZE] = {}; // Covariance matrix
+    float P[altholdStateCount * altholdStateCount] = {}; // Covariance matrix
 
     // H
-    const float H_BARO[STATE_SIZE] = {1.0f, 0, 0, 1.0f};
-    const float H_GPS_ALT[STATE_SIZE] = {1.0f, 0, 0, 0};
-    const float H_GPS_VEL[STATE_SIZE] = {0, 1.0f, 0, 0};
+    const float H_BARO[altholdStateCount] = {1.0f, 0, 0, 1.0f};
+    const float H_GPS_ALT[altholdStateCount] = {1.0f, 0, 0, 0};
+    const float H_GPS_VEL[altholdStateCount] = {0, 1.0f, 0, 0};
 
-    float F[STATE_SIZE * STATE_SIZE] = {}; // State transition matrix
-    float B[STATE_SIZE] = {}; // Control input matrix
-    float Q[STATE_SIZE * STATE_SIZE] = {}; // Process noise covariance
+    float F[altholdStateCount * altholdStateCount] = {}; // State transition matrix
+    float B[altholdStateCount] = {}; // Control input matrix
+    float Q[altholdStateCount * altholdStateCount] = {}; // Process noise covariance
     // NOLINTEND(readability-identifier-naming)
     
     float dtPrev;

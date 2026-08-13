@@ -187,6 +187,7 @@ void AttitudeManager::amUpdate() {
         break; // for now only use one imu message per am loop
         */
     }
+    if (scaledImuData.count > 0) droneState.verticalAcc = scaledImuData.data[scaledImuData.count - 1].zacc;
 
     Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
@@ -228,7 +229,7 @@ void AttitudeManager::amUpdate() {
         }
 
         // Update altholdKF with barometer data
-        if (baroHomeStarted) {
+        if (baroHomeSampleCount > 0 && baroData.pressureKPa > 0.0f) {
             baroZ = BARO_ALT_SCALE_M * (1.0f - powf(baroData.pressureKPa / baroHomePressureKPa, BARO_EXPONENT));
             altholdKF.updateBarometer(baroZ);
         }
@@ -299,15 +300,15 @@ void AttitudeManager::amUpdate() {
         lastValidClearance = rangefinderData.distance;
     }
 
-    altitude = altholdKF.getEstimatedAltitude();
-    droneState.altitude = altitude;
+    droneState.altitude = altholdKF.getEstimatedAltitude();
+    droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
 
     // Send global position (altitude) data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ) == 0) {
         float altAMSL = (gpsData.altitude != -1) ? lastValidGps.altitude : -1.0f;
         sendGlobalPositionIntToTelemetryManager(
             altAMSL, // altitude_amsl: GPS MSL altitude
-            altitude // altitude_relative: KF altitude above takeoff
+            droneState.altitude // altitude_relative: KF altitude above takeoff
         );
     }
 
