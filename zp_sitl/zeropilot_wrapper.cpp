@@ -243,22 +243,24 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double p_rad_s, q_rad_s, r_rad_s;
     double ax_body, ay_body, az_body;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
+    double vx_mps, vy_mps, vz_mps;
     float fuel_lbs, rpm;
     float rangefinder_alt;
     double baro_pressure_kpa, baro_temp_c;
 
-    if (!PyArg_ParseTuple(args, "dddddddddddddfffdd",
+    if (!PyArg_ParseTuple(args, "ddddddddddddddddfffdd",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
         &ax_body, &ay_body, &az_body,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
+        &vx_mps, &vy_mps, &vz_mps,
         &fuel_lbs, &rpm,
         &rangefinder_alt,
         &baro_pressure_kpa, &baro_temp_c))
         return NULL;
 
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s, ax_body, ay_body, az_body);
-    self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
+    self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg, vx_mps, vy_mps, vz_mps);
     self->pm->update_from_plant(fuel_lbs, rpm);
     self->rangefinder->update_from_plant(rangefinder_alt);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);

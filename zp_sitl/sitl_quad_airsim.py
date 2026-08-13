@@ -142,6 +142,7 @@ class ZP_QUAD_SITL_AIRSIM:
             lat_deg, long_deg, alt_deg,
             ground_speed,
             heading,
+            lv.x_val, lv.y_val, lv.z_val,
             0.0,
             0.0,
             alt_rangefinder,

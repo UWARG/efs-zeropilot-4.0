@@ -160,6 +160,9 @@ class ZP_PLANE_SITL_FGFS:
             self.fdm['position/lat-geod-deg'],
             self.fdm['position/long-gc-deg'], self.fdm['position/h-sl-ft'] * FT_TO_M,
             self.fdm['velocities/vg-fps'] * FT_TO_M, self.fdm['attitude/psi-deg'],
+            self.fdm['velocities/v-north-fps'] * FT_TO_M,
+            self.fdm['velocities/v-east-fps'] * FT_TO_M,
+            self.fdm['velocities/v-down-fps'] * FT_TO_M,
             self.fdm['propulsion/total-fuel-lbs'], self.fdm['propulsion/engine/propeller-rpm'],
             self.fdm['position/h-agl-ft'] * FT_TO_M,
             self.fdm['atmosphere/P-psf'] * PSF_TO_KPA, rankine_to_celsius(self.fdm['atmosphere/T-R'])
