@@ -34,6 +34,7 @@ public:
     /**
      * Simulates the IMU readings based on the physics engine (Plant)
      * Note: This converts physical SI units into "Raw" LSB counts
+    */
     void update_from_plant(double roll_rad, double pitch_rad, double p_rad_s, double q_rad_s, double r_rad_s,
                            double ax_body = 0.0, double ay_body = 0.0, double az_body = 0.0) {
         // Pre-calculate trig to save cycles
