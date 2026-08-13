@@ -2,6 +2,7 @@
 import jsbsim
 import time
 import threading
+import math
 import os
 import tempfile
 import pygame
@@ -13,9 +14,27 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 SITL_RATE_HZ = 1000
 PSF_TO_KPA = 0.0478803
+FT_TO_M = 0.3048
+# Matches SITL_IMU_Config::GRAVITY so the gravity term cancels exactly
+GRAVITY_MPS2 = 9.81
 
 def rankine_to_celsius(temp_r):
     return (temp_r - 491.67) * 5.0 / 9.0
+
+def body_linear_accel(fdm, roll_rad, pitch_rad):
+    """Body-frame linear acceleration, gravity excluded, in m/s^2.
+
+    JSBSim's a-pilot-* is specific force (what an accelerometer actually reads), already
+    in body axes with z down. SITL_IMU re-applies the gravity projection itself, so hand
+    it gravity-free acceleration: a_body = specific_force + g_body.
+    """
+    sr, cr = math.sin(roll_rad), math.cos(roll_rad)
+    sp, cp = math.sin(pitch_rad), math.cos(pitch_rad)
+    return (
+        fdm['accelerations/a-pilot-x-ft_sec2'] * FT_TO_M - GRAVITY_MPS2 * sp,
+        fdm['accelerations/a-pilot-y-ft_sec2'] * FT_TO_M + GRAVITY_MPS2 * sr * cp,
+        fdm['accelerations/a-pilot-z-ft_sec2'] * FT_TO_M + GRAVITY_MPS2 * cr * cp,
+    )
 
 class ZP_PLANE_SITL_FGFS:
     def __init__(self, fg_host="127.0.0.1", fg_port=5550):
@@ -129,13 +148,20 @@ class ZP_PLANE_SITL_FGFS:
 
     def step(self):
         # Update ZeroPilot Sensors
+        roll_rad = self.fdm['attitude/phi-rad']
+        pitch_rad = self.fdm['attitude/theta-rad']
+        ax_body, ay_body, az_body = body_linear_accel(self.fdm, roll_rad, pitch_rad)
+
         self.zp.update_from_plant(
-            self.fdm['attitude/phi-rad'], self.fdm['attitude/theta-rad'],
+            roll_rad, pitch_rad,
             self.fdm['velocities/p-rad_sec'], self.fdm['velocities/q-rad_sec'],
-            self.fdm['velocities/r-rad_sec'], self.fdm['position/lat-geod-deg'],
-            self.fdm['position/long-gc-deg'], self.fdm['position/h-sl-ft'] * 0.3048,
-            self.fdm['velocities/vg-fps'] * 0.3048, self.fdm['attitude/psi-deg'],
+            self.fdm['velocities/r-rad_sec'],
+            ax_body, ay_body, az_body,
+            self.fdm['position/lat-geod-deg'],
+            self.fdm['position/long-gc-deg'], self.fdm['position/h-sl-ft'] * FT_TO_M,
+            self.fdm['velocities/vg-fps'] * FT_TO_M, self.fdm['attitude/psi-deg'],
             self.fdm['propulsion/total-fuel-lbs'], self.fdm['propulsion/engine/propeller-rpm'],
+            self.fdm['position/h-agl-ft'] * FT_TO_M,
             self.fdm['atmosphere/P-psf'] * PSF_TO_KPA, rankine_to_celsius(self.fdm['atmosphere/T-R'])
         )
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
