@@ -113,8 +113,6 @@ private:
     uint32_t lastTimestamp = 0;
     bool haveLastImuTimestamp = false;
 
-    float altitude = 0.0f;
-
     float lastValidClearance = 0.0f;
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
