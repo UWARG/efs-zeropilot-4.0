@@ -228,7 +228,7 @@ void AttitudeManager::amUpdate() {
         }
 
         // Update altholdKF with barometer data
-        if (baroHomeStarted) {
+        if (baroHomeSampleCount > 0 && baroData.pressureKPa > 0.0f) {
             baroZ = BARO_ALT_SCALE_M * (1.0f - powf(baroData.pressureKPa / baroHomePressureKPa, BARO_EXPONENT));
             altholdKF.updateBarometer(baroZ);
         }
