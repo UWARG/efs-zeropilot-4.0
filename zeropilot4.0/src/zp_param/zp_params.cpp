@@ -245,9 +245,9 @@ void init() {
     initParam(ZP_PARAM_ID::FLTMODE1, "FLTMODE1", static_cast<float>(FlightMode_e::STABILIZE), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE2, "FLTMODE2", static_cast<float>(FlightMode_e::ACRO), MAV_PARAM_TYPE_UINT32);
     initParam(ZP_PARAM_ID::FLTMODE3, "FLTMODE3", static_cast<float>(FlightMode_e::ALTHOLD), MAV_PARAM_TYPE_UINT32);
-    initParam(ZP_PARAM_ID::FLTMODE4, "FLTMODE4", static_cast<float>(FlightMode_e::ACRO), MAV_PARAM_TYPE_UINT32);
-    initParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(FlightMode_e::ACRO), MAV_PARAM_TYPE_UINT32);
-    initParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(FlightMode_e::ACRO), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE4, "FLTMODE4", static_cast<float>(FlightMode_e::STABILIZE), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE5, "FLTMODE5", static_cast<float>(FlightMode_e::STABILIZE), MAV_PARAM_TYPE_UINT32);
+    initParam(ZP_PARAM_ID::FLTMODE6, "FLTMODE6", static_cast<float>(FlightMode_e::STABILIZE), MAV_PARAM_TYPE_UINT32);
     #endif
 
     initParam(ZP_PARAM_ID::RC_FS_TIMEOUT, "RC_FS_TIMEOUT", 0.5f, MAV_PARAM_TYPE_REAL32);
