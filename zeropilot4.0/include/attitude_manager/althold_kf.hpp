@@ -60,17 +60,10 @@ private:
 
     bool baroBiasEnabled = true;
 
-    uint8_t rangefinderRejectCount = 0;
     uint8_t barometerRejectCount = 0;
     uint8_t gpsAltRejectCount = 0;
     uint8_t gpsVelRejectCount = 0;
     
     void rebuildFBQ(float dt);
     void update(float measurement, const float *H, float R);
-
-    uint16_t rangeUpdateCount = 0;
-    uint16_t baroUpdateCount = 0;
-    uint16_t gpsUpdateCount = 0;
-
-
 };
