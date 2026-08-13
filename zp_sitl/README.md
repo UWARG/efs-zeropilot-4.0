@@ -88,7 +88,9 @@ Download Blocks.zip @ https://github.com/Microsoft/AirSim/releases. Open Blocks.
       "Sensors": {
         "Distance": {
           "SensorType": 5,
-          "Enabled": true
+          "Enabled": true,
+          "X": 0, "Y": 0, "Z": 0,
+          "Yaw": 0, "Pitch": -90, "Roll": 0
         }
       }
     }
