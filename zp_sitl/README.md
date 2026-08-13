@@ -27,10 +27,10 @@ source venv/bin/activate
 # On Windows:
 venv\Scripts\activate
 
-# Dependencies for plane:
+# Dependencies:
 pip install -r requirements.txt
 
-# Dependencies for quadcopter:
+# Extra dependencies for quadcopter:
 pip install numpy==1.19.0
 pip install msgpack-rpc-python==0.4.1
 pip install backports.ssl_match_hostname==3.7.0.1
