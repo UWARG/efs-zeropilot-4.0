@@ -125,15 +125,16 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         lastDesiredRate += rateChange; // lastDesiredRate now represents the desired rate thhis loop
         targetAltAboveTerrain += lastDesiredRate * controlPeriodS;
 
+        // Leash the targetAltAboveTerrain to avoid too much thrust (eg. when there is gust the drone may be not
+        // climbing but the pilot may keep the throttle high, then target altitude will be really high
+        // and when the gust is gone the drone will rocket up)
+        float altAboveTerrain = droneState.altitude - terrainAlt;
+        targetAltAboveTerrain = constrain(targetAltAboveTerrain, altAboveTerrain - ALT_LEASH, altAboveTerrain + ALT_LEASH);
+
         wasInDeadzone = false;
     }
 
-    // Leash the targetAltAboveTerrain to avoid too much thrust (eg. when there is gust the drone may be not
-    // climbing but the pilot may keep the throttle high, then target altitude will be really high
-    // and when the gust is gone the drone will rocket up)
-    float altAboveTerrain = droneState.altitude - terrainAlt;
-    targetAltAboveTerrain = constrain(targetAltAboveTerrain, altAboveTerrain - ALT_LEASH, altAboveTerrain + ALT_LEASH);
-
+    // Determine if the rangefinder is lost
     if (rangefinderStaleCycles < rangefinderTimeoutCycles) {
         rangefinderStaleCycles++;
     } else {
@@ -148,7 +149,8 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
 
     // Position control loop
     if (posLoopCounter == 0) {
-        float posSetpoint = targetAlt;
+        // Only ask for maximum of ALT_LEASH climb at a time so a big terrain change is taken in steps
+        float posSetpoint = constrain(targetAlt, droneState.altitude - ALT_LEASH, droneState.altitude + ALT_LEASH);
         float posMeasrued = droneState.altitude;
         velocityCmd = positionPID.pidOutput(posSetpoint, posMeasrued);
         velocityCmd = scale(velocityCmd, -maxDescendRate, maxClimbRate);
