@@ -2,6 +2,7 @@
 #include <cmath>
 
 static float constrain(float value, float minVal, float maxVal);
+static float scale(float value, float minVal, float maxVal);
 
 AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize) noexcept : 
     posLoopRatio((1.0f / controlPeriodS) / POS_LOOP_RATE_HZ),
@@ -24,8 +25,8 @@ AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize
 }
 
 void AltholdMapping::activateFlightMode() {
-    needTargetAltInit = true;  // Initialize target altitude on first runControl loop
-    wasInDeadzone = true;  // Start in hold mode, not climbing
+    needTargetAltInit = true; // Initialize target altitude on first runControl loop
+    wasInDeadzone = true; // Start in hold mode, not climbing
     resetControlLoopState();
     stabilizeCLAW.resetControlLoopState();
 }
@@ -128,6 +129,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         float posSetpoint = targetAlt;
         float posMeasrued = droneState.altitude;
         velocityCmd = positionPID.pidOutput(posSetpoint, posMeasrued);
+        velocityCmd = scale(velocityCmd, -maxDescendRate, maxClimbRate);
     }
 
     // Velocity control loop
@@ -135,15 +137,17 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         float velSetpoint = velocityCmd;
         float velMeasured = droneState.verticalVel;
         accelCmd = velocityPID.pidOutput(velSetpoint, velMeasured);
+        accelCmd = scale(accelCmd, -pilotAccelRate, pilotAccelRate);
     }
 
     // Acceleration control loop
     if (accelLoopCounter == 0) {
         float accelSetpoint = accelCmd;
         float accelMeasured = droneState.verticalAcc;
-        throttleCmd = hoverThrottle + accelPID.pidOutput(accelSetpoint, accelMeasured);
+        float accelOutput = accelPID.pidOutput(accelSetpoint, accelMeasured);
+        throttleCmd = hoverThrottle + scale(accelOutput, minThrottle - hoverThrottle, maxThrottle - hoverThrottle);
 
-        // Update hover throttle based on current throttle (before tilt compansation as we want the leveled throttle)
+        // Update hover throttle based on current throttle (before tilt compansation since we want the leveled throttle)
         updateHoverThrottle(throttleCmd, droneState.verticalVel, droneState.verticalAcc);
         
         // Tilt compensation (thrustVertical = thrustTotal * cos(roll) * cos(pitch))
@@ -183,4 +187,9 @@ static float constrain(float value, float minVal, float maxVal) {
     } else {
         return value;
     }
+}
+
+// Map PID output in [-1, 1] onto an asymmetric range. Positive values scale by maxVal, negative values by minVal.
+static float scale(float value, float minVal, float maxVal) {
+    return value * (value >= 0.0f ? maxVal : -minVal);
 }
