@@ -8,6 +8,7 @@ AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize
     posLoopRatio((1.0f / controlPeriodS) / POS_LOOP_RATE_HZ),
     velLoopRatio((1.0f / controlPeriodS) / VEL_LOOP_RATE_HZ),
     accelLoopRatio((1.0f / controlPeriodS) / ACCEL_LOOP_RATE_HZ),
+    rangefinderTimeoutCycles(static_cast<uint32_t>(RANGEFINDER_TIMEOUT_S / controlPeriodS)),
     positionPID(0.0f, 0.0f, 0.0f, 0.0f,
                 OUTPUT_MIN, OUTPUT_MAX, 100,
                 1.0f / POS_LOOP_RATE_HZ),
@@ -27,6 +28,14 @@ AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize
 void AltholdMapping::activateFlightMode() {
     needTargetAltInit = true; // Initialize target altitude on first runControl loop
     wasInDeadzone = true; // Start in hold mode, not climbing
+
+    // Initialize the surface tracking states
+    targetAltAboveTerrain = 0.0f;
+    terrainAlt = 0.0f; // terrainAlt starts at 0 so the drone holds an absolute altitude until the rangefinder is acquired
+    rangefinderLost = true; // Assume no rangefinder, updateTerrainAlt() will update this if we have one
+    rangefinderStaleCycles = 0;
+    validReadingCount = 0;
+
     resetControlLoopState();
     stabilizeCLAW.resetControlLoopState();
 }
@@ -90,7 +99,7 @@ PID *AltholdMapping::getAccelPID() noexcept {
 
 RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) {
     if (needTargetAltInit) {
-        targetAlt = droneState.altitude;
+        targetAltAboveTerrain = droneState.altitude - terrainAlt;
         needTargetAltInit = false;
     }
 
@@ -100,7 +109,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         // In the deadzone, maintain the current altitude
         if (!wasInDeadzone) {
             // Only set the target once when entering the deadzone
-            targetAlt = droneState.altitude;
+            targetAltAboveTerrain = droneState.altitude - terrainAlt;
             wasInDeadzone = true;
         }
     } else {
@@ -114,15 +123,28 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         // Limit the rate change to the pilot's desired acceleration rate
         float rateChange = constrain(targetRate - lastDesiredRate, -maxRateChange, maxRateChange);
         lastDesiredRate += rateChange; // lastDesiredRate now represents the desired rate thhis loop
-        targetAlt += lastDesiredRate * controlPeriodS;
+        targetAltAboveTerrain += lastDesiredRate * controlPeriodS;
 
         wasInDeadzone = false;
     }
 
-    // Leash the target altitude to avoid too much thrust (eg. when there is gust the drone may be not 
-    // climbing but the pilot may keep the throttle high, then target altitude will be really high 
+    // Leash the targetAltAboveTerrain to avoid too much thrust (eg. when there is gust the drone may be not
+    // climbing but the pilot may keep the throttle high, then target altitude will be really high
     // and when the gust is gone the drone will rocket up)
-    targetAlt = constrain(targetAlt, droneState.altitude - ALT_LEASH, droneState.altitude + ALT_LEASH);
+    float altAboveTerrain = droneState.altitude - terrainAlt;
+    targetAltAboveTerrain = constrain(targetAltAboveTerrain, altAboveTerrain - ALT_LEASH, altAboveTerrain + ALT_LEASH);
+
+    if (rangefinderStaleCycles < rangefinderTimeoutCycles) {
+        rangefinderStaleCycles++;
+    } else {
+        // Rangefinder is lost
+        rangefinderLost = true;
+        validReadingCount = 0;
+    }
+
+    // terrainAlt follows the terrain while the rangefinder is valid and freezes when it isn't
+    // When rangefiner is lost, targetAlt simply becomes the absolute altitude
+    targetAlt = targetAltAboveTerrain + terrainAlt;
 
     // Position control loop
     if (posLoopCounter == 0) {
@@ -177,6 +199,39 @@ void AltholdMapping::updateHoverThrottle(float currentThrottle, float verticalVe
         const float alpha = (controlPeriodS * accelLoopRatio) / timeConstant;
         hoverThrottle += alpha * (currentThrottle - hoverThrottle);
     }
+}
+
+void AltholdMapping::updateTerrainAlt(const DroneState_t &droneState, float rangefinderAlt) {
+    if (needTargetAltInit) return;
+
+    // Reset the stale counter since we got a new reading
+    rangefinderStaleCycles = 0;
+
+    float newTerrainAlt = droneState.altitude - rangefinderAlt;
+
+    // Attempt to reaquire the rangefinder if it was lost
+    if (rangefinderLost) {
+        // Require a few consecutive readings to ensure rangefinder is actually reacquired 
+        // and not just a single good reading in the middle of a dropout
+        validReadingCount++;
+        if (validReadingCount < RANGEFINDER_REACQUIRE_COUNT) {
+            return;
+        }
+        // The rangefinder is now considered reacquired
+        validReadingCount = 0;
+        
+        /*
+        Rebase targetAltAboveTerrain onto the new terrain so targetAlt comes out unchanged, 
+        we hold the current altitude on this transition. Without this, a rangefinder that comes 
+        back reading something far from the terrainAlt we were freezed to may cause the drone 
+        to shoot off to correct it.
+        */
+        targetAltAboveTerrain = targetAlt - newTerrainAlt;
+
+        rangefinderLost = false;
+    }
+
+    terrainAlt = newTerrainAlt;
 }
 
 static float constrain(float value, float minVal, float maxVal) {

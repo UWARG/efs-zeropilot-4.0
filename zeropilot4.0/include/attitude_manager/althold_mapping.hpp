@@ -12,6 +12,8 @@ public:
 
     RCMotorControlMessage_t runControl(RCMotorControlMessage_t controlInput, const DroneState_t &droneState) override;
 
+    void updateTerrainAlt(const DroneState_t &droneState, float rangefinderAlt);
+
     // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
     void resetControlLoopState() noexcept;
 
@@ -43,7 +45,8 @@ private:
     uint32_t posLoopRatio;
     uint32_t velLoopRatio;
     uint32_t accelLoopRatio;
-    
+    uint32_t rangefinderTimeoutCycles;
+
     uint8_t posLoopCounter = 0;
     uint8_t velLoopCounter = 0;
     uint8_t accelLoopCounter = 0;
@@ -62,6 +65,14 @@ private:
 
     bool needTargetAltInit = true;
     float targetAlt = 0.0f;
+    float targetAltAboveTerrain = 0.0f;
+    float terrainAlt = 0.0f;
+    bool rangefinderLost = true;
+    uint32_t rangefinderStaleCycles = 0;
+    uint8_t validReadingCount = 0;
+
+    static constexpr float RANGEFINDER_TIMEOUT_S = 0.3f;
+    static constexpr uint8_t RANGEFINDER_REACQUIRE_COUNT = 5;
 
     float maxClimbRate = 2.5f;
     float maxDescendRate = 2.5f;

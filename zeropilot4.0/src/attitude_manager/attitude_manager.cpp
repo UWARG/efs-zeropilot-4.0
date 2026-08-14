@@ -304,15 +304,17 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Get rangefinder data
-    rangefinderData = rangefinderDriver->readData();
-    if (rangefinderData.isNew && rangefinderData.isValid) {
-        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
-        lastValidClearance = rangefinderData.distance;
-    }
-
     droneState.altitude = altholdKF.getEstimatedAltitude();
     droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
+
+    // Get rangefinder data
+    rangefinderData = rangefinderDriver->readData(); // Always read so the driver keeps its transfers going
+    #ifdef QUADCOPTER // ALTHOLD is quad only
+    if (rangefinderData.isNew && rangefinderData.isValid && activeCLAW == &altholdCLAW) {
+        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
+        altholdCLAW.updateTerrainAlt(droneState, rangefinderZ);
+    }
+    #endif
 
     // Send global position (altitude) data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ) == 0) {
