@@ -20,6 +20,7 @@
 #include "barometer_iface.hpp"
 #include "MahonyAHRS.hpp"
 #include "althold_kf.hpp"
+#include "unit_conversions.hpp"
 #include "althold_mapping.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
@@ -135,6 +136,12 @@ private:
     bool gpsHomeSettled = false;
 
     static constexpr float GRAVITY = 9.81f;
+
+    static constexpr float VERT_ACC_UPDATE_DT_S = AM_CONTROL_LOOP_PERIOD_S; // Updated every AM loop
+    static constexpr float VERT_ACC_CUTOFF_HZ = 20.0f;
+    static constexpr float VERT_ACC_TIME_CONSTANT_S = 1.0f / (2.0f * ZP_UNITS::PI * VERT_ACC_CUTOFF_HZ);
+    static constexpr float VERT_ACC_ALPHA = VERT_ACC_UPDATE_DT_S / (VERT_ACC_TIME_CONSTANT_S + VERT_ACC_UPDATE_DT_S);
+    float verticalAccFiltered = 0.0f;
 
     static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // 25hz
     static constexpr float BARO_HOME_TIME_CONSTANT_S = 60.0f;
