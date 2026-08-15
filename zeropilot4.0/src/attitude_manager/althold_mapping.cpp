@@ -110,7 +110,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         if (!wasInDeadzone) {
             // Only set the target once when entering the deadzone
             float vz = droneState.verticalVel;
-            float stoppingDistance = (vz * fabsf(vz)) / (2.0f * pilotAccelRate); // d = v^2 / (2a)
+            float stoppingDistance = constrain((vz * fabsf(vz)) / (2.0f * pilotAccelRate), 0.0f, 1.0f); // d = v^2 / (2a)
             targetAltAboveTerrain = droneState.altitude - terrainAlt + stoppingDistance;
             lastDesiredRate = 0.0f;
             wasInDeadzone = true;
@@ -123,9 +123,9 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
 
         float targetRate = 0.0f;
         if (throttleCentered > 0) { // [0, 0.5], climb
-            targetRate = stickPastDeadzone * maxClimbRate; // *2.0f to scale to [0, 1] range
+            targetRate = stickPastDeadzone * maxClimbRate;
         } else  { // [-0.5, 0], Descend
-            targetRate = -stickPastDeadzone * maxDescendRate; // *2.0f to scale to [-1, 0] range
+            targetRate = -stickPastDeadzone * maxDescendRate;
         }
         // Limit the rate change to the pilot's desired acceleration rate
         float rateChange = constrain(targetRate - lastDesiredRate, -maxRateChange, maxRateChange);
@@ -213,10 +213,10 @@ void AltholdMapping::updateHoverThrottle(float currentThrottle, float verticalVe
 }
 
 void AltholdMapping::updateTerrainAlt(const DroneState_t &droneState, float rangefinderAlt) {
-    if (needTargetAltInit) return;
-
     // Reset the stale counter since we got a new reading
     rangefinderStaleCycles = 0;
+
+    if (needTargetAltInit) return;
 
     float newTerrainAlt = droneState.altitude - rangefinderAlt;
 
