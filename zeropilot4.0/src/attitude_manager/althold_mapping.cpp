@@ -117,11 +117,15 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         }
     } else {
         // Outside the deadzone, adjust the target altitude based on throttle input
+
+        // Scale the stick input to [0,1] past the deadzone so rates start at 0 from the deadzone edge instead of jumping
+        float stickPastDeadzone = (fabsf(throttleCentered) - THROTTLE_DEADZONE) / (0.5f - THROTTLE_DEADZONE);
+
         float targetRate = 0.0f;
         if (throttleCentered > 0) { // [0, 0.5], climb
-            targetRate = (throttleCentered * 2.0f) * maxClimbRate; // *2.0f to scale to [0, 1] range
+            targetRate = stickPastDeadzone * maxClimbRate; // *2.0f to scale to [0, 1] range
         } else  { // [-0.5, 0], Descend
-            targetRate = (throttleCentered * 2.0f) * maxDescendRate; // *2.0f to scale to [-1, 0] range
+            targetRate = -stickPastDeadzone * maxDescendRate; // *2.0f to scale to [-1, 0] range
         }
         // Limit the rate change to the pilot's desired acceleration rate
         float rateChange = constrain(targetRate - lastDesiredRate, -maxRateChange, maxRateChange);
