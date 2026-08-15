@@ -183,7 +183,8 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         
         // Tilt compensation (thrustVertical = thrustTotal * cos(roll) * cos(pitch))
         // We can only command total thrust so we convert the required vertical thrust to total thrust
-        throttleCmd /= (cosf(droneState.roll) * cosf(droneState.pitch));
+        float tiltCos = cosf(droneState.roll) * cosf(droneState.pitch);
+        throttleCmd /= fmaxf(tiltCos, 0.1f); // Avoid dividing by zero if the drone is 90 deg
         
         // Convert back to [0, 100] range
         throttleCmd = constrain(throttleCmd, minThrottle, maxThrottle) * 100.0f;
