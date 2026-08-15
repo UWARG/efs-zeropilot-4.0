@@ -44,6 +44,11 @@ namespace SITL_Driver_Configs {
         static constexpr float BAROMETRIC_EXPONENT = 0.190284f; // must match the driver's exponent
     };
 
+    struct SITL_Rangefinder_Config {
+        static constexpr uint32_t UPDATE_RATE_HZ = 100; // TF02-Pro frame rate, so SITL sees the same sample rate as hardware
+        static constexpr uint32_t PLANT_UPDATES_PER_FRAME = SITL_DRIVER_UPDATE_RATE_HZ / UPDATE_RATE_HZ;
+    };
+
     struct SITL_TELEM_Config {
         static constexpr uint32_t RX_BUF_SZ_BYTES = 1048576; // 1 MB receive buffer
     };
