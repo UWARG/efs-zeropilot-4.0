@@ -109,7 +109,9 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         // In the deadzone, maintain the current altitude
         if (!wasInDeadzone) {
             // Only set the target once when entering the deadzone
-            targetAltAboveTerrain = droneState.altitude - terrainAlt;
+            float vz = droneState.verticalVel;
+            float stoppingDistance = (vz * fabsf(vz)) / (2.0f * pilotAccelRate); // d = v^2 / (2a)
+            targetAltAboveTerrain = droneState.altitude - terrainAlt + stoppingDistance;
             lastDesiredRate = 0.0f;
             wasInDeadzone = true;
         }
