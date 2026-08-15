@@ -35,6 +35,7 @@ public:
         plantUpdateCounter = 0;
 
         data.distance = sim_altitude;
+        data.signalStrength = 65535;
         data.isValid = sim_altitude < 40.0f ? true : false;
         data.isNew = true;
     }
