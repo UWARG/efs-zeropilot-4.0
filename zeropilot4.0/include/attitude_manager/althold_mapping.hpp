@@ -56,8 +56,8 @@ private:
     static constexpr float OUTPUT_MAX = +1.0f;
 
     PID positionPID; // Position loop should have only P term
-    PID velocityPID; // Velocity/rate loop should have P and D terms
-    PID accelPID; // Acceleration loop should have all PID terms
+    PID velocityPID; // Velocity/rate loop should have P terms
+    PID accelPID; // Acceleration loop should have all P and I terms
 
     StabilizeMapping &stabilizeCLAW;
 
