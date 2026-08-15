@@ -59,11 +59,14 @@ private:
     float dtPrev;
 
     bool baroBiasEnabled = true;
+    
+    static constexpr float NIS_GATE = 16.0f; // 4 sigma
+    static constexpr uint8_t MAX_CONSECUTIVE_REJECTS = 20;
 
     uint8_t barometerRejectCount = 0;
     uint8_t gpsAltRejectCount = 0;
     uint8_t gpsVelRejectCount = 0;
-    
+
     void rebuildFBQ(float dt);
-    void update(float measurement, const float *H, float R);
+    void update(float measurement, const float *H, float R, uint8_t &rejectCount);
 };
