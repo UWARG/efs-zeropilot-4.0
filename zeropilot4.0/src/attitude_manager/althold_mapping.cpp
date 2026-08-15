@@ -19,7 +19,8 @@ AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize
                 OUTPUT_MIN, OUTPUT_MAX, 100,
                 1.0f / ACCEL_LOOP_RATE_HZ),
     stabilizeCLAW(stabilize),
-    controlPeriodS(controlPeriodS) {
+    controlPeriodS(controlPeriodS),
+    terrainAlpha(controlPeriodS / TERRAIN_TAU_S) {
         positionPID.pidInitState();
         velocityPID.pidInitState();
         accelPID.pidInitState();
@@ -102,6 +103,9 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         targetAltAboveTerrain = droneState.altitude - terrainAlt;
         needTargetAltInit = false;
     }
+
+    // Low pass filter the terrain altitude
+    terrainAlt += terrainAlpha * (rawTerrainAlt - terrainAlt);
 
     // Check throttle input every loop to determine the altitude to hold
     float throttleCentered = (controlInput.throttle / 100.0f) - 0.5f; // Convert throttle from [0, 100] to [-0.5, 0.5]
@@ -238,11 +242,13 @@ void AltholdMapping::updateTerrainAlt(const DroneState_t &droneState, float rang
         to shoot off to correct it.
         */
         targetAltAboveTerrain = targetAlt - newTerrainAlt;
+        rawTerrainAlt = newTerrainAlt;
+        terrainAlt = newTerrainAlt;
 
         rangefinderLost = false;
     }
 
-    terrainAlt = newTerrainAlt;
+    rawTerrainAlt = newTerrainAlt;
 }
 
 static float constrain(float value, float minVal, float maxVal) {

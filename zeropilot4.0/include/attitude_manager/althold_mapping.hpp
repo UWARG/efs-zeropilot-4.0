@@ -74,6 +74,10 @@ private:
     static constexpr float RANGEFINDER_TIMEOUT_S = 0.3f;
     static constexpr uint8_t RANGEFINDER_REACQUIRE_COUNT = 5;
 
+    float rawTerrainAlt = 0.0f;
+    float terrainAlpha;
+    static constexpr float TERRAIN_TAU_S = 0.2f; // 0.2s at 100hz takes roughtly 20 readings
+
     float maxClimbRate = 2.5f;
     float maxDescendRate = 2.5f;
     float pilotAccelRate = 2.5f; // How aggressively can the pilot's stick input change the climb rate
