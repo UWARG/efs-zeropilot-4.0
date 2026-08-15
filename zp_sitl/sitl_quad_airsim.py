@@ -19,6 +19,11 @@ PA_TO_KPA = 0.001
 # AirSim's barometer sensor doesn't report temperature, so assume a fixed ambient.
 BARO_AMBIENT_TEMP_C = 25.0
 
+RC_DEADZONE = 0.05
+
+# Neutral RC value
+RC_CENTRE = 50
+
 class ZP_QUAD_SITL_AIRSIM:
     def __init__(self, ip="127.0.0.1", port=14550):
         # Input Setup (Joysticks)
@@ -40,7 +45,7 @@ class ZP_QUAD_SITL_AIRSIM:
         self.armed = False
         self.paused = True 
         self.reset_requested = False
-        self.commands = {'roll': 0, 'pitch': 0, 'yaw': 0, 'throttle': 0}
+        self.commands = {'roll': RC_CENTRE, 'pitch': RC_CENTRE, 'yaw': RC_CENTRE, 'throttle': 0}
         self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
 
         # Get fltmode on startup
@@ -57,9 +62,10 @@ class ZP_QUAD_SITL_AIRSIM:
             pygame.event.pump()
             if self.joy:
                 # Mapping: 2:Roll, 3:Pitch, 0:Yaw, 1:Throttle
-                self.commands['roll'] = (self.joy.get_axis(0) + 1) * 50
-                self.commands['pitch'] = (self.joy.get_axis(1) + 1) * 50
-                self.commands['yaw'] = (self.joy.get_axis(3) + 1) * 50
+                # Throttle is left raw, althold applies its own THROTTLE_DEADZONE and stabilize wants the full range
+                self.commands['roll'] = (self.apply_deadzone(self.joy.get_axis(0)) + 1) * 50
+                self.commands['pitch'] = (self.apply_deadzone(self.joy.get_axis(1)) + 1) * 50
+                self.commands['yaw'] = (self.apply_deadzone(self.joy.get_axis(3)) + 1) * 50
                 self.commands['throttle'] = (self.joy.get_axis(2) + 1) * 50
 
                 if self.joy.get_axis(4) > 0.5: 
@@ -81,6 +87,12 @@ class ZP_QUAD_SITL_AIRSIM:
 
     def axis_to_fltmode(self, value):
         return min(range(len(FLTMODE_AXIS_VALUES)), key=lambda i: abs(FLTMODE_AXIS_VALUES[i] - value))
+
+    @staticmethod
+    def apply_deadzone(v, dz=RC_DEADZONE):
+        if abs(v) < dz:
+            return 0.0
+        return (v - math.copysign(dz, v)) / (1.0 - dz)
 
     @staticmethod
     def world_to_body(q, vx, vy, vz):
