@@ -40,15 +40,15 @@ void AltholdKF::predict(float u, float dt) {
 }
 
 void AltholdKF::updateBarometer(float altitude) {
-    update(altitude, H_BARO, config.measNoiseBarometer);
+    update(altitude, H_BARO, config.measNoiseBarometer, barometerRejectCount);
 }
 
 void AltholdKF::updateGPSAlt(float altitude) {
-    update(altitude, H_GPS_ALT, config.measNoiseGPSAlt);
+    update(altitude, H_GPS_ALT, config.measNoiseGPSAlt, gpsAltRejectCount);
 }
 
 void AltholdKF::updateGPSVel(float verticalVelocity) {
-    update(verticalVelocity, H_GPS_VEL, config.measNoiseGPSVel);
+    update(verticalVelocity, H_GPS_VEL, config.measNoiseGPSVel, gpsVelRejectCount);
 }
 
 float AltholdKF::getEstimatedAltitude() {
@@ -94,7 +94,7 @@ void AltholdKF::rebuildFBQ(float dt) {
     // NOLINTEND(readability-identifier-naming)
 }
 
-void AltholdKF::update(float measurement, const float *H, float R) {
+void AltholdKF::update(float measurement, const float *H, float R, uint8_t &rejectCount) {
     // NOLINTBEGIN(readability-identifier-naming)
     float Ht[altholdStateCount * 1];
     math->matrixTranspose(H, 1, altholdStateCount, Ht); // H^T
@@ -112,10 +112,27 @@ void AltholdKF::update(float measurement, const float *H, float R) {
     
     // Gating
     float nis = y * y / S[0];
-    if (nis > 16.0f) {
-        // Reject
+    if (nis > NIS_GATE) {
+        if (++rejectCount < MAX_CONSECUTIVE_REJECTS) {
+            // Sensor glitch, reject them
+            return;
+        }
+        rejectCount = 0;
+
+        /*
+        The sensor has disagreed for a long time, so our estimate is the one that is off, not the
+        sensor. Inflate uncertainty along the measured states so the next reading passes the gate.
+        */
+        for (int i = 0; i < altholdStateCount; i++) {
+            // Only inflate covariance of the states that are actually measured by 
+            // this sensor and dont inflate states that are delibrately frozen
+            if (H[i] != 0.0f && P[i * altholdStateCount + i] > 0.0f) {
+                P[i * altholdStateCount + i] += y * y;
+            }
+        }
         return;
     }
+    rejectCount = 0;
 
     float Sinv[1 * 1];
     math->matrixInverse(S, 1, Sinv); // S^-1
