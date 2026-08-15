@@ -179,7 +179,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         throttleCmd = hoverThrottle + scale(accelOutput, minThrottle - hoverThrottle, maxThrottle - hoverThrottle);
 
         // Update hover throttle based on current throttle (before tilt compansation since we want the leveled throttle)
-        updateHoverThrottle(throttleCmd, droneState.verticalVel, droneState.verticalAcc);
+        updateHoverThrottle(throttleCmd, droneState.verticalVel, droneState.verticalAcc, droneState.altitude);
         
         // Tilt compensation (thrustVertical = thrustTotal * cos(roll) * cos(pitch))
         // We can only command total thrust so we convert the required vertical thrust to total thrust
@@ -201,9 +201,10 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
     return controlInput;
 }
 
-void AltholdMapping::updateHoverThrottle(float currentThrottle, float verticalVel, float verticalAcc) {
+void AltholdMapping::updateHoverThrottle(float currentThrottle, float verticalVel, float verticalAcc, float altitude) {
     bool stable = (fabsf(verticalVel) < 0.5f) && (fabsf(verticalAcc) < 1.0f);
-    if (stable) {
+    bool inAir = altitude > 0.5f;
+    if (stable && inAir) {
         // First order low pass filter to learn the hover throttle over time
         const float timeConstant = 5.0f; // 5 seconds
         const float alpha = (controlPeriodS * accelLoopRatio) / timeConstant;

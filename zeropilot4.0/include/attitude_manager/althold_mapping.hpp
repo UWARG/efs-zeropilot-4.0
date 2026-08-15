@@ -95,5 +95,5 @@ private:
     float accelCmd = 0.0f;
     float throttleCmd = 0.0f;
     
-    void updateHoverThrottle(float currentThrottle, float verticalVel, float verticalAcc);
+    void updateHoverThrottle(float currentThrottle, float verticalVel, float verticalAcc, float altitude);
 };
