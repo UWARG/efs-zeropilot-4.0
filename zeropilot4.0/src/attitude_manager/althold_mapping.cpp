@@ -33,6 +33,7 @@ void AltholdMapping::activateFlightMode() {
     // Initialize the surface tracking states
     targetAltAboveTerrain = 0.0f;
     terrainAlt = 0.0f; // terrainAlt starts at 0 so the drone holds an absolute altitude until the rangefinder is acquired
+    rawTerrainAlt = 0.0f;
     rangefinderLost = true; // Assume no rangefinder, updateTerrainAlt() will update this if we have one
     rangefinderStaleCycles = 0;
     validReadingCount = 0;
@@ -123,7 +124,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         // Outside the deadzone, adjust the target altitude based on throttle input
 
         // Scale the stick input to [0,1] past the deadzone so rates start at 0 from the deadzone edge instead of jumping
-        float stickPastDeadzone = (fabsf(throttleCentered) - THROTTLE_DEADZONE) / (0.5f - THROTTLE_DEADZONE);
+        float stickPastDeadzone = constrain((fabsf(throttleCentered) - THROTTLE_DEADZONE) / (0.5f - THROTTLE_DEADZONE), 0.0f, 1.0f);
 
         float targetRate = 0.0f;
         if (throttleCentered > 0) { // [0, 0.5], climb
