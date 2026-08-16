@@ -163,11 +163,14 @@ void AttitudeManager::amUpdate() {
             dt
         );
         
-        // Tilt compensation for vertical acceleration
-        float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
-                                                        scaledImuData.data[i].yacc, 
-                                                        scaledImuData.data[i].zacc);
-        altholdKF.predict(-vertAccel, dt);
+        // Only feed IMU0's vertical acceleration to altholdKF
+        if (scaledImuData.data[i].imuId == 0) {
+            // Tilt compensation for vertical acceleration
+            float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
+                                                            scaledImuData.data[i].yacc, 
+                                                            scaledImuData.data[i].zacc);
+            altholdKF.predict(-vertAccel, dt);
+        }
 
         /* TODO: Uncomment once using EKF
         float gyro[3] = {
@@ -222,7 +225,7 @@ void AttitudeManager::amUpdate() {
 
         // Capture home pressure while disarmed, skipping the first 1s warmup transient
         // The baroHomePressureKPa keeps refining past baroHomeSettled (baro can drift), until drone is armed
-        if (!armedFlag && baroElapsedMs >= BARO_HOME_WARMUP_MS) {
+        if (!armedFlag && baroElapsedMs >= BARO_HOME_WARMUP_MS && !baroHomeSettled) {
             baroHomeSampleCount++;
 
             // fmax of 1/n and BARO_HOME_ALPHA_MIN so that the running mean becomes an EMA after 60s 
