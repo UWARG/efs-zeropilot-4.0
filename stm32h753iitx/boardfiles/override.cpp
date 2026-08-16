@@ -10,12 +10,9 @@ extern "C" {
 #endif
 
 /* overriding _write to redirect puts()/printf() to SWO */
-int _write(int file, char *ptr, int len)
-{
-  if( osMutexAcquire(itmMutex, osWaitForever) == osOK )
-  {
-    for (int DataIdx = 0; DataIdx < len; DataIdx++)
-    {
+int _write(int file, char *ptr, int len) {
+  if( osMutexAcquire(itmMutex, osWaitForever) == osOK ) {
+    for (int DataIdx = 0; DataIdx < len; DataIdx++) {
       ITM_SendChar(ptr[DataIdx]);
     }
     osMutexRelease(itmMutex);
@@ -55,7 +52,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart == rcHandle->getHuart()) {
+  if (huart == rcHandle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
@@ -99,20 +96,60 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-    if (hspi == imuHandle->getSPI()) {
-      imuHandle->txRxCallback();
+  if (hspi == imuHandle->getSPI()) {
+    imuHandle->txRxCallback();
+  }
+}
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
+    FDCAN_RxHeaderTypeDef rxHeader;
+    uint8_t rxData[8];
+
+    uint32_t count = HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0);
+    while (count-- && HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, rxData) == HAL_OK
+        && canControllerHandle) {
+      (void)canControllerHandle->enqueueRxFrame(rxHeader.Identifier, rxHeader.DataLength, rxData);
     }
+  }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_MemRxCpltCallback();
-    }
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_MemRxCpltCallback();
+  } else if(hi2c == barometerHandle->getI2C()) {
+    barometerHandle->rxCallback();
+  }
+}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->txCallback();
+  }
+}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->rxCallback();
+  }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_ErrorCallback();
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  } else if (hi2c == barometerHandle->getI2C()) {
+    barometerHandle->errorCallback();
+  } else if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->errorCallback();
+  }
+}
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
+    FDCAN_ProtocolStatusTypeDef protocol_status;
+    HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
+
+    if (protocol_status.BusOff != 0) {
+        CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
     }
 }
 

@@ -14,10 +14,8 @@ extern "C" {
 /* overriding _write to redirect puts()/printf() to SWO */
 int _write(int file, char *ptr, int len)
 {
-  if( osMutexAcquire(itmMutex, osWaitForever) == osOK )
-  {
-    for (int DataIdx = 0; DataIdx < len; DataIdx++)
-    {
+  if (osMutexAcquire(itmMutex, osWaitForever) == osOK) {
+    for (int DataIdx = 0; DataIdx < len; DataIdx++) {
       ITM_SendChar(ptr[DataIdx]);
     }
     osMutexRelease(itmMutex);
@@ -44,7 +42,7 @@ void HAL_Delay(uint32_t Delay) {
 
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-    if (huart == rcHandle->getHuart()){
+    if (huart == rcHandle->getHuart()) {
         rcHandle->parse();
         rcHandle->startDMA();
     } else if (huart == telemLinkHandle->getHuart()) {
@@ -56,22 +54,22 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart == rcHandle->getHuart()){
+  if (huart == rcHandle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
       __HAL_UART_CLEAR_PEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_NE){
+    if (error & HAL_UART_ERROR_NE) {
       __HAL_UART_CLEAR_NEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_FE){
+    if (error & HAL_UART_ERROR_FE) {
       __HAL_UART_CLEAR_FEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_ORE){
+    if (error & HAL_UART_ERROR_ORE) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
@@ -84,15 +82,15 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 		__HAL_UART_CLEAR_PEFLAG(huart);
 	  }
 
-	  if (error & HAL_UART_ERROR_NE){
+	  if (error & HAL_UART_ERROR_NE) {
 		__HAL_UART_CLEAR_NEFLAG(huart);
 	  }
 
-	  if (error & HAL_UART_ERROR_FE){
+	  if (error & HAL_UART_ERROR_FE) {
 		__HAL_UART_CLEAR_FEFLAG(huart);
 	  }
 
-	  if (error & HAL_UART_ERROR_ORE){
+	  if (error & HAL_UART_ERROR_ORE) {
 		__HAL_UART_CLEAR_OREFLAG(huart);
 	  }
 	  gpsHandle->rxCallback(0);
@@ -100,25 +98,65 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-    #ifdef SPI_INTERFACE
-    if (hspi->Instance == SPI1) {
-        setSpiTxFlag(1);
-    }
-    #endif
-    if (hspi->Instance == SPI2) {
-      imuHandle->txRxCallback();
-    }
+#ifdef SPI_INTERFACE
+  if (hspi->Instance == SPI1) {
+      setSpiTxFlag(1);
+  }
+#endif
+  if (hspi->Instance == SPI2) {
+    imuHandle->txRxCallback();
+  }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_MemRxCpltCallback();
-    }
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_MemRxCpltCallback();
+  } else if(hi2c == barometerHandle->getI2C()) {
+    barometerHandle->rxCallback();
+  }
+}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->txCallback();
+  }
+}
+
+void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->rxCallback();
+  }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_ErrorCallback();
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  } else if (hi2c == barometerHandle->getI2C()) {
+    barometerHandle->errorCallback();
+  } else if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->errorCallback();
+  }
+}
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
+    FDCAN_RxHeaderTypeDef rxHeader;
+    uint8_t rxData[8];
+
+    uint32_t count = HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0);
+    while (count-- && HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, rxData) == HAL_OK
+        && canControllerHandle) {
+      (void)canControllerHandle->enqueueRxFrame(rxHeader.Identifier, rxHeader.DataLength, rxData);
+    }
+  }
+}
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
+    FDCAN_ProtocolStatusTypeDef protocol_status;
+    HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
+
+    if (protocol_status.BusOff != 0) {
+        CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
     }
 }
 

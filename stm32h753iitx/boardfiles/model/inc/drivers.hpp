@@ -1,6 +1,7 @@
 #pragma once
 
 #include "systemutils.hpp"
+#include "mathutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
 #include "sd.hpp"
@@ -13,25 +14,32 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
+#include "can_controller.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
 #include "dshot.hpp"
 #include "fused_imu.hpp"
 #include "fft.hpp"
+#include "tf02pro.hpp"
+#include "icp_20100.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern MathUtils *mathUtilsHandle;
 extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 
 extern IMotorControl *motorHandles[8];
 
+extern CANController *canControllerHandle;
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
+extern Rangefinder *rangefinderHandle;
+extern Barometer *barometerHandle;
 
 extern SDFileSystem *sdFileSystemHandle;
 

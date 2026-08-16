@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include "systemutils_iface.hpp"
+#include "mathutils_iface.hpp"
 #include "fft_iface.hpp"
 
 #define FFT_NOTCH_MAX_HARMONICS 16
@@ -24,7 +24,7 @@ struct FFTHarmonicNotchConfig {
 
 class FFTHarmonicNotch {
     public:
-        FFTHarmonicNotch(ISystemUtils *systemUtilsDriver, IFFT *fftDriver);
+        FFTHarmonicNotch(IMathUtils *mathUtilsDriver, IFFT *fftDriver);
         
         // Initialize filters, compute Hanning window, setup FFT handler
         bool init(const FFTHarmonicNotchConfig& notchConfig);
@@ -42,7 +42,7 @@ class FFTHarmonicNotch {
     private:
         static constexpr uint16_t FFT_MAX_WINDOW_SIZE = 1024;
 
-        ISystemUtils *systemUtilsDriver;
+        IMathUtils *mathUtilsDriver;
 
         // Calculates coefficients based on the new peak frequency
         void updateFilters(float peakFreqHz);
@@ -54,7 +54,7 @@ class FFTHarmonicNotch {
             float x1Z = 0, x2Z = 0, y1Z = 0, y2Z = 0;
             bool enabled = false;
 
-            void updateCoefficients(ISystemUtils *systemUtilsDriver, float sample_freq, float center_freq, float A, float Q);
+            void updateCoefficients(IMathUtils *mathUtilsDriver, float sample_freq, float center_freq, float A, float Q);
             void applyTriAxis(float &gx, float &gy, float &gz);
             void resetStates();
         };

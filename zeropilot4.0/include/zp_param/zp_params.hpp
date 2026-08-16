@@ -86,11 +86,13 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     RLL2SRV_D,
     RLL2SRV_TAU,
     RLL2SRV_IMAX,
+    RLL2SRV_FF,
     PTCH2SRV_P,
     PTCH2SRV_I,
     PTCH2SRV_D,
     PTCH2SRV_TAU,
     PTCH2SRV_IMAX,
+    PTCH2SRV_FF,
     KFF_RDDRMIX,
     ROLL_LIMIT_DEG,
     PTCH_LIM_MAX_DEG,
@@ -125,6 +127,9 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     ATC_ANG_PTCH_TAU,
     ATC_ANG_PTCH_IMAX,
     ATC_ANGLE_MAX,
+    MOT_SPIN_MIN,
+    MOT_SPIN_MAX,
+    MOT_SPIN_ARM,
     #endif
     FLTMODE1,
     FLTMODE2,
@@ -148,6 +153,9 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     INS_HNTCH_BW,
     INS_HNTCH_ATT,
     INS_HNTCH_HMNCS,
+    RNGFND_ENABLE,
+    RNGFND_MIN,
+    RNGFND_MAX,
     PARAM_COUNT
 };
 

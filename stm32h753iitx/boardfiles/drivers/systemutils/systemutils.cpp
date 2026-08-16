@@ -89,10 +89,3 @@ uint32_t SystemUtils::getDWTMicroSec() {
     return (uint32_t)(microSecAccumCyc / (SystemCoreClock / 1000000U));
 }
 
-float SystemUtils::dspSinf(float x) {
-    return arm_sin_f32(x);
-}
-
-float SystemUtils::dspCosf(float x) {
-    return arm_cos_f32(x);
-}
