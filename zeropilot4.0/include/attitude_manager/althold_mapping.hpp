@@ -91,7 +91,7 @@ private:
     static constexpr float THROTTLE_DEADZONE = 0.1f;
     bool wasInDeadzone = true;
 
-    float hoverThrottle = 0.3f;
+    float hoverThrottle = 0.6f;
 
     static constexpr float ALT_LEASH = 5.0f;
 
