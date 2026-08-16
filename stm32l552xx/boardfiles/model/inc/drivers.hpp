@@ -3,7 +3,6 @@
 #include "systemutils.hpp"
 #include "iwdg.hpp"
 #include "sd.hpp"
-#include "fs_backend.hpp"
 #include "motor.hpp"
 #include "motor_datatype.hpp"
 #include "rc_sbus.hpp"
@@ -24,7 +23,6 @@ extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern SDFileSystem *sdFileSystemHandle;
-extern FatFsBackend *fatFsBackendHandle;
 
 extern IMotorControl *motorHandles[8];
 
@@ -37,8 +35,8 @@ extern PowerModule *pmHandle;
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
-extern MessageQueue<ExMemReqMsg> *sdRequestQueueHandle;
-extern MessageQueue<ExMemReqBuf> *sdBufferQueueHandle;
+extern MessageQueue<SdReqMsg> *sdRequestQueueHandle;
+extern MessageQueue<SdReqBuf> *sdBufferQueueHandle;
 extern IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];
 
 extern MotorGroupInstance_t mainMotorGroup;

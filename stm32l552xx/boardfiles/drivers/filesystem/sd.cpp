@@ -11,7 +11,7 @@ static inline void swoWrite(const char* data, uint32_t len) {
 }
 #endif
 
-SDFileSystem::SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuf> *bufQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)])
+SDFileSystem::SDFileSystem(MessageQueue<SdReqMsg> *reqQueue, MessageQueue<SdReqBuf> *bufQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)])
     : mounted(false), requestQueue(reqQueue), bufferQueue(bufQueue), responseQueues(respQueues) {
     std::memset(&fsObj, 0, sizeof(FATFS));
 }
@@ -101,14 +101,14 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
         res = (res == FR_OK) ? f_sync(reinterpret_cast<FIL*>(&fp->storage[0])) : res; // Sync only if write was successful
         return fresultToStatus(res);
     } else {
-        ExMemReqMsg req;
+        SdReqMsg req;
         req.id = id;
         req.type = ReqType_e::WRITE;
         req.fp = fp;
         req.totalSize = btw;
         req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
-        ExMemReqBuf writeBuffMsg;
+        SdReqBuf writeBuffMsg;
         while (btw > 0) {
             writeBuffMsg.id = id;
             writeBuffMsg.type = ReqType_e::WRITE;
@@ -142,14 +142,14 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
 
     if (!mounted) return FILE_STATUS_ERROR;
 
-    ExMemReqMsg req;
+    SdReqMsg req;
     req.id = id;
     req.type = ReqType_e::WRITE_SYNC;
     req.fp = fp;
     req.totalSize = btw;
     req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
-    ExMemReqBuf writeBuffMsg;
+    SdReqBuf writeBuffMsg;
     while (btw > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType_e::WRITE_SYNC;
@@ -180,7 +180,7 @@ FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) 
         FRESULT res = f_sync(reinterpret_cast<FIL*>(&fp->storage[0]));
         return fresultToStatus(res);
     } else {
-        ExMemReqMsg req;
+        SdReqMsg req;
         req.id = id;
         req.type = ReqType_e::SYNC;
         req.fp = fp;
@@ -225,7 +225,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
 
     if (!mounted) return FILE_STATUS_ERROR;
 
-    ExMemReqMsg req;
+    SdReqMsg req;
     req.id = id;
     req.type = ReqType_e::WRITE_SEEK;
     req.fp = fp;
@@ -233,7 +233,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
     req.offset = ofs;
     req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
-    ExMemReqBuf writeBuffMsg;
+    SdReqBuf writeBuffMsg;
     while (btw > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType_e::WRITE_SEEK;
@@ -280,7 +280,7 @@ FileStatus_e SDFileSystem::lseek(ManagerId_e id, File* fp, uint64_t ofs, ReqOpti
         FRESULT res = f_lseek(reinterpret_cast<FIL*>(&fp->storage[0]), static_cast<FSIZE_t>(ofs));
         return fresultToStatus(res);
     } else {
-        ExMemReqMsg req;
+        SdReqMsg req;
         req.id = id;
         req.type = ReqType_e::LSEEK;
         req.fp = fp;
@@ -309,7 +309,7 @@ FileStatus_e SDFileSystem::tell(ManagerId_e id, File* fp, uint64_t* position, Re
         if (options == ReqOptions_e::ASYNC_NO_RESP) {
             return FILE_STATUS_ERROR; // TELL operation requires a response to return the position, so ASYNC_NO_RESP is not valid here
         }
-        ExMemReqMsg req;
+        SdReqMsg req;
         req.id = id;
         req.type = ReqType_e::TELL;
         req.fp = fp;

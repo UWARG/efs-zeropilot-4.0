@@ -3,11 +3,11 @@
 #include "attitude_manager.hpp"
 #include "system_manager.hpp"
 #include "telemetry_manager.hpp"
-#include "exmem_manager.hpp"
+#include "sd_manager.hpp"
 
 extern AttitudeManager *amHandle;
 extern SystemManager *smHandle;
 extern TelemetryManager *tmHandle;
-extern ExMemManager *emHandle;
+extern SDManager *sdmHandle;
 
 void initManagers();

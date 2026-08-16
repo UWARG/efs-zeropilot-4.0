@@ -1,7 +1,7 @@
 #pragma once
 
 #include "filesystem_iface.hpp"
-#include "exmem_msgs.hpp"
+#include "sd_msgs.hpp"
 #include "queue.hpp"
 #include "fatfs.h"
 
@@ -13,12 +13,12 @@ class SDFileSystem : public IFileSystem {
         // Helper to convert mode string to FatFs mode flags
         uint8_t modeStringToFatfsFlags(const char* mode);
 
-        MessageQueue<ExMemReqMsg> *requestQueue;
-        MessageQueue<ExMemReqBuf> *bufferQueue;
+        MessageQueue<SdReqMsg> *requestQueue;
+        MessageQueue<SdReqBuf> *bufferQueue;
         IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
 
     public:
-        SDFileSystem(MessageQueue<ExMemReqMsg> *reqQueue, MessageQueue<ExMemReqBuf> *bufQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]);
+        SDFileSystem(MessageQueue<SdReqMsg> *reqQueue, MessageQueue<SdReqBuf> *bufQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]);
         ~SDFileSystem() override;
         
         FileStatus_e init();

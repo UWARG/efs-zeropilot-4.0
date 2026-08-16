@@ -5,5 +5,5 @@ void initThreads()
   amInitThreads();
   smInitThreads();
   tmInitThreads();
-  emInitThreads();
+  sdInitThreads();
 }

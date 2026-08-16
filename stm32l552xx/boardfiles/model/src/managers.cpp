@@ -6,13 +6,13 @@
 alignas(AttitudeManager) static uint8_t amHandleStorage[sizeof(AttitudeManager)];
 alignas(SystemManager) static uint8_t smHandleStorage[sizeof(SystemManager)];
 alignas(TelemetryManager) static uint8_t tmHandleStorage[sizeof(TelemetryManager)];
-alignas(ExMemManager) static uint8_t emHandleStorage[sizeof(ExMemManager)];
+alignas(SDManager) static uint8_t sdmHandleStorage[sizeof(SDManager)];
 
 // Manager handles
 AttitudeManager *amHandle = nullptr;
 SystemManager *smHandle = nullptr;
 TelemetryManager *tmHandle = nullptr;
-ExMemManager *emHandle = nullptr;
+SDManager *sdmHandle = nullptr;
 
 void initManagers()
 {
@@ -47,10 +47,9 @@ void initManagers()
         messageBufferHandle
     );
 
-    // EMM initialization
-    emHandle = new (&emHandleStorage) ExMemManager(
+    // SDM initialization
+    sdmHandle = new (&sdmHandleStorage) SDManager(
         systemUtilsHandle,
-        fatFsBackendHandle,
         sdRequestQueueHandle,
         sdBufferQueueHandle,
         sdResponseQueuesHandle

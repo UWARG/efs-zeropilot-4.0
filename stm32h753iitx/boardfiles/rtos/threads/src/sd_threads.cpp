@@ -1,29 +1,29 @@
-#include "em_threads.hpp"
+#include "sd_threads.hpp"
 #include "managers.hpp"
 #include "utils.h"
 #include "museq.hpp"
 #include "cmsis_os.h"
 
-osThreadId_t emMainHandle;
+osThreadId_t sdMainHandle;
 
 static const osThreadAttr_t sdMainLoopAttr = {
-    .name = "emMain",
+    .name = "sdMain",
     .stack_size = 6144,
     .priority = (osPriority_t) osPriorityBelowNormal
 };
 
-void emMainLoopWrapper(void *arg)
+void sdMainLoopWrapper(void *arg)
 {
   while(true)
   {
-    ExMemReqMsg reqMsg;
+    SdReqMsg reqMsg;
     if (osMessageQueueGet(sdRequestQueueId, &reqMsg, NULL, osWaitForever) == osOK) {
-      emHandle->emUpdate(reqMsg);
+      sdmHandle->sdUpdate(reqMsg);
     }
   }
 }
 
-void emInitThreads()
+void sdInitThreads()
 {
-    emMainHandle = osThreadNew(emMainLoopWrapper, NULL, &sdMainLoopAttr);
+    sdMainHandle = osThreadNew(sdMainLoopWrapper, NULL, &sdMainLoopAttr);
 }

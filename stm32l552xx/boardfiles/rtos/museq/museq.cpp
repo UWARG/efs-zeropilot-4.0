@@ -1,7 +1,7 @@
 #include "museq.hpp"
 #include "rc_motor_control.hpp"
 #include "tm_queue.hpp"
-#include "exmem_msgs.hpp"
+#include "sd_msgs.hpp"
 #include "mavlink.h"
 
 /* --- mutexes --- */
@@ -45,8 +45,8 @@ void initQueues()
   amQueueId = osMessageQueueNew(16, sizeof(RCMotorControlMessage_t), NULL);
   tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
   messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);
-  sdRequestQueueId = osMessageQueueNew(32, sizeof(ExMemReqMsg), NULL);
-  sdBufferQueueId = osMessageQueueNew(32, sizeof(ExMemReqBuf), NULL);
+  sdRequestQueueId = osMessageQueueNew(32, sizeof(SdReqMsg), NULL);
+  sdBufferQueueId = osMessageQueueNew(32, sizeof(SdReqBuf), NULL);
   for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
       sdResponseQueueId[i] = osMessageQueueNew(16, sizeof(PollResult), NULL);
   }

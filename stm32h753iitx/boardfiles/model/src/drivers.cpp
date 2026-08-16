@@ -27,7 +27,6 @@ SystemUtils *systemUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 SDFileSystem *sdFileSystemHandle = nullptr;
-FatFsBackend *fatFsBackendHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -41,8 +40,8 @@ MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
-MessageQueue<ExMemReqMsg> *sdRequestQueueHandle = nullptr;
-MessageQueue<ExMemReqBuf> *sdBufferQueueHandle = nullptr;
+MessageQueue<SdReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<SdReqBuf> *sdBufferQueueHandle = nullptr;
 IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)] = {nullptr};
 
 // ----------------------------------------------------------------------------
@@ -132,15 +131,14 @@ void initDrivers()
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
-    sdRequestQueueHandle = new MessageQueue<ExMemReqMsg>(&sdRequestQueueId);
-    sdBufferQueueHandle = new MessageQueue<ExMemReqBuf>(&sdBufferQueueId);
+    sdRequestQueueHandle = new MessageQueue<SdReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new MessageQueue<SdReqBuf>(&sdBufferQueueId);
     for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
         sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
     }
 
     // File system
     sdFileSystemHandle = new SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
-    fatFsBackendHandle = new FatFsBackend();
 
     // Initialize hardware components
     for (int i = 0; i < 8; i++)

@@ -1,22 +1,21 @@
-#include "exmem_manager.hpp"
+#include "sd_manager.hpp"
+#include "sd.hpp"
 
-ExMemManager::ExMemManager(
+SDManager::SDManager(
     ISystemUtils *systemUtilsDriver,
-    IFileSystemBackend *fsBackend,
-    IMessageQueue<ExMemReqMsg> *reqQueue,
-    IMessageQueue<ExMemReqBuf> *bufQueue,
+    IMessageQueue<SdReqMsg> *reqQueue,
+    IMessageQueue<SdReqBuf> *bufQueue,
     IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]
 ) :
     systemUtilsDriver(systemUtilsDriver),
-    fsBackend(fsBackend),
     requestQueue(reqQueue),
     bufferQueue(bufQueue),
     responseQueues(respQueues),
     profilerId(0) {
-       systemUtilsDriver->profilerRegister("EM", &profilerId);
+       systemUtilsDriver->profilerRegister("SD", &profilerId);
 }
 
-void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
+void SDManager::sdUpdate(SdReqMsg reqMsg) {
     systemUtilsDriver->profilerBegin(profilerId);
 
     bool firstMsgRead = false;
@@ -29,10 +28,20 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
         PollResult respMsg;
         respMsg.type = reqMsg.type;
 
+        if (reqMsg.fp == nullptr) {
+            respMsg.status = FILE_STATUS_ERROR;
+            if (reqMsg.sendResp) {
+                responseQueues[static_cast<size_t>(reqMsg.id)]->push(&respMsg);
+            }
+            continue;
+        }
+
+        FIL* fil = reinterpret_cast<FIL*>(&reqMsg.fp->storage[0]);
+
         switch (reqMsg.type) {
             case ReqType_e::WRITE:
             case ReqType_e::WRITE_SYNC: {
-                ExMemReqBuf writeBuffMsg;
+                SdReqBuf writeBuffMsg;
                 int totalSize = reqMsg.totalSize;
                 while (totalSize > 0) {
                     if (bufferQueue->count() == 0) {
@@ -41,7 +50,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                     }
                     bufferQueue->get(&writeBuffMsg);
                     uint32_t bytesWritten = 0;
-                    respMsg.status = fsBackend->writeFile(reqMsg.fp, writeBuffMsg.buff, writeBuffMsg.size, &bytesWritten);
+                    respMsg.status = SDFileSystem::fresultToStatus(f_write(fil, writeBuffMsg.buff, writeBuffMsg.size, reinterpret_cast<UINT*>(&bytesWritten)));
                     if (respMsg.status != FILE_STATUS_OK) {
                         break;
                     }
@@ -50,29 +59,29 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                 respMsg.status = (respMsg.status == FILE_STATUS_OK && totalSize <= 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
                 respMsg.data.bytesTransferred = reqMsg.totalSize - totalSize;
                 if (respMsg.status == FILE_STATUS_OK && reqMsg.type == ReqType_e::WRITE_SYNC) {
-                    respMsg.status = fsBackend->syncFile(reqMsg.fp);
+                    respMsg.status = SDFileSystem::fresultToStatus(f_sync(fil));
                 }
                 break;
             }
             case ReqType_e::SYNC: {
-                respMsg.status = fsBackend->syncFile(reqMsg.fp);
+                respMsg.status = SDFileSystem::fresultToStatus(f_sync(fil));
                 break;
             }
             /* TODO: Verify in later PR
             case ReqType_e::LSEEK: {
-                respMsg.status = fsBackend->seekFile(reqMsg.fp, reqMsg.offset);
+                respMsg.status = SDFileSystem::fresultToStatus(f_lseek(fil, static_cast<FSIZE_t>(reqMsg.offset)));
                 break;
             }
             case ReqType_e::TELL: {
-                respMsg.data.position = fsBackend->tellFile(reqMsg.fp);
-                respMsg.status = FILE_STATUS_OK; // tell doesn't return a result code
+                respMsg.data.position = f_tell(fil);
+                respMsg.status = FILE_STATUS_OK; // f_tell doesn't return a result code
                 break;
             }
             case ReqType_e::WRITE_SEEK: {
-                respMsg.status = fsBackend->seekFile(reqMsg.fp, reqMsg.offset);
+                respMsg.status = SDFileSystem::fresultToStatus(f_lseek(fil, static_cast<FSIZE_t>(reqMsg.offset)));
                 int totalSize = reqMsg.totalSize;
                 if (respMsg.status == FILE_STATUS_OK) {
-                    ExMemReqBuf writeBuffMsg;
+                    SdReqBuf writeBuffMsg;
                     while (totalSize > 0) {
                         if (bufferQueue->count() == 0) {
                             respMsg.status = FILE_STATUS_ERROR; // No buffer available for write operation
@@ -80,7 +89,8 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                         }
                         bufferQueue->get(&writeBuffMsg);
                         uint32_t bytesWritten = 0;
-                        respMsg.status = fsBackend->writeFile(reqMsg.fp, writeBuffMsg.buff, writeBuffMsg.size, &bytesWritten);
+                        respMsg.status = SDFileSystem::fresultToStatus(
+                            f_write(fil, writeBuffMsg.buff, writeBuffMsg.size, reinterpret_cast<UINT*>(&bytesWritten)));
                         if (respMsg.status != FILE_STATUS_OK) {
                             break;
                         }
@@ -93,7 +103,7 @@ void ExMemManager::emUpdate(ExMemReqMsg reqMsg) {
                         if (bufferQueue->count() == 0) {
                             break;
                         }
-                        ExMemReqBuf dummyBuff;
+                        SdReqBuf dummyBuff;
                         bufferQueue->get(&dummyBuff);
                         totalSize -= dummyBuff.size; // Decrease totalSize to eventually clear all related buffers
                     }
