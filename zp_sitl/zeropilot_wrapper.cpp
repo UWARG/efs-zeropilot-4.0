@@ -351,7 +351,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->am = new AttitudeManager(
             self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->rangefinder, self->barometer,
-            self->amQueue, self->tmQueue, self->logQueue,
+            self->amQueue, self->tmQueue,
             &self->motorGroup
         );
         

@@ -33,6 +33,10 @@ protected:
         RC_FAILSAFE_ITERATIONS =
             ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000) / SM_UPDATE_LOOP_DELAY_MS) + 5;
 
+        // Logger::init() bails out unless the filesystem reports itself available,
+        // which would leave loggerEnable false and suppress every log write.
+        ON_CALL(mockFileSystem, available()).WillByDefault(Return(true));
+
         ON_CALL(mockFileSystem, write(_, _, _, _, _, _))
             .WillByDefault([this](ManagerId_e, File*, const void*, uint32_t, uint32_t*, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
         ON_CALL(mockFileSystem, writeAndSync(_, _, _, _, _))
