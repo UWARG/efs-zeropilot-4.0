@@ -323,6 +323,16 @@ void IMU::flushFIFO() {
     writeRegister(0, UB0_REG_SIGNAL_PATH_RESET, 0b00000010);
 }
 
+void IMU::flush() {
+    // Discard queued FIFO data and reset the DMA state machine to idle.
+    // Must be called when no DMA transfer is in flight (e.g. control-loop startup).
+    flushFIFO();
+    rxFlag = COUNT;
+    dmaDone = true;
+    fifoSize = 0;
+    rawImuDataBatch.count = 0;
+}
+
 void IMU::dmaTransfer() {
     csLow();
     switch (rxFlag) {

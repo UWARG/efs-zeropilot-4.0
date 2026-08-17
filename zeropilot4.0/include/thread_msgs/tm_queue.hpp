@@ -115,6 +115,12 @@ typedef union TMMessageData_u {
     float quaternion[4];
     uint8_t signalQuality;
   } distanceSensorData;
+
+  struct {
+      uint32_t onboardControlSensorsPresent;
+      uint32_t onboardControlSensorsEnabled;
+      uint32_t onboardControlSensorsHealth;
+  } sysStatusData;
 } TMMessageData_t;
 
 typedef struct TMMessage{
@@ -129,7 +135,8 @@ typedef struct TMMessage{
         ATTITUDE_DATA,
         SCALED_PRESSURE_DATA,
         GLOBAL_POSITION_INT_DATA,
-        DISTANCE_SENSOR_DATA
+        DISTANCE_SENSOR_DATA,
+        SYS_STATUS_DATA
     } dataType;
     TMMessageData_t tmMessageData;
     uint32_t timeBootMs = 0;
@@ -138,6 +145,11 @@ typedef struct TMMessage{
 inline TMMessage_t heartbeatPack(uint32_t time_boot_ms, uint8_t base_mode, uint32_t custom_mode, uint8_t system_status) {
     const TMMessageData_t DATA = {.heartbeatData={base_mode, custom_mode, system_status }};
     return TMMessage_t{TMMessage_t::HEARTBEAT_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t sysStatusPack(uint32_t time_boot_ms, uint32_t sensors_present, uint32_t sensors_enabled, uint32_t sensors_health) {
+    const TMMessageData_t DATA = {.sysStatusData = {sensors_present, sensors_enabled, sensors_health}};
+    return TMMessage_t{TMMessage_t::SYS_STATUS_DATA, DATA, time_boot_ms};
 }
 
 inline TMMessage_t statusTextPack(uint32_t time_boot_ms, uint8_t severity, const char text[TM_QUEUE_STATUSTEXT_CHAR_COUNT], uint16_t id, uint8_t chunk_seq) {
