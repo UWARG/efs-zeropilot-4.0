@@ -12,6 +12,8 @@ namespace SITL_Driver_Configs {
 
     struct SITL_GPS_Config {
         static constexpr uint8_t NUM_SATELLITES = 12; // Number of satellites in view
+        static constexpr uint32_t UPDATE_RATE_HZ = 5; 
+        static constexpr uint32_t FRAME_PERIOD_US = 1000000 / UPDATE_RATE_HZ;
     };
 
     struct SITL_IMU_Config {

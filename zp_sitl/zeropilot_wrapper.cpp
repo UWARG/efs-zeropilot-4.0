@@ -307,7 +307,7 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     uint32_t dt_us = plantStepUs(self);
 
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s, ax_body, ay_body, az_body, dt_us);
-    self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg, vx_mps, vy_mps, vz_mps);
+    self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg, vx_mps, vy_mps, vz_mps, dt_us);
     self->pm->update_from_plant(fuel_lbs, rpm);
     self->rangefinder->update_from_plant(rangefinder_alt, dt_us);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);
