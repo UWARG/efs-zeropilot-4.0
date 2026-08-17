@@ -129,12 +129,6 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
-            case TMMessage_t::DISTANCE_SENSOR_DATA: {
-                auto distanceSensorData = tmqMessage.tmMessageData.distanceSensorData;
-                mavlink_msg_distance_sensor_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, distanceSensorData.minDistance, distanceSensorData.maxDistance, distanceSensorData.currentDistance, MAV_DISTANCE_SENSOR_LASER, distanceSensorData.id, MAV_SENSOR_ROTATION_PITCH_270, distanceSensorData.covariance, distanceSensorData.horizontalFov, distanceSensorData.verticalFov, distanceSensorData.quaternion, distanceSensorData.signalQuality);
-                break;
-            }
-
             case TMMessage_t::GLOBAL_POSITION_INT_DATA: {
                 auto globalPositionIntData = tmqMessage.tmMessageData.globalPositionIntData;
                 mavlink_msg_global_position_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs,
@@ -146,6 +140,12 @@ void TelemetryManager::processTXMsgQueue() {
                     0, // vy: unused, add when EKF supports these
                     0, // vz: unused, add when EKF supports these
                     UINT16_MAX); // vz: unused, add when EKF supports these
+                break;
+            }
+            
+            case TMMessage_t::DISTANCE_SENSOR_DATA: {
+                auto distanceSensorData = tmqMessage.tmMessageData.distanceSensorData;
+                mavlink_msg_distance_sensor_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, distanceSensorData.minDistance, distanceSensorData.maxDistance, distanceSensorData.currentDistance, MAV_DISTANCE_SENSOR_LASER, distanceSensorData.id, MAV_SENSOR_ROTATION_PITCH_270, distanceSensorData.covariance, distanceSensorData.horizontalFov, distanceSensorData.verticalFov, distanceSensorData.quaternion, distanceSensorData.signalQuality);
                 break;
             }
 

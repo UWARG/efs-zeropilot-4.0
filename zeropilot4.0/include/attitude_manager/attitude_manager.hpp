@@ -117,8 +117,9 @@ private:
     static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
     uint32_t lastTimestamp = 0;
     bool haveLastImuTimestamp = false;
+    bool haveLastKfTimestamp = false;
+    uint32_t lastKfTimestamp = 0;
 
-    float lastValidClearance = 0.0f;
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
 

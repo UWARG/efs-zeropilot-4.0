@@ -166,11 +166,17 @@ void AttitudeManager::amUpdate() {
         
         // Only feed IMU0's vertical acceleration to altholdKF
         if (scaledImuData.data[i].imuId == 0) {
-            // Tilt compensation for vertical acceleration
-            float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
-                                                            scaledImuData.data[i].yacc, 
-                                                            scaledImuData.data[i].zacc);
-            altholdKF.predict(-vertAccel, dt);
+            uint16_t kfDeltaTicks = scaledImuData.data[i].timestamp - lastKfTimestamp;
+            lastKfTimestamp = scaledImuData.data[i].timestamp;
+            if (haveLastKfTimestamp) {
+                // Tilt compensation for vertical acceleration
+                float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
+                                                                scaledImuData.data[i].yacc, 
+                                                                scaledImuData.data[i].zacc);
+                altholdKF.predict(-vertAccel, kfDeltaTicks * TIMESTAMP_RESOLUTION);
+            } else {
+                haveLastKfTimestamp = true;
+            }
         }
 
         /* TODO: Uncomment once using EKF
@@ -622,6 +628,16 @@ void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroD
     tmQueue->push(&pressureDataMsg);
 }
 
+void AttitudeManager::sendGlobalPositionIntToTelemetryManager(float altitudeAmsl, float altitudeRelative) {
+    TMMessage_t globalPositionIntMsg = globalPositionIntPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        altitudeAmsl,
+        altitudeRelative
+    );
+
+    tmQueue->push(&globalPositionIntMsg);
+}
+
 void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData) {
     float invalidQuaternion[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
@@ -639,16 +655,6 @@ void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderDat
     );
 
     tmQueue->push(&rangefinderDataMsg);
-}
-
-void AttitudeManager::sendGlobalPositionIntToTelemetryManager(float altitudeAmsl, float altitudeRelative) {
-    TMMessage_t globalPositionIntMsg = globalPositionIntPack(
-        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
-        altitudeAmsl,
-        altitudeRelative
-    );
-
-    tmQueue->push(&globalPositionIntMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {
