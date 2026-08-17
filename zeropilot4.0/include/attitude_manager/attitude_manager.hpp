@@ -69,8 +69,8 @@ private:
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
-    // AHRSEKF ekf;
-    Mahony mahonyFilter;
+    AHRSEKF ekf;
+    // Mahony mahonyFilter;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;

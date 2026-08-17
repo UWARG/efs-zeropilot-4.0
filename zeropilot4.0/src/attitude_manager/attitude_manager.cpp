@@ -24,7 +24,7 @@ AttitudeManager::AttitudeManager(
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
-    // ekf(mathUtilsDriver),
+    ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -61,7 +61,6 @@ AttitudeManager::AttitudeManager(
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
 
-        /* TODO: Uncomment once using EKF
         // Init the EKF
         AHRSEKF::Config ekfCfg = {
             .gyroCov = 4.78e-6f,
@@ -82,7 +81,6 @@ AttitudeManager::AttitudeManager(
         float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
-        */
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -119,10 +117,9 @@ void AttitudeManager::amUpdate() {
         }
         // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
         harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-       
-        /* TODO: Uncomment once using EKF
+
+        // Kept after the notch so IMU0 still feeds the FFT a continuous sample stream.
         if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
-        */
 
         /*
         We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
@@ -145,18 +142,7 @@ void AttitudeManager::amUpdate() {
         droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
 
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
-        
-        mahonyFilter.updateIMU(
-            scaledImuData.data[i].xgyro - startupGyroBias.x,
-            scaledImuData.data[i].ygyro - startupGyroBias.y,
-            scaledImuData.data[i].zgyro - startupGyroBias.z,
-            scaledImuData.data[i].xacc,
-            scaledImuData.data[i].yacc,
-            scaledImuData.data[i].zacc,
-            dt
-        );
 
-        /* TODO: Uncomment once using EKF
         float gyro[3] = {
             scaledImuData.data[i].xgyro,
             scaledImuData.data[i].ygyro,
@@ -172,13 +158,9 @@ void AttitudeManager::amUpdate() {
         if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
             ekf.correctionAccelerometer(accel);
         }
-        GyroBias_t gyroBias = ekf.getGyroBias();
-
-        break; // for now only use one imu message per am loop
-        */
     }
 
-    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
+    Attitude_t attitude = ekf.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
