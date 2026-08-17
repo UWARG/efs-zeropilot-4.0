@@ -313,18 +313,6 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    droneState.altitude = altholdKF.getEstimatedAltitude();
-    droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
-
-    // Send global position (altitude) data to telemetry manager
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ) == 0) {
-        float altAMSL = (gpsData.altitude != -1) ? lastValidGps.altitude : -1.0f;
-        sendGlobalPositionIntToTelemetryManager(
-            altAMSL, // altitude_amsl: GPS MSL altitude
-            droneState.altitude // altitude_relative: KF altitude above takeoff
-        );
-    }
-
     // Get rangefinder data
     // RangefinderData_t rangefinderData = {};
     if (rangefinderDriver != nullptr) {
@@ -334,18 +322,28 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    #ifdef QUADCOPTER // ALTHOLD is quad only
-    if (rangefinderData.isNew && rangefinderData.isValid && activeCLAW == &altholdCLAW) {
+    if (rangefinderData.isNew && rangefinderData.isValid) {
         rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
-        altholdCLAW.updateTerrainAlt(droneState, rangefinderZ);
+        // altholdCLAW.updateTerrainAlt(droneState, rangefinderZ);
     }
-    #endif
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ) == 0) {
         if (lastNewRangefinderData.isNew) {
             sendRangefinderDataToTelemetryManager(lastNewRangefinderData);
             lastNewRangefinderData.isNew = false; // Mark as sent to telemetry manager, so if no new rangefinder data is valid the same data is not sent again
         }
+    }
+    
+    droneState.altitude = rangefinderZ;
+    droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
+
+    // Send global position (altitude) data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ) == 0) {
+        float altAMSL = (gpsData.altitude != -1) ? lastValidGps.altitude : -1.0f;
+        sendGlobalPositionIntToTelemetryManager(
+            altAMSL, // altitude_amsl: GPS MSL altitude
+            altholdKF.getEstimatedAltitude() // altitude_relative: KF altitude above takeoff
+        );
     }
 
     // Get data from Queue and motor outputs
