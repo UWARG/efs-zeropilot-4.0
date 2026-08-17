@@ -153,6 +153,9 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     INS_HNTCH_BW,
     INS_HNTCH_ATT,
     INS_HNTCH_HMNCS,
+    RNGFND_ENABLE,
+    RNGFND_MIN,
+    RNGFND_MAX,
     PARAM_COUNT
 };
 

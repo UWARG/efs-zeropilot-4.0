@@ -142,6 +142,12 @@ void TelemetryManager::processTXMsgQueue() {
                     UINT16_MAX); // vz: unused, add when EKF supports these
                 break;
             }
+            
+            case TMMessage_t::DISTANCE_SENSOR_DATA: {
+                auto distanceSensorData = tmqMessage.tmMessageData.distanceSensorData;
+                mavlink_msg_distance_sensor_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, distanceSensorData.minDistance, distanceSensorData.maxDistance, distanceSensorData.currentDistance, MAV_DISTANCE_SENSOR_LASER, distanceSensorData.id, MAV_SENSOR_ROTATION_PITCH_270, distanceSensorData.covariance, distanceSensorData.horizontalFov, distanceSensorData.verticalFov, distanceSensorData.quaternion, distanceSensorData.signalQuality);
+                break;
+            }
 
             default: {
                 continue;

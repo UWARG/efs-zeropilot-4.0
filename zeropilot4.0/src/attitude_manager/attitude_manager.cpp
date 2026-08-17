@@ -310,12 +310,6 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Get rangefinder data
-    rangefinderData = rangefinderDriver->readData();
-    if (rangefinderData.isNew && rangefinderData.isValid) {
-        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
-    }
-
     droneState.altitude = altholdKF.getEstimatedAltitude();
     droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
 
@@ -326,6 +320,29 @@ void AttitudeManager::amUpdate() {
             altAMSL, // altitude_amsl: GPS MSL altitude
             droneState.altitude // altitude_relative: KF altitude above takeoff
         );
+    }
+
+    // Get rangefinder data
+    // RangefinderData_t rangefinderData = {};
+    if (rangefinderDriver != nullptr) {
+        rangefinderData = rangefinderDriver->readData();
+        if (rangefinderData.isNew) {
+            lastNewRangefinderData = rangefinderData;
+        }
+    }
+
+    #ifdef QUADCOPTER // ALTHOLD is quad only
+    if (rangefinderData.isNew && rangefinderData.isValid && activeCLAW == &altholdCLAW) {
+        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
+        altholdCLAW.updateTerrainAlt(droneState, rangefinderZ);
+    }
+    #endif
+
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ) == 0) {
+        if (lastNewRangefinderData.isNew) {
+            sendRangefinderDataToTelemetryManager(lastNewRangefinderData);
+            lastNewRangefinderData.isNew = false; // Mark as sent to telemetry manager, so if no new rangefinder data is valid the same data is not sent again
+        }
     }
 
     // Get data from Queue and motor outputs
@@ -613,6 +630,25 @@ void AttitudeManager::sendGlobalPositionIntToTelemetryManager(float altitudeAmsl
     );
 
     tmQueue->push(&globalPositionIntMsg);
+}
+
+void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData) {
+    float invalidQuaternion[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    TMMessage_t rangefinderDataMsg = distanceSensorDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        ZP_PARAM::get(ZP_PARAM_ID::RNGFND_MIN),
+        ZP_PARAM::get(ZP_PARAM_ID::RNGFND_MAX),
+        rangefinderData.distance,
+        1, // id
+        0.01f, // covariance from datasheet of TF02
+        0, // horizontalFov: invalid
+        0, // verticalFov: invalid
+        invalidQuaternion,
+        rangefinderData.isValid ? ((rangefinderData.signalStrength / 65535.0f) * 100.0f) : 1 // % signalQuality, 1 = no signal
+    );
+
+    tmQueue->push(&rangefinderDataMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {

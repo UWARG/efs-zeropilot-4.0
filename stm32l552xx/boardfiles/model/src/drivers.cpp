@@ -117,7 +117,9 @@ void initDrivers()
     telemLinkHandle = new RFD(&huart3);
     imuHandle = new IMU(&hspi2, GPIOF, GPIO_PIN_12, 0, IMU_ODR_1KHZ);
     pmHandle = new PowerModule(&hi2c1);
-    rangefinderHandle = new Rangefinder(&hi2c3);
+    if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
+        rangefinderHandle = new Rangefinder(&hi2c3);
+    }
     barometerHandle = new Barometer(&hi2c2);
 
     // Queues
@@ -136,7 +138,9 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
-    rangefinderHandle->init();
+    if (rangefinderHandle != nullptr) {
+        rangefinderHandle->init();
+    }
     barometerHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
