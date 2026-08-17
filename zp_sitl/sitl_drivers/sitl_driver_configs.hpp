@@ -2,7 +2,13 @@
 #include <cstdint>
 
 namespace SITL_Driver_Configs {
-    static constexpr uint32_t SITL_DRIVER_UPDATE_RATE_HZ = 1000; // 1 kHz update rate for all SITL drivers
+    static constexpr uint32_t SITL_DRIVER_UPDATE_RATE_HZ = 1000; // Nominal update rate the SITL scripts aim for
+
+    static constexpr uint32_t SITL_PLANT_STEP_MIN_US = 1;
+    static constexpr uint32_t SITL_PLANT_STEP_MAX_US = 60000;
+
+    // Used until the first step has been measured, and after a discontinuity (sim reset, pause)
+    static constexpr uint32_t SITL_PLANT_STEP_DEFAULT_US = 1000000 / SITL_DRIVER_UPDATE_RATE_HZ;
 
     struct SITL_GPS_Config {
         static constexpr uint8_t NUM_SATELLITES = 12; // Number of satellites in view
@@ -46,7 +52,7 @@ namespace SITL_Driver_Configs {
 
     struct SITL_Rangefinder_Config {
         static constexpr uint32_t UPDATE_RATE_HZ = 100; // TF02-Pro frame rate, so SITL sees the same sample rate as hardware
-        static constexpr uint32_t PLANT_UPDATES_PER_FRAME = SITL_DRIVER_UPDATE_RATE_HZ / UPDATE_RATE_HZ;
+        static constexpr uint32_t FRAME_PERIOD_US = 1000000 / UPDATE_RATE_HZ;
     };
 
     struct SITL_TELEM_Config {

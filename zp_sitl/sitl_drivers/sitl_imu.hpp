@@ -36,7 +36,7 @@ public:
      * Note: This converts physical SI units into "Raw" LSB counts
     */
     void update_from_plant(double roll_rad, double pitch_rad, double p_rad_s, double q_rad_s, double r_rad_s,
-                           double ax_body = 0.0, double ay_body = 0.0, double az_body = 0.0) {
+                           double ax_body, double ay_body, double az_body, uint32_t dt_us) {
         // Pre-calculate trig to save cycles
         float sr = std::sin(roll_rad);
         float cr = std::cos(roll_rad);
@@ -64,13 +64,15 @@ public:
         rawData.ygyro = toRawCount(q_deg_s * Config::GYRO_SCALE);
         rawData.zgyro = toRawCount(r_deg_s * Config::GYRO_SCALE);
 
-        rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
+        // Advance by however long the plant actually stepped, so AM's dt matches the sim instead of a fixed 1 ms
+        rawData.timestamp += dt_us;
     }
     
     RawImuBatch_t readRawData() override {
         return rawBatch;
     }
 
+    // Nominal rate: AM asks for this once at construction, before any plant step has been measured
     float getODRHz() override {
         return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
