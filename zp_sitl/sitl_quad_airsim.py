@@ -16,8 +16,14 @@ FLTMODE_AXIS = 6
 FLTMODE_AXIS_VALUES = [-0.8, -0.38, -0.12, 0.0, 0.29, 0.99]
 
 PA_TO_KPA = 0.001
+NS_TO_S = 1e-9
 # AirSim's barometer sensor doesn't report temperature, so assume a fixed ambient.
 BARO_AMBIENT_TEMP_C = 25.0
+
+# Every AirSim call is a blocking RPC round trip, so polling all of them each step is what keeps the loop
+# from reaching SITL_RATE_HZ. Sample the slow sensors at their real rates instead of once per step.
+BARO_RATE_HZ = 50
+RANGEFINDER_RATE_HZ = 100
 
 RC_DEADZONE = 0.05
 
@@ -47,6 +53,16 @@ class ZP_QUAD_SITL_AIRSIM:
         self.reset_requested = False
         self.commands = {'roll': RC_CENTRE, 'pitch': RC_CENTRE, 'yaw': RC_CENTRE, 'throttle': 0}
         self.fltmode_setpoints = [16.5, 29.5, 42.5, 55.5, 68.5, 81.5]
+
+        # Cached slow-sensor samples and the dashboard's copy of the last step's state
+        self.baro = self.client.getBarometerData()
+        self.alt_rangefinder = self.client.getDistanceSensorData().distance
+        self.next_baro_t = 0.0
+        self.next_rangefinder_t = 0.0
+        self.last_state = None
+        self.achieved_rate_hz = 0.0
+        self._rate_window_t = time.perf_counter()
+        self._rate_window_steps = 0
 
         # Get fltmode on startup
         if self.joy:
@@ -114,6 +130,9 @@ class ZP_QUAD_SITL_AIRSIM:
         self.client.enableApiControl(True)
         self.client.armDisarm(True)
         time.sleep(1)
+        # The sim clock restarts, so the sensor schedules would otherwise sit in the future forever
+        self.next_baro_t = 0.0
+        self.next_rangefinder_t = 0.0
 
     def step(self):
         state = self.client.getMultirotorState()
@@ -142,10 +161,22 @@ class ZP_QUAD_SITL_AIRSIM:
 
         heading = math.degrees(yaw) % 360
 
-        baro = self.client.getBarometerData()
+        # AirSim stamps its state with the simulation clock. Hand it to the wrapper so the firmware's dt is
+        # the time the sim really advanced, rather than the 1/SITL_RATE_HZ the loop cannot actually sustain.
+        sim_time_s = state.timestamp * NS_TO_S
+        self.zp.set_plant_time(sim_time_s)
 
-        # altitude for rangefinder
-        alt_rangefinder = self.client.getDistanceSensorData().distance
+        # Slow sensors: poll at their own rates so their RPCs don't throttle the control loop
+        if sim_time_s >= self.next_baro_t:
+            self.baro = self.client.getBarometerData()
+            self.next_baro_t = sim_time_s + 1.0 / BARO_RATE_HZ
+        if sim_time_s >= self.next_rangefinder_t:
+            self.alt_rangefinder = self.client.getDistanceSensorData().distance
+            self.next_rangefinder_t = sim_time_s + 1.0 / RANGEFINDER_RATE_HZ
+
+        baro = self.baro
+        alt_rangefinder = self.alt_rangefinder
+        self.last_state = state
 
         self.zp.update_from_plant(
             roll, pitch,
@@ -168,17 +199,31 @@ class ZP_QUAD_SITL_AIRSIM:
 
         if not self.paused:
             m1, m2, m3, m4 = self.zp.get_motor_outputs()
-            self.client.moveByMotorPWMsAsync(m1 / 100, m2 / 100, m3 / 100, m4 / 100, 0.01) 
-        
+            self.client.moveByMotorPWMsAsync(m1 / 100, m2 / 100, m3 / 100, m4 / 100, 0.01)
+
+        self._rate_window_steps += 1
+        window = time.perf_counter() - self._rate_window_t
+        if window >= 0.5:
+            self.achieved_rate_hz = self._rate_window_steps / window
+            self._rate_window_t = time.perf_counter()
+            self._rate_window_steps = 0
+
     def print_state(self):
         sys.stdout.write("\033[H")
         arm_s = "\033[1;32mARMED   \033[0m" if self.armed else "\033[1;31mDISARMED\033[0m"
         sim_s = "\033[1;33mPAUSED  \033[0m" if self.paused else "\033[1;32mRUNNING \033[0m"
         
-        state = self.client.getMultirotorState()
-        alt_rangefinder = self.client.getDistanceSensorData().distance
-        baro = self.client.getBarometerData()
+        # Reuse what step() already fetched; the dashboard must not add RPCs to the control loop
+        state = self.last_state
+        if state is None:
+            return
+        alt_rangefinder = self.alt_rangefinder
+        baro = self.baro
         m1, m2, m3, m4 = self.zp.get_motor_outputs()
+
+        # A rate well below SITL_RATE_HZ means the firmware is being stepped slower than it thinks;
+        # the plant clock keeps that honest, but it still costs control bandwidth
+        rate_colour = "\033[1;32m" if self.achieved_rate_hz >= 0.5 * SITL_RATE_HZ else "\033[1;33m"
 
         dash = [
             "==============================================",
@@ -187,6 +232,7 @@ class ZP_QUAD_SITL_AIRSIM:
             f" Roll: {self.commands['roll']:>5.1f}% | Pitch: {self.commands['pitch']:>5.1f}%",
             f" Yaw:  {self.commands['yaw']:>5.1f}% | Thr:   {self.commands['throttle']:>5.1f}%",
             f" FltMode: {self.fltmode_index + 1}",
+            f" Loop: {rate_colour}{self.achieved_rate_hz:>6.0f}\033[0m / {SITL_RATE_HZ} Hz",
             "----------------------------------------------",
             f" Alt GPS:  {state.gps_location.altitude:>6.1f} m",
             f" Alt Range: {alt_rangefinder:>6.1f} m",
