@@ -228,7 +228,7 @@ void AttitudeManager::amUpdate() {
 
         // Capture home pressure while disarmed, skipping the first 1s warmup transient
         // The baroHomePressureKPa keeps refining past baroHomeSettled (baro can drift), until drone is armed
-        if (!armedFlag && baroElapsedMs >= BARO_HOME_WARMUP_MS && !baroHomeSettled) {
+        if (!armedFlag && baroElapsedMs >= BARO_HOME_WARMUP_MS) {
             baroHomeSampleCount++;
 
             // fmax of 1/n and BARO_HOME_ALPHA_MIN so that the running mean becomes an EMA after 60s 
