@@ -324,6 +324,13 @@ void AttitudeManager::amUpdate() {
         }
     }
 
+    #ifdef QUADCOPTER // ALTHOLD is quad only
+    if (rangefinderData.isNew && rangefinderData.isValid && activeCLAW == &altholdCLAW) {
+        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
+        altholdCLAW.updateTerrainAlt(droneState, rangefinderZ);
+    }
+    #endif
+
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ) == 0) {
         if (lastNewRangefinderData.isNew) {
             sendRangefinderDataToTelemetryManager(lastNewRangefinderData);
