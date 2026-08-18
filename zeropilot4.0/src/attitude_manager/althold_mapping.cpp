@@ -115,7 +115,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         if (!wasInDeadzone) {
             // Only set the target once when entering the deadzone
             float vz = droneState.verticalVel;
-            float stoppingDistance = constrain((vz * fabsf(vz)) / (2.0f * pilotAccelRate), 0.0f, 1.0f); // d = v^2 / (2a)
+            float stoppingDistance = constrain((vz * fabsf(vz)) / (2.0f * pilotAccelRate), -1.0f, 1.0f); // d = v^2 / (2a)
             targetAltAboveTerrain = droneState.altitude - terrainAlt + stoppingDistance;
             lastDesiredRate = 0.0f;
             wasInDeadzone = true;
@@ -181,6 +181,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
         float accelSetpoint = accelCmd;
         float accelMeasured = droneState.verticalAcc;
         float accelOutput = accelPID.pidOutput(accelSetpoint, accelMeasured);
+        // Command throttle in [minThrottle, maxThrottle] range, with hoverThrottle as the center point
         throttleCmd = hoverThrottle + scale(accelOutput, minThrottle - hoverThrottle, maxThrottle - hoverThrottle);
 
         // Update hover throttle based on current throttle (before tilt compansation since we want the leveled throttle)
@@ -244,7 +245,7 @@ void AltholdMapping::updateTerrainAlt(const DroneState_t &droneState, float rang
         */
         targetAltAboveTerrain = targetAlt - newTerrainAlt;
         rawTerrainAlt = newTerrainAlt;
-        terrainAlt = newTerrainAlt;
+        terrainAlt = newTerrainAlt; // Bypass the low pass filter
 
         rangefinderLost = false;
     }
