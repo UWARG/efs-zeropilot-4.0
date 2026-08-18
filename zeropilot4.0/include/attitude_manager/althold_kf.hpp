@@ -1,11 +1,11 @@
 #include "mathutils_iface.hpp"
 
 enum AltholdStatesIdx_e {
-    altholdStateAltIdx,
-    altholdStateVelIdx,
-    altholdStateBiasAccelIdx,
-    altholdStateBiasBaroIdx,
-    altholdStateCount
+    ALTHOLD_STATE_ALT_IDX,
+    ALTHOLD_STATE_VEL_IDX,
+    ALTHOLD_STATE_BIAS_ACCEL_IDX,
+    ALTHOLD_STATE_BIAS_BARO_IDX,
+    ALTHOLD_STATE_COUNT
 };
 
 typedef struct {
@@ -41,19 +41,19 @@ private:
     b_accel: accelerometer bias
     b_baro: barometer bias
     */
-    float states[altholdStateCount] = {};
+    float states[ALTHOLD_STATE_COUNT] = {};
 
     // NOLINTBEGIN(readability-identifier-naming)
-    float P[altholdStateCount * altholdStateCount] = {}; // Covariance matrix
+    float P[ALTHOLD_STATE_COUNT * ALTHOLD_STATE_COUNT] = {}; // Covariance matrix
 
     // H
-    const float H_BARO[altholdStateCount] = {1.0f, 0, 0, 1.0f};
-    const float H_GPS_ALT[altholdStateCount] = {1.0f, 0, 0, 0};
-    const float H_GPS_VEL[altholdStateCount] = {0, 1.0f, 0, 0};
+    const float H_BARO[ALTHOLD_STATE_COUNT] = {1.0f, 0, 0, 1.0f};
+    const float H_GPS_ALT[ALTHOLD_STATE_COUNT] = {1.0f, 0, 0, 0};
+    const float H_GPS_VEL[ALTHOLD_STATE_COUNT] = {0, 1.0f, 0, 0};
 
-    float F[altholdStateCount * altholdStateCount] = {}; // State transition matrix
-    float B[altholdStateCount] = {}; // Control input matrix
-    float Q[altholdStateCount * altholdStateCount] = {}; // Process noise covariance
+    float F[ALTHOLD_STATE_COUNT * ALTHOLD_STATE_COUNT] = {}; // State transition matrix
+    float B[ALTHOLD_STATE_COUNT] = {}; // Control input matrix
+    float Q[ALTHOLD_STATE_COUNT * ALTHOLD_STATE_COUNT] = {}; // Process noise covariance
     // NOLINTEND(readability-identifier-naming)
     
     float dtPrev;

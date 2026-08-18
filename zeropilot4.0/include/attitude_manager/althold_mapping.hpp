@@ -17,9 +17,6 @@ public:
     // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
     void resetControlLoopState() noexcept;
 
-    /*
-    Setters
-    */
     void setPositionPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
     void setVelocityPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
     void setAccelPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;

@@ -78,24 +78,14 @@ AttitudeManager::AttitudeManager(
         */
 
         AltholdConfig_t altholdCfg = {
-            .processNoiseAccel = 1.0f,
+            .processNoiseAccel = 0.05f,
             .processNoiseBiasAccel = 0.02f,
             .processNoiseBiasBaro = 0.000001f,
-            .processNoiseTerrainAlt = 0.00005f,
-            .measNoiseBarometer = 0.2f,
-            .measNoiseRangefinder = 0.01f,
+            .measNoiseBarometer = 0.006f,
             .measNoiseGPSAlt = 25.0f,
             .measNoiseGPSVel = 0.03f
         };
         float initAltHoldStates[5] = {0.0f, 0.0f, 9.9f, 0.0f, 0.0f};
-        // ScaledImuBatch_t scaledImuData;
-        // for (int i = 0; i < 2; ++i) {
-        //     RawImuBatch_t imuData = imuDriver->readRawData();
-        //     scaledImuData = imuDriver->scaleIMUData(imuData);
-        // }
-        // if (scaledImuData.count > 0) {
-        //     initAltHoldStates[2] = scaledImuData.data[scaledImuData.count - 1].zacc; // Use the last IMU sample's z-accel for initialization
-        // }
         altholdKF.init(altholdCfg, initAltHoldStates);
         altholdKF.setBaroBiasEnabled(false); // Enable later when we have RTK GPS so GPS altitude can be used to correct barometer bias
 
@@ -335,13 +325,6 @@ void AttitudeManager::amUpdate() {
             lastNewRangefinderData = rangefinderData;
         }
     }
-
-    #ifdef QUADCOPTER // ALTHOLD is quad only
-    if (rangefinderData.isNew && rangefinderData.isValid && activeCLAW == &altholdCLAW) {
-        rangefinderZ = rangefinderData.distance * cosf(droneState.roll) * cosf(droneState.pitch); // Convert to vertical distance if drone tilted
-        altholdCLAW.updateTerrainAlt(droneState, rangefinderZ);
-    }
-    #endif
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ) == 0) {
         if (lastNewRangefinderData.isNew) {
