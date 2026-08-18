@@ -3,6 +3,11 @@
 #include "mathutils_iface.hpp"
 #include "arm_math.h"
 
+// CMSIS-DSP's fast_math_functions.h defines a global PI macro that
+// collides with ZP_UNITS::PI (unit_conversions.hpp). It's unused elsewhere
+// in CMSIS-DSP, so drop it once arm_math.h is done with it.
+#undef PI
+
 class MathUtils : public IMathUtils {
     public:
         MathUtils() = default;
