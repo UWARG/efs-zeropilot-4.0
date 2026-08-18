@@ -113,6 +113,9 @@ private:
     uint32_t lastTimestamp;
     bool haveLastImuTimestamp;
 
+    float accelAccum[3];
+    uint16_t accelAccumCount;
+
     bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
     void outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);

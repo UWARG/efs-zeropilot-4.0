@@ -53,6 +53,8 @@ AttitudeManager::AttitudeManager(
     groundIdlePrev(false),
     lastTimestamp(0),
     haveLastImuTimestamp(false),
+    accelAccum{0.0f, 0.0f, 0.0f},
+    accelAccumCount(0),
     profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
@@ -175,15 +177,26 @@ void AttitudeManager::amUpdate() {
             scaledImuData.data[i].ygyro,
             scaledImuData.data[i].zgyro
         };
-        float accel[3] = {
-            scaledImuData.data[i].xacc, 
-            scaledImuData.data[i].yacc, 
-            scaledImuData.data[i].zacc
-        };
+        accelAccum[0] += scaledImuData.data[i].xacc;
+        accelAccum[1] += scaledImuData.data[i].yacc;
+        accelAccum[2] += scaledImuData.data[i].zacc;
+        accelAccumCount++;
 
         ekf.stateExtrapolation(gyro, dt);
-        if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
+        // Correct accel once for every 10 gyro updates, using the average of the
+        // samples rather than a single reading so a corrupted vibration spike can't 
+        // dominate the correction
+        if (amSchedulingCounter % 10 == 0 && accelAccumCount > 0) {
+            float accel[3] = {
+                accelAccum[0] / accelAccumCount,
+                accelAccum[1] / accelAccumCount,
+                accelAccum[2] / accelAccumCount
+            };
             ekf.correctionAccelerometer(accel);
+            for (int i = 0; i < 3; i++) {
+                accelAccum[i] = 0.0f;
+            }
+            accelAccumCount = 0;
         }
     }
 
