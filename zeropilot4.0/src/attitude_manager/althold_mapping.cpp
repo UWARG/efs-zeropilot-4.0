@@ -149,8 +149,7 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
 
     // Position control loop
     if (posLoopCounter == 0) {
-        // Only ask for maximum of ALT_LEASH climb at a time so a big terrain change is taken in steps
-        float posSetpoint = constrain(targetAlt, droneState.altitude - ALT_LEASH, droneState.altitude + ALT_LEASH);
+        float posSetpoint = targetAlt;
         float posMeasrued = droneState.altitude;
         velocityCmd = positionPID.pidOutput(posSetpoint, posMeasrued);
         velocityCmd = scale(velocityCmd, -maxDescendRate, maxClimbRate);
