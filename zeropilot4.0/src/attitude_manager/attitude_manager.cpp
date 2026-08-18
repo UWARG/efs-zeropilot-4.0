@@ -133,8 +133,17 @@ void AttitudeManager::amUpdate() {
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
             harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         }
+
+        // Notch-filtered copy for the rate controllers only. The EKF propagates on the
+        // un-notched gyro further below so the notch's group delay and per-window
+        // coefficient transients don't leak into attitude estimation.
+        float notchedGyro[3] = {
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro
+        };
         // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
-        harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
+        harmonicNotchFilter.apply(notchedGyro[0], notchedGyro[1], notchedGyro[2]);
 
         // Kept after the notch so IMU0 still feeds the FFT a continuous sample stream.
         if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
@@ -155,9 +164,9 @@ void AttitudeManager::amUpdate() {
         }
 
         GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
-        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
-        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
-        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
+        droneState.rollRate = notchedGyro[0] - startupGyroBias.x;
+        droneState.pitchRate = notchedGyro[1] - startupGyroBias.y;
+        droneState.yawRate = notchedGyro[2] - startupGyroBias.z;
 
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
 
