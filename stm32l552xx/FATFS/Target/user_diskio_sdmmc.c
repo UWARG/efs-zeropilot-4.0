@@ -28,49 +28,54 @@ DSTATUS USER_SDMMC_status (BYTE lun) {
 }
 
 DRESULT USER_SDMMC_read (BYTE lun, BYTE *buff, DWORD sector, UINT count) {
-  DRESULT res = RES_ERROR;
+  // DRESULT res = RES_ERROR;
 
-  if (osKernelGetState() == osKernelRunning) {
-    HAL_SD_ReadBlocks_DMA(&hsd1, buff, sector, count);
+  // if (osKernelGetState() == osKernelRunning) {
+  //   HAL_SD_ReadBlocks_DMA(&hsd1, buff, sector, count);
 
-    uint32_t start = HAL_GetTick();
-    while (!readStatus && (HAL_GetTick() - start) < SD_TIMEOUT) {
-      HAL_Delay(10);
-    }
-  } else {
-    HAL_SD_ReadBlocks(&hsd1, buff, sector, count, HAL_MAX_DELAY);
-    readStatus = 1;
-  }
+  //   uint32_t start = HAL_GetTick();
+  //   while (!readStatus && (HAL_GetTick() - start) < SD_TIMEOUT) {
+  //     HAL_Delay(10);
+  //   }
+  // } else {
+  //   HAL_SD_ReadBlocks(&hsd1, buff, sector, count, HAL_MAX_DELAY);
+  //   readStatus = 1;
+  // }
 
-  if (readStatus) {
-    readStatus = 0;
-    res = RES_OK;
-  }
+  // if (readStatus) {
+  //   readStatus = 0;
+  //   res = RES_OK;
+  // }
 
-  return res;
+  // return res;
+
+  if (HAL_SD_ReadBlocks(&hsd1, buff, sector, count, SD_TIMEOUT) != HAL_OK) return RES_ERROR;
+  return RES_OK;
 }
 
 DRESULT USER_SDMMC_write (BYTE lun, const BYTE *buff, DWORD sector, UINT count) {
-  DRESULT res = RES_ERROR;
+  // DRESULT res = RES_ERROR;
 
-  if (osKernelGetState() == osKernelRunning) {
-    HAL_SD_WriteBlocks_DMA(&hsd1, buff, sector, count);
+  // if (osKernelGetState() == osKernelRunning) {
+  //   HAL_SD_WriteBlocks_DMA(&hsd1, buff, sector, count);
 
-    uint32_t start = HAL_GetTick();
-    while (!writeStatus && (HAL_GetTick() - start) < SD_TIMEOUT) {
-      HAL_Delay(10);
-    }
-  } else {
-    HAL_SD_WriteBlocks(&hsd1, buff, sector, count, HAL_MAX_DELAY);
-    writeStatus = 1;
-  }
+  //   uint32_t start = HAL_GetTick();
+  //   while (!writeStatus && (HAL_GetTick() - start) < SD_TIMEOUT) {
+  //     HAL_Delay(10);
+  //   }
+  // } else {
+  //   HAL_SD_WriteBlocks(&hsd1, buff, sector, count, HAL_MAX_DELAY);
+  //   writeStatus = 1;
+  // }
 
-  if (writeStatus) {
-    writeStatus = 0;
-    res = RES_OK;
-  }
+  // if (writeStatus) {
+  //   writeStatus = 0;
+  //   res = RES_OK;
+  // }
 
-  return res;
+  // return res;
+  if (HAL_SD_WriteBlocks(&hsd1, buff, sector, count, SD_TIMEOUT) != HAL_OK) return RES_ERROR;
+  return RES_OK;
 }
 
 DRESULT USER_SDMMC_ioctl (BYTE lun, BYTE cmd, void *buff) {

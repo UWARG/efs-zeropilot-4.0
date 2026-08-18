@@ -6,4 +6,4 @@ build/
 *.o
 *.pyd
 
-sd_card/
+file_system/

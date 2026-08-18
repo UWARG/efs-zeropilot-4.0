@@ -73,7 +73,7 @@
 									<listOptionValue builtIn="false" value="../FATFS/App"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/boardfiles/drivers/imu}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1677137064" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
@@ -101,7 +101,7 @@
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -243,7 +243,6 @@
 									<listOptionValue builtIn="false" value="../FATFS/App"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/boardfiles/drivers/imu}&quot;"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
@@ -268,7 +267,7 @@
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -403,7 +402,6 @@
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -446,7 +444,7 @@
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -580,7 +578,6 @@
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -626,7 +623,7 @@
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
