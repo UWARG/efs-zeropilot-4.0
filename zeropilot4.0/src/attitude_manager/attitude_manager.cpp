@@ -17,7 +17,8 @@ AttitudeManager::AttitudeManager(
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    MotorGroupInstance_t *mainMotorGroup
+    MotorGroupInstance_t *mainMotorGroup,
+    ArmingStatus *armingStatus
 ) :
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
@@ -30,6 +31,7 @@ AttitudeManager::AttitudeManager(
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
+    armingStatus(armingStatus),
     #ifdef PLANE
     activeCLAW(&manualCLAW),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
@@ -336,6 +338,17 @@ void AttitudeManager::amUpdate() {
         );
     }
 
+    // Publish arming/readiness state for SM. GPS only gates modes that actually need it.
+    bool gpsReadyForMode = !activeCLAW->requiresGPS() || gpsHomeSettled;
+    armingStatus->readyToArm = baroHomeSettled && gpsReadyForMode;
+    armingStatus->armed = armedFlag;
+    armingStatus->prearmReason = PrearmReason::NONE;
+    if (!baroHomeSettled) {
+        armingStatus->prearmReason = PrearmReason::BARO_NOT_SETTLED;
+    } else if (!gpsReadyForMode) {
+        armingStatus->prearmReason = PrearmReason::GPS_NOT_SETTLED;
+    }
+
     // Get data from Queue and motor outputs
     bool controlRes = getControlInputs(&controlMsg);
     
@@ -383,10 +396,16 @@ void AttitudeManager::amUpdate() {
 
     // Update armedFlag and activateFlightMode() on the arm/disarm edge
     if (controlMsg.arm != armedFlag) {
-        armStateChanged = true;
-        armedFlag = controlMsg.arm;
-        if (armedFlag) {
-            activeCLAW->activateFlightMode();
+        if (controlMsg.arm) {
+            // Only arm if all requirements are met
+            if (baroHomeSettled) {
+                armedFlag = true;
+                armStateChanged = true;
+                activeCLAW->activateFlightMode();
+            }
+        } else {
+            armedFlag = false;
+            armStateChanged = true;
         }
     }
 
@@ -653,4 +672,9 @@ void AttitudeManager::sendServoOutputRawToTelemetryManager() {
     );
 
     tmQueue->push(&servoOutputMsg);
+}
+
+void AttitudeManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, const char text[50], uint16_t id, uint8_t chunk_seq) {
+    TMMessage_t statusTextMsg = statusTextPack(systemUtilsDriver->getCurrentTimestampMs(), severity, text, id, chunk_seq);
+    tmQueue->push(&statusTextMsg);
 }

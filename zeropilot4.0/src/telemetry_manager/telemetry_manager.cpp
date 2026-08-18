@@ -149,6 +149,20 @@ void TelemetryManager::processTXMsgQueue() {
                 break;
             }
 
+            case TMMessage_t::SYS_STATUS_DATA: {
+                auto& s = tmqMessage.tmMessageData.sysStatusData;
+                mavlink_msg_sys_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage,
+                    s.onboardControlSensorsPresent, s.onboardControlSensorsEnabled, s.onboardControlSensorsHealth,
+                    0, // Load (0.1%): unused
+                    UINT16_MAX, // Voltage_battery (mV): unused, already sent in a BATTERY_STATUS
+                    -1, // Current_battery (cA): unused, already sent in a BATTERY_STATUS
+                    -1, // Battery_remaining (%): unused, already sent in a BATTERY_STATUS
+                    0, 0, // Drop_rate_comm, errors_comm
+                    0, 0, 0, 0, // Errors_count1..4
+                    0, 0, 0); // Sensors present/enabled/health extended
+                break;
+            }
+
             default: {
                 continue;
             }
