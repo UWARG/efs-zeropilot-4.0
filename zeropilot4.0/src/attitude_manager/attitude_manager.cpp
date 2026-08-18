@@ -87,19 +87,37 @@ AttitudeManager::AttitudeManager(
         float startupAccelMag = std::sqrt(accelStartup.x * accelStartup.x +
                                            accelStartup.y * accelStartup.y +
                                            accelStartup.z * accelStartup.z);
-        float initAccel[3];
+        float initAccel[3] = {0.0f, 0.0f, -9.81f};
+        float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         if (startupAccelMag > 5.0f && startupAccelMag < 15.0f) { // Sanity bound around 1g
             initAccel[0] = accelStartup.x;
             initAccel[1] = accelStartup.y;
             initAccel[2] = accelStartup.z;
-        } else {
-            initAccel[0] = 0.0f;
-            initAccel[1] = 0.0f;
-            initAccel[2] = -9.81f;
+
+            // Calculate the quaternion based on the accel measured at startup
+            float refAccelNorm[3] = {0.0f, 0.0f, -1.0f};
+            float measAccelNorm[3] = {
+                accelStartup.x / startupAccelMag,
+                accelStartup.y / startupAccelMag,
+                accelStartup.z / startupAccelMag
+            };
+            float dot = refAccelNorm[0] * measAccelNorm[0] +
+                        refAccelNorm[1] * measAccelNorm[1] +
+                        refAccelNorm[2] * measAccelNorm[2];
+            if (dot > -0.9999f) { // Skip if upside down at startup, falls back to level
+                float cross[3] = {
+                    refAccelNorm[1] * measAccelNorm[2] - refAccelNorm[2] * measAccelNorm[1],
+                    refAccelNorm[2] * measAccelNorm[0] - refAccelNorm[0] * measAccelNorm[2],
+                    refAccelNorm[0] * measAccelNorm[1] - refAccelNorm[1] * measAccelNorm[0]
+                };
+                float q[4] = {1.0f + dot, cross[0], cross[1], cross[2]};
+                float qNorm[4];
+                mathUtilsDriver->quatNormalize(q, qNorm);
+                mathUtilsDriver->quatInverse(qNorm, initQuat);
+            }
         }
 
         float initMag[3] = {1.0f, 0.0f, 0.0f};
-        float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
 
         // Activate the activeCLAW
