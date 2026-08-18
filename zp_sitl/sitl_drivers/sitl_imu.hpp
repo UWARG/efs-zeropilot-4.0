@@ -70,6 +70,10 @@ public:
         return GyroBias_t{0.0f, 0.0f, 0.0f}; // No startup bias in simulation
     }
 
+    AccelStartup_t getAccelStartupMean(uint8_t imuId) override {
+        return AccelStartup_t{0.0f, 0.0f, -Config::GRAVITY}; // SITL always starts level
+    }
+
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
