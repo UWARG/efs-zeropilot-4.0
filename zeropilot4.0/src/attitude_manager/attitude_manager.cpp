@@ -77,7 +77,24 @@ AttitudeManager::AttitudeManager(
             .magInertial = {1, 0, 0}
         };
         float initGyro[3] = {0.0f, 0.0f, 0.0f};
-        float initAccel[3] = {0.0f, 0.0f, -9.81f};
+
+        // Seed the EKF with the accel actually measured while stationary at startup
+        // instead of assuming the vehicle starts level
+        AccelStartup_t accelStartup = imuDriver->getAccelStartupMean(0);
+        float startupAccelMag = std::sqrt(accelStartup.x * accelStartup.x +
+                                           accelStartup.y * accelStartup.y +
+                                           accelStartup.z * accelStartup.z);
+        float initAccel[3];
+        if (startupAccelMag > 5.0f && startupAccelMag < 15.0f) { // Sanity bound around 1g
+            initAccel[0] = accelStartup.x;
+            initAccel[1] = accelStartup.y;
+            initAccel[2] = accelStartup.z;
+        } else {
+            initAccel[0] = 0.0f;
+            initAccel[1] = 0.0f;
+            initAccel[2] = -9.81f;
+        }
+
         float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
