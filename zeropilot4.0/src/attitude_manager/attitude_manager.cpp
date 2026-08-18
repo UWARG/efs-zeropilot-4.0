@@ -78,10 +78,10 @@ AttitudeManager::AttitudeManager(
         */
 
         AltholdConfig_t altholdCfg = {
-            .processNoiseAccel = 0.05f,
+            .processNoiseAccel = 1.0f,
             .processNoiseBiasAccel = 0.02f,
             .processNoiseBiasBaro = 0.000001f,
-            .measNoiseBarometer = 0.006f,
+            .measNoiseBarometer = 0.01f,
             .measNoiseGPSAlt = 25.0f,
             .measNoiseGPSVel = 0.03f
         };
