@@ -14,7 +14,6 @@ public:
 
     void updateTerrainAlt(const DroneState_t &droneState, float rangefinderAlt);
 
-    // Resetter for all roll, pitch and yaw PIDs (needed for unit testing)
     void resetControlLoopState() noexcept;
 
     void setPositionPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept;
@@ -86,7 +85,6 @@ private:
     static constexpr float maxThrottle = 0.9f;
     
     static constexpr float THROTTLE_DEADZONE = 0.1f;
-    bool wasInDeadzone = true;
 
     float hoverThrottle = 0.6f;
 

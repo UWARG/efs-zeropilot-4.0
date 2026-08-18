@@ -28,7 +28,6 @@ AltholdMapping::AltholdMapping(float controlPeriodS, StabilizeMapping &stabilize
 
 void AltholdMapping::activateFlightMode() {
     needTargetAltInit = true; // Initialize target altitude on first runControl loop
-    wasInDeadzone = true; // Start in hold mode, not climbing
 
     // Initialize the surface tracking states
     targetAltAboveTerrain = 0.0f;
@@ -110,41 +109,30 @@ RCMotorControlMessage_t AltholdMapping::runControl(RCMotorControlMessage_t contr
 
     // Check throttle input every loop to determine the altitude to hold
     float throttleCentered = (controlInput.throttle / 100.0f) - 0.5f; // Convert throttle from [0, 100] to [-0.5, 0.5]
-    if (fabsf(throttleCentered) < THROTTLE_DEADZONE) {
-        // In the deadzone, maintain the current altitude
-        if (!wasInDeadzone) {
-            // Only set the target once when entering the deadzone
-            float vz = droneState.verticalVel;
-            float stoppingDistance = constrain((vz * fabsf(vz)) / (2.0f * pilotAccelRate), -1.0f, 1.0f); // d = v^2 / (2a)
-            targetAltAboveTerrain = droneState.altitude - terrainAlt + stoppingDistance;
-            lastDesiredRate = 0.0f;
-            wasInDeadzone = true;
-        }
-    } else {
-        // Outside the deadzone, adjust the target altitude based on throttle input
 
+    // Find the targetRate if throttle stick is outside of deadzone.
+    // When inside the deadzone, targetRate is 0, so the ramp below decelerates lastDesiredRate down
+    // to 0 at pilotAccelRate instead of snapping to a stop, which causes a dip in altitude
+    float targetRate = 0.0f;
+    if (fabsf(throttleCentered) >= THROTTLE_DEADZONE) {
         // Scale the stick input to [0,1] past the deadzone so rates start at 0 from the deadzone edge instead of jumping
         float stickPastDeadzone = constrain((fabsf(throttleCentered) - THROTTLE_DEADZONE) / (0.5f - THROTTLE_DEADZONE), 0.0f, 1.0f);
-
-        float targetRate = 0.0f;
-        if (throttleCentered > 0) { // [0, 0.5], climb
-            targetRate = stickPastDeadzone * maxClimbRate;
-        } else  { // [-0.5, 0], Descend
-            targetRate = -stickPastDeadzone * maxDescendRate;
-        }
-        // Limit the rate change to the pilot's desired acceleration rate
-        float rateChange = constrain(targetRate - lastDesiredRate, -maxRateChange, maxRateChange);
-        lastDesiredRate += rateChange; // lastDesiredRate now represents the desired rate thhis loop
-        targetAltAboveTerrain += lastDesiredRate * controlPeriodS;
-
-        // Leash the targetAltAboveTerrain to avoid too much thrust (eg. when there is gust the drone may be not
-        // climbing but the pilot may keep the throttle high, then target altitude will be really high
-        // and when the gust is gone the drone will rocket up)
-        float altAboveTerrain = droneState.altitude - terrainAlt;
-        targetAltAboveTerrain = constrain(targetAltAboveTerrain, altAboveTerrain - ALT_LEASH, altAboveTerrain + ALT_LEASH);
-
-        wasInDeadzone = false;
+        targetRate = (throttleCentered > 0)
+            ? stickPastDeadzone * maxClimbRate // [0, 0.5], climb
+            : -stickPastDeadzone * maxDescendRate; // [-0.5, 0], descend
     }
+
+    // Limit the rate change to the pilot's desired acceleration rate, 
+    // ramp up or down to the targetRate instead of snapping to it
+    float rateChange = constrain(targetRate - lastDesiredRate, -maxRateChange, maxRateChange);
+    lastDesiredRate += rateChange; // lastDesiredRate now represents the desired rate this loop
+    targetAltAboveTerrain += lastDesiredRate * controlPeriodS;
+
+    // Leash the targetAltAboveTerrain to avoid too much thrust (eg. when there is gust the drone may be not
+    // climbing but the pilot may keep the throttle high, then target altitude will be really high
+    // and when the gust is gone the drone will rocket up)
+    float altAboveTerrain = droneState.altitude - terrainAlt;
+    targetAltAboveTerrain = constrain(targetAltAboveTerrain, altAboveTerrain - ALT_LEASH, altAboveTerrain + ALT_LEASH);
 
     // Determine if the rangefinder is lost
     if (rangefinderStaleCycles < rangefinderTimeoutCycles) {
