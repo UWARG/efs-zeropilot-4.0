@@ -22,6 +22,7 @@
 #include <string>
 #include <queue>
 #include <mutex>
+#include <chrono>
 
 static constexpr int SITL_NUM_MOTORS = 6;
 
@@ -77,7 +78,45 @@ typedef struct {
     uint32_t smCounter;
     uint32_t tmCounter;
     uint32_t amCounter;
+
+    /*
+    Plant clock. Scripts that have a real simulation clock (AirSim exposes one on its state messages)
+    should push it with set_plant_time() so the sim's own time base drives the firmware, which stays
+    correct even when the sim does not run at wall-clock speed. Otherwise we fall back to the host
+    steady clock, which is right for any sim running in real time.
+    */
+    bool usePlantTime;  // A script has pushed a sim clock, so prefer it over the host clock
+    double plantTimeS;
+    bool havePrevTime;
+    double prevPlantTimeS;
+    std::chrono::steady_clock::time_point prevHostTime;
 } ZPObject;
+
+// How long the plant actually advanced since the previous call, clamped to what AM's uint16_t delta can carry
+static uint32_t plantStepUs(ZPObject* self) {
+    using namespace SITL_Driver_Configs;
+
+    auto hostNow = std::chrono::steady_clock::now();
+
+    double elapsedS = 0.0;
+    if (self->havePrevTime) {
+        elapsedS = self->usePlantTime
+            ? (self->plantTimeS - self->prevPlantTimeS)
+            : std::chrono::duration<double>(hostNow - self->prevHostTime).count();
+    }
+    self->prevPlantTimeS = self->plantTimeS;
+    self->prevHostTime = hostNow;
+
+    if (!self->havePrevTime) {
+        self->havePrevTime = true;
+        return SITL_PLANT_STEP_DEFAULT_US; // Nothing to measure against yet
+    }
+
+    double us = elapsedS * 1e6;
+    if (!(us > SITL_PLANT_STEP_MIN_US)) return SITL_PLANT_STEP_MIN_US; // Clock stalled or went backwards
+    if (us > SITL_PLANT_STEP_MAX_US) return SITL_PLANT_STEP_MAX_US;    // Sim reset or pause: don't jump the integrators
+    return (uint32_t)us;
+}
 
 static void ZP_dealloc(ZPObject* self) {
     delete self->sm;
@@ -234,6 +273,12 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->smCounter = 0;
         self->tmCounter = 0;
         self->amCounter = 0;
+
+        self->usePlantTime = false;
+        self->plantTimeS = 0.0;
+        self->havePrevTime = false;
+        self->prevPlantTimeS = 0.0;
+        self->prevHostTime = std::chrono::steady_clock::now();
     }
     return (PyObject*)self;
 }
@@ -259,12 +304,29 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
         &baro_pressure_kpa, &baro_temp_c))
         return NULL;
 
-    self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s, ax_body, ay_body, az_body);
-    self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg, vx_mps, vy_mps, vz_mps);
+    uint32_t dt_us = plantStepUs(self);
+
+    self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s, ax_body, ay_body, az_body, dt_us);
+    self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg, vx_mps, vy_mps, vz_mps, dt_us);
     self->pm->update_from_plant(fuel_lbs, rpm);
-    self->rangefinder->update_from_plant(rangefinder_alt);
+    self->rangefinder->update_from_plant(rangefinder_alt, dt_us);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);
-    
+
+    Py_RETURN_NONE;
+}
+
+/*
+Optional: hand the wrapper the simulator's own clock (seconds). Preferred over the host clock because it
+stays correct when the sim is not running at wall-clock speed (e.g. AirSim's ClockSpeed setting). Call it
+before update_from_plant each step; if never called, the host steady clock is used instead.
+*/
+static PyObject* ZP_setPlantTime(ZPObject* self, PyObject* args) {
+    double plant_time_s;
+    if (!PyArg_ParseTuple(args, "d", &plant_time_s))
+        return NULL;
+
+    self->usePlantTime = true;
+    self->plantTimeS = plant_time_s;
     Py_RETURN_NONE;
 }
 
@@ -366,6 +428,7 @@ static PyObject* ZP_getTelemMessages(ZPObject* self, PyObject* args) {
 
 static PyMethodDef ZP_methods[] = {
     {"update_from_plant", (PyCFunction)ZP_updateFromPlant, METH_VARARGS, "Update sensors from plant"},
+    {"set_plant_time", (PyCFunction)ZP_setPlantTime, METH_VARARGS, "Supply the simulator's clock (seconds) for this step"},
     {"set_max_batt_capacity", (PyCFunction)ZP_setBatteryCapacity, METH_VARARGS, "Set max battery capacity"},
     {"set_rc", (PyCFunction)ZP_setRC, METH_VARARGS, "Set RC commands"},
     {"update", (PyCFunction)ZP_update, METH_NOARGS, "Run all managers"},

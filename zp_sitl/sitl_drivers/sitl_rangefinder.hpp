@@ -10,7 +10,7 @@ private:
     using Config = SITL_Driver_Configs::SITL_Rangefinder_Config;
 
     RangefinderData_t data = {};
-    uint32_t plantUpdateCounter = 0;
+    uint32_t usSinceFrame = 0;
 
 public:
 
@@ -27,16 +27,18 @@ public:
         return sample;
     }
 
-    void update_from_plant(float sim_altitude) {
-        // The plant drives us at SITL_DRIVER_UPDATE_RATE_HZ, so only produce a frame at the sensor's rate
-        if (++plantUpdateCounter < Config::PLANT_UPDATES_PER_FRAME) {
+    void update_from_plant(float sim_altitude, uint32_t dt_us) {
+        // Only produce a frame at the sensor's rate, timed off the plant clock so the rate holds
+        // regardless of how fast the SITL script manages to step
+        usSinceFrame += dt_us;
+        if (usSinceFrame < Config::FRAME_PERIOD_US) {
             return;
         }
-        plantUpdateCounter = 0;
+        usSinceFrame = 0;
 
         data.distance = sim_altitude;
         data.signalStrength = 65535;
-        data.isValid = sim_altitude < 40.0f ? true : false;
+        data.isValid = sim_altitude < 30.0f ? true : false;
         data.isNew = true;
     }
 };
