@@ -3,7 +3,7 @@
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
 #include "unit_conversions.hpp"
-#include <limits>
+#include <cmath>
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -68,8 +68,9 @@ AttitudeManager::AttitudeManager(
             .magCov = 3.6e-5f,
             .gyroBiasCov = 1.0e-6f,
             .accelBiasCov = 0.0f,
-            .accelGateThreshold = std::numeric_limits<float>::max(), // Turning off gating bc if start position is not leveled, then gating prevents convergence
+            .accelGateThreshold = 16.3f,
             .magGateThreshold = 16.3f,
+            .accelRejectCountLimit = 30, //  Around 300ms at the 100Hz correction rate
             .pInitAtt = 1e-2f,
             .pInitBiasGyro = 1e-3f,
             .pInitBiasAccel = 0.0f, // Assume P is a diagonal matrix

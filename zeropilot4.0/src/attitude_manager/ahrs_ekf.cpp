@@ -355,7 +355,22 @@ void AHRSEKF::applyUpdate(const float* y, const float* h0, bool observesAccelBia
     float mahalanobisDist = 0;
     math->matrixMult(yTSinv, 1, 3, y, 1, &mahalanobisDist);
 
-    if (mahalanobisDist > gateThreshold) return;
+    if (mahalanobisDist > gateThreshold) {
+        // Track how many accel corrections in a row have been gated out. A long streak
+        // means the filter is overconfident rather than the measurements is bad, like vibration. 
+        // So reinflate the covariance and let the next correction through rather than gated forever
+        if (observesAccelBias) {
+            if (cfg.accelRejectCountLimit > 0 && ++accelRejectCount >= cfg.accelRejectCountLimit) {
+                for (int i = 0; i < 3; ++i) {
+                    float& diag = p[i * 9 + i];
+                    if (diag < cfg.pInitAtt) diag = cfg.pInitAtt;
+                }
+                accelRejectCount = 0;
+            }
+        }
+        return;
+    }
+    if (observesAccelBias) accelRejectCount = 0;
 
     // 2. Kalman Update: k = p @ H^t @ sInv; p is symmetric, so p @ H^t = (H @ p)^t
     // and each 3x3 block row of k is K_i = HP_i^t @ sInv
