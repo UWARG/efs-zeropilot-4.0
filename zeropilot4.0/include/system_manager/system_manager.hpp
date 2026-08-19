@@ -18,7 +18,6 @@
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 #define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
-#define SM_TELEMETRY_PREARM_SAFETY_SWITCH_RATE_HZ 1
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
 
@@ -38,6 +37,7 @@ static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -
 // Safety switch constants
 static constexpr uint32_t SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS = 2000;
 static constexpr uint32_t SM_SAFETY_SWITCH_BLINK_RATE_HZ = 2;
+static constexpr uint32_t SM_SAFETY_SWITCH_PREARM_MSG_INTERVAL_S = 10; // Send safety switch prearm message every 10 seconds
 class SystemManager {
     friend class SMParamSetup;
 
@@ -76,6 +76,7 @@ class SystemManager {
         bool isSafetySwitchEngaged;         // Flag to indicate if the safety switch is engaged
         uint32_t safetySwitchHoldCounterMs; // Counter to track how long the safety switch has been held
         bool safetySwitchTriggered;         // Flag to prevent toggling multiple times during a single long press
+        uint32_t safetySwitchPrearmCntrMs;  // Counter to track time since last prearm message was sent
         void safetySwitchUpdate();          // Function to update the state of the safety switch and handle its logic
 
         int oldDataCount;

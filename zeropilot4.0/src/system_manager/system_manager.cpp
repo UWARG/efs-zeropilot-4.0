@@ -30,6 +30,7 @@ SystemManager::SystemManager(
         isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
         safetySwitchHoldCounterMs(0),
         safetySwitchTriggered(false),
+        safetySwitchPrearmCntrMs(0),
         oldDataCount(0),
         rcConnected(false),
         rcChannelReversed{},
@@ -190,7 +191,10 @@ void SystemManager::safetySwitchUpdate() {
 
     // Handle "PreArm: Hardware Safety Switch" STATUSTEXT message
     if (isSafetySwitchEngaged) {
-        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_PREARM_SAFETY_SWITCH_RATE_HZ) == 0) {
+        safetySwitchPrearmCntrMs += SM_UPDATE_LOOP_DELAY_MS;
+
+        if (safetySwitchPrearmCntrMs >= (SM_SAFETY_SWITCH_PREARM_MSG_INTERVAL_S * 1000)) {
+            safetySwitchPrearmCntrMs = 0;
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
         }
     }
