@@ -5,7 +5,7 @@ class SITL_Motor : public IMotorControl {
 public:
     SITL_Motor() = default;
 
-    void set(uint32_t percent) override {
+    void set(uint32_t percent, bool safetyEngaged = false) override {
         currentPercent = percent;
     }
 

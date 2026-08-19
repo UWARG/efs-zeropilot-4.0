@@ -12,7 +12,7 @@ class IMotorControl {
         virtual ~IMotorControl() = default;
 
         // Set pwm percentage of servo motors
-        virtual void set(uint32_t percent) = 0;
+        virtual void set(uint32_t percent, bool safetyEngaged = false) = 0;
 
         // Initialize/start motor output
         virtual void init() = 0;
