@@ -216,7 +216,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
+            self->sysUtils, self->iwdg, self->logger, nullptr, self->rc, self->pm,
             self->amQueue, self->tmQueue, self->logQueue
         );
         
