@@ -4,6 +4,7 @@
 #include "motor_functions.hpp"
 #include "unit_conversions.hpp"
 #include <limits>
+#include <cmath>
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -25,12 +26,12 @@ AttitudeManager::AttitudeManager(
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     // ekf(mathUtilsDriver),
+    altholdKF(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
     #ifdef PLANE
     activeCLAW(&manualCLAW),
-    manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
     controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
     currentFlightMode(FlightMode_e::MANUAL),
@@ -42,18 +43,7 @@ AttitudeManager::AttitudeManager(
     controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
     currentFlightMode(FlightMode_e::STABILIZE),
     #endif
-    droneState(DRONE_STATE_DEFAULT),
     mainMotorGroup(mainMotorGroup),
-    armedFlag(false),
-    setArmFlag(false),
-    lastServoOutputs{0},
-    amSchedulingCounter(0),
-    noDataCount(0),
-    failsafeTriggered(false),
-    groundIdlePrev(false),
-    lastTimestamp(0),
-    haveLastImuTimestamp(false),
-    profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
@@ -84,6 +74,18 @@ AttitudeManager::AttitudeManager(
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
         */
 
+        AltholdConfig_t altholdCfg = {
+            .processNoiseAccel = 0.05f,
+            .processNoiseBiasAccel = 0.02f,
+            .processNoiseBiasBaro = 0.000001f,
+            .measNoiseBarometer = 0.006f,
+            .measNoiseGPSAlt = 25.0f,
+            .measNoiseGPSVel = 0.03f
+        };
+        float initAltHoldStates[5] = {0.0f, 0.0f, 9.9f, 0.0f, 0.0f};
+        altholdKF.init(altholdCfg, initAltHoldStates);
+        altholdKF.setBaroBiasEnabled(false); // Enable later when we have RTK GPS so GPS altitude can be used to correct barometer bias
+
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
 
@@ -91,23 +93,18 @@ AttitudeManager::AttitudeManager(
 }
 
 void AttitudeManager::amUpdate() {
-
     systemUtilsDriver->profilerBegin(profilerId);
+
+    if (firstIteration) {
+        imuDriver->flush();
+        firstIteration = false;
+    }
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 
     // Send servo output raw data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         sendServoOutputRawToTelemetryManager();
-    }
-
-    // Read barometer data
-    BaroData_t baroData;
-    barometerDriver->readData(baroData);
-
-    // Send scaled pressure data to TM
-    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
-        sendPressureDataToTelemetryManager(baroData);
     }
 
     // Send IMU raw data to telemetry manager
@@ -155,6 +152,21 @@ void AttitudeManager::amUpdate() {
             scaledImuData.data[i].zacc,
             dt
         );
+        
+        // Only feed IMU0's vertical acceleration to altholdKF
+        if (scaledImuData.data[i].imuId == 0) {
+            uint16_t kfDeltaTicks = scaledImuData.data[i].timestamp - lastKfTimestamp;
+            lastKfTimestamp = scaledImuData.data[i].timestamp;
+            if (haveLastKfTimestamp) {
+                // Tilt compensation for vertical acceleration
+                float vertAccel = mahonyFilter.getVerticalAccel(scaledImuData.data[i].xacc, 
+                                                                scaledImuData.data[i].yacc, 
+                                                                scaledImuData.data[i].zacc);
+                altholdKF.predict(-vertAccel, kfDeltaTicks * TIMESTAMP_RESOLUTION);
+            } else {
+                haveLastKfTimestamp = true;
+            }
+        }
 
         /* TODO: Uncomment once using EKF
         float gyro[3] = {
@@ -172,10 +184,16 @@ void AttitudeManager::amUpdate() {
         if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
             ekf.correctionAccelerometer(accel);
         }
+
         GyroBias_t gyroBias = ekf.getGyroBias();
 
         break; // for now only use one imu message per am loop
         */
+    }
+    if (scaledImuData.count > 0) {
+        ScaledImu_t last = scaledImuData.data[scaledImuData.count - 1];
+        // Remove gravity, make it positive-up, and tilt compensate the latest attitude estimate
+        droneState.verticalAcc = -mahonyFilter.getVerticalAccel(last.xacc, last.yacc, last.zacc) - GRAVITY;
     }
 
     Attitude_t attitude = mahonyFilter.getAttitudeRadians();
@@ -191,10 +209,87 @@ void AttitudeManager::amUpdate() {
         sendAttitudeDataToTelemetryManager(attitude);
     }
 
+    // Read barometer data
+    // BaroData_t baroData;
+    if (barometerDriver->readData(baroData)) {
+        uint32_t baroNowMs = systemUtilsDriver->getCurrentTimestampMs();
+        if (!baroHomeStarted) {
+            baroHomeStartMs = baroNowMs;
+            baroHomeStarted = true;
+        }
+        uint32_t baroElapsedMs = baroNowMs - baroHomeStartMs;
+
+        // Capture home pressure while disarmed, skipping the first 1s warmup transient
+        // The baroHomePressureKPa keeps refining past baroHomeSettled (baro can drift), until drone is armed
+        if (!armedFlag && baroElapsedMs >= BARO_HOME_WARMUP_MS) {
+            baroHomeSampleCount++;
+
+            // fmax of 1/n and BARO_HOME_ALPHA_MIN so that the running mean becomes an EMA after 60s 
+            // and forgets old samples if the prearm time is long, which helps track drift
+            float alpha = fmaxf(1.0f / (float)baroHomeSampleCount, BARO_HOME_ALPHA_MIN);
+            baroHomePressureKPa += alpha * (baroData.pressureKPa - baroHomePressureKPa);
+
+            if (baroElapsedMs >= BARO_HOME_WARMUP_MS + BARO_HOME_AVERAGE_MS) {
+                // Mark the home pressure as accurate enough to arm on, but keeps refining until armed
+                baroHomeSettled = true;
+            }
+        }
+
+        // Update altholdKF with barometer data
+        if (baroHomeSampleCount > 0 && baroData.pressureKPa > 0.0f) {
+            baroZ = BARO_ALT_SCALE_M * (1.0f - powf(baroData.pressureKPa / baroHomePressureKPa, BARO_EXPONENT));
+            altholdKF.updateBarometer(baroZ);
+        }
+    }
+
+    // Send scaled pressure data to TM
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SCALED_PRESSURE_DATA_RATE_HZ) == 0) {
+        sendPressureDataToTelemetryManager(baroData);
+    }
+
     // Get GPS data
-    GpsData_t gpsData = gpsDriver->readData();
+    gpsData = gpsDriver->readData();
     if (gpsData.isNew) {
         lastValidGps = gpsData;
+        if (gpsData.altitude != -1 && gpsData.numSatellites >= GPS_MIN_SATELLITES && gpsData.vAcc <= GPS_HOME_VACC_MAX_M) {
+            if (!armedFlag && !gpsHomeSettled) {
+                // Capture GPS home while disarmed, freeze once the fix has stayed stable 
+                uint32_t gpsNowMs = systemUtilsDriver->getCurrentTimestampMs();
+                if (gpsHomeSampleCount == 0) {
+                    gpsHomeAltitude = gpsData.altitude;
+                    gpsHomeSampleCount = 1;
+                    gpsHomeCalibStartMs = gpsNowMs;
+                    gpsHomeFirstSampleMs = gpsNowMs;
+                } else {
+                    float residual = gpsData.altitude - gpsHomeAltitude;
+                    // Ignore spikes far from the current home estimate
+                    if (fabsf(residual) <= GPS_HOME_OUTLIER_M) {
+                        gpsHomeSampleCount++;
+                        float alpha = fmaxf(1.0f / (float)gpsHomeSampleCount, GPS_HOME_ALPHA_MIN);
+                        gpsHomeAltitude += alpha * residual;
+                    }
+                    // Restart the capture if the fix is misbehaving
+                    if (fabsf(residual) > GPS_HOME_STABLE_SIGMA * gpsData.vAcc) {
+                        gpsHomeCalibStartMs = gpsNowMs;
+                    }
+                }
+
+                // Settles in 5s if have a good fix and 30s hard cap if bad fix
+                if ((gpsNowMs - gpsHomeCalibStartMs) >= GPS_HOME_STABLE_TIME_MS ||
+                    (gpsNowMs - gpsHomeFirstSampleMs) >= GPS_HOME_MAX_CAPTURE_MS) {
+                    gpsHomeSettled = true;
+                }
+            }
+
+            if (gpsHomeSampleCount > 0) {
+                gpsZ = gpsData.altitude - gpsHomeAltitude;
+                altholdKF.updateGPSAlt(gpsZ);
+                altholdKF.updateGPSVel(-gpsData.vz); // gpsData.vz is NED velD (positive down) but KF vz is positive up
+            }
+        } else if (!armedFlag && !gpsHomeSettled && gpsHomeSampleCount > 0) {
+            // Reset the GPS home capture if the fix is lost or becomes invalid
+            gpsHomeCalibStartMs = systemUtilsDriver->getCurrentTimestampMs();
+        }
     }
     
     // Send GPS data to telemetry manager
@@ -205,8 +300,20 @@ void AttitudeManager::amUpdate() {
         }
     }
 
+    droneState.altitude = altholdKF.getEstimatedAltitude();
+    droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
+
+    // Send global position (altitude) data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ) == 0) {
+        float altAMSL = (gpsData.altitude != -1) ? lastValidGps.altitude : -1.0f;
+        sendGlobalPositionIntToTelemetryManager(
+            altAMSL, // altitude_amsl: GPS MSL altitude
+            droneState.altitude // altitude_relative: KF altitude above takeoff
+        );
+    }
+
     // Get rangefinder data
-    RangefinderData_t rangefinderData = {};
+    // RangefinderData_t rangefinderData = {};
     if (rangefinderDriver != nullptr) {
         rangefinderData = rangefinderDriver->readData();
         if (rangefinderData.isNew) {
@@ -214,7 +321,6 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Send rangefinder data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ) == 0) {
         if (lastNewRangefinderData.isNew) {
             sendRangefinderDataToTelemetryManager(lastNewRangefinderData);
@@ -267,9 +373,9 @@ void AttitudeManager::amUpdate() {
         }
     }
 
-    // Update armedFlag and activateFlightMode() on rising edge
+    // Update armedFlag and activateFlightMode() on the arm/disarm edge
     if (controlMsg.arm != armedFlag) {
-        setArmFlag = true;
+        armStateChanged = true;
         armedFlag = controlMsg.arm;
         if (armedFlag) {
             activeCLAW->activateFlightMode();
@@ -333,8 +439,6 @@ void AttitudeManager::amUpdate() {
     // Output to motors
     outputToMotors(motorOutputs, groundIdle);
 
-    setArmFlag = false;
-    
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
@@ -409,7 +513,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         lastServoOutputs[i] = 1000 + (cmd * 10); // Convert to microseconds for telemetry
 
         // Set arm flag for throttle motors, only on arm/disarm edges
-        if (setArmFlag) {
+        if (armStateChanged) {
 
             #ifdef PLANE
             bool armed = (motor->function == MotorFunction_e::THROTTLE) ? armedFlag : true;
@@ -426,6 +530,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         // Send command to motor
         motor->motorInstance->set(cmd);
     }
+    armStateChanged = false;
 }
 
 
@@ -498,6 +603,16 @@ void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroD
     );
 
     tmQueue->push(&pressureDataMsg);
+}
+
+void AttitudeManager::sendGlobalPositionIntToTelemetryManager(float altitudeAmsl, float altitudeRelative) {
+    TMMessage_t globalPositionIntMsg = globalPositionIntPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        altitudeAmsl,
+        altitudeRelative
+    );
+
+    tmQueue->push(&globalPositionIntMsg);
 }
 
 void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData) {

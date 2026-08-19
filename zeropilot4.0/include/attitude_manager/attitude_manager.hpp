@@ -19,6 +19,7 @@
 #include "rangefinder_iface.hpp"
 #include "barometer_iface.hpp"
 #include "MahonyAHRS.hpp"
+#include "althold_kf.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -26,6 +27,7 @@
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
 #define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
+#define AM_TELEMETRY_GLOBAL_POSITION_INT_RATE_HZ 10
 #define AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ 2
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
@@ -33,8 +35,7 @@
 
 static_assert(AM_CONTROL_LOOP_PERIOD_S != 0.0f, "AM_CONTROL_LOOP_PERIOD_S must be nonzero.");
 
-class AttitudeManager
-{
+class AttitudeManager {
     friend class AMParamSetup;
 
 public:
@@ -60,8 +61,6 @@ private:
     ISystemUtils *systemUtilsDriver;
 
     IGPS *gpsDriver;
-    GpsData_t lastValidGps = {};
-    bool gpsUnsent = false;
     IIMU *imuDriver;
     IRangefinder *rangefinderDriver;
     RangefinderData_t lastNewRangefinderData = {};
@@ -71,47 +70,108 @@ private:
     FFTHarmonicNotchConfig harmonicNotchConfig;
     // AHRSEKF ekf;
     Mahony mahonyFilter;
+    AltholdKF altholdKF;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;
     IMessageQueue<char[100]> *smLoggerQueue;
 
     Flightmode *activeCLAW; // Pointer to current active Control Law
-    #ifdef PLANE
+#ifdef PLANE
     DirectMapping manualCLAW; // Manual Control Law (Direct Passthrough)
     FBWAMapping fbwaCLAW;     // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
-    #endif
-    #ifdef QUADCOPTER
+#endif
+#ifdef QUADCOPTER
     AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
     StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
-    #endif
+#endif
     RCMotorControlMessage_t controlMsg;
     FlightMode_e currentFlightMode;
-    DroneState_t droneState;
-
     MotorGroupInstance_t *mainMotorGroup;
 
-    bool armedFlag;
-    bool setArmFlag;
+    DroneState_t droneState = DRONE_STATE_DEFAULT;
 
-    uint16_t lastServoOutputs[16];
+    bool firstIteration = true;
 
-    uint16_t amSchedulingCounter;
+    bool armedFlag = false;
+    bool armStateChanged = false;
 
-    int noDataCount;
-    bool failsafeTriggered;
+    uint16_t lastServoOutputs[16] = {};
 
-    float motSpinMin;
-    float motSpinMax;
-    float motSpinArm;
+    uint16_t amSchedulingCounter = 0;
+
+    int noDataCount = 0;
+    bool failsafeTriggered = false;
+
+    float motSpinMin = 0.0f;
+    float motSpinMax = 0.0f;
+    float motSpinArm = 0.0f;
 
     static constexpr float MOT_GND_IDLE_THR = 0.02f;
-    bool groundIdlePrev;
+    bool groundIdlePrev = false;
 
     static constexpr uint16_t MAX_TIMESTAMP = 65535;
     static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
-    uint32_t lastTimestamp;
-    bool haveLastImuTimestamp;
+    uint32_t lastTimestamp = 0;
+    bool haveLastImuTimestamp = false;
+    bool haveLastKfTimestamp = false;
+    uint32_t lastKfTimestamp = 0;
+
+    GpsData_t lastValidGps = {};
+    bool gpsUnsent = false;
+
+    // for debugging now
+    BaroData_t baroData = {};
+    RangefinderData_t rangefinderData = {};
+    GpsData_t gpsData = {};
+
+    float baroHomePressureKPa = 0.0f;
+    uint32_t baroHomeSampleCount = 0;
+    uint32_t baroHomeStartMs = 0;
+    bool baroHomeStarted = false;
+    bool baroHomeSettled = false;
+
+    float gpsHomeAltitude = 0.0f;
+    uint32_t gpsHomeSampleCount = 0;
+    bool gpsHomeSettled = false;
+
+    static constexpr float GRAVITY = 9.81f;
+
+    static constexpr float BARO_UPDATE_DT_S = 1.0f / 25.0f; // 25hz
+    static constexpr float BARO_HOME_TIME_CONSTANT_S = 60.0f;
+    static constexpr float BARO_HOME_ALPHA_MIN = BARO_UPDATE_DT_S / (BARO_HOME_TIME_CONSTANT_S + BARO_UPDATE_DT_S);
+    static constexpr uint32_t BARO_HOME_WARMUP_MS = 1000;
+    static constexpr uint32_t BARO_HOME_AVERAGE_MS = 1500;
+
+    // Standard atmosphere, for relative altitude against the captured ground pressure
+    static constexpr float BARO_LAPSE_RATE_K_PER_M = 0.0065f;
+    static constexpr float BARO_REF_TEMP_K = 288.15f;
+    static constexpr float BARO_EXPONENT = 0.190284f;
+    static constexpr float BARO_ALT_SCALE_M = BARO_REF_TEMP_K / BARO_LAPSE_RATE_K_PER_M;
+
+    static constexpr float GPS_UPDATE_DT_S = 1.0f / 5.0f; // 5hz
+    static constexpr float GPS_HOME_TIME_CONSTANT_S = 30.0f;
+    static constexpr float GPS_HOME_ALPHA_MIN = GPS_UPDATE_DT_S / (GPS_HOME_TIME_CONSTANT_S + GPS_UPDATE_DT_S);
+    static constexpr uint8_t  GPS_MIN_SATELLITES = 8;
+    static constexpr float GPS_HOME_VACC_MAX_M = 3.0f;
+    static constexpr float GPS_HOME_OUTLIER_M = 5.0f;
+    static constexpr float GPS_HOME_STABLE_SIGMA = 3.0f;
+    static constexpr uint32_t GPS_HOME_STABLE_TIME_MS = 5000;
+    static constexpr uint32_t GPS_HOME_MAX_CAPTURE_MS = 30000;
+
+    uint32_t gpsHomeCalibStartMs = 0;
+    uint32_t gpsHomeFirstSampleMs = 0;
+
+    float baroZ = 0.0f;
+    float gpsZ = 0.0f;
+    float rangefinderZ = 0.0f;
+
+    // Motor mixer output for each motor
+    float motorPercent[NUM_MOTORS] = {};
+    
+    uint8_t profilerId = 0;
+
+    AMParamSetup paramSetup;
 
     bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
@@ -121,13 +181,7 @@ private:
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
+    void sendGlobalPositionIntToTelemetryManager(float altitudeAmsl, float altitudeRelative);
     void sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData);
     void sendServoOutputRawToTelemetryManager();
-
-    uint8_t profilerId;
-
-    // Motor mixer output for each motor
-    float motorPercent[NUM_MOTORS];
-
-    AMParamSetup paramSetup;
 };
