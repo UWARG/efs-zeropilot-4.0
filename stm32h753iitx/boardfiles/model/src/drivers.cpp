@@ -35,6 +35,7 @@ Logger *loggerHandle = nullptr;
 IMotorControl *motorHandles[8] = {0};
 
 CANController *canControllerHandle = nullptr;
+SafetySwitch *safetySwitchHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
@@ -121,6 +122,7 @@ void initDrivers() {
     }
 
     // Peripherals
+    safetySwitchHandle = new SafetySwitch(GPIOH, GPIO_PIN_12, GPIOH, GPIO_PIN_11);
     gpsHandle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);

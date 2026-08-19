@@ -22,6 +22,7 @@
 #include "fft.hpp"
 #include "tf02pro.hpp"
 #include "icp_20100.hpp"
+#include "safety_switch.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -33,6 +34,7 @@ extern Logger *loggerHandle;
 extern IMotorControl *motorHandles[8];
 
 extern CANController *canControllerHandle;
+extern SafetySwitch *safetySwitchHandle;
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern FusedIMU *imuHandle;
