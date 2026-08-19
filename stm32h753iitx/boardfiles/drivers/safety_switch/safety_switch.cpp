@@ -13,12 +13,12 @@ SafetySwitch::SafetySwitch(GPIO_TypeDef* switchPort, uint16_t switchPin, GPIO_Ty
 SafetySwitch::~SafetySwitch() {}
 
 bool SafetySwitch::isSafetySwitchPressed() {
-    return (HAL_GPIO_ReadPin(switchPort, switchPin) == GPIO_PIN_SET);  // Active low switch, so pressed state is GPIO_PIN_RESET
+    return (HAL_GPIO_ReadPin(switchPort, switchPin) == GPIO_PIN_SET);  // Active high switch
 }
 
 void SafetySwitch::setSafetySwitchLEDState(bool state) {
     ledState = state;
-    HAL_GPIO_WritePin(ledPort, ledPin, state ? GPIO_PIN_RESET : GPIO_PIN_SET);
+    HAL_GPIO_WritePin(ledPort, ledPin, state ? GPIO_PIN_RESET : GPIO_PIN_SET); // Active low LED
 }
 
 bool SafetySwitch::getSafetySwitchLEDState() {
