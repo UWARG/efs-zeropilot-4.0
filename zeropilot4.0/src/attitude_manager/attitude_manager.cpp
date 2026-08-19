@@ -326,7 +326,9 @@ void AttitudeManager::amUpdate() {
         }
     }
     
-    droneState.altitude = rangefinderZ;
+    // Low pass filter the rangefinder altitude to smooth sensor noise and the zero-order hold between its ~100hz updates
+    filteredAltitude += RANGEFINDER_ALT_ALPHA * (rangefinderZ - filteredAltitude);
+    droneState.altitude = filteredAltitude;
     droneState.verticalVel = altholdKF.getEstimatedVerticalVel();
 
     // Send global position (altitude) data to telemetry manager

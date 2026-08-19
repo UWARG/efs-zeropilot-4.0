@@ -179,6 +179,11 @@ private:
     float gpsZ = 0.0f;
     float rangefinderZ = 0.0f;
 
+    static constexpr float RANGEFINDER_ALT_CUTOFF_HZ = 10.0f;
+    static constexpr float RANGEFINDER_ALT_TIME_CONSTANT_S = 1.0f / (2.0f * ZP_UNITS::PI * RANGEFINDER_ALT_CUTOFF_HZ);
+    static constexpr float RANGEFINDER_ALT_ALPHA = AM_CONTROL_LOOP_PERIOD_S / (RANGEFINDER_ALT_TIME_CONSTANT_S + AM_CONTROL_LOOP_PERIOD_S);
+    float filteredAltitude = 0.0f;
+
     // Motor mixer output for each motor
     float motorPercent[NUM_MOTORS] = {};
     
