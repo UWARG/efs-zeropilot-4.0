@@ -104,6 +104,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -276,6 +277,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -441,6 +443,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -606,6 +609,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>

@@ -10,6 +10,7 @@ SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
     ILogger *loggerDriver,
+    ISafetySwitch *safetySwitchDriver,
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
@@ -19,6 +20,7 @@ SystemManager::SystemManager(
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
+        safetySwitchDriver(safetySwitchDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
         amRCQueue(amRCQueue),
@@ -28,6 +30,10 @@ SystemManager::SystemManager(
         smSchedulingCounter(0),
         preArmStatusCounterS(0),
         flightModes{},
+        isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
+        safetySwitchHoldCounterMs(0),
+        safetySwitchTriggered(false),
+        safetySwitchPrearmCntrMs(0),
         oldDataCount(0),
         rcConnected(false),
         rcChannelReversed{},
@@ -47,6 +53,12 @@ void SystemManager::smUpdate() {
 
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
+
+
+    // Update the state of the safety switch if the driver is available
+    if (safetySwitchDriver != nullptr) {
+        safetySwitchUpdate();
+    }
 
 
     // Get RC data from the RC receiver and passthrough to AM if new
@@ -75,7 +87,7 @@ void SystemManager::smUpdate() {
         sendRCDataToTelemetryManager(rcData);
     }
 
-    bool armed = armingStatus->armed;
+    bool armed = armingStatus->armed && !isSafetySwitchEngaged;
     bool readyToArm = armingStatus->readyToArm;
 
     // Populate baseMode based on arm state
@@ -164,6 +176,42 @@ void SystemManager::smUpdate() {
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
 
     systemUtilsDriver->profilerEnd(profilerId);
+}
+
+void SystemManager::safetySwitchUpdate() {
+    // Safety switch logic
+    if (safetySwitchDriver->isSafetySwitchPressed()) {
+        safetySwitchHoldCounterMs += SM_UPDATE_LOOP_DELAY_MS;
+
+        // If held for threshold duration and not already triggered, toggle the safety switch state
+        if (safetySwitchHoldCounterMs >= SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS && !safetySwitchTriggered) {
+            isSafetySwitchEngaged = !isSafetySwitchEngaged;
+            safetySwitchTriggered = true;
+        }
+    } else {
+        safetySwitchHoldCounterMs = 0;
+        safetySwitchTriggered = false;
+    }
+
+    // Safety switch LED logic
+    if (!isSafetySwitchEngaged) {
+        safetySwitchDriver->setSafetySwitchLEDState(true);
+    } else {
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_SAFETY_SWITCH_BLINK_RATE_HZ) == 0) {
+            bool currentLedState = safetySwitchDriver->getSafetySwitchLEDState();
+            safetySwitchDriver->setSafetySwitchLEDState(!currentLedState);
+        }
+    }
+
+    // Handle "PreArm: Hardware Safety Switch" STATUSTEXT message
+    if (isSafetySwitchEngaged) {
+        safetySwitchPrearmCntrMs += SM_UPDATE_LOOP_DELAY_MS;
+
+        if (safetySwitchPrearmCntrMs >= (SM_SAFETY_SWITCH_PREARM_MSG_INTERVAL_S * 1000)) {
+            safetySwitchPrearmCntrMs = 0;
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
+        }
+    }
 }
 
 bool SystemManager::updateBatteryFSM() {
@@ -262,7 +310,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = rcChannelReversed[1] ? 100.0f - rcData.pitch : rcData.pitch;
     rcDataMessage.throttle = rcChannelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
     rcDataMessage.yaw = rcChannelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
-    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    rcDataMessage.arm = (rcData.arm > SM_RC_ARM_THRESHOLD) && !isSafetySwitchEngaged;
     #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
     #endif
