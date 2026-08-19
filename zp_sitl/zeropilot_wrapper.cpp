@@ -61,6 +61,7 @@ typedef struct {
     
     SITL_IWDG* iwdg;
     SITL_Logger* logger;
+    ISafetySwitch* safetySwitch;
     SITL_RC* rc;
     SITL_PowerModule* pm;
     SITL_TELEM* telem;
@@ -127,6 +128,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->iwdg = new SITL_IWDG();
         self->logger = new SITL_Logger();
+        self->safetySwitch = nullptr; // Safety switch is not used in SITL
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
         self->barometer = new SITL_Barometer();
@@ -216,8 +218,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
-            self->amQueue, self->tmQueue, self->logQueue
+            self->sysUtils, self->iwdg, self->logger, self->safetySwitch, self->rc, 
+            self->pm, self->amQueue, self->tmQueue, self->logQueue
         );
         
         self->tm = new TelemetryManager(

@@ -34,6 +34,7 @@ void initManagers()
         systemUtilsHandle, 
         iwdgHandle,
         loggerHandle,
+        safetySwitchHandle,
         rcHandle,
         pmHandle,
         amRCQueueHandle,
