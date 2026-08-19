@@ -34,6 +34,7 @@ void initManagers()
         systemUtilsHandle, 
         iwdgHandle,
         loggerHandle,
+        nullptr, // safetySwitchHandle: No safety switch on L5, pass nullptr
         rcHandle,
         pmHandle,
         amRCQueueHandle,

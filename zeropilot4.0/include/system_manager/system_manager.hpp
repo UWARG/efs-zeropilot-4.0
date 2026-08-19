@@ -7,6 +7,7 @@
 #include "rc_iface.hpp"
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
+#include "safety_switch_iface.hpp"
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
@@ -41,6 +42,7 @@ class SystemManager {
             ISystemUtils *systemUtilsDriver,
             IIndependentWatchdog *iwdgDriver,
             ILogger *loggerDriver,
+            ISafetySwitch *safetySwitchDriver,
             IRCReceiver *rcDriver,
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
@@ -55,6 +57,7 @@ class SystemManager {
 
         IIndependentWatchdog *iwdgDriver; // Independent Watchdog driver
         ILogger *loggerDriver; // Logger driver
+        ISafetySwitch *safetySwitchDriver; // Safety switch driver
         IRCReceiver *rcDriver; // RC receiver driver
         IPowerModule *pmDriver; // Power module driver
         
