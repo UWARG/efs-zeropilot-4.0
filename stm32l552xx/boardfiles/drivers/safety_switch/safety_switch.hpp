@@ -1,7 +1,7 @@
 #pragma once
 
 #include "safety_switch_iface.hpp"
-#include "stm32h7xx_hal.h"
+#include "stm32l5xx_hal.h"
 
 class SafetySwitch : public ISafetySwitch {
     public:
