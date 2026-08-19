@@ -53,7 +53,7 @@ void SystemManager::smUpdate() {
 
     // Update the state of the safety switch if the driver is available
     if (safetySwitchDriver != nullptr) {
-        updateSafetySwitchState();
+        safetySwitchUpdate();
     }
 
 
@@ -163,7 +163,7 @@ void SystemManager::smUpdate() {
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
-void SystemManager::updateSafetySwitchState() {
+void SystemManager::safetySwitchUpdate() {
     // Safety switch logic
     if (safetySwitchDriver->isSafetySwitchPressed()) {
         safetySwitchHoldCounterMs += SM_UPDATE_LOOP_DELAY_MS;
