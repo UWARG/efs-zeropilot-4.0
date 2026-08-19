@@ -27,7 +27,7 @@ SystemManager::SystemManager(
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         flightModes{},
-        isSafetySwitchEngaged(false),
+        isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
         safetySwitchHoldCounterMs(0),
         safetySwitchTriggered(false),
         oldDataCount(0),
@@ -51,35 +51,9 @@ void SystemManager::smUpdate() {
     iwdgDriver->refreshWatchdog();
 
 
-    // Safety switch logic
-    if (safetySwitchDriver->isSafetySwitchPressed()) {
-        safetySwitchHoldCounterMs += SM_UPDATE_LOOP_DELAY_MS;
-
-        // If held for threshold duration and not already triggered, toggle the safety switch state
-        if (safetySwitchHoldCounterMs >= SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS && !safetySwitchTriggered) {
-            isSafetySwitchEngaged = !isSafetySwitchEngaged;
-            safetySwitchTriggered = true;
-        }
-    } else {
-        safetySwitchHoldCounterMs = 0;
-        safetySwitchTriggered = false;
-    }
-
-    // Safety switch LED logic
-    if (!isSafetySwitchEngaged) {
-        safetySwitchDriver->setSafetySwitchLEDState(true);
-    } else {
-        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_SAFETY_SWITCH_BLINK_RATE_HZ) == 0) {
-            bool currentLedState = safetySwitchDriver->getSafetySwitchLEDState();
-            safetySwitchDriver->setSafetySwitchLEDState(!currentLedState);
-        }
-    }
-
-    // Handle "PreArm: Hardware Safety Switch" STATUSTEXT message
-    if (isSafetySwitchEngaged) {
-        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_PREARM_SAFETY_SWITCH_RATE_HZ) == 0) {
-            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
-        }
+    // Update the state of the safety switch if the driver is available
+    if (safetySwitchDriver != nullptr) {
+        updateSafetySwitchState();
     }
 
 
@@ -187,6 +161,39 @@ void SystemManager::smUpdate() {
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
 
     systemUtilsDriver->profilerEnd(profilerId);
+}
+
+void SystemManager::updateSafetySwitchState() {
+    // Safety switch logic
+    if (safetySwitchDriver->isSafetySwitchPressed()) {
+        safetySwitchHoldCounterMs += SM_UPDATE_LOOP_DELAY_MS;
+
+        // If held for threshold duration and not already triggered, toggle the safety switch state
+        if (safetySwitchHoldCounterMs >= SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS && !safetySwitchTriggered) {
+            isSafetySwitchEngaged = !isSafetySwitchEngaged;
+            safetySwitchTriggered = true;
+        }
+    } else {
+        safetySwitchHoldCounterMs = 0;
+        safetySwitchTriggered = false;
+    }
+
+    // Safety switch LED logic
+    if (!isSafetySwitchEngaged) {
+        safetySwitchDriver->setSafetySwitchLEDState(true);
+    } else {
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_SAFETY_SWITCH_BLINK_RATE_HZ) == 0) {
+            bool currentLedState = safetySwitchDriver->getSafetySwitchLEDState();
+            safetySwitchDriver->setSafetySwitchLEDState(!currentLedState);
+        }
+    }
+
+    // Handle "PreArm: Hardware Safety Switch" STATUSTEXT message
+    if (isSafetySwitchEngaged) {
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_PREARM_SAFETY_SWITCH_RATE_HZ) == 0) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
+        }
+    }
 }
 
 bool SystemManager::updateBatteryFSM() {

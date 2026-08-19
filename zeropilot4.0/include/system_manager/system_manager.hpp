@@ -76,6 +76,7 @@ class SystemManager {
         bool isSafetySwitchEngaged;         // Flag to indicate if the safety switch is engaged
         uint32_t safetySwitchHoldCounterMs; // Counter to track how long the safety switch has been held
         bool safetySwitchTriggered;         // Flag to prevent toggling multiple times during a single long press
+        void updateSafetySwitchState();     // Function to update the state of the safety switch
 
         int oldDataCount;
         bool rcConnected;
