@@ -27,6 +27,9 @@ SystemManager::SystemManager(
         smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         flightModes{},
+        isSafetySwitchEngaged(false),
+        safetySwitchHoldCounterMs(0),
+        safetySwitchTriggered(false),
         oldDataCount(0),
         rcConnected(false),
         rcChannelReversed{},
@@ -46,6 +49,38 @@ void SystemManager::smUpdate() {
 
     // Kick the watchdog
     iwdgDriver->refreshWatchdog();
+
+
+    // Safety switch logic
+    if (safetySwitchDriver->isSafetySwitchPressed()) {
+        safetySwitchHoldCounterMs += SM_UPDATE_LOOP_DELAY_MS;
+
+        // If held for threshold duration and not already triggered, toggle the safety switch state
+        if (safetySwitchHoldCounterMs >= SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS && !safetySwitchTriggered) {
+            isSafetySwitchEngaged = !isSafetySwitchEngaged;
+            safetySwitchTriggered = true;
+        }
+    } else {
+        safetySwitchHoldCounterMs = 0;
+        safetySwitchTriggered = false;
+    }
+
+    // Safety switch LED logic
+    if (!isSafetySwitchEngaged) {
+        safetySwitchDriver->setSafetySwitchLEDState(true);
+    } else {
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_SAFETY_SWITCH_BLINK_RATE_HZ) == 0) {
+            bool currentLedState = safetySwitchDriver->getSafetySwitchLEDState();
+            safetySwitchDriver->setSafetySwitchLEDState(!currentLedState);
+        }
+    }
+
+    // Handle "PreArm: Hardware Safety Switch" STATUSTEXT message
+    if (isSafetySwitchEngaged) {
+        if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_PREARM_SAFETY_SWITCH_RATE_HZ) == 0) {
+            sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
+        }
+    }
 
 
     // Get RC data from the RC receiver and passthrough to AM if new
@@ -75,7 +110,7 @@ void SystemManager::smUpdate() {
     }
 
     // Set armed status based on SM_RC_ARM_THRESHOLD
-    bool armed = rcData.arm > SM_RC_ARM_THRESHOLD;
+    bool armed = (rcData.arm > SM_RC_ARM_THRESHOLD) && !isSafetySwitchEngaged;
 
     // Populate baseMode based on arm state
     uint8_t baseMode = MAV_MODE_FLAG_CUSTOM_MODE_ENABLED;
@@ -225,7 +260,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.pitch = rcChannelReversed[1] ? 100.0f - rcData.pitch : rcData.pitch;
     rcDataMessage.throttle = rcChannelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
     rcDataMessage.yaw = rcChannelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
-    rcDataMessage.arm = rcData.arm > SM_RC_ARM_THRESHOLD;
+    rcDataMessage.arm = (rcData.arm > SM_RC_ARM_THRESHOLD) && !isSafetySwitchEngaged;
     #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
     #endif

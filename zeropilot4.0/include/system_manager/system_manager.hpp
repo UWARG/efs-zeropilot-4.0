@@ -18,6 +18,7 @@
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 #define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
+#define SM_TELEMETRY_PREARM_SAFETY_SWITCH_RATE_HZ 1
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
 
@@ -34,6 +35,9 @@ static constexpr float SM_FLIGHTMODE3_MAX = 49.0f; // (1425 + 1555) / 2 = 1490 -
 static constexpr float SM_FLIGHTMODE4_MAX = 62.0f; // (1555 + 1685) / 2 = 1620 -> scaled/offset to 62.0
 static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -> scaled/offset to 75.0
 
+// Safety switch constants
+static constexpr uint32_t SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS = 2000;
+static constexpr uint32_t SM_SAFETY_SWITCH_BLINK_RATE_HZ = 2;
 class SystemManager {
     friend class SMParamSetup;
 
@@ -68,6 +72,10 @@ class SystemManager {
         uint8_t smSchedulingCounter;
 
         FlightMode_e flightModes[SM_FLIGHTMODE_COUNT];
+
+        bool isSafetySwitchEngaged;         // Flag to indicate if the safety switch is engaged
+        uint32_t safetySwitchHoldCounterMs; // Counter to track how long the safety switch has been held
+        bool safetySwitchTriggered;         // Flag to prevent toggling multiple times during a single long press
 
         int oldDataCount;
         bool rcConnected;
