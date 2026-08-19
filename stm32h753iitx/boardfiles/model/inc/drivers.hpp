@@ -34,7 +34,8 @@ extern IMotorControl *motorHandles[8];
 
 extern CANController *canControllerHandle;
 extern CRSFReceiver *rcHandle;
-extern GPS *gpsHandle;
+extern GPS *gps1Handle;
+extern GPS *gps2Handle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
