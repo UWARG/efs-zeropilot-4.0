@@ -11,7 +11,7 @@ class MotorControl : public IMotorControl {
          * @brief sets PWM motor output
          * @param percent PWM value 0-100
          */
-        void set(uint32_t percent) override;
+        void set(uint32_t percent, bool safetyEngaged = false) override;
 
         /**
          * @brief starts PWM output
@@ -19,6 +19,8 @@ class MotorControl : public IMotorControl {
         void init() override;
 
     private:
+        bool currentSafetyState = false;
+
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;
         const uint32_t minCCR;

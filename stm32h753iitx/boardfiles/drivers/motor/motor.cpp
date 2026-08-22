@@ -7,7 +7,21 @@ MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint
     maxCCR(maxDutyCycle / 100.0 * timer->Init.Period),
     servoIdx(servoIdx) {}
 
-void MotorControl::set(uint32_t percent) {
+void MotorControl::set(uint32_t percent, bool safetyEngaged) {
+    if (safetyEngaged != currentSafetyState) {
+        currentSafetyState = safetyEngaged;
+        if (currentSafetyState) {
+            HAL_TIM_PWM_Stop(timer, timerChannel);
+        } else {
+            __HAL_TIM_SET_COMPARE(timer, timerChannel, minCCR);
+            HAL_TIM_PWM_Start(timer, timerChannel);
+        }
+    }
+
+    if (safetyEngaged) {
+        return;
+    }
+
     percent = percent > 100 ? 100 : percent;
     
     uint32_t ticks = 0;
