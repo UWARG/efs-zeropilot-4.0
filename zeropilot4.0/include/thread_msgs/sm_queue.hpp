@@ -41,12 +41,12 @@ inline SMMessage_t motorTestPack(uint32_t time_boot_ms, float instance, float th
 }
 
 inline SMMessage_t calibrationPack(uint32_t time_boot_ms, bool accelCalibration, bool compassCalibration) {
-    const TMMessageData_t DATA = {.motorTestCmd={accelCalibration, compassCalibration}};
+    const TMMessageData_t DATA = {.calibrationCmd={accelCalibration, compassCalibration}};
     return TMMessage_t{TMMessage_t::CALIBRATION, DATA, time_boot_ms};
 }
 
 inline SMMessage_t setSafetySwitchPack(uint32_t time_boot_ms, float switchState) {
-    const TMMessageData_t DATA = {.motorTestCmd={switchState}};
+    const TMMessageData_t DATA = {.setSafetySwitchCmd={switchState}};
     return TMMessage_t{TMMessage_t::SAFETY_SWITCH_STATE, DATA, time_boot_ms};
 }
 
