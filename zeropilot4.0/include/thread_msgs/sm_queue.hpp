@@ -12,46 +12,45 @@ typedef union SMMessageData {
         int32_t testOrder
     } motorTestCmd;
     struct {
-        int32_t accelCalibration,
-        int32_t compassCalibration
+        bool accelCalibration,
+        bool compassCalibration
     } calibrationCmd;
     struct {
         float switchState
     } setSafetySwitchCmd;
     struct {
-        float autopilotAction,
-        float companionAction,
-        float componentAction,
-        float componentId,
-        int32_t conditions
+        bool reboot
     } rebootCmd;
 } SMMessageData_t; // Messasage data
 
 // Motor test, accel calibration, compass calibration, toggle safety switch, reboot flight controller
 typedef struct SMMessage{
     enum{ // Type of data being sent to SM
-        MAV_CMD_DO_MOTOR_TEST,
-        MAV_CMD_PREFLIGHT_CALIBRATION, // for accel and for compass
-        MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, 
-        MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN 
+        MOTOR_TEST,
+        CALIBRATION, // For acceleration and for compass
+        SAFETY_SWITCH_STATE, 
+        REBOOT_FLIGHT_CONTROLLER
     } dataType;
     SMMessageData_t tmMessageData; // Message data
     uint32_t timeBootMs = 0; // When the message was generated
 } SMMessage_t;
 
-// pack data to send, but MAVLINK sends data as COMMAND_INT?
 inline SMMessage_t motorTestPack(uint32_t time_boot_ms, float instance, float throttleType, float throttle, float timeout, int32_t motorCount, int32_t testOrder) {
-
+    const TMMessageData_t DATA = {.motorTestCmd={instance, throttleType, throttle, timeout, motorCount, testOrder}};
+    return TMMessage_t{TMMessage_t::MOTOR_TEST, DATA, time_boot_ms};
 }
 
-inline SMMessage_t calibrationPack(uint32_t time_boot_ms, int32_t accelCalibration, int32_t compassCalibration) {
-    
+inline SMMessage_t calibrationPack(uint32_t time_boot_ms, bool accelCalibration, bool compassCalibration) {
+    const TMMessageData_t DATA = {.motorTestCmd={accelCalibration, compassCalibration}};
+    return TMMessage_t{TMMessage_t::CALIBRATION, DATA, time_boot_ms};
 }
 
-inline SMMessage_t setSafetySwitchPack(uint32_t time_boot_ms) {
-    
+inline SMMessage_t setSafetySwitchPack(uint32_t time_boot_ms, float switchState) {
+    const TMMessageData_t DATA = {.motorTestCmd={switchState}};
+    return TMMessage_t{TMMessage_t::SAFETY_SWITCH_STATE, DATA, time_boot_ms};
 }
 
-inline SMMessage_t rebootPack(uint32_t time_boot_ms) {
-    
+inline SMMessage_t rebootPack(uint32_t time_boot_ms, bool reboot) {
+    const TMMessageData_t DATA = {.rebootCmd={reboot}};
+    return TMMessage_t{TMMessage_t::REBOOT_FLIGHT_CONTROLLER, DATA, time_boot_ms};
 }
