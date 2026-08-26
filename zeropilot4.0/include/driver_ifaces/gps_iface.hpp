@@ -1,4 +1,4 @@
-#pragma once
+    #pragma once
 
 #include <cstdint>
 
@@ -32,10 +32,12 @@ typedef struct {
     uint8_t numSatellites;
     float altitude; // m, -1 if not valid
     float trackAngle; // deg
-    bool isNew;
     float vx; // m/s
     float vy; // m/s
     float vz; // m/s
+    float hAcc; // m
+    float vAcc; // m
+    bool isNew;
 } GpsData_t;
 
 
