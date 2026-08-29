@@ -15,6 +15,7 @@ extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi1;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
@@ -39,6 +40,7 @@ IMU *imuHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
+NVMFlash *nvmHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
@@ -123,6 +125,7 @@ void initDrivers()
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
+    nvmHandle = new NVMFlash(&hspi1, GPIOA, GPIO_PIN_4);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -146,6 +149,7 @@ void initDrivers()
     telemLinkHandle->init();
     gpsHandle->init();
     imuHandle->init();
+    nvmHandle->init();
     pmHandle->init();
     if (rangefinderHandle != nullptr) {
         rangefinderHandle->init();

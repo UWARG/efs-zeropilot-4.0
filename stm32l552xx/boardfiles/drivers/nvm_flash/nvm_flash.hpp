@@ -2,8 +2,7 @@
 #pragma once
 
 #include "stm32l5xx_hal.h"
-<<<<<<< HEAD
-<<<<<<< HEAD
+
 #include "nvm_flash_iface.hpp"
 
 class NVMFlash : public INVMFlash {
@@ -12,36 +11,12 @@ public:
 
 	int format() override;
 	int mount() override;
+	void init() override;
 
 	int write(AbstractMessage *msg) override;
 	int read(AbstractMessage *msg) override;
 	int erase(AbstractMessage *msg) override;
 	int update(AbstractMessage *msg) override;
-=======
-#include "nvm_flash_message.hpp"
-=======
-#include "nvm_flash_iface.hpp"
->>>>>>> 802778d (Add NVM flash driver interface)
-
-class NVMFlash : public INVMFlash {
-public:
-	NVMFlash(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t csPin);
-
-	int format() override;
-	int mount() override;
-
-<<<<<<< HEAD
-	int write(AbstractMessage *msg);
-	int read(AbstractMessage *msg);
-	int erase(AbstractMessage *msg);
-	int update(AbstractMessage *msg);
->>>>>>> b5b48d2 (ported over driver and ftl code from kitchen sinks)
-=======
-	int write(AbstractMessage *msg) override;
-	int read(AbstractMessage *msg) override;
-	int erase(AbstractMessage *msg) override;
-	int update(AbstractMessage *msg) override;
->>>>>>> 802778d (Add NVM flash driver interface)
 
 private:
 	SPI_HandleTypeDef *spiHandle;

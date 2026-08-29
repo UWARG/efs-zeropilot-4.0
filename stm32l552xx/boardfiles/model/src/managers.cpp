@@ -55,6 +55,7 @@ void initManagers()
         systemUtilsHandle,
         sdRequestQueueHandle,
         sdBufferQueueHandle,
-        sdResponseQueuesHandle
+        sdResponseQueuesHandle,
+		nvmHandle
     );
 }

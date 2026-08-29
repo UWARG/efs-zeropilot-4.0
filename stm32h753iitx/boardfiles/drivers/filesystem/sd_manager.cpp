@@ -3,14 +3,17 @@
 
 SDManager::SDManager(
     ISystemUtils *systemUtilsDriver,
-    IMessageQueue<SdReqMsg> *reqQueue,
-    IMessageQueue<SdReqBuf> *bufQueue,
-    IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]
+    IMessageQueue<ExMemReqMsg> *reqQueue,
+    IMessageQueue<ExMemReqBuf> *bufQueue,
+    IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)],
+	INVMFlash *nvmDriver
 ) :
     systemUtilsDriver(systemUtilsDriver),
     requestQueue(reqQueue),
     bufferQueue(bufQueue),
     responseQueues(respQueues),
+	nvmDriver(nvmDriver),
+
     profilerId(0) {
        systemUtilsDriver->profilerRegister("SD", &profilerId);
 }

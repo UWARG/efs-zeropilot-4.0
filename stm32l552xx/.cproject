@@ -92,7 +92,10 @@
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
+
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/nvm_flash"/>
+
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>

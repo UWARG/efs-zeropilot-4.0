@@ -21,6 +21,7 @@
 #include "fft.hpp"
 #include "tf02pro.hpp"
 #include "icp_20100.hpp"
+#include "nvm_flash.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -39,6 +40,7 @@ extern IMU *imuHandle;
 extern PowerModule *pmHandle;
 extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
+extern NVMFlash *nvmHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;

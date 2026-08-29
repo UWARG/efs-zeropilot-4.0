@@ -111,6 +111,11 @@ int NVMFlash::mount() {
 	return 0;
 }
 
+void NVMFlash::init() {
+	format();
+	mount();
+}
+
 int NVMFlash::write(AbstractMessage *msg) {
 	// ensure that chip is mounted
 	if (!mounted) {
