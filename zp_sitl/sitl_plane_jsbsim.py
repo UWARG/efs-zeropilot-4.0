@@ -111,6 +111,7 @@ class ZP_PLANE_SITL_JSBSIM:
                 self.fdm['attitude/psi-deg'],
                 self.fdm['propulsion/total-fuel-lbs'],
                 self.fdm['propulsion/engine/propeller-rpm'],
+                self.fdm['position/h-agl-ft'] * FT_TO_M,
                 self.fdm['atmosphere/P-psf'] * PSF_TO_KPA,
                 rankine_to_celsius(self.fdm['atmosphere/T-R'])
             )

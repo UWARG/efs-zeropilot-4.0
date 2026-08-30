@@ -122,25 +122,40 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
  * instead of the Mem ones the power module uses.
  */
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == magHandle->getI2C()) {
-      magHandle->masterTxCpltCallback();
-    }
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterTxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->txCallback();
+  }
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == magHandle->getI2C()) {
-      magHandle->masterRxCpltCallback();
-    }
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterRxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->rxCallback();
+  }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_ErrorCallback();
-    } else if (hi2c == magHandle->getI2C()) {
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->errorCallback();
+  } else {
+    /*
+     * The magnetometer and barometer share I2C2, so a bus error cannot be
+     * attributed to one of them by handle alone. Both error callbacks only
+     * reset driver state and are no-ops when that driver has nothing in
+     * flight, so notify both.
+     */
+    if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
       magHandle->errorCallback();
-    } else if (hi2c == barometerHandle->getI2C()) {
+    }
+    if (hi2c == barometerHandle->getI2C()) {
       barometerHandle->errorCallback();
     }
+  }
 }
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {

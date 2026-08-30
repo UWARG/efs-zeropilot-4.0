@@ -15,11 +15,13 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart6;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
+extern I2C_HandleTypeDef hi2c3;
 extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
@@ -34,12 +36,15 @@ Logger *loggerHandle = nullptr;
 IMotorControl *motorHandles[8] = {0};
 
 CANController *canControllerHandle = nullptr;
-GPS *gpsHandle = nullptr;
+SafetySwitch *safetySwitchHandle = nullptr;
+GPS *gps1Handle = nullptr;
+GPS *gps2Handle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Magnetometer *magHandle = nullptr;
+Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -84,8 +89,7 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 // Initialization
 // ----------------------------------------------------------------------------
-void initDrivers()
-{
+void initDrivers() {
     // Core utilities
     systemUtilsHandle = new SystemUtils();
     mathUtilsHandle = new MathUtils();
@@ -95,19 +99,17 @@ void initDrivers()
 
     // Motors (servo index matches SERVOx param)
     uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
-    for (int i = 0; i < 8; i++)
-    {
-        bool isBLDC = false;
+    for (int i = 0; i < 8; i++) {
+        // Determine if it is brushless DC motor
+        bool isBLDC = false; 
         #ifdef PLANE
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
         #endif
         #ifdef QUADCOPTER
         isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
         #endif
-        if (isBLDC)
-        {
-            switch (servoType)
-            {
+        if (isBLDC) {
+            switch (servoType) {
             case MOT_TYPE_DSHOT: // DShot
                 motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
                 break;
@@ -117,14 +119,15 @@ void initDrivers()
                 break;
             }
         }
-        else
-        {
+        else {
             motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
         }
     }
 
     // Peripherals
-    gpsHandle = new GPS(&huart3);
+    safetySwitchHandle = new SafetySwitch(GPIOH, GPIO_PIN_12, GPIOH, GPIO_PIN_11);    
+    gps1Handle = new GPS(&huart6);
+    gps2Handle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_1KHZ);
@@ -132,6 +135,9 @@ void initDrivers()
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
     magHandle = new Magnetometer(&hi2c2);
+    if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
+        rangefinderHandle = new Rangefinder(&hi2c3);
+    }
     barometerHandle = new Barometer(&hi2c2);
 
     // Queues
@@ -141,8 +147,7 @@ void initDrivers()
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
         motorHandles[i]->init();
     }
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
@@ -151,16 +156,19 @@ void initDrivers()
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
     rcHandle->init();
-    gpsHandle->init();
+    gps1Handle->init();
+    gps2Handle->init();
     imuHandle->init();
     telemLinkHandle->init();
     pmHandle->init();
     magHandle->init();
+    if (rangefinderHandle != nullptr) {
+        rangefinderHandle->init();
+    }
     barometerHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
         motorInstances[i] = {motorHandles[i]};
     }
 

@@ -46,8 +46,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
   else if (huart == telemLinkHandle->getHuart()) {
     telemLinkHandle->receiveCallback(Size);
   }
-  else if (huart == gpsHandle->getHuart()) {
-    gpsHandle->rxCallback(Size);
+  else if (huart == gps1Handle->getHuart()) {
+    gps1Handle->rxCallback(Size);
+  }
+  else if (huart == gps2Handle->getHuart()) {
+    gps2Handle->rxCallback(Size);
   }
 }
 
@@ -72,7 +75,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     }
 
     rcHandle->startDMA();
-  } else if (huart == gpsHandle->getHuart()) {
+  } else if (huart == gps1Handle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
@@ -91,8 +94,28 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
-    gpsHandle->restartDMA();
-  }
+    gps1Handle->restartDMA();
+  } else if (huart == gps2Handle->getHuart()) {
+    uint32_t error = HAL_UART_GetError(huart);
+
+    if (error & HAL_UART_ERROR_PE) {
+      __HAL_UART_CLEAR_PEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_NE) {
+      __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_FE) {
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE) {
+      __HAL_UART_CLEAR_OREFLAG(huart);
+    }
+
+    gps2Handle->restartDMA();
+  } 
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
@@ -118,7 +141,7 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c == pmHandle->getI2C()) {
     pmHandle->I2C_MemRxCpltCallback();
   } else if(hi2c == barometerHandle->getI2C()) {
-  barometerHandle->rxCallback();
+    barometerHandle->rxCallback();
   }
 }
 
@@ -128,25 +151,40 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
  * instead of the Mem ones the power module uses.
  */
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == magHandle->getI2C()) {
-      magHandle->masterTxCpltCallback();
-    }
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterTxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->txCallback();
+  }
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == magHandle->getI2C()) {
-      magHandle->masterRxCpltCallback();
-    }
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterRxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->rxCallback();
+  }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-    if (hi2c == pmHandle->getI2C()) {
-      pmHandle->I2C_ErrorCallback();
-    } else if (hi2c == magHandle->getI2C()) {
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->errorCallback();
+  } else {
+    /*
+     * The magnetometer and barometer share I2C2, so a bus error cannot be
+     * attributed to one of them by handle alone. Both error callbacks only
+     * reset driver state and are no-ops when that driver has nothing in
+     * flight, so notify both.
+     */
+    if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
       magHandle->errorCallback();
-    } else if (hi2c == barometerHandle->getI2C()) {
+    }
+    if (hi2c == barometerHandle->getI2C()) {
       barometerHandle->errorCallback();
     }
+  }
 }
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {

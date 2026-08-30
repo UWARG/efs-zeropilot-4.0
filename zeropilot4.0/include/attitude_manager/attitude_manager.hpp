@@ -9,6 +9,7 @@
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
 #include "magnetometer_iface.hpp"
+#include "mag_cal.hpp"
 #include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
@@ -17,7 +18,9 @@
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
 #include "fft_harmonic_notch.hpp"
+#include "rangefinder_iface.hpp"
 #include "barometer_iface.hpp"
+#include "MahonyAHRS.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -25,6 +28,7 @@
 #define AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ 10
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
 #define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
+#define AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ 2
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
@@ -43,6 +47,7 @@ public:
         IIMU *imuDriver,
         IMagnetometer *magDriver,
         IFFT *fftDriver,
+        IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
@@ -51,6 +56,8 @@ public:
     );
 
     void amUpdate();
+
+    MagCal &getMagCal() { return magCal; }
 
 private:
     static constexpr uint8_t NUM_MOTORS = 8;
@@ -61,26 +68,29 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
-    IMagnetometer *magDriver;
+    MagCal magCal;
+    IRangefinder *rangefinderDriver;
+    RangefinderData_t lastNewRangefinderData = {};
     IBarometer *barometerDriver;
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
-    AHRSEKF ekf;
+    // AHRSEKF ekf;
+    Mahony mahonyFilter;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;
     IMessageQueue<char[100]> *smLoggerQueue;
 
     Flightmode *activeCLAW; // Pointer to current active Control Law
-#ifdef PLANE
+    #ifdef PLANE
     DirectMapping manualCLAW; // Manual Control Law (Direct Passthrough)
     FBWAMapping fbwaCLAW;     // Fly-By-Wire A Control Law (Roll and Pitch PID + Yaw Rudder Mixing)
-#endif
-#ifdef QUADCOPTER
+    #endif
+    #ifdef QUADCOPTER
     AcroMapping acroCLAW;           // Acro Control Law (Roll, Pitch and Yaw PID)
     StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
-#endif
+    #endif
     RCMotorControlMessage_t controlMsg;
     FlightMode_e currentFlightMode;
     DroneState_t droneState;
@@ -117,6 +127,7 @@ private:
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
     void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
+    void sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData);
     void sendServoOutputRawToTelemetryManager();
 
     uint8_t profilerId;

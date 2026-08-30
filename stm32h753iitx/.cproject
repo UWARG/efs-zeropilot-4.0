@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.799392911.124154583" name="Debug-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v quad -b h753iit  ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.799392911.124154583" name="Debug-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v quad -b h753iit">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.799392911.124154583." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.1343801461" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1027650376" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32H753IITx" valueType="string"/>
@@ -105,6 +105,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -119,6 +120,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
@@ -186,7 +188,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.799392911.236734616" name="Debug-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v plane -b h753iit  ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.799392911.236734616" name="Debug-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v plane -b h753iit">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.799392911.236734616." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.584784855" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.2124977642" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32H753IITx" valueType="string"/>
@@ -277,6 +279,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -291,6 +294,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
@@ -358,7 +362,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1602661202.2018388601" name="Release-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v plane -b h753iit  ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1602661202.2018388601" name="Release-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v plane -b h753iit">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1602661202.2018388601." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release.1360122350" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1188047077" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32H753IITx" valueType="string"/>
@@ -442,6 +446,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -456,6 +461,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
@@ -523,7 +529,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1602661202.1137653820" name="Release-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v quad -b h753iit  ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1602661202.1137653820" name="Release-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v quad -b h753iit">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.1602661202.1137653820." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release.687712337" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.269604312" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32H753IITx" valueType="string"/>
@@ -607,6 +613,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rc"/>
@@ -621,6 +628,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>

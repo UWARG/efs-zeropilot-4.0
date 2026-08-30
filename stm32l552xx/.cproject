@@ -14,7 +14,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.111159865.7969262" name="Debug-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v plane -b l552 ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.111159865.7969262" name="Debug-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v plane -b l552">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.111159865.7969262." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.128832604" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1749178401" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32L552ZETxQ" valueType="string"/>
@@ -96,10 +96,12 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
@@ -186,7 +188,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.111159865.634087394" name="Debug-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v quad -b l552 ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.111159865.634087394" name="Debug-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -v quad -b l552">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.111159865.634087394." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.350360426" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1557764704" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32L552ZETxQ" valueType="string"/>
@@ -268,6 +270,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
@@ -294,6 +297,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.includefiles.435647214" name="Include files (-include)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.includefiles" useByScannerDiscovery="false" valueType="includeFiles"/>
@@ -358,7 +362,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.972853733.1577412701" name="Release-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v plane -b l552 ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.972853733.1577412701" name="Release-plane" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v plane -b l552">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.972853733.1577412701." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release.43847476" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.609355386" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32L552ZETxQ" valueType="string"/>
@@ -402,6 +406,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
@@ -446,6 +451,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
@@ -472,6 +478,7 @@
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.otherflags.141202208" name="Other flags" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.otherflags" useByScannerDiscovery="true" valueType="stringList">
@@ -535,7 +542,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.972853733.1071611513" name="Release-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v quad -b l552 ">
+				<configuration artifactExtension="elf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.972853733.1071611513" name="Release-quad" parent="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release" prebuildStep="cd ../../zeropilot4.0; ./hwbuild.bash -c -r -v quad -b l552">
 					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.972853733.1071611513." name="/" resourcePath="">
 						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release.1436447516" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.release">
 							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1184736911" name="MCU" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu" useByScannerDiscovery="true" value="STM32L552ZETxQ" valueType="string"/>
@@ -579,6 +586,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
@@ -622,9 +630,11 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/power_module"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>

@@ -98,6 +98,18 @@ typedef union TMMessageData_u {
     int16_t temperature;
     int16_t temperaturePressDiff;
   } scaledPressureData;
+
+  struct {
+    uint16_t minDistance;
+    uint16_t maxDistance;
+    uint16_t currentDistance;
+    uint8_t id;
+    uint8_t covariance;
+    float horizontalFov;
+    float verticalFov;
+    float quaternion[4];
+    uint8_t signalQuality;
+  } distanceSensorData;
 } TMMessageData_t;
 
 typedef struct TMMessage{
@@ -110,7 +122,8 @@ typedef struct TMMessage{
         BATTERY_DATA,
         RAW_IMU_DATA,
         ATTITUDE_DATA,
-        SCALED_PRESSURE_DATA
+        SCALED_PRESSURE_DATA,
+        DISTANCE_SENSOR_DATA
     } dataType;
     TMMessageData_t tmMessageData;
     uint32_t timeBootMs = 0;
@@ -238,4 +251,19 @@ inline TMMessage_t attitudeDataPack(uint32_t time_boot_ms, float roll, float pit
     float yawspeed = 0.0f;
     const TMMessageData_t DATA = {.attitudeData ={roll, pitch, yaw, rollspeed, pitchspeed, yawspeed }};
     return TMMessage_t{TMMessage_t::ATTITUDE_DATA, DATA, time_boot_ms};
+}
+
+inline TMMessage_t distanceSensorDataPack(uint32_t time_boot_ms, float min_distance, float max_distance, float current_distance, uint8_t id, float covariance, float horizontal_fov_rad, float vertical_fov_rad, float quaternion[4], uint8_t signal_quality_pct) {
+    uint16_t scaledMinDistance = static_cast<uint16_t>(min_distance * 100); // m -> cm
+    uint16_t scaledMaxDistance = static_cast<uint16_t>(max_distance * 100); // m -> cm
+    uint16_t scaledCurrentDistance = static_cast<uint16_t>(current_distance * 100); // m -> cm
+    uint8_t scaledCovariance = static_cast<uint8_t>(covariance * 10000); // m^2 -> cm^2
+
+    const TMMessageData_t DATA = {
+        .distanceSensorData = {
+            scaledMinDistance, scaledMaxDistance, scaledCurrentDistance, id, scaledCovariance, horizontal_fov_rad, vertical_fov_rad,
+            {quaternion[0], quaternion[1], quaternion[2], quaternion[3]}, signal_quality_pct
+        }
+    };
+    return TMMessage_t{TMMessage_t::DISTANCE_SENSOR_DATA, DATA, time_boot_ms};
 }

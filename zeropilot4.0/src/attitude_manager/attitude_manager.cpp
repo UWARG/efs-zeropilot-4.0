@@ -12,6 +12,7 @@ AttitudeManager::AttitudeManager(
     IIMU *imuDriver,
     IMagnetometer *magDriver,
     IFFT *fftDriver,
+    IRangefinder *rangefinderDriver,
     IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
@@ -21,10 +22,11 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
-    magDriver(magDriver),
+    magCal(magDriver),
+    rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
-    ekf(mathUtilsDriver),
+    // ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
@@ -61,6 +63,7 @@ AttitudeManager::AttitudeManager(
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
 
+        /* TODO: Uncomment once using EKF
         // Init the EKF
         AHRSEKF::Config ekfCfg = {
             .gyroCov = 4.78e-6f,
@@ -81,6 +84,7 @@ AttitudeManager::AttitudeManager(
         float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
+        */
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -99,6 +103,11 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
+    // Drive the magnetometer through MagCal every cycle so a running
+    // calibration keeps collecting. The corrected field is not consumed yet;
+    // it lands here once the EKF above is enabled.
+    magCal.update();
+
     // Read barometer data
     BaroData_t baroData;
     barometerDriver->readData(baroData);
@@ -112,20 +121,21 @@ void AttitudeManager::amUpdate() {
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
     for (int i = 0; i < scaledImuData.count; i++) {
-        /* TODO: Uncomment once timing issues are resolved.
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
             harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         }
         // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
         harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-        */
        
+        /* TODO: Uncomment once using EKF
         if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
+        */
 
-        /**
-         * We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
-         * and the delta for double IMU will be necessarily less than uint16_t max value.
-         */
+        /*
+        We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
+        and the delta for double IMU will be necessarily less than uint16_t max value.
+        */
+        
         uint16_t deltaTicks = scaledImuData.data[i].timestamp - lastTimestamp;
 
         lastTimestamp = scaledImuData.data[i].timestamp;
@@ -136,8 +146,24 @@ void AttitudeManager::amUpdate() {
             continue;
         }
 
-        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
+        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
+        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
+        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
 
+        float dt = deltaTicks * TIMESTAMP_RESOLUTION;
+        
+        mahonyFilter.updateIMU(
+            scaledImuData.data[i].xgyro - startupGyroBias.x,
+            scaledImuData.data[i].ygyro - startupGyroBias.y,
+            scaledImuData.data[i].zgyro - startupGyroBias.z,
+            scaledImuData.data[i].xacc,
+            scaledImuData.data[i].yacc,
+            scaledImuData.data[i].zacc,
+            dt
+        );
+
+        /* TODO: Uncomment once using EKF
         float gyro[3] = {
             scaledImuData.data[i].xgyro,
             scaledImuData.data[i].ygyro,
@@ -153,17 +179,13 @@ void AttitudeManager::amUpdate() {
         if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
             ekf.correctionAccelerometer(accel);
         }
-
         GyroBias_t gyroBias = ekf.getGyroBias();
-        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
-        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
-        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
-        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
 
         break; // for now only use one imu message per am loop
+        */
     }
 
-    Attitude_t attitude = ekf.getAttitudeRadians();
+    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
@@ -187,6 +209,23 @@ void AttitudeManager::amUpdate() {
         if (lastValidGps.isNew) {
             sendGPSDataToTelemetryManager(lastValidGps);
             lastValidGps.isNew = false; // Mark as sent to telemetry manager, so if no new GPS data is valid the same data is not sent again
+        }
+    }
+
+    // Get rangefinder data
+    RangefinderData_t rangefinderData = {};
+    if (rangefinderDriver != nullptr) {
+        rangefinderData = rangefinderDriver->readData();
+        if (rangefinderData.isNew) {
+            lastNewRangefinderData = rangefinderData;
+        }
+    }
+
+    // Send rangefinder data to telemetry manager
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ) == 0) {
+        if (lastNewRangefinderData.isNew) {
+            sendRangefinderDataToTelemetryManager(lastNewRangefinderData);
+            lastNewRangefinderData.isNew = false; // Mark as sent to telemetry manager, so if no new rangefinder data is valid the same data is not sent again
         }
     }
 
@@ -466,6 +505,25 @@ void AttitudeManager::sendPressureDataToTelemetryManager(const BaroData_t &baroD
     );
 
     tmQueue->push(&pressureDataMsg);
+}
+
+void AttitudeManager::sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData) {
+    float invalidQuaternion[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    TMMessage_t rangefinderDataMsg = distanceSensorDataPack(
+        systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
+        ZP_PARAM::get(ZP_PARAM_ID::RNGFND_MIN),
+        ZP_PARAM::get(ZP_PARAM_ID::RNGFND_MAX),
+        rangefinderData.distance,
+        1, // id
+        0.01f, // covariance from datasheet of TF02
+        0, // horizontalFov: invalid
+        0, // verticalFov: invalid
+        invalidQuaternion,
+        rangefinderData.isValid ? ((rangefinderData.signalStrength / 65535.0f) * 100.0f) : 1 // % signalQuality, 1 = no signal
+    );
+
+    tmQueue->push(&rangefinderDataMsg);
 }
 
 void AttitudeManager::sendServoOutputRawToTelemetryManager() {

@@ -18,6 +18,7 @@
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
 #include "sitl_drivers/sitl_fft.hpp"
+#include "sitl_drivers/sitl_rangefinder.hpp"
 #include <functional>
 #include <string>
 #include <queue>
@@ -62,12 +63,14 @@ typedef struct {
     
     SITL_IWDG* iwdg;
     SITL_Logger* logger;
+    ISafetySwitch* safetySwitch;
     SITL_RC* rc;
     SITL_PowerModule* pm;
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
     SITL_Magnetometer* mag;
+    SITL_Rangefinder *rangefinder;
     SITL_Barometer* barometer;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
@@ -99,6 +102,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->imu;
     delete self->gps;
     delete self->mag;
+    delete self->rangefinder;
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -128,6 +132,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->iwdg = new SITL_IWDG();
         self->logger = new SITL_Logger();
+        self->safetySwitch = nullptr; // Safety switch is not used in SITL
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
         self->barometer = new SITL_Barometer();
@@ -135,6 +140,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
         self->mag = new SITL_Magnetometer();
+        self->rangefinder = new SITL_Rangefinder();
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
@@ -217,8 +223,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
-            self->amQueue, self->tmQueue, self->logQueue
+            self->sysUtils, self->iwdg, self->logger, self->safetySwitch, self->rc, 
+            self->pm, self->amQueue, self->tmQueue, self->logQueue
         );
         
         self->tm = new TelemetryManager(
@@ -226,7 +232,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->mathUtils, self->gps, self->imu, self->mag, self->fft, self->barometer,
+            self->sysUtils, self->mathUtils, self->gps, self->imu, self->mag, self->fft, self->rangefinder, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
@@ -244,13 +250,15 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
     float fuel_lbs, rpm;
+    float rangefinder_alt;
     double baro_pressure_kpa, baro_temp_c;
 
-    if (!PyArg_ParseTuple(args, "ddddddddddffdd",
+    if (!PyArg_ParseTuple(args, "ddddddddddfffdd",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
         &fuel_lbs, &rpm,
+        &rangefinder_alt,
         &baro_pressure_kpa, &baro_temp_c))
         return NULL;
 
@@ -259,6 +267,7 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     // course_deg is the plant's heading (attitude/psi-deg), so it doubles as yaw here
     self->mag->update_from_plant(roll_rad, pitch_rad, course_deg * DEG_TO_RAD);
     self->pm->update_from_plant(fuel_lbs, rpm);
+    self->rangefinder->update_from_plant(rangefinder_alt);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);
     
     Py_RETURN_NONE;

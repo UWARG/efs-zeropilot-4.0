@@ -10,16 +10,6 @@ private:
     MagData_t magData = {};
     bool sampleReady = false;
 
-    // Identity calibration: the simulated field is already free of hard/soft iron
-    // distortion, so calibration is a no-op that reports the reference field.
-    MagCalConstants_t calConstants = {
-        {0.0f, 0.0f, 0.0f},
-        {1.0f, 0.0f, 0.0f,
-         0.0f, 1.0f, 0.0f,
-         0.0f, 0.0f, 1.0f},
-        Config::FIELD_STRENGTH_UT
-    };
-
 public:
     bool init() override {
         magData = {};
@@ -73,16 +63,5 @@ public:
         magData.isNew = sampleReady;
         sampleReady = false;
         return magData;
-    }
-
-    void startCalibration() override {}
-    void cancelCalibration() override {}
-
-    MagCalStatus_t getCalibrationStatus() override {
-        return MagCalStatus_t{MAG_CAL_STATE_SUCCESS, MAG_CAL_ERR_NONE, 0, 100};
-    }
-
-    const MagCalConstants_t &getCalibrationConstants() const override {
-        return calConstants;
     }
 };

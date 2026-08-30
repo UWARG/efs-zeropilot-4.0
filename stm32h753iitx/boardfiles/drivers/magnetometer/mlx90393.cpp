@@ -1,6 +1,71 @@
 #include "mlx90393.hpp"
 
-#include <cmath>
+/*
+ * Register, command and configuration definitions are implementation detail of
+ * this driver and are not referenced through the header, so they live here.
+ */
+enum : uint8_t {
+    MLX90393_AXIS_T = 0x01,
+    MLX90393_AXIS_X = 0x02,
+    MLX90393_AXIS_Y = 0x04,
+    MLX90393_AXIS_Z = 0x08,
+};
+
+enum : uint8_t {
+    MLX90393_CONF1 = 0x00,
+    MLX90393_CONF2 = 0x01,
+    MLX90393_CONF3 = 0x02,
+    MLX90393_CONF4 = 0x03,
+};
+
+enum : uint8_t {
+    MLX90393_CMD_NOP = 0x00,
+    MLX90393_CMD_EXIT = 0x80,
+    MLX90393_CMD_START_BURST = 0x10,
+    MLX90393_CMD_WAKE_ON_CHANGE = 0x20,
+    MLX90393_CMD_START_MEASUREMENT = 0x30,
+    MLX90393_CMD_READ_MEASUREMENT = 0x40,
+    MLX90393_CMD_READ_REGISTER = 0x50,
+    MLX90393_CMD_WRITE_REGISTER = 0x60,
+    MLX90393_CMD_MEMORY_RECALL = 0xD0,
+    MLX90393_CMD_MEMORY_STORE = 0xE0,
+    MLX90393_CMD_RESET = 0xF0,
+};
+
+enum : uint8_t {
+    MLX90393_STATUS_BURST_MODE = 0x80,
+    MLX90393_STATUS_WAKE_ON_CHANGE = 0x40,
+    MLX90393_STATUS_POLLING_MODE = 0x20,
+    MLX90393_STATUS_ERROR = 0x10,
+    MLX90393_STATUS_EEC = 0x08,
+    MLX90393_STATUS_RESET = 0x04,
+};
+
+enum : uint8_t {
+    MLX90393_GAIN_5X = 0x00,
+    MLX90393_GAIN_4X = 0x01,
+    MLX90393_GAIN_3X = 0x02,
+    MLX90393_GAIN_2_5X = 0x03,
+    MLX90393_GAIN_2X = 0x04,
+    MLX90393_GAIN_1_67X = 0x05,
+    MLX90393_GAIN_1_33X = 0x06,
+    MLX90393_GAIN_1X = 0x07,
+};
+
+enum : uint8_t {
+    MLX90393_RES_15 = 0x00,
+    MLX90393_RES_16 = 0x01,
+    MLX90393_RES_17 = 0x02,
+    MLX90393_RES_18 = 0x03,
+};
+
+// 7 bit; datasheet family is 0x0C..0x0F
+static constexpr uint8_t MLX90393_DEFAULT_ADDR = 0x18;
+
+static constexpr uint8_t ZYXT = MLX90393_AXIS_X | MLX90393_AXIS_Y | MLX90393_AXIS_Z;
+static constexpr uint32_t CONVERSION_MARGIN_MS = 10;
+static constexpr uint32_t TRANSFER_TIMEOUT_MS = 100;
+static constexpr uint32_t INIT_TIMEOUT_MS = 100;
 
 static constexpr uint16_t GAIN_MASK = 0x0070;
 static constexpr uint8_t GAIN_SHIFT = 4;
@@ -55,16 +120,8 @@ static constexpr uint8_t CONFIG_X_RES = MLX90393_RES_16;
 static constexpr uint8_t CONFIG_Y_RES = MLX90393_RES_16;
 static constexpr uint8_t CONFIG_Z_RES = MLX90393_RES_15;
 
-static constexpr MagCalConstants_t DEFAULT_CAL_CONSTANTS = {
-
-    {-9.946797043f, -25.11398367f, 3.1675524f},
-
-    {1.00266659f, 0.0f, 0.0f,
-     0.0f, 1.35954797f, 0.0f,
-     0.0f, 0.0f, 0.78919065f},
-
-    53.5f, // ideal
-};
+Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16_t csPin)
+    : Magnetometer(hi2c, csPort, csPin, MLX90393_DEFAULT_ADDR) {}
 
 Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16_t csPin, uint8_t address)
     : hi2c(hi2c),
@@ -87,16 +144,7 @@ Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16
       transferStartMs(0),
       txByte(0),
       rxBuffer{0},
-      magData{},
-      calConstants(DEFAULT_CAL_CONSTANTS),
-      calState(MAG_CAL_STATE_IDLE),
-      calError(MAG_CAL_ERR_NONE),
-      calStartMs(0),
-      calSampleCount(0),
-      calNormalMatrix{0},
-      calNormalVector{0},
-      calAxisMin{0},
-      calAxisMax{0} {}
+      magData{} {}
 
 bool Magnetometer::init() {
 
@@ -436,10 +484,6 @@ void Magnetometer::decode() {
 
     const uint32_t NOW = HAL_GetTick();
 
-    calAddSample(field, NOW);
-
-    calApply(field);
-
     magData.x = field[0];
     magData.y = field[1];
     magData.z = field[2];
@@ -452,251 +496,4 @@ void Magnetometer::decode() {
 
 I2C_HandleTypeDef *Magnetometer::getI2C() {
     return hi2c;
-}
-
-void Magnetometer::startCalibration() {
-    if (calState == MAG_CAL_STATE_COLLECTING) {
-        return;
-    }
-
-    calResetAccumulators();
-    calStartMs = HAL_GetTick();
-    calError = MAG_CAL_ERR_NONE;
-    calState = MAG_CAL_STATE_COLLECTING;
-}
-
-void Magnetometer::cancelCalibration() {
-    if (calState != MAG_CAL_STATE_COLLECTING) {
-        return;
-    }
-    calResetAccumulators();
-    calState = MAG_CAL_STATE_IDLE;
-}
-
-void Magnetometer::resetCalibrationToDefaults() {
-    calConstants = DEFAULT_CAL_CONSTANTS;
-    calError = MAG_CAL_ERR_NONE;
-    calState = MAG_CAL_STATE_IDLE;
-}
-
-MagCalStatus_t Magnetometer::getCalibrationStatus() {
-    MagCalStatus_t out = {};
-    out.state = calState;
-    out.error = calError;
-    out.sampleCount = calSampleCount;
-
-    if (calState != MAG_CAL_STATE_COLLECTING) {
-        out.progressPercent = (calState == MAG_CAL_STATE_SUCCESS) ? 100 : 0;
-        return out;
-    }
-
-    const uint32_t ELAPSED = HAL_GetTick() - calStartMs;
-    out.progressPercent = (ELAPSED >= CAL_COLLECT_DURATION_MS)
-                              ? 100
-                              : static_cast<uint8_t>((ELAPSED * 100U) / CAL_COLLECT_DURATION_MS);
-    return out;
-}
-
-const MagCalConstants_t &Magnetometer::getCalibrationConstants() const {
-    return calConstants;
-}
-
-void Magnetometer::calApply(float field[3]) const {
-    const float CENTERED[3] = {
-        field[0] - calConstants.hardIron[0],
-        field[1] - calConstants.hardIron[1],
-        field[2] - calConstants.hardIron[2],
-    };
-
-    for (uint8_t row = 0; row < 3; row++) {
-        field[row] = calConstants.softIron[row * 3 + 0] * CENTERED[0] +
-                     calConstants.softIron[row * 3 + 1] * CENTERED[1] +
-                     calConstants.softIron[row * 3 + 2] * CENTERED[2];
-    }
-}
-
-void Magnetometer::calResetAccumulators() {
-    for (uint8_t i = 0; i < 16; i++) {
-        calNormalMatrix[i] = 0.0f;
-    }
-    for (uint8_t i = 0; i < 4; i++) {
-        calNormalVector[i] = 0.0f;
-    }
-    for (uint8_t i = 0; i < 3; i++) {
-        calAxisMin[i] = 1e9f;
-        calAxisMax[i] = -1e9f;
-    }
-    calSampleCount = 0;
-}
-
-void Magnetometer::calAddSample(const float field[3], uint32_t nowMs) {
-    if (calState != MAG_CAL_STATE_COLLECTING) {
-        return;
-    }
-
-    const float X = field[0];
-    const float Y = field[1];
-    const float Z = field[2];
-    const float R2 = X * X + Y * Y + Z * Z;
-
-    calNormalMatrix[0] += X * X;
-    calNormalMatrix[1] += X * Y;
-    calNormalMatrix[2] += X * Z;
-    calNormalMatrix[3] += X;
-
-    calNormalMatrix[4] += X * Y;
-    calNormalMatrix[5] += Y * Y;
-    calNormalMatrix[6] += Y * Z;
-    calNormalMatrix[7] += Y;
-
-    calNormalMatrix[8] += X * Z;
-    calNormalMatrix[9] += Y * Z;
-    calNormalMatrix[10] += Z * Z;
-    calNormalMatrix[11] += Z;
-
-    calNormalMatrix[12] += X;
-    calNormalMatrix[13] += Y;
-    calNormalMatrix[14] += Z;
-    calNormalMatrix[15] += 1.0f;
-
-    calNormalVector[0] += X * R2;
-    calNormalVector[1] += Y * R2;
-    calNormalVector[2] += Z * R2;
-    calNormalVector[3] += R2;
-
-    if (X < calAxisMin[0]) calAxisMin[0] = X;
-    if (X > calAxisMax[0]) calAxisMax[0] = X;
-    if (Y < calAxisMin[1]) calAxisMin[1] = Y;
-    if (Y > calAxisMax[1]) calAxisMax[1] = Y;
-    if (Z < calAxisMin[2]) calAxisMin[2] = Z;
-    if (Z > calAxisMax[2]) calAxisMax[2] = Z;
-
-    calSampleCount++;
-
-    if (nowMs - calStartMs < CAL_COLLECT_DURATION_MS) {
-        return;
-    }
-
-    calState = calSolve() ? MAG_CAL_STATE_SUCCESS : MAG_CAL_STATE_FAILED;
-}
-
-bool Magnetometer::invert4x4(const float src[16], float dst[16]) {
-
-    double aug[4][8] = {};
-    for (uint8_t i = 0; i < 4; i++) {
-        for (uint8_t j = 0; j < 4; j++) {
-            aug[i][j] = src[i * 4 + j];
-        }
-        aug[i][4 + i] = 1.0;
-    }
-
-    for (uint8_t col = 0; col < 4; col++) {
-        uint8_t pivot = col;
-        for (uint8_t row = col + 1; row < 4; row++) {
-            if (std::fabs(aug[row][col]) > std::fabs(aug[pivot][col])) {
-                pivot = row;
-            }
-        }
-        if (std::fabs(aug[pivot][col]) < 1e-12) {
-            return false;
-        }
-        if (pivot != col) {
-            for (uint8_t j = 0; j < 8; j++) {
-                const double TMP = aug[col][j];
-                aug[col][j] = aug[pivot][j];
-                aug[pivot][j] = TMP;
-            }
-        }
-
-        const double DIAG = aug[col][col];
-        for (uint8_t j = 0; j < 8; j++) {
-            aug[col][j] /= DIAG;
-        }
-        for (uint8_t row = 0; row < 4; row++) {
-            if (row == col) continue;
-            const double FACTOR = aug[row][col];
-            if (FACTOR == 0.0) continue;
-            for (uint8_t j = 0; j < 8; j++) {
-                aug[row][j] -= FACTOR * aug[col][j];
-            }
-        }
-    }
-
-    for (uint8_t i = 0; i < 4; i++) {
-        for (uint8_t j = 0; j < 4; j++) {
-            dst[i * 4 + j] = static_cast<float>(aug[i][4 + j]);
-        }
-    }
-    return true;
-}
-
-bool Magnetometer::calSolve() {
-    if (calSampleCount < CAL_MIN_SAMPLES) {
-        calError = MAG_CAL_ERR_TOO_FEW_SAMPLES;
-        return false;
-    }
-
-    float radius[3];
-    for (uint8_t i = 0; i < 3; i++) {
-        radius[i] = 0.5f * (calAxisMax[i] - calAxisMin[i]);
-    }
-
-    float radiusMax = radius[0];
-    for (uint8_t i = 1; i < 3; i++) {
-        if (radius[i] > radiusMax) radiusMax = radius[i];
-    }
-
-    if (radiusMax < CAL_MIN_AXIS_SPAN_UT ||
-        radius[0] < CAL_MIN_SPAN_RATIO * radiusMax ||
-        radius[1] < CAL_MIN_SPAN_RATIO * radiusMax ||
-        radius[2] < CAL_MIN_SPAN_RATIO * radiusMax) {
-        calError = MAG_CAL_ERR_POOR_COVERAGE;
-        return false;
-    }
-
-    float inverse[16];
-    if (!invert4x4(calNormalMatrix, inverse)) {
-        calError = MAG_CAL_ERR_SINGULAR;
-        return false;
-    }
-
-    float beta[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    for (uint8_t row = 0; row < 4; row++) {
-        for (uint8_t col = 0; col < 4; col++) {
-            beta[row] += inverse[row * 4 + col] * calNormalVector[col];
-        }
-    }
-
-    // beta = [2b, |B|^2 - |b|^2], NXP AN4246
-    const float BX = 0.5f * beta[0];
-    const float BY = 0.5f * beta[1];
-    const float BZ = 0.5f * beta[2];
-    const float FIELD_SQUARED = beta[3] + BX * BX + BY * BY + BZ * BZ;
-
-    if (FIELD_SQUARED <= 0.0f) {
-        calError = MAG_CAL_ERR_IMPLAUSIBLE_FIELD;
-        return false;
-    }
-
-    const float FIELD = sqrtf(FIELD_SQUARED);
-    if (FIELD < CAL_MIN_FIELD_UT || FIELD > CAL_MAX_FIELD_UT) {
-        calError = MAG_CAL_ERR_IMPLAUSIBLE_FIELD;
-        return false;
-    }
-
-    calConstants.hardIron[0] = BX;
-    calConstants.hardIron[1] = BY;
-    calConstants.hardIron[2] = BZ;
-    calConstants.fieldStrength = FIELD;
-
-    const float RADIUS_MEAN = (radius[0] + radius[1] + radius[2]) / 3.0f;
-    for (uint8_t i = 0; i < 9; i++) {
-        calConstants.softIron[i] = 0.0f;
-    }
-    calConstants.softIron[0] = RADIUS_MEAN / radius[0];
-    calConstants.softIron[4] = RADIUS_MEAN / radius[1];
-    calConstants.softIron[8] = RADIUS_MEAN / radius[2];
-
-    calError = MAG_CAL_ERR_NONE;
-    return true;
 }
