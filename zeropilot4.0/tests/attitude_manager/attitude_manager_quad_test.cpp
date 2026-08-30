@@ -5,6 +5,7 @@
 #include "mock_systemutils.hpp"
 #include "mock_gps.hpp"
 #include "mock_imu.hpp"
+#include "mock_magnetometer.hpp"
 #include "mock_queue.hpp"
 #include "mock_motor.hpp"
 #include "mock_fft.hpp"
@@ -32,6 +33,7 @@ protected:
     NiceMock<MockMathUtils> mockMathUtils;
     NiceMock<MockGPS> mockGPS;
     NiceMock<MockIMU> mockIMU;
+    NiceMock<MockMagnetometer> mockMag;
     NiceMock<MockRangefinder> mockRangefinder;
     NiceMock<MockBarometer> mockBarometer;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
@@ -69,6 +71,7 @@ protected:
         ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImuBatch_t{}));      // Empty batch, count 0
         ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImuBatch_t{})); // Empty batch, count 0
         ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
+        ON_CALL(mockMag, readData()).WillByDefault(Return(MagData_t{})); // isNew false
         ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
         ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
         ON_CALL(mockFFT, init(_)).WillByDefault(Return(true));
@@ -88,7 +91,7 @@ TEST_F(AttitudeManagerQuadTest, AllMotorsDisarmedOnStartup) {
     EXPECT_CALL(motor3, set(Gt(0))).Times(0);
     EXPECT_CALL(motor4, set(Gt(0))).Times(0);
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }
@@ -110,7 +113,7 @@ TEST_F(AttitudeManagerQuadTest, MotorOutputTest) {
     EXPECT_CALL(motor3, set(_)).Times(AtLeast(1));
     EXPECT_CALL(motor4, set(_)).Times(AtLeast(1));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }
@@ -132,7 +135,7 @@ TEST_F(AttitudeManagerQuadTest, DisarmThrottleZero) {
     EXPECT_CALL(motor3, set(0)).Times(AtLeast(1));
     EXPECT_CALL(motor4, set(0)).Times(AtLeast(1));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }
@@ -146,7 +149,7 @@ TEST_F(AttitudeManagerQuadTest, FailsafeTriggered) {
     EXPECT_CALL(motor3, set(0)).Times(AtLeast(1));
     EXPECT_CALL(motor4, set(0)).Times(AtLeast(1));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -176,7 +179,7 @@ TEST_F(AttitudeManagerQuadTest, FailsafeRecovery) {
 
     EXPECT_CALL(mockLogQueue, push(_)).Times(2);
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -203,7 +206,7 @@ TEST_F(AttitudeManagerQuadTest, MotorClampingUpper) {
     EXPECT_CALL(motor3, set(Ge(90)));
     EXPECT_CALL(motor4, set(Ge(90)));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
     am.amUpdate();
 }

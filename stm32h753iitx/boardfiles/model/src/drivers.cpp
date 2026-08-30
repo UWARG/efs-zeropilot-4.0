@@ -43,6 +43,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 
@@ -133,6 +134,7 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
+    magHandle = new Magnetometer(&hi2c2);
     if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
@@ -159,6 +161,7 @@ void initDrivers() {
     imuHandle->init();
     telemLinkHandle->init();
     pmHandle->init();
+    magHandle->init();
     if (rangefinderHandle != nullptr) {
         rangefinderHandle->init();
     }
