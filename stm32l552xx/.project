@@ -36,12 +36,12 @@
 		<link>
 			<name>dronecan</name>
 			<type>2</type>
-			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/generated/src</location>
+			<locationURI>PARENT-1-PROJECT_LOC/external/dronecan/generated/src</locationURI>
 		</link>
 		<link>
 			<name>libcanard</name>
 			<type>2</type>
-			<location>$%7BPARENT-1-PROJECT_LOC%7D/external/dronecan/libcanard</location>
+			<locationURI>PARENT-1-PROJECT_LOC/external/dronecan/libcanard</locationURI>
 		</link>
 		<link>
 			<name>boardfiles/CommonTables.c</name>
