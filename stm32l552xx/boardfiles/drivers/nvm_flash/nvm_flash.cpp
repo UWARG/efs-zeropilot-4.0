@@ -548,3 +548,11 @@ uint32_t NVMFlash::crc32(const uint8_t *data, uint32_t len) {
 inline uint32_t NVMFlash::indexToBaseAddr(uint32_t unit_index) {
     return (unit_index * FTL_UNIT_SIZE);  // FTL_DATA_BASE is 0, so this is fine
 }
+
+void NVMFlash::test_message(){
+	BatteryLog send(0, 5, 10, 50);
+	int write_res = write(&send);
+
+	BatteryLog recv(0, 0, 0, 0);
+	int read_res = read(&recv);
+}

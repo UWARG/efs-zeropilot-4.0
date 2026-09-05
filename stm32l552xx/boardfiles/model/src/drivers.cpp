@@ -145,16 +145,16 @@ void initDrivers()
         motorHandles[i]->init();
     }
 
-    rcHandle->init();
-    telemLinkHandle->init();
-    gpsHandle->init();
-    imuHandle->init();
+//    rcHandle->init();
+//    telemLinkHandle->init();
+//    gpsHandle->init();
+//    imuHandle->init();
     nvmHandle->init();
-    pmHandle->init();
-    if (rangefinderHandle != nullptr) {
-        rangefinderHandle->init();
-    }
-    barometerHandle->init();
+//    pmHandle->init();
+//    if (rangefinderHandle != nullptr) {
+//        rangefinderHandle->init();
+//    }
+//    barometerHandle->init();
     sdFileSystemHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()

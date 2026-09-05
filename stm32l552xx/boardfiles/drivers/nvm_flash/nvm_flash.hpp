@@ -4,6 +4,7 @@
 #include "stm32l5xx_hal.h"
 
 #include "nvm_flash_iface.hpp"
+#include "battery_log.hpp"
 
 class NVMFlash : public INVMFlash {
 public:
@@ -17,6 +18,7 @@ public:
 	int read(AbstractMessage *msg) override;
 	int erase(AbstractMessage *msg) override;
 	int update(AbstractMessage *msg) override;
+	void test_message() override;
 
 private:
 	SPI_HandleTypeDef *spiHandle;

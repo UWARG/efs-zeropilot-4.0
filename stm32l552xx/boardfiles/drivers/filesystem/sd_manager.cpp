@@ -18,6 +18,7 @@ SDManager::SDManager(
 }
 
 void SDManager::sdUpdate(SdReqMsg reqMsg) {
+	nvmDriver->test_message();
     systemUtilsDriver->profilerBegin(profilerId);
 
     bool firstMsgRead = false;

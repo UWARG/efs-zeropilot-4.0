@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 #include "nvm_flash_message.hpp"
 
@@ -16,4 +17,5 @@ public:
 	virtual int read(AbstractMessage *msg) = 0;
 	virtual int erase(AbstractMessage *msg) = 0;
 	virtual int update(AbstractMessage *msg) = 0;
+	virtual void test_message() = 0;
 };

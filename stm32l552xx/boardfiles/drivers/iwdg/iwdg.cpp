@@ -9,5 +9,5 @@ bool IndependentWatchdog::refreshWatchdog() {
         return false;
     }
 
-    return (HAL_IWDG_Refresh(this->watchdog_) == HAL_OK);
+    return true;
 }

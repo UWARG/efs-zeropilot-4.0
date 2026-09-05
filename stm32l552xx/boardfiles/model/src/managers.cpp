@@ -25,14 +25,14 @@ void initManagers()
         fftHandle,
         rangefinderHandle,
         barometerHandle,
-        amRCQueueHandle, 
-        tmQueueHandle, 
+        amRCQueueHandle,
+        tmQueueHandle,
         &mainMotorGroup
     );
 
     // SM initialization
     smHandle = new (&smHandleStorage) SystemManager(
-        systemUtilsHandle, 
+        systemUtilsHandle,
         iwdgHandle,
         sdFileSystemHandle,
         rcHandle,

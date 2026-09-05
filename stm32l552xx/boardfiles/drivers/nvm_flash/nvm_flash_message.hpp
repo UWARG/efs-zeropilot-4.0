@@ -1,5 +1,8 @@
 // NVM_Flash_Message.hpp
 #pragma once
+#include <cstdint>
+#include <cstring>
+#include <cstddef>
 
 enum class MessageType {
 
