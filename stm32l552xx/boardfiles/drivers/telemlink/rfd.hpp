@@ -25,10 +25,14 @@ public:
     // Start DMA
     ZP_Error init();
 
+    // Restart reception after a UART error aborted the DMA
+    ZP_Error restartRx();
+
 private:
     ZP_Error getRXTransferSize(uint16_t idx, uint16_t& output);
     UART_HandleTypeDef* huart;
     uint8_t rxBuffer[BUFFER_SIZE];
+    uint8_t txBuffer[TX_BUFFER_SIZE]; // Owned by the driver so a caller cannot overwrite a transfer in flight
 
     uint16_t readIndex = 0;
     uint16_t writeIndex = 0;

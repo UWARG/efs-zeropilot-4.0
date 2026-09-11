@@ -71,7 +71,7 @@ namespace ZP_BIT {
     */
     ZP_Error report(ZP_BIT_ID id, ZP_Error status);
 
-    // Clears every latched fault
+    // Resets every latch to its BIT's current state
     ZP_Error clearLatched();
 
     /*

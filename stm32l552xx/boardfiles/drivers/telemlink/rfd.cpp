@@ -13,11 +13,42 @@ RFD::~RFD() {
 }
 
 ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
+    if (huart == nullptr || data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+
+    if (size > TX_BUFFER_SIZE) {
+        return ZP_ERROR_RANGE;
+    }
+
+    // The DMA reads out of txBuffer, so refilling it mid transfer would corrupt the frame on the wire
+    if (huart->gState != HAL_UART_STATE_READY) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
+    }
+
+    memcpy(txBuffer, data, size);
+
+    HAL_StatusTypeDef status = HAL_UART_Transmit_DMA(huart, txBuffer, size);
+    if (status == HAL_BUSY) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
+    } else if (status != HAL_OK) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
+}
+
+ZP_Error RFD::restartRx() {
     if (huart == nullptr) {
         return ZP_ERROR_NULLPTR;
     }
 
-    HAL_StatusTypeDef status = HAL_UART_Transmit_DMA(huart, data, size);
+    // Whatever was mid transfer is gone, so start the ring empty again
+    readIndex = 0;
+    writeIndex = 0;
+    currentSize = 0;
+    lastIdx = 0;
+
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
     if (status == HAL_BUSY) {
         return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
     } else if (status != HAL_OK) {
@@ -36,17 +67,7 @@ ZP_Error RFD::getRXTransferSize(uint16_t idx, uint16_t& output) {
 }
 
 ZP_Error RFD::init() {
-    if (huart == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
-    if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    } else if (status != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-    }
-    return ZP_ERROR_OK;
+    return restartRx();
 }
 
 ZP_Error RFD::receiveCallback(uint16_t writeIdx) {
@@ -77,6 +98,12 @@ ZP_Error RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_s
     }
 
     received_size = 0;
+
+    // The DMA is not running, so reception was aborted by an error and has to be restarted
+    if (huart->RxState == HAL_UART_STATE_READY) {
+        ZP_Error restartStatus = restartRx();
+        return (restartStatus == ZP_ERROR_OK) ? ZP_ERROR_NOT_READY : restartStatus;
+    }
 
     // Nothing buffered yet is the normal idle case, not a failure
     if (readIndex == writeIndex) {

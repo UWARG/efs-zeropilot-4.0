@@ -32,8 +32,8 @@ SystemManager::SystemManager(
         safetySwitchTriggered(false),
         safetySwitchPrearmCntrMs(0),
         rcConnected(false),
-        prevArmed(false),
         bitFailsafe(BitFailsafe_e::NONE),
+        bitFailReportCntrMs(0),
         rcChannelReversed{},
         batteryData({PMData_t{}, MAV_BATTERY_CHARGE_STATE_OK, 0, 0}),
         socEstimator(batteryData),
@@ -159,10 +159,9 @@ void SystemManager::smUpdate() {
         #endif
     }
 
-    if (prevArmed && !armed) {
+    if (!armed) {
         (void)ZP_BIT::clearLatched();
     }
-    prevArmed = armed;
 
     // Increment scheduling counter
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
@@ -286,7 +285,11 @@ ZP_Error SystemManager::initBitHandlers() {
 
 ZP_Error SystemManager::applyBitFailsafes() {
     ZP_Error result = ZP_ERROR_OK;
-    const bool REPORT_TICK = (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BIT_FAIL_RATE_HZ)) == 0;
+    bitFailReportCntrMs += SM_UPDATE_LOOP_DELAY_MS;
+    const bool REPORT_TICK = bitFailReportCntrMs >= (SM_TELEMETRY_BIT_FAIL_PERIOD_S * 1000);
+    if (REPORT_TICK) {
+        bitFailReportCntrMs = 0;
+    }
     BitFailsafe_e failsafe = BitFailsafe_e::NONE;
 
     for (uint16_t i = 0; i < static_cast<uint16_t>(ZP_BIT_ID::NUM_BIT_IDS); i++) {

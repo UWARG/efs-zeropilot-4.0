@@ -21,7 +21,7 @@
 #define SM_TELEMETRY_RC_DATA_RATE_HZ 5
 #define SM_TELEMETRY_BATTERY_DATA_RATE_HZ 1
 #define SM_TELEMETRY_SYS_STATUS_RATE_HZ 1
-#define SM_TELEMETRY_BIT_FAIL_RATE_HZ 1
+#define SM_TELEMETRY_BIT_FAIL_PERIOD_S 5
 
 #define SM_UPDATE_LOOP_DELAY_MS (1000 / SM_SCHEDULING_RATE_HZ)
 
@@ -109,8 +109,8 @@ class SystemManager {
         ZP_Error safetySwitchUpdate();
 
         bool rcConnected;
-        bool prevArmed;
         BitFailsafe_e bitFailsafe; // most severe action requested by a failing BIT
+        uint32_t bitFailReportCntrMs; // time since the failing BITs were last reported
 
         bool rcChannelReversed[SM_RC_REVERSIBLE_COUNT];
         

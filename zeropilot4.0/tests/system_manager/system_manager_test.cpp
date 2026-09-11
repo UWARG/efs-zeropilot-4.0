@@ -326,14 +326,15 @@ TEST_F(SystemManagerTest, CriticalReportBitSendsTextWithoutDisarmFailsafe) {
     nowMs += BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::IMU_DATA_VALID)].failMs;
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_DATA_VALID, ZP_ERROR_FAIL);
 
-    const int TICKS = 2 * SM_SCHEDULING_RATE_HZ;
+    const int REPORT_PERIOD_TICKS = SM_TELEMETRY_BIT_FAIL_PERIOD_S * SM_SCHEDULING_RATE_HZ;
+    const int TICKS = 2 * REPORT_PERIOD_TICKS + SM_SCHEDULING_RATE_HZ;
     for (int i = 0; i < TICKS; i++) {
         sm.smUpdate();
         nowMs += SM_UPDATE_LOOP_DELAY_MS;
     }
 
     EXPECT_GE(failTexts, 2) << "the failure text repeats while the BIT is failing";
-    EXPECT_LE(failTexts, TICKS / (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BIT_FAIL_RATE_HZ) + 1) << "and is rate limited";
+    EXPECT_LE(failTexts, TICKS / REPORT_PERIOD_TICKS + 1) << "and is rate limited";
     EXPECT_EQ(failSeverity, MAV_SEVERITY_CRITICAL) << "a CRITICAL BIT reports at critical severity";
     EXPECT_EQ(disarmTexts, 0) << "a REPORT failsafe must not trigger the disarm action";
     EXPECT_FALSE(lastArm) << "a CRITICAL BIT still blocks arming through the pre-arm check";
