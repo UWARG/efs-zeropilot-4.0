@@ -208,7 +208,7 @@ void AttitudeManager::amUpdate() {
     // Get GPS data
     GpsData_t gpsData = {};
     ZP_Error gpsStatus = gpsDriver->readData(gpsData);
-    (void)gpsStatus;
+    gpsStatus |= ZP_ERROR_INVALID_DATA;
     (void)ZP_BIT::report(ZP_BIT_ID::GPS_DATA_VALID, gpsStatus);
     if (gpsData.isNew) {
         lastValidGps = gpsData;
