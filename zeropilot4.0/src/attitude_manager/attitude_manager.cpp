@@ -67,6 +67,8 @@ AttitudeManager::AttitudeManager(
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
 
+        (void)mahonyFilter.begin(imuDriver->getODRHz());
+
         /* TODO: Uncomment once using EKF
         // Init the EKF
         AHRSEKF::Config ekfCfg = {
