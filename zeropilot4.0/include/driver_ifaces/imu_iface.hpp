@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-
 #include "imu_datatypes.hpp"
+#include "zp_error.h"
 
 class IIMU {
 protected:
@@ -10,9 +10,9 @@ protected:
 
 public:
     virtual ~IIMU() = default;
-	virtual int init() = 0;
-	virtual RawImuBatch_t readRawData() = 0;
-	virtual ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) = 0;
+	virtual ZP_Error init() = 0;
+	virtual ZP_Error readRawData(RawImuBatch_t &rawDataBatch) = 0;
+	virtual ZP_Error scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) = 0;
 	virtual float getODRHz() = 0;
 	virtual GyroBias_t getGyroStartupBias(uint8_t imuId) = 0;
 };

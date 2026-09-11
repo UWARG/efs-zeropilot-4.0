@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 typedef struct PMData {
     // Instantaneous results
@@ -21,6 +22,5 @@ protected:
 
 public:
     virtual ~IPowerModule() = default;
-
-    virtual bool readData(PMData_t *data) = 0;
+    virtual ZP_Error readData(PMData_t *data) = 0;
 };

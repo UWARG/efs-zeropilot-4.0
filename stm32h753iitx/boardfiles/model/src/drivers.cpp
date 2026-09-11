@@ -1,4 +1,5 @@
 #include "drivers.hpp"
+#include "zp_bit.hpp"
 #include "museq.hpp"
 #include "stm32h7xx_hal.h"
 #include "zp_params.hpp"
@@ -88,24 +89,36 @@ const ZP_PARAM_ID SERVO_FUNC[8] = {
 // ----------------------------------------------------------------------------
 // Initialization
 // ----------------------------------------------------------------------------
+// Split out so initModel can start BIT off this clock before any driver reports into it
+void initSystemUtils() {
+    systemUtilsHandle = new SystemUtils();
+}
+
 void initDrivers() {
     // Core utilities
-    systemUtilsHandle = new SystemUtils();
     mathUtilsHandle = new MathUtils();
     fftHandle = new FFT();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
     loggerHandle = new Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
-    uint32_t servoType = int(ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE));
+    float val = 0.0f;
+    ZP_Error paramStatus = ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE, val);
+    uint32_t servoType = static_cast<uint32_t>(val);
+
     for (int i = 0; i < 8; i++) {
         // Determine if it is brushless DC motor
-        bool isBLDC = false; 
+        float funcVal = 0.0f;
+        paramStatus |= ZP_PARAM::get(SERVO_FUNC[i], funcVal);
+
+        MotorFunction_e func = static_cast<MotorFunction_e>(static_cast<int>(funcVal));
+        bool isBLDC = false;
         #ifdef PLANE
-        isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::THROTTLE);
+        isBLDC = (func == MotorFunction_e::THROTTLE);
         #endif
         #ifdef QUADCOPTER
-        isBLDC = int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_1) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_2) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_3) || int(ZP_PARAM::get(SERVO_FUNC[i])) == int(MotorFunction_e::MOTOR_4);
+        isBLDC = (func == MotorFunction_e::MOTOR_1) || (func == MotorFunction_e::MOTOR_2) ||
+                 (func == MotorFunction_e::MOTOR_3) || (func == MotorFunction_e::MOTOR_4);
         #endif
         if (isBLDC) {
             switch (servoType) {
@@ -133,7 +146,9 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
-    if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
+    float rngfndEnable = 0.0f;
+    paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE, rngfndEnable);
+    if (static_cast<int>(rngfndEnable) == 1) {
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
@@ -145,24 +160,29 @@ void initDrivers() {
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
     // Initialize hardware components
+    ZP_Error motorStatus = ZP_ERROR_OK;
     for (int i = 0; i < 8; i++) {
-        motorHandles[i]->init();
+        motorStatus |= motorHandles[i]->init();
     }
+
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
-    MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
+    motorStatus |= MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
+    (void)ZP_BIT::report(ZP_BIT_ID::MOTOR_INIT, motorStatus);
 
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
-    rcHandle->init();
-    gps1Handle->init();
-    gps2Handle->init();
-    imuHandle->init();
-    telemLinkHandle->init();
-    pmHandle->init();
+    (void)ZP_BIT::report(ZP_BIT_ID::RC_INIT, rcHandle->init());
+    
+    (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gps1Handle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::GPS2_INIT, gps2Handle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
     if (rangefinderHandle != nullptr) {
-        rangefinderHandle->init();
+        (void)ZP_BIT::report(ZP_BIT_ID::RANGEFINDER_INIT,
+                             rangefinderHandle->init());
     }
-    barometerHandle->init();
+    (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {
@@ -170,4 +190,6 @@ void initDrivers() {
     }
 
     mainMotorGroup = {motorInstances, 8};
+
+    (void)ZP_BIT::report(ZP_BIT_ID::PARAM_TABLE_INIT, paramStatus);
 }

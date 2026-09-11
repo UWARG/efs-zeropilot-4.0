@@ -2,6 +2,7 @@
 
 #include "stm32l5xx.h"
 #include "barometer_iface.hpp"
+#include "zp_error.h"
 #include <cmath>
 #include <cstdint>
 
@@ -13,11 +14,11 @@ class Barometer : public IBarometer {
 
     public:
         Barometer(I2C_HandleTypeDef *hi2c);
-        bool readData(BaroData_t &data);
-        bool init(); 
+        ZP_Error readData(BaroData_t &data) override;
+        ZP_Error init(); 
         void rxCallback();
         void errorCallback();
-        bool firWarmupPoll();
+        ZP_Error firWarmupPoll();
         I2C_HandleTypeDef* getI2C();
 
     private:
@@ -33,5 +34,5 @@ class Barometer : public IBarometer {
         uint8_t fifoRegister;
         float latestTemperatureC = 0.0f;
         float latestPressureKpa = 0.0f;
-        bool readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
+        ZP_Error readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
 };

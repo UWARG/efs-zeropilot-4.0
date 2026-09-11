@@ -3,6 +3,10 @@
 
 TMParamSetup::TMParamSetup(TelemetryManager* tm) : tm(tm) {}
 
-void TMParamSetup::loadAllParams() {}
+ZP_Error TMParamSetup::loadAllParams() {
+    return ZP_ERROR_OK;
+}
 
-void TMParamSetup::bindAllParamCallbacks() {}
+ZP_Error TMParamSetup::bindAllParamCallbacks() {
+    return ZP_ERROR_OK;
+}

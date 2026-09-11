@@ -10,17 +10,18 @@ private:
 
     RawImu_t rawData = {};
     ScaledImu_t scaledData = {};
-    RawImuBatch_t rawBatch = {&rawData, 1}; // Only returning 1 data packet for sitl
-    ScaledImuBatch_t scaledBatch = {&scaledData, 1}; // Only returning 1 data packet for sitl
+    static constexpr uint16_t SITL_BATCH_PACKETS = 1;
+    RawImuBatch_t rawBatch = {&rawData, SITL_BATCH_PACKETS};
+    ScaledImuBatch_t scaledBatch = {&scaledData, SITL_BATCH_PACKETS};
 
     // Constants for internal conversions
     static constexpr float RAD_TO_DEG = 57.2957795f;
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
 public:
-    int init() override {
+    ZP_Error init() override {
         rawData.timestamp = 0; // Initialize timestamp
-        return 0; // Success
+        return ZP_ERROR_OK;
     }
     
     /**
@@ -58,8 +59,9 @@ public:
         rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
     }
     
-    RawImuBatch_t readRawData() override {
-        return rawBatch;
+    ZP_Error readRawData(RawImuBatch_t &rawDataBatch) override {
+        rawDataBatch = rawBatch;
+        return ZP_ERROR_OK;
     }
 
     float getODRHz() override {
@@ -73,7 +75,14 @@ public:
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
-    ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override {
+    ZP_Error scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) override {
+        if (rawDataBatch.data == nullptr) {
+            return ZP_ERROR_NULLPTR;
+        }
+        if (rawDataBatch.count > SITL_BATCH_PACKETS) {
+            return ZP_ERROR_RANGE;
+        }
+
         for (int i = 0; i < rawDataBatch.count; i++) {
             const RawImu_t &raw = rawDataBatch.data[i];
 
@@ -89,6 +98,8 @@ public:
 
             scaledData.timestamp = raw.timestamp;
         }
-        return scaledBatch; 
+
+        scaledDataBatch = scaledBatch;
+        return ZP_ERROR_OK;
     }
 };

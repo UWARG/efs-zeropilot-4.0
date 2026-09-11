@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rangefinder_datatypes.hpp"
+#include "zp_error.h"
 
 class IRangefinder {
     protected:
@@ -9,6 +10,6 @@ class IRangefinder {
     public:
         virtual ~IRangefinder() = default;
 
-        virtual int init() = 0;
-        virtual RangefinderData_t readData() = 0;
+        virtual ZP_Error init() = 0;
+        virtual ZP_Error readData(RangefinderData_t &data) = 0;
 };

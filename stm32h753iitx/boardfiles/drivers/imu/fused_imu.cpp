@@ -6,19 +6,19 @@ FusedIMU::FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1) :
     imu{imu0, imu1},
     active_imu(0) {}
     
-int FusedIMU::init() {
-    bool status = true;
+ZP_Error FusedIMU::init() {
+    ZP_Error result = ZP_ERROR_OK;
     for (int i = 0; i < NUM_IMU; i++) {
         // Init all IMUs and check IMU health from whoami
-        if (imu[i]->init() == -1) {
-            status = false;
-        }
+        result |= imu[i]->init();
     }
     active_imu = 0;
-    return status ? 0 : -1;
+    return result;
 }
 
-RawImuBatch_t FusedIMU::readRawData() {
+ZP_Error FusedIMU::readRawData(RawImuBatch_t &rawDataBatch) {
+    ZP_Error result = ZP_ERROR_OK;
+
     // Check if all IMU is filled
     bool allImuFilled = true;
     for (int i = 0; i < NUM_IMU; i++) {
@@ -34,8 +34,13 @@ RawImuBatch_t FusedIMU::readRawData() {
 
             uint16_t count = rawImuBatch[i].count;
             if (count == 0) continue; // No data from this IMU, skip
+
+            if (offset + count > MAX_FUSED_PACKET_SIZE) {
+                result |= ZP_ERROR_RANGE;
+                break;
+            }
             
-            // Concatonate the batches based on imu order, sort the exact order later in scaleIMUData
+            // Concatenate the batches based on imu order, sort the exact order later in scaleIMUData
             memcpy(rawFusedImuData + offset, rawImuBatch[i].data, sizeof(RawImu_t) * count);
             
             // Normalize IMU hardware timstamps to DWT ticks, cant compare hardware ticks between IMUs
@@ -61,15 +66,23 @@ RawImuBatch_t FusedIMU::readRawData() {
     
     rawFusedImuBatch.data = rawFusedImuData;
     rawFusedImuBatch.count = offset;
-    return rawFusedImuBatch;
+    rawDataBatch = rawFusedImuBatch;
+    return result;
 }
 
-ScaledImuBatch_t FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
+ZP_Error FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) {
     // Guard to prevent recalculations when IMUs not filled with new data
     if (rawDataBatch.count == 0) {
         scaledFusedImuBatch.count = 0;
-        return scaledFusedImuBatch;
+        scaledDataBatch = scaledFusedImuBatch;
+        return ZP_ERROR_OK;
     }
+    if (rawDataBatch.data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+
+    ZP_Error result = ZP_ERROR_OK;
+
     // Scale IMU data
     RawImuBatch_t temp; 
     uint16_t offset = 0;
@@ -82,7 +95,7 @@ ScaledImuBatch_t FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
         
         temp.data = rawDataBatch.data + offset;
         temp.count = count;
-        scaledImuBatch[i] = imu[i]->scaleIMUData(temp);
+        result |= imu[i]->scaleIMUData(temp, scaledImuBatch[i]);
         offset += count;
     }
 
@@ -103,6 +116,10 @@ ScaledImuBatch_t FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
 
         if (smallestIMU == -1) break; // All IMU has been merged, done
 
+        if (k >= MAX_FUSED_PACKET_SIZE) {
+            result |= ZP_ERROR_RANGE;
+            break;
+        }
         scaledFusedImuData[k] = scaledImuBatch[smallestIMU].data[idx[smallestIMU]];
         k++;
         idx[smallestIMU]++;
@@ -123,7 +140,8 @@ ScaledImuBatch_t FusedIMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
     
     scaledFusedImuBatch.data = scaledFusedImuData + start;
     scaledFusedImuBatch.count = k - start;
-    return scaledFusedImuBatch;
+    scaledDataBatch = scaledFusedImuBatch;
+    return result;
 }
 
 void FusedIMU::txRxCallback() {

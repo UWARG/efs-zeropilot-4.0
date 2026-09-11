@@ -105,7 +105,7 @@ void NominalState::extrapolateQuaternion(const float* gyroNewVec, const float* g
     }
 
     float qUnnorm[4];
-    math->matrixMult(omegaMatrix, 4, 4, quaternionPrev, 1, qUnnorm);
+    (void)math->matrixMult(omegaMatrix, 4, 4, quaternionPrev, 1, qUnnorm);
     math->quatNormalize(qUnnorm, qOut);
 }
 
@@ -195,17 +195,17 @@ void AHRSEKF::stateExtrapolation(const float* gyroNew, float dt) {
     math->skewSymmetric(g, s);
 
     float s2[9];
-    math->matrixMult(s, 3, 3, s, 3, s2);
+    (void)math->matrixMult(s, 3, 3, s, 3, s2);
 
     float halfDt2 = 0.5f * dt * dt;
 
     float a[9], b[9], negDtS[9], halfDt2S2[9];
-    math->matrixScale(s, -dt, negDtS, 3, 3);
-    math->matrixScale(s2, halfDt2, halfDt2S2, 3, 3);
-    math->matrixAdd(negDtS, halfDt2S2, a, 3, 3);
+    (void)math->matrixScale(s, -dt, negDtS, 3, 3);
+    (void)math->matrixScale(s2, halfDt2, halfDt2S2, 3, 3);
+    (void)math->matrixAdd(negDtS, halfDt2S2, a, 3, 3);
     a[0] += 1.0f; a[4] += 1.0f; a[8] += 1.0f;
 
-    math->matrixScale(s, halfDt2, b, 3, 3);
+    (void)math->matrixScale(s, halfDt2, b, 3, 3);
     b[0] -= dt; b[4] -= dt; b[8] -= dt;
 
     // p = Phi @ p @ Phi^t only modifies the first block row/column of p:
@@ -219,25 +219,25 @@ void AHRSEKF::stateExtrapolation(const float* gyroNew, float dt) {
     for (int j = 0; j < 3; ++j) {
         getBlock3x3(p, 0, j, p0j);
         getBlock3x3(p, 1, j, p1j);
-        math->matrixMult(a, 3, 3, p0j, 3, ap);
-        math->matrixMult(b, 3, 3, p1j, 3, bp);
-        math->matrixAdd(ap, bp, t[j], 3, 3);
+        (void)math->matrixMult(a, 3, 3, p0j, 3, ap);
+        (void)math->matrixMult(b, 3, 3, p1j, 3, bp);
+        (void)math->matrixAdd(ap, bp, t[j], 3, 3);
     }
 
     float aT[9], bT[9], p00[9];
-    math->matrixTranspose(a, 3, 3, aT);
-    math->matrixTranspose(b, 3, 3, bT);
-    math->matrixMult(t0, 3, 3, aT, 3, ap);
-    math->matrixMult(t1, 3, 3, bT, 3, bp);
-    math->matrixAdd(ap, bp, p00, 3, 3);
+    (void)math->matrixTranspose(a, 3, 3, aT);
+    (void)math->matrixTranspose(b, 3, 3, bT);
+    (void)math->matrixMult(t0, 3, 3, aT, 3, ap);
+    (void)math->matrixMult(t1, 3, 3, bT, 3, bp);
+    (void)math->matrixAdd(ap, bp, p00, 3, 3);
 
     float tTransposed[9];
     setBlock3x3(p, 0, 0, p00);
     setBlock3x3(p, 0, 1, t1);
     setBlock3x3(p, 0, 2, t2);
-    math->matrixTranspose(t1, 3, 3, tTransposed);
+    (void)math->matrixTranspose(t1, 3, 3, tTransposed);
     setBlock3x3(p, 1, 0, tTransposed);
-    math->matrixTranspose(t2, 3, 3, tTransposed);
+    (void)math->matrixTranspose(t2, 3, 3, tTransposed);
     setBlock3x3(p, 2, 0, tTransposed);
 
     // p += Q; Q is nonzero only on the diagonals of its 3x3 blocks
@@ -253,7 +253,7 @@ void AHRSEKF::stateExtrapolation(const float* gyroNew, float dt) {
         p[(i+6)*9 + (i+6)] += accelBiasCovMat[r] * dt;
     }
 
-    math->ensureSymmetric(p, 9);
+    (void)math->ensureSymmetric(p, 9);
 }
 
 void AHRSEKF::correctionAccelerometer(const float* accelNew) {
@@ -291,7 +291,7 @@ void AHRSEKF::correctionAccelerometer(const float* accelNew) {
 
 void AHRSEKF::correctionMagnetometer(const float* magNew) {
     float magNorm[3];
-    math->vectorNormalize(magNew, magNorm, 3);
+    (void)math->vectorNormalize(magNew, magNorm, 3);
     meas.updateMag(magNorm);
 
     // mag_predicted = normalize( i_to_b_rot(q_new) @ magInertial )
@@ -302,7 +302,7 @@ void AHRSEKF::correctionMagnetometer(const float* magNew) {
     math->quatRotateVector(qInv, cfg.magInertial, magPredRaw);
     
     float magPred[3];
-    math->vectorNormalize(magPredRaw, magPred, 3);
+    (void)math->vectorNormalize(magPredRaw, magPred, 3);
 
     float innovation[3];
     for (int i = 0; i < 3; ++i) innovation[i] = meas.magNew[i] - magPred[i];
@@ -330,30 +330,30 @@ void AHRSEKF::applyUpdate(const float* y, const float* h0, bool observesAccelBia
     float pBlock[9], tmp[9];
     for (int j = 0; j < 3; ++j) {
         getBlock3x3(p, 0, j, pBlock);
-        math->matrixMult(h0, 3, 3, pBlock, 3, hp[j]);
+        (void)math->matrixMult(h0, 3, 3, pBlock, 3, hp[j]);
         if (observesAccelBias) {
             getBlock3x3(p, 2, j, pBlock);
-            math->matrixAdd(hp[j], pBlock, hp[j], 3, 3);
+            (void)math->matrixAdd(hp[j], pBlock, hp[j], 3, 3);
         }
     }
 
     // 1. Mahalanobis Gating: s = H @ p @ H^t + R = HP_0 @ h0^t + HP_2 @ H2^t + R
     float h0T[9], s[9];
-    math->matrixTranspose(h0, 3, 3, h0T);
-    math->matrixMult(hp0, 3, 3, h0T, 3, s);
+    (void)math->matrixTranspose(h0, 3, 3, h0T);
+    (void)math->matrixMult(hp0, 3, 3, h0T, 3, s);
     if (observesAccelBias) {
-        math->matrixAdd(s, hp2, s, 3, 3);
+        (void)math->matrixAdd(s, hp2, s, 3, 3);
     }
-    math->matrixAdd(s, R, s, 3, 3);
+    (void)math->matrixAdd(s, R, s, 3, 3);
 
     float sInv[9]; // 3x3
-    if (!math->matrixInverse(s, 3, sInv)) return; // Failsafe against singularity
+    if (math->matrixInverse(s, 3, sInv) != ZP_ERROR_OK) return; // Failsafe against singularity
 
     float yTSinv[3]; // 1x3
-    math->matrixMult(y, 1, 3, sInv, 3, yTSinv); // y_T is identical memory layout as y
+    (void)math->matrixMult(y, 1, 3, sInv, 3, yTSinv); // y_T is identical memory layout as y
 
     float mahalanobisDist = 0;
-    math->matrixMult(yTSinv, 1, 3, y, 1, &mahalanobisDist);
+    (void)math->matrixMult(yTSinv, 1, 3, y, 1, &mahalanobisDist);
 
     if (mahalanobisDist > gateThreshold) return;
 
@@ -362,23 +362,23 @@ void AHRSEKF::applyUpdate(const float* y, const float* h0, bool observesAccelBia
     float k0[9], k1[9], k2[9];
     float* k[3] = {k0, k1, k2};
     for (int i = 0; i < 3; ++i) {
-        math->matrixTranspose(hp[i], 3, 3, tmp);
-        math->matrixMult(tmp, 3, 3, sInv, 3, k[i]);
+        (void)math->matrixTranspose(hp[i], 3, 3, tmp);
+        (void)math->matrixMult(tmp, 3, 3, sInv, 3, k[i]);
     }
 
     // errorState = k @ y
     float errorState[9]; // 9x1
     for (int i = 0; i < 3; ++i) {
-        math->matrixMult(k[i], 3, 3, y, 1, &errorState[i*3]);
+        (void)math->matrixMult(k[i], 3, 3, y, 1, &errorState[i*3]);
     }
 
     // p = (I - k @ H) @ p = p - k @ (H @ p), one 3x3 block at a time:
     // block (i, j) of k @ (H @ p) is K_i @ HP_j
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-            math->matrixMult(k[i], 3, 3, hp[j], 3, tmp);
+            (void)math->matrixMult(k[i], 3, 3, hp[j], 3, tmp);
             getBlock3x3(p, i, j, pBlock);
-            math->matrixSub(pBlock, tmp, pBlock, 3, 3);
+            (void)math->matrixSub(pBlock, tmp, pBlock, 3, 3);
             setBlock3x3(p, i, j, pBlock);
         }
     }
@@ -393,28 +393,28 @@ void AHRSEKF::applyUpdate(const float* y, const float* h0, bool observesAccelBia
     //   p0j' = j00 @ p0j and Pj0' = Pj0 @ j00^t, for j = 1, 2
     float skewErr[9], j00[9];
     math->skewSymmetric(&errorState[0], skewErr);
-    math->matrixScale(skewErr, -0.5f, j00, 3, 3);
+    (void)math->matrixScale(skewErr, -0.5f, j00, 3, 3);
     j00[0] += 1.0f; j00[4] += 1.0f; j00[8] += 1.0f;
 
     float j00T[9];
-    math->matrixTranspose(j00, 3, 3, j00T);
+    (void)math->matrixTranspose(j00, 3, 3, j00T);
 
     getBlock3x3(p, 0, 0, pBlock);
-    math->matrixMult(j00, 3, 3, pBlock, 3, tmp);
-    math->matrixMult(tmp, 3, 3, j00T, 3, pBlock);
+    (void)math->matrixMult(j00, 3, 3, pBlock, 3, tmp);
+    (void)math->matrixMult(tmp, 3, 3, j00T, 3, pBlock);
     setBlock3x3(p, 0, 0, pBlock);
 
     for (int j = 1; j < 3; ++j) {
         getBlock3x3(p, 0, j, pBlock);
-        math->matrixMult(j00, 3, 3, pBlock, 3, tmp);
+        (void)math->matrixMult(j00, 3, 3, pBlock, 3, tmp);
         setBlock3x3(p, 0, j, tmp);
 
         getBlock3x3(p, j, 0, pBlock);
-        math->matrixMult(pBlock, 3, 3, j00T, 3, tmp);
+        (void)math->matrixMult(pBlock, 3, 3, j00T, 3, tmp);
         setBlock3x3(p, j, 0, tmp);
     }
 
-    math->ensureSymmetric(p, 9);
+    (void)math->ensureSymmetric(p, 9);
 }
 
 Attitude_t AHRSEKF::getAttitudeRadians() const {

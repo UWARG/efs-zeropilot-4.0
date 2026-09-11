@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "zp_error.h"
 
 // Flight modes: numbering aligns to ArduPilot's MAVLink mapping for MissionPlanner compatibility
 enum class FlightMode_e : uint32_t {
@@ -13,7 +14,7 @@ enum class FlightMode_e : uint32_t {
     #endif
 };
 
-inline bool isValidFlightMode(uint32_t val) {
+inline ZP_Error isValidFlightMode(uint32_t val) {
     switch (static_cast<FlightMode_e>(val)) {
         #ifdef PLANE
         case FlightMode_e::MANUAL:
@@ -23,9 +24,9 @@ inline bool isValidFlightMode(uint32_t val) {
         case FlightMode_e::ACRO:
         case FlightMode_e::STABILIZE:
         #endif
-            return true;
+            return ZP_ERROR_OK;
         default:
-            return false;
+            return ZP_ERROR_INVALID_ARG;
     }
 }
 

@@ -80,51 +80,51 @@ static int8_t hexValue(uint8_t c);
 GPS::GPS(UART_HandleTypeDef* huart) :
     huart(huart) {}
 
-bool GPS::init() {
+ZP_Error GPS::init() {
     SET_BIT(huart->Instance->CR3, USART_CR3_OVRDIS);
 
     // Configure before starting the DMA receive, waitForAck() is polling
-    protocol = configureUBX() ? UBX : NMEA;
+    protocol = (configureUBX() == ZP_ERROR_OK) ? UBX : NMEA;
 
-    return restartDMA() == HAL_OK;
+    return restartDMA();
 }
 
 /*
 Enable NAV-PVT before disabling NMEA. If this is not acknowledged the receiver keeps emitting its NMEA messages
-Switch the gps to UBX NAV-PVT only. Returns false if the receiver does not support UBX and 
+Switch the gps to UBX NAV-PVT only. Returns an error if the receiver does not support UBX and 
 leaves its NMEA output untouched so readData() can still parse it
 */
-bool GPS::configureUBX() {
+ZP_Error GPS::configureUBX() {
     // Try CFG-VALSET config msg, prefered for chips M9/M10
-    if (configValset(CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1, MESSAGE_RATE_EVERY_SOLUTION)) {
+    if (configValset(CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1, MESSAGE_RATE_EVERY_SOLUTION) == ZP_ERROR_OK) {
         // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
         for (uint32_t key : CFG_KEY_MSGOUT_NMEA_UART1) {
-            configValset(key, MESSAGE_RATE_DISABLED);
+            (void)configValset(key, MESSAGE_RATE_DISABLED);
         }
         // Configure GPS ODR to be 5Hz
-        configValset(CFG_KEY_RATE_MEAS, 200);
-        configValset(CFG_KEY_RATE_NAV, 1);
-        return true;
+        (void)configValset(CFG_KEY_RATE_MEAS, 200);
+        (void)configValset(CFG_KEY_RATE_NAV, 1);
+        return ZP_ERROR_OK;
     }
 
     // GPS is M8 or older, retry over legacy CFG-MSG
-    if (setMessageRate(UBX_MESSAGE_CLASS_NAV, UBX_MESSAGE_ID_PVT, MESSAGE_RATE_EVERY_SOLUTION)) {
+    ZP_Error status = setMessageRate(UBX_MESSAGE_CLASS_NAV, UBX_MESSAGE_ID_PVT, MESSAGE_RATE_EVERY_SOLUTION);
+    if (status == ZP_ERROR_OK) {
         // PVT is confirmed, so NMEA is redundant. Disable NMEA messages
         for (uint8_t sentenceId : NMEA_SENTENCE_IDS) {
-            setMessageRate(UBX_MESSAGE_CLASS_NMEA, sentenceId, MESSAGE_RATE_DISABLED);
+            (void)setMessageRate(UBX_MESSAGE_CLASS_NMEA, sentenceId, MESSAGE_RATE_DISABLED);
         }
-        setRate(200, 1);
-        return true;
+        (void)setRate(200, 1);
     }
 
-    return false;
+    return status;
 }
 
 /*
 Send config message via CFG-MSG for M8 or older
 Rate 0 disables the message, 1 emits it on every navigation solution
 */
-bool GPS::setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate) {
+ZP_Error GPS::setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate) {
     uint8_t cfgMsg[] = {
         UBX_SYNC_1, UBX_SYNC_2,
         UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_MSG,
@@ -132,12 +132,13 @@ bool GPS::setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate) {
         msgClass, msgId, rate,
         0x00, 0x00 // Placeholder for checksum
     };
-    if (!sendUBX(cfgMsg, sizeof(cfgMsg))) return false;
+    ZP_Error status = sendUBX(cfgMsg, sizeof(cfgMsg));
+    if (status != ZP_ERROR_OK) return status;
     return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_MSG);
 }
 
 // Legacy CFG-RATE for M8 and older. measRate in ms, navRate in cycles.
-bool GPS::setRate(uint16_t measRateMs, uint16_t navRate) {
+ZP_Error GPS::setRate(uint16_t measRateMs, uint16_t navRate) {
     uint8_t cfgRate[] = {
         UBX_SYNC_1, UBX_SYNC_2,
         UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_RATE,
@@ -147,7 +148,8 @@ bool GPS::setRate(uint16_t measRateMs, uint16_t navRate) {
         0x01, 0x00, // timeRef = 1 (GPS time)
         0x00, 0x00  // Checksum placeholder
     };
-    if (!sendUBX(cfgRate, sizeof(cfgRate))) return false;
+    ZP_Error status = sendUBX(cfgRate, sizeof(cfgRate));
+    if (status != ZP_ERROR_OK) return status;
     return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_RATE);
 }
 
@@ -155,14 +157,14 @@ bool GPS::setRate(uint16_t measRateMs, uint16_t navRate) {
 Send config message via UBX-CFG-VALSET for M9/M10
 Rate 0 disables the message, 1 emits it on every navigation solution
 */
-bool GPS::configValset(uint32_t key, uint32_t value) {
+ZP_Error GPS::configValset(uint32_t key, uint32_t value) {
     // The value width (1/2/4 bytes) is encoded in bits 30:28 of the key
     uint8_t valueLen;
     switch ((key >> 28) & 0x07) {
         case 0x2: valueLen = 1; break; // U1 or bool
         case 0x3: valueLen = 2; break; // U2
         case 0x4: valueLen = 4; break; // U4
-        default:  return false; // Unsupported width
+        default:  return ZP_ERROR_INVALID_ARG; // Unsupported width
     }
 
     // Header(6) + cfg preamble(4) + key(4) + value(<=4) + checksum(2)
@@ -188,7 +190,8 @@ bool GPS::configValset(uint32_t key, uint32_t value) {
     msg[i++] = 0x00; // Checksum placeholder
     msg[i++] = 0x00;
 
-    if (!sendUBX(msg, i)) return false;
+    ZP_Error status = sendUBX(msg, i);
+    if (status != ZP_ERROR_OK) return status;
     return waitForAck(UBX_MESSAGE_CLASS_CFG, UBX_MESSAGE_ID_CFG_VALSET);
 }
 
@@ -202,27 +205,27 @@ void GPS::calcChecksum(uint8_t *msg, uint16_t len) {
     msg[len - 1] = ckB;
 }
 
-bool GPS::sendUBX(uint8_t *msg, uint16_t len) {
+ZP_Error GPS::sendUBX(uint8_t *msg, uint16_t len) {
     calcChecksum(msg, len);
-    return (HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY) == HAL_OK);
+    return (HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY) == HAL_OK) ? ZP_ERROR_OK : (ZP_ERROR_EXT_API | ZP_ERROR_FAIL);
 }
 
 /*
 Scans the incoming msgs in polling for an ACK msgClass and msgId. 
 A gps that does not speak UBX never ACKs and timeout tells us to fall back to NMEA
 */
-bool GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
+ZP_Error GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
     const uint32_t deadline = HAL_GetTick() + UBX_ACK_TIMEOUT_MS;
 
     uint8_t byte = 0;
-    while (receiveByte(byte, deadline)) {
+    while (receiveByte(byte, deadline) == ZP_ERROR_OK) {
         if (byte != UBX_SYNC_1) continue;
-        if (!receiveByte(byte, deadline) || byte != UBX_SYNC_2) continue;
+        if (receiveByte(byte, deadline) != ZP_ERROR_OK || byte != UBX_SYNC_2) continue;
 
         uint8_t body[UBX_ACK_FRAME_LEN] = {0};
         bool success = true;
         for (uint8_t i = 0; i < UBX_ACK_FRAME_LEN && success; i++) {
-            success = receiveByte(body[i], deadline);
+            success = (receiveByte(body[i], deadline) == ZP_ERROR_OK);
         }
         if (!success) break;
 
@@ -234,24 +237,31 @@ bool GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
         if (body[4] != msgClass || body[5] != msgId) continue;
 
         // An ACK-NAK means the receiver refused the request
-        return body[1] == UBX_MESSAGE_ID_ACK_ACK;
+        return (body[1] == UBX_MESSAGE_ID_ACK_ACK) ? ZP_ERROR_OK : ZP_ERROR_NACK;
     }
 
-    return false;
+    return ZP_ERROR_TIMEOUT;
 }
 
-bool GPS::receiveByte(uint8_t &byte, uint32_t deadline) {
+ZP_Error GPS::receiveByte(uint8_t &byte, uint32_t deadline) {
     int32_t remainingTick = (int32_t)(deadline - HAL_GetTick());
-    if (remainingTick <= 0) return false;
+    if (remainingTick <= 0) return ZP_ERROR_TIMEOUT;
 
-    return HAL_UART_Receive(huart, &byte, 1, (uint32_t)remainingTick) == HAL_OK;
+    HAL_StatusTypeDef status = HAL_UART_Receive(huart, &byte, 1, (uint32_t)remainingTick);
+    if (status == HAL_TIMEOUT) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
+    } else if (status != HAL_OK) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }
 
-GpsData_t GPS::readData() {
-    // When nothing new has arrived since the last call, mark it as old and don't reparse the data
+ZP_Error GPS::readData(GpsData_t &data) {
+    // Check if new data has arrived
     if (!dataReady) {
         tempData.isNew = false;
-        return tempData;
+        data = tempData;
+        return ZP_ERROR_OK;
     }
     dataReady = false;
 
@@ -263,9 +273,9 @@ GpsData_t GPS::readData() {
     const uint16_t len = processBufferLen();
     while (idx < len) {
         if (processBuffer[idx] == UBX_SYNC_1) {
-            success |= consumeUBX(idx);
+            success |= (consumeUBX(idx) == ZP_ERROR_OK);
         } else if (processBuffer[idx] == NMEA_SENTENCE_START) {
-            success |= consumeNMEA(idx);
+            success |= (consumeNMEA(idx) == ZP_ERROR_OK);
         } else {
             idx++;
         }
@@ -274,7 +284,9 @@ GpsData_t GPS::readData() {
     tempData.isNew = success;
 
     parsingData = false;
-    return tempData;
+    data = tempData;
+
+    return success ? ZP_ERROR_OK : ZP_ERROR_PARSE;
 }
 
 void GPS::rxCallback(uint16_t size) {
@@ -285,17 +297,17 @@ void GPS::rxCallback(uint16_t size) {
         dataReady = true;
     }
 
-    restartDMA();
+    (void)restartDMA();
 }
 
-HAL_StatusTypeDef GPS::restartDMA() {
+ZP_Error GPS::restartDMA() {
     HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(
         huart,
         (uint8_t*)rxBuffer,
         MAX_NMEA_DATA_LENGTH
     );
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-    return status;
+    return status == HAL_OK ? ZP_ERROR_OK : ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
 }
 
 UART_HandleTypeDef* GPS::getHuart() {
@@ -311,14 +323,14 @@ uint16_t GPS::processBufferLen() {
 }
 
 // idx enters on the sync char 1(0xB5) and leaves past the end of the frame, whether or not the frame parsed, so that readData() always makes progress
-bool GPS::consumeUBX(uint16_t &idx) {
+ZP_Error GPS::consumeUBX(uint16_t &idx) {
     const uint16_t start = idx;
     const uint16_t len = processBufferLen();
 
     // Step over it, not long enough to form a header or not a real UBX frame
     if (start + UBX_HEADER_LEN > len || processBuffer[start + 1] != UBX_SYNC_2) {
         idx = start + 1;
-        return false;
+        return ZP_ERROR_PARSE;
     }
 
     uint8_t msgClass = processBuffer[start + 2];
@@ -329,14 +341,14 @@ bool GPS::consumeUBX(uint16_t &idx) {
     uint32_t frameLen = (uint32_t)UBX_HEADER_LEN + payloadLen + UBX_CHECKSUM_LEN;
     if (start + frameLen > len) {
         idx = len; // The rest has not arrived, drop the msg
-        return false;
+        return ZP_ERROR_PARSE;
     }
 
     idx = start + (uint16_t)frameLen;
 
-    if (!verifyChecksumUBX(start, (uint16_t)frameLen)) return false;
+    if (!verifyChecksumUBX(start, (uint16_t)frameLen)) return ZP_ERROR_CRC;
 
-    if (msgClass != UBX_MESSAGE_CLASS_NAV) return false;
+    if (msgClass != UBX_MESSAGE_CLASS_NAV) return ZP_ERROR_UNSUPPORTED;
 
     // The parse functions expect to start on the length field
     uint16_t parseStart = start + 4;
@@ -346,12 +358,12 @@ bool GPS::consumeUBX(uint16_t &idx) {
         case UBX_MESSAGE_ID_PVT:
             return parsePVT(parseStart);
         default:
-            return false; // Drop all other msgs
+            return ZP_ERROR_UNSUPPORTED; // Drop all other msgs
     }
 }
 
 // idx enters on the '$' and leaves past \n, whether or not the sentence parsed, so readData() always makes progress
-bool GPS::consumeNMEA(uint16_t &idx) {
+ZP_Error GPS::consumeNMEA(uint16_t &idx) {
     const uint16_t start = idx;
     const uint16_t len = processBufferLen();
 
@@ -360,20 +372,20 @@ bool GPS::consumeNMEA(uint16_t &idx) {
     while ((end < len) && (processBuffer[end] != NMEA_SENTENCE_END)) end++;
     if (end == len) {
         idx = len; // The full msg didnt arrive, drop the msg
-        return false;
+        return ZP_ERROR_PARSE;
     }
 
     idx = end + 1;
 
-    if (!verifyChecksumNMEA(start, end)) return false;
+    if (!verifyChecksumNMEA(start, end)) return ZP_ERROR_CRC;
 
     uint16_t parseStart = start + NMEA_SENTENCE_TYPE_OFFSET;
-    if (parseStart + NMEA_SENTENCE_TYPE_LEN > end) return false;
+    if (parseStart + NMEA_SENTENCE_TYPE_LEN > end) return ZP_ERROR_PARSE;
 
     if (matchesSentenceType(parseStart, "RMC")) return parseRMC(parseStart);
     if (matchesSentenceType(parseStart, "GGA")) return parseGGA(parseStart);
 
-    return false;
+    return ZP_ERROR_UNSUPPORTED;
 }
 
 bool GPS::matchesSentenceType(uint16_t idx, const char *sentenceType) {
@@ -415,118 +427,119 @@ bool GPS::verifyChecksumNMEA(uint16_t start, uint16_t end) {
 }
 
 // idx enters on the 'R' of "RMC"
-bool GPS::parseRMC(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, NMEA_SENTENCE_TYPE_SKIP)) return false;
+ZP_Error GPS::parseRMC(uint16_t &idx) {
+    ZP_Error status = ZP_ERROR_OK;
+
+    if (incrementProcessBufferIndex(idx, NMEA_SENTENCE_TYPE_SKIP) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Check if data exists
     if (processBuffer[idx] == ',') {
-        return false;
+        return ZP_ERROR_INVALID_DATA;
     }
 
-    if (getTimeRMC(idx) == false) {
-        return false;
-    }
+    status = getTimeRMC(idx);
+    if (status != ZP_ERROR_OK) return status;
 
     // Skip to status
-    while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;;
+    while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Begin status
-    if (!incrementProcessBufferIndex(idx, 1)) return false;
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Check if data valid
-    if (processBuffer[idx] == 'V') return false;
+    if (processBuffer[idx] == 'V') return ZP_ERROR_INVALID_DATA;
     // End status
 
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
-    if (getLatitudeRMC(idx) == false) {
-        return false;
-    }
+    status = getLatitudeRMC(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
-    if (getLongitudeRMC(idx) == false) {
-        return false;
-    }
+    status = getLongitudeRMC(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
-    if (getSpeedRMC(idx) == false) {
-        return false;
-    }
+    status = getSpeedRMC(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;;
-    if (!incrementProcessBufferIndex(idx, 1)) return false;
+    while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
-    if (getTrackAngleRMC(idx) == false) {
-        return false;
-    }
+    status = getTrackAngleRMC(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;
-    while (processBuffer[idx] == ',') if (!incrementProcessBufferIndex(idx, 1)) return false;
+    while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
+    while (processBuffer[idx] == ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
-    if (getDateRMC(idx) == false) {
-        return false;
-    }
+    status = getDateRMC(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
 // idx enters on the first 'G' of "GGA"
-bool GPS::parseGGA(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, NMEA_SENTENCE_TYPE_SKIP)) return false;
+ZP_Error GPS::parseGGA(uint16_t &idx) {
+    ZP_Error status = ZP_ERROR_OK;
+
+    if (incrementProcessBufferIndex(idx, NMEA_SENTENCE_TYPE_SKIP) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Check if data exists
     if (processBuffer[idx] == ',') {
-        return false;
+        return ZP_ERROR_INVALID_DATA;
     }
 
     // Skip 7 sections of data
     for (int i = 0; i < 6; i++) {
-        while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
 
-    if (getNumSatellitesGGA(idx) == false) {
-        return false;
-    }
+    status = getNumSatellitesGGA(idx);
+    if (status != ZP_ERROR_OK) return status;
 
     for (int i = 0; i < 2; i++) {
-    	while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+    	while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
 
-    if(getAltitudeGGA(idx) == false) {
-    	return false;
-    }
+    status = getAltitudeGGA(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::parseVELECEF(uint16_t &idx) {
-    if (getLenUBX(idx) != VELECEF_EXPECTED_LEN) return false;
+ZP_Error GPS::parseVELECEF(uint16_t &idx) {
+    ZP_Error status = ZP_ERROR_OK;
+
+    if (getLenUBX(idx) != VELECEF_EXPECTED_LEN) return ZP_ERROR_PARSE;
 
     // Skip iTOW field
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
-    if (!getVxVELECEF(idx)) return false;
+    status = getVxVELECEF(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    if (!getVyVELECEF(idx)) return false;
+    status = getVyVELECEF(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    if (!getVzVELECEF(idx)) return false;
+    status = getVzVELECEF(idx);
+    if (status != ZP_ERROR_OK) return status;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::parsePVT(uint16_t &idx) {
+ZP_Error GPS::parsePVT(uint16_t &idx) {
     // Length field
-    if (getLenUBX(idx) != PVT_EXPECTED_LEN) return false;
+    if (getLenUBX(idx) != PVT_EXPECTED_LEN) return ZP_ERROR_PARSE;
 
     // Skip iTOW field
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Consume year(2), month(1), day(1), hour(1), min(1), sec(1), valid(1)
-    if (!incrementProcessBufferIndex(idx, 8)) return false;
+    if (incrementProcessBufferIndex(idx, 8) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     bool validTimeData = (processBuffer[idx - 1] & PVT_VALID_TIME_MASK) == PVT_VALID_TIME_MASK;
     if (validTimeData) {
         tempData.time.year = ((uint16_t)processBuffer[idx - 7] << 8) | ((uint16_t)processBuffer[idx - 8]);
@@ -538,14 +551,14 @@ bool GPS::parsePVT(uint16_t &idx) {
     }
 
     // Skip tAcc(4 bytes) and nano(4 bytes) fields
-    if (!incrementProcessBufferIndex(idx, 8)) return false;
+    if (incrementProcessBufferIndex(idx, 8) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Consume fixType(1), flags(1), flags2(1), numSV(1), lon(4), lat(4), height(4), hMSL(4)
-    if (!incrementProcessBufferIndex(idx, 20)) return false;
+    if (incrementProcessBufferIndex(idx, 20) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     uint8_t fixType = processBuffer[idx - 20];
     bool gnssFixOK = processBuffer[idx - 19] & PVT_GNSS_FIX_OK_MASK;
     if (!gnssFixOK || (fixType != FIX_TYPE_2D && fixType != FIX_TYPE_3D)) {
-        return false;
+        return ZP_ERROR_INVALID_DATA;
     }
     tempData.numSatellites = processBuffer[idx - 17];
     tempData.longitude = readInt32LE((uint8_t*)processBuffer, idx - 16) * 1e-7f; // 1e-7 deg to deg
@@ -556,65 +569,65 @@ bool GPS::parsePVT(uint16_t &idx) {
         : INVALID_ALTITUDE;
 
     // Skip hAcc(4) and vAcc(4) fields
-    if (!incrementProcessBufferIndex(idx, 8)) return false;
+    if (incrementProcessBufferIndex(idx, 8) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
 
     // Consume the NED velocities velN(4), velE(4), velD(4)
-    if (!incrementProcessBufferIndex(idx, 12)) return false;
+    if (incrementProcessBufferIndex(idx, 12) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     tempData.vx = readInt32LE((uint8_t*)processBuffer, idx - 12) / 1000.0f; // mm/s to m/s
     tempData.vy = readInt32LE((uint8_t*)processBuffer, idx - 8) / 1000.0f;
     tempData.vz = readInt32LE((uint8_t*)processBuffer, idx - 4) / 1000.0f;
 
     // Get gSpeed field
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     tempData.groundSpeed = readInt32LE((uint8_t*)processBuffer, idx - 4) / 10.0f; // mm/s to cm/s
 
     // Get headMot field
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     tempData.trackAngle = readInt32LE((uint8_t*)processBuffer, idx - 4) * 1e-5f; // 1e-5 deg to deg
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
 uint16_t GPS::getLenUBX(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 2)) return 0;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return 0;
     return ((uint16_t)processBuffer[idx - 1] << 8) | ((uint16_t)processBuffer[idx - 2]);  
 }
 
-bool GPS::getTimeRMC(uint16_t &idx) {
+ZP_Error GPS::getTimeRMC(uint16_t &idx) {
     uint8_t hour = (processBuffer[idx] - '0') * 10 + (processBuffer[idx + 1] - '0');
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     uint8_t minute = (processBuffer[idx] - '0') * 10 + (processBuffer[idx + 1] - '0');
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     uint8_t second = (processBuffer[idx] - '0') * 10 + (processBuffer[idx + 1] - '0');
 
     tempData.time.hour = hour;
     tempData.time.minute = minute;
     tempData.time.second = second;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getLatitudeRMC(uint16_t &idx) {
+ZP_Error GPS::getLatitudeRMC(uint16_t &idx) {
     float lat = 0;
     for (int i = 0; i < 2; i++) {
         lat *= 10;
         lat += ((float)(processBuffer[idx] - '0'));
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
 
     float lat_minutes = 0;
     while (processBuffer[idx] != '.') {
         lat_minutes *= 10;
         lat_minutes += ((float)(processBuffer[idx] - '0'));
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
-    if (!incrementProcessBufferIndex(idx, 1)) return false;; // Skip decimal char
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE; // Skip decimal char
 
     // Including two digits of minutes
     uint32_t mult = 10;
     while (processBuffer[idx] != ',' && mult <= DECIMAL_PRECISION) {
         lat_minutes += ((float)(processBuffer[idx] - '0')) / mult;
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
         mult *= 10;
     }
 
@@ -623,82 +636,82 @@ bool GPS::getLatitudeRMC(uint16_t &idx) {
     tempData.latitude = lat;
 
     // Skip to NS char indicator
-    while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;
-    if (!incrementProcessBufferIndex(idx, 1)) return false; // Skip over comma
+    while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE; // Skip over comma
     tempData.latitude *= (processBuffer[idx] == 'N') ? 1 : -1;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getLongitudeRMC(uint16_t &idx) {
+ZP_Error GPS::getLongitudeRMC(uint16_t &idx) {
     float lon = 0;
     for (int i = 0; i < 3; i++) {
         lon *= 10;
         lon += ((float)(processBuffer[idx] - '0'));
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
 
     float lon_minutes = 0;
     while (processBuffer[idx] != '.') {
         lon_minutes *= 10;
         lon_minutes += ((float)(processBuffer[idx] - '0'));
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
 
-    if (!incrementProcessBufferIndex(idx, 1)) return false; // Skip decimal char
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE; // Skip decimal char
 
     // Including two digits of minutes
     uint32_t mult = 10;
     while (processBuffer[idx] != ',' && mult <= DECIMAL_PRECISION) {
         lon_minutes += ((float)(processBuffer[idx] - '0')) / mult;
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
         mult *= 10;
     }
 
     lon += lon_minutes / 60;
 
     tempData.longitude = lon;
-    while (processBuffer[idx] != ',') if (!incrementProcessBufferIndex(idx, 1)) return false;
-    if (!incrementProcessBufferIndex(idx, 1)) return false;
+    while (processBuffer[idx] != ',') if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     tempData.longitude *= (processBuffer[idx] == 'E') ? 1 : -1;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getSpeedRMC(uint16_t &idx) {
+ZP_Error GPS::getSpeedRMC(uint16_t &idx) {
     float spd = 0;
     while (processBuffer[idx] != '.') {
         spd *= 10;
         spd += processBuffer[idx] - '0';
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
-    if (!incrementProcessBufferIndex(idx, 1)) return false; // Decimal char
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE; // Decimal char
     uint32_t mult = 10;
     while (processBuffer[idx] != ',' && mult <= DECIMAL_PRECISION) {
         spd += ((float)(processBuffer[idx] - '0')) / mult;
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
         mult *= 10;
     }
 
     tempData.groundSpeed = spd * 51.4444; // Convert from kt to cm/s
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getTrackAngleRMC(uint16_t &idx) {
+ZP_Error GPS::getTrackAngleRMC(uint16_t &idx) {
     float cog = 0;
     // Check if cog was calculated
     if (processBuffer[idx] != ',') {
         while (processBuffer[idx] != '.') {
             cog *= 10;
             cog += processBuffer[idx] - '0';
-            if (!incrementProcessBufferIndex(idx, 1)) return false;
+            if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
         }
-        if (!incrementProcessBufferIndex(idx, 1)) return false; // Decimal char
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE; // Decimal char
         uint32_t mult = 10;
         while (processBuffer[idx] != ',' && mult <= DECIMAL_PRECISION) {
             cog += ((float)(processBuffer[idx] - '0')) / mult;
-            if (!incrementProcessBufferIndex(idx, 1)) return false;
+            if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
             mult *= 10;
         }
     }
@@ -708,83 +721,83 @@ bool GPS::getTrackAngleRMC(uint16_t &idx) {
 
     tempData.trackAngle = cog;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getDateRMC(uint16_t &idx) {
+ZP_Error GPS::getDateRMC(uint16_t &idx) {
     int day = (processBuffer[idx] - '0') * 10 + processBuffer[idx + 1] - '0';
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     int month = (processBuffer[idx] - '0') * 10 + processBuffer[idx + 1] - '0';
-    if (!incrementProcessBufferIndex(idx, 2)) return false;
+    if (incrementProcessBufferIndex(idx, 2) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     int year = (processBuffer[idx] - '0') * 10 + processBuffer[idx + 1] - '0';
 
     tempData.time.day = day;
     tempData.time.month= month;
     tempData.time.year = year;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getNumSatellitesGGA(uint16_t &idx) {
+ZP_Error GPS::getNumSatellitesGGA(uint16_t &idx) {
     int numSats = 0;
     while (processBuffer[idx] != ',') {
         numSats *= 10;
         numSats += processBuffer[idx] - '0';
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
 
     tempData.numSatellites = numSats;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getAltitudeGGA(uint16_t &idx) {
+ZP_Error GPS::getAltitudeGGA(uint16_t &idx) {
     float altitude = 0;
     while (processBuffer[idx] != '.') {
         altitude *= 10;
         altitude += processBuffer[idx] - '0';
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     }
-    if (!incrementProcessBufferIndex(idx, 1)) return false; // Decimal char
+    if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE; // Decimal char
     uint32_t mult = 10;
     while (processBuffer[idx] != ',' && mult <= DECIMAL_PRECISION) {
         altitude += ((float)(processBuffer[idx] - '0')) / mult;
-        if (!incrementProcessBufferIndex(idx, 1)) return false;
+        if (incrementProcessBufferIndex(idx, 1) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
         mult *= 10;
     }
 
     tempData.altitude = altitude;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getVxVELECEF(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+ZP_Error GPS::getVxVELECEF(uint16_t &idx) {
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     int32_t ecefVX = readInt32LE((uint8_t*)processBuffer, idx - 4);
 
     tempData.vx = ecefVX / 100.0f; // cm/s to m/s
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getVyVELECEF(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+ZP_Error GPS::getVyVELECEF(uint16_t &idx) {
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     int32_t ecefVY = readInt32LE((uint8_t*)processBuffer, idx - 4);
 
     tempData.vy = ecefVY / 100.0f; // cm/s to m/s
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::getVzVELECEF(uint16_t &idx) {
-    if (!incrementProcessBufferIndex(idx, 4)) return false;
+ZP_Error GPS::getVzVELECEF(uint16_t &idx) {
+    if (incrementProcessBufferIndex(idx, 4) != ZP_ERROR_OK) return ZP_ERROR_RANGE;
     int32_t ecefVZ = readInt32LE((uint8_t*)processBuffer, idx - 4);
 
     tempData.vz = ecefVZ / 100.0f; // cm/s to m/s
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
-    if (processBuffer + idx + increment >= processBufferEnd) return false;
+ZP_Error GPS::incrementProcessBufferIndex(uint16_t &idx, uint16_t increment) {
+    if (processBuffer + idx + increment >= processBufferEnd) return ZP_ERROR_RANGE;
     idx += increment;
-    return true;
+    return ZP_ERROR_OK;
 }
 
 static int32_t readInt32LE(const uint8_t *buf, uint16_t idx) {

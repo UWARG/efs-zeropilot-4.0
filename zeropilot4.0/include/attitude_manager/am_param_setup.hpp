@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-
+#include "zp_error.h"
 #include "param_setup.hpp"
 
 class AttitudeManager;
@@ -9,85 +9,85 @@ class AttitudeManager;
 class AMParamSetup : public IParamSetup {
    public:
     explicit AMParamSetup(AttitudeManager* am);
-    void loadAllParams() override;
-    void bindAllParamCallbacks() override;
+    ZP_Error loadAllParams() override;
+    ZP_Error bindAllParamCallbacks() override;
 
    private:
     AttitudeManager* am;
 
     // Flightmode param callbacks
     #ifdef PLANE
-    static bool updatePIDRollKp(AttitudeManager* ctx, float val);
-    static bool updatePIDRollKi(AttitudeManager* ctx, float val);
-    static bool updatePIDRollKd(AttitudeManager* ctx, float val);
-    static bool updatePIDRollTau(AttitudeManager* ctx, float val);
-    static bool updatePIDRollIMax(AttitudeManager* ctx, float val);
-    static bool updatePIDRollFF(AttitudeManager* ctx, float val);
-    static bool updatePIDPitchKp(AttitudeManager* ctx, float val);
-    static bool updatePIDPitchKi(AttitudeManager* ctx, float val);
-    static bool updatePIDPitchKd(AttitudeManager* ctx, float val);
-    static bool updatePIDPitchTau(AttitudeManager* ctx, float val);
-    static bool updatePIDPitchIMax(AttitudeManager* ctx, float val);
-    static bool updatePIDPitchFF(AttitudeManager* ctx, float val);
-    static bool updateKffRddrmix(AttitudeManager* ctx, float val);
-    static bool updateRollLimitDeg(AttitudeManager* ctx, float val);
-    static bool updatePitchLimMaxDeg(AttitudeManager* ctx, float val);
-    static bool updatePitchLimMinDeg(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDRollKp(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDRollKi(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDRollKd(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDRollTau(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDRollIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDRollFF(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDPitchKp(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDPitchKi(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDPitchKd(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDPitchTau(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDPitchIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updatePIDPitchFF(AttitudeManager* ctx, float val);
+    static ZP_Error updateKffRddrmix(AttitudeManager* ctx, float val);
+    static ZP_Error updateRollLimitDeg(AttitudeManager* ctx, float val);
+    static ZP_Error updatePitchLimMaxDeg(AttitudeManager* ctx, float val);
+    static ZP_Error updatePitchLimMinDeg(AttitudeManager* ctx, float val);
     #endif
     #ifdef QUADCOPTER
-    static bool updateRatePIDRollKp(AttitudeManager* ctx, float val);
-    static bool updateRatePIDRollKi(AttitudeManager* ctx, float val);
-    static bool updateRatePIDRollKd(AttitudeManager* ctx, float val);
-    static bool updateRatePIDRollTau(AttitudeManager* ctx, float val);
-    static bool updateRatePIDRollIMax(AttitudeManager* ctx, float val);
-    static bool updateRatePIDPitchKp(AttitudeManager* ctx, float val);
-    static bool updateRatePIDPitchKi(AttitudeManager* ctx, float val);
-    static bool updateRatePIDPitchKd(AttitudeManager* ctx, float val);
-    static bool updateRatePIDPitchTau(AttitudeManager* ctx, float val);
-    static bool updateRatePIDPitchIMax(AttitudeManager* ctx, float val);
-    static bool updateRatePIDYawKp(AttitudeManager* ctx, float val);
-    static bool updateRatePIDYawKi(AttitudeManager* ctx, float val);
-    static bool updateRatePIDYawKd(AttitudeManager* ctx, float val);
-    static bool updateRatePIDYawTau(AttitudeManager* ctx, float val);
-    static bool updateRatePIDYawIMax(AttitudeManager* ctx, float val);
-    static bool updateRollPitchLimitRate(AttitudeManager* ctx, float val);
-    static bool updateYawLimitRate(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDRollKp(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDRollKi(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDRollKd(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDRollTau(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDRollIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDPitchKp(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDPitchKi(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDPitchKd(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDPitchTau(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDPitchIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDYawKp(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDYawKi(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDYawKd(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDYawTau(AttitudeManager* ctx, float val);
+    static ZP_Error updateRatePIDYawIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updateRollPitchLimitRate(AttitudeManager* ctx, float val);
+    static ZP_Error updateYawLimitRate(AttitudeManager* ctx, float val);
 
-    static bool updateAngPIDRollKp(AttitudeManager* ctx, float val);
-    static bool updateAngPIDRollKi(AttitudeManager* ctx, float val);
-    static bool updateAngPIDRollKd(AttitudeManager* ctx, float val);
-    static bool updateAngPIDRollTau(AttitudeManager* ctx, float val);
-    static bool updateAngPIDRollIMax(AttitudeManager* ctx, float val);
-    static bool updateAngPIDPitchKp(AttitudeManager* ctx, float val);
-    static bool updateAngPIDPitchKi(AttitudeManager* ctx, float val);
-    static bool updateAngPIDPitchKd(AttitudeManager* ctx, float val);
-    static bool updateAngPIDPitchTau(AttitudeManager* ctx, float val);
-    static bool updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
-    static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
-    static bool updateMotSpinMin(AttitudeManager* ctx, float val);
-    static bool updateMotSpinMax(AttitudeManager* ctx, float val);
-    static bool updateMotSpinArm(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDRollKp(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDRollKi(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDRollKd(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDRollTau(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDRollIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDPitchKp(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDPitchKi(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDPitchKd(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDPitchTau(AttitudeManager* ctx, float val);
+    static ZP_Error updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
+    static ZP_Error updateRollPitchLimitAng(AttitudeManager* ctx, float val);
+    static ZP_Error updateMotSpinMin(AttitudeManager* ctx, float val);
+    static ZP_Error updateMotSpinMax(AttitudeManager* ctx, float val);
+    static ZP_Error updateMotSpinArm(AttitudeManager* ctx, float val);
     #endif
 
     // FFT Harmonic Notch Filter param callbacks
-    static bool updateHarmonicNotchEnabled(AttitudeManager* ctx, float val);
-    static bool updateHarmonicNotchWindowSize(AttitudeManager* ctx, float val);
-    static bool updateHarmonicNotchMinFreqHz(AttitudeManager* ctx, float val);
-    static bool updateHarmonicNotchBandwidthHz(AttitudeManager* ctx, float val);
-    static bool updateHarmonicNotchAttenuationDB(AttitudeManager* ctx, float val);
-    static bool updateHarmonicNotchHarmonicsMask(AttitudeManager* ctx, float val);
+    static ZP_Error updateHarmonicNotchEnabled(AttitudeManager* ctx, float val);
+    static ZP_Error updateHarmonicNotchWindowSize(AttitudeManager* ctx, float val);
+    static ZP_Error updateHarmonicNotchMinFreqHz(AttitudeManager* ctx, float val);
+    static ZP_Error updateHarmonicNotchBandwidthHz(AttitudeManager* ctx, float val);
+    static ZP_Error updateHarmonicNotchAttenuationDB(AttitudeManager* ctx, float val);
+    static ZP_Error updateHarmonicNotchHarmonicsMask(AttitudeManager* ctx, float val);
 
     // Servo param callback helpers
-    static bool setServoTrim(AttitudeManager* ctx, uint8_t ch, float val);
-    static bool setServoMin(AttitudeManager* ctx, uint8_t ch, float val);
-    static bool setServoMax(AttitudeManager* ctx, uint8_t ch, float val);
-    static bool setServoReversed(AttitudeManager* ctx, uint8_t ch, float val);
-    static bool setServoFunction(AttitudeManager* ctx, uint8_t ch, float val);
+    static ZP_Error setServoTrim(AttitudeManager* ctx, uint8_t ch, float val);
+    static ZP_Error setServoMin(AttitudeManager* ctx, uint8_t ch, float val);
+    static ZP_Error setServoMax(AttitudeManager* ctx, uint8_t ch, float val);
+    static ZP_Error setServoReversed(AttitudeManager* ctx, uint8_t ch, float val);
+    static ZP_Error setServoFunction(AttitudeManager* ctx, uint8_t ch, float val);
 
     // Compile-time: each instantiation is a distinct function pointer
-    template <uint8_t Ch> static bool cbServoTrim(AttitudeManager* ctx, float v)     { return setServoTrim(ctx, Ch, v); }
-    template <uint8_t Ch> static bool cbServoMin(AttitudeManager* ctx, float v)      { return setServoMin(ctx, Ch, v); }
-    template <uint8_t Ch> static bool cbServoMax(AttitudeManager* ctx, float v)      { return setServoMax(ctx, Ch, v); }
-    template <uint8_t Ch> static bool cbServoReversed(AttitudeManager* ctx, float v) { return setServoReversed(ctx, Ch, v); }
-    template <uint8_t Ch> static bool cbServoFunction(AttitudeManager* ctx, float v) { return setServoFunction(ctx, Ch, v); }
+    template <uint8_t Ch> static ZP_Error cbServoTrim(AttitudeManager* ctx, float v)     { return setServoTrim(ctx, Ch, v); }
+    template <uint8_t Ch> static ZP_Error cbServoMin(AttitudeManager* ctx, float v)      { return setServoMin(ctx, Ch, v); }
+    template <uint8_t Ch> static ZP_Error cbServoMax(AttitudeManager* ctx, float v)      { return setServoMax(ctx, Ch, v); }
+    template <uint8_t Ch> static ZP_Error cbServoReversed(AttitudeManager* ctx, float v) { return setServoReversed(ctx, Ch, v); }
+    template <uint8_t Ch> static ZP_Error cbServoFunction(AttitudeManager* ctx, float v) { return setServoFunction(ctx, Ch, v); }
 };

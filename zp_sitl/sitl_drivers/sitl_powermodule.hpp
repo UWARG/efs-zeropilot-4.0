@@ -40,9 +40,9 @@ public:
         pmData.temperature += (targetTemp - pmData.temperature) * Config::TEMP_THERMAL_LAG_COEFF;
     }
     
-    bool readData(PMData_t *data) override {
-        if (!data) return false;
+    ZP_Error readData(PMData_t *data) override {
+        if (!data) return ZP_ERROR_NULLPTR;
         *data = pmData;
-        return true;
+        return ZP_ERROR_OK;
     }
 };

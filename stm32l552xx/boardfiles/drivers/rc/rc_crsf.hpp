@@ -2,7 +2,9 @@
 
 #include "rc_defines.hpp"
 #include "rc_iface.hpp"
+#include "zp_error.h"
 #include "stm32l5xx_hal.h"
+
 /**
  * @class CRSFReceiver
  * @brief A class to receive and parse CRSF RC channel data via UART.
@@ -23,16 +25,16 @@ class CRSFReceiver : public IRCReceiver {
     public:
         CRSFReceiver(UART_HandleTypeDef *uart);
 
-        RCControl getRCData() override;
+        ZP_Error getRCData(RCControl &data) override;
 
-        void init();
-        void startDMA();
+        ZP_Error init();
+        ZP_Error startDMA();
 
-        void parse();
+        ZP_Error parse();
         UART_HandleTypeDef * getHuart();
-       
+
     private:
         UART_HandleTypeDef *uart;
         RCControl rcData;
-        uint8_t crsfRxBuffer[CRSF_BYTE_COUNT];
+        uint8_t crsfRxBuffer[CRSF_PACKET_SIZE];
 };
