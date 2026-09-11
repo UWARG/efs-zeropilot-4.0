@@ -105,9 +105,8 @@ ZP_Error RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_s
         return (restartStatus == ZP_ERROR_OK) ? ZP_ERROR_NOT_READY : restartStatus;
     }
 
-    // Nothing buffered yet is the normal idle case, not a failure
     if (readIndex == writeIndex) {
-        return ZP_ERROR_NOT_READY;
+        return ZP_ERROR_OK;
     }
 
     int dataRead = 0;
