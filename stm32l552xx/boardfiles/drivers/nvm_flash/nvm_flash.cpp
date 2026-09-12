@@ -129,7 +129,7 @@ int NVMFlash::write(AbstractMessage *msg) {
 	uint32_t addr_base = indexToBaseAddr(idx);
 	uint32_t id = state.next_id;       // record ID
 
-	uint8_t data[FTL_MAX_PAYLOAD];
+	uint8_t data[200];
 	uint16_t len;
 	msg->pack(data, len);
 
@@ -234,7 +234,7 @@ int NVMFlash::read(AbstractMessage *msg) {
 	}
 
 	uint32_t addr_base = indexToBaseAddr(idx);
-	uint8_t out[FTL_MAX_PAYLOAD];
+	uint8_t out[200];
 	// TODO: Add success/error check to readData
 	readData(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
 

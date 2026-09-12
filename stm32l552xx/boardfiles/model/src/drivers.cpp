@@ -16,6 +16,7 @@ extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi3;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
 extern I2C_HandleTypeDef hi2c3;
@@ -125,7 +126,7 @@ void initDrivers()
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
-    nvmHandle = new NVMFlash(&hspi1, GPIOA, GPIO_PIN_4);
+    nvmHandle = new NVMFlash(&hspi3, GPIOC, GPIO_PIN_9);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -155,7 +156,7 @@ void initDrivers()
 //        rangefinderHandle->init();
 //    }
 //    barometerHandle->init();
-    sdFileSystemHandle->init();
+//    sdFileSystemHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {

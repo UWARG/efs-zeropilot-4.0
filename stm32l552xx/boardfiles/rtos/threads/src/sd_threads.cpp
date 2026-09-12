@@ -17,9 +17,9 @@ void sdMainLoopWrapper(void *arg)
   while(true)
   {
         SdReqMsg reqMsg;
-//    if (osMessageQueueGet(sdRequestQueueId, &reqMsg, NULL, osWaitForever) == osOK) {
-//      sdmHandle->sdUpdate(reqMsg);
-//    }
+    if (osMessageQueueGet(sdRequestQueueId, &reqMsg, NULL, osWaitForever) == osOK) {
+      sdmHandle->sdUpdate(reqMsg);
+    }
     sdmHandle->sdUpdate(reqMsg);
   }
 }

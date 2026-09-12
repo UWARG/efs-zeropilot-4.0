@@ -13,7 +13,8 @@ SystemManager::SystemManager(
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue) :
+    IMessageQueue<TMMessage_t> *tmQueue,
+	INVMFlash *nvmDriver) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         fileSystemDriver(fileSystemDriver),
@@ -21,6 +22,7 @@ SystemManager::SystemManager(
         pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
+		nvmDriver(nvmDriver),
         smSchedulingCounter(0),
         flightModes{},
         oldDataCount(0),
@@ -38,6 +40,7 @@ SystemManager::SystemManager(
 }
 
 void SystemManager::smUpdate() {
+	nvmDriver -> test_message();
     Logger::sync();
 
     systemUtilsDriver->profilerBegin(profilerId);

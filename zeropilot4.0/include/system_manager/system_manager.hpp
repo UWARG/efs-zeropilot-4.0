@@ -13,6 +13,7 @@
 #include "sm_param_setup.hpp"
 #include "logger.hpp"
 #include "soc_estimation.hpp"
+#include "nvm_flash_iface.hpp"
 
 #define SM_SCHEDULING_RATE_HZ 20
 #define SM_TELEMETRY_HEARTBEAT_RATE_HZ 1
@@ -45,7 +46,8 @@ class SystemManager {
             IRCReceiver *rcDriver,
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-            IMessageQueue<TMMessage_t> *tmQueue
+            IMessageQueue<TMMessage_t> *tmQueue,
+			INVMFlash *nvmDriver
         );
 
         ~SystemManager();
@@ -62,6 +64,7 @@ class SystemManager {
         
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
+        INVMFlash *nvmDriver; //NVM driver to backup log telemetry data
 
         uint8_t smSchedulingCounter;
 

@@ -38,7 +38,8 @@ void initManagers()
         rcHandle,
         pmHandle,
         amRCQueueHandle,
-        tmQueueHandle
+        tmQueueHandle,
+		nvmHandle
     );
 
     // TM initialization
@@ -55,7 +56,6 @@ void initManagers()
         systemUtilsHandle,
         sdRequestQueueHandle,
         sdBufferQueueHandle,
-        sdResponseQueuesHandle,
-		nvmHandle
+        sdResponseQueuesHandle
     );
 }

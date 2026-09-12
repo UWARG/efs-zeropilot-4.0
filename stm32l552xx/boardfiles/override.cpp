@@ -106,6 +106,10 @@ void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
   if (hspi->Instance == SPI2) {
     imuHandle->txRxCallback();
   }
+
+  if (hspi->Instance == SPI3){
+
+  }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
