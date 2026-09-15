@@ -18,10 +18,10 @@ public:
     void sdUpdate(SdReqMsg reqMsg);
     
 private:
-        ISystemUtils *systemUtilsDriver;
-        IMessageQueue<SdReqMsg> *requestQueue;
-        IMessageQueue<SdReqBuf> *bufferQueue;
-        IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
-    
-        uint8_t profilerId;
+    ISystemUtils *systemUtilsDriver;
+    IMessageQueue<SdReqMsg> *requestQueue;
+    IMessageQueue<SdReqBuf> *bufferQueue;
+    IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
+
+    uint8_t profilerId;
 };
