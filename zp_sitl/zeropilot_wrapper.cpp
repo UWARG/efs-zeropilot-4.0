@@ -343,8 +343,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->fileSystem, self->safetySwitch, self->rc, 
-            self->pm, self->amQueue, self->tmQueue, self->logQueue
+            self->sysUtils, self->iwdg, self->fileSystem, self->safetySwitch, self->rc,
+            self->pm, self->amQueue, self->tmQueue
         );
         
         self->tm = new TelemetryManager(
