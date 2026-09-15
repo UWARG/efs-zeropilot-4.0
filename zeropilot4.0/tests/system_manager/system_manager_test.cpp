@@ -22,6 +22,7 @@ protected:
     NiceMock<MockSystemUtils> mockSystemUtils;
     NiceMock<MockWatchdog> mockWatchdog;
     NiceMock<MockFileSystem> mockFileSystem;
+    ISafetySwitch* mockSafetySwitchPtr = nullptr; // Safety switch is not used in unit tests by default
     NiceMock<MockRCReceiver> mockRC;
     NiceMock<MockPowerModule> mockPM;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
@@ -47,8 +48,8 @@ protected:
 TEST_F(SystemManagerTest, WatchdogRefresh) {
     EXPECT_CALL(mockWatchdog, refreshWatchdog()).Times(1);
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     sm.smUpdate();
 }
@@ -71,8 +72,8 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
 
     EXPECT_CALL(mockAMQueue, push(_)).Times(1); 
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     sm.smUpdate();
 
@@ -93,8 +94,8 @@ TEST_F(SystemManagerTest, HeartbeatSentToTelemetry) {
             return 0;
         }));
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
         sm.smUpdate();
@@ -120,8 +121,8 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
             return 0;
         }));
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
         sm.smUpdate();
@@ -142,8 +143,8 @@ TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
             return 0;
         }));
     
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
     
     for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
         sm.smUpdate();
@@ -178,9 +179,8 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
             return 0;
         }));
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem,
-                     &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToLow =
         (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to low state
@@ -222,9 +222,8 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
             return 0;
         }));
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem,
-                     &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToCritical =
         (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to critical state
@@ -256,8 +255,8 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         {1815.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE6)))}
     };
 
-    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, &mockRC, &mockPM,
-                     &mockAMQueue, &mockTMQueue);
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockFileSystem, mockSafetySwitchPtr, &mockRC, 
+                     &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     for (const auto& test : testCases) {
         RCControl rcData;
