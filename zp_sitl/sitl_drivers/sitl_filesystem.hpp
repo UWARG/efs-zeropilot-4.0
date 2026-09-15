@@ -46,24 +46,24 @@ public:
         return FILE_STATUS_OK;
     }
 
-    FileStatus_e write(ManagerId_e id, File* fp, const void* buff, uint32_t btw,
-                       uint32_t* bw, ReqOptions_e options = ReqOptions_e::ASYNC) override {
+    FileStatus_e write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite,
+                       uint32_t* bytesWritten, ReqOptions_e options = ReqOptions_e::ASYNC) override {
         (void)id;
         (void)options;
         if (!fp || !buff) return FILE_STATUS_ERROR;
         FileHandle* file = getFileHandle(fp);
         if (!file) return FILE_STATUS_ERROR;
 
-        size_t bytes_written = std::fwrite(buff, 1, btw, file);
-        if (bw) *bw = static_cast<uint32_t>(bytes_written);
+        size_t bytes_written = std::fwrite(buff, 1, bytesToWrite, file);
+        if (bytesWritten) *bytesWritten = static_cast<uint32_t>(bytes_written);
 
         if (std::ferror(file)) return FILE_STATUS_ERROR;
         return FILE_STATUS_OK;
     }
 
-    FileStatus_e writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t btw,
+    FileStatus_e writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite,
                               ReqOptions_e options = ReqOptions_e::ASYNC) override {
-        FileStatus_e status = write(id, fp, buff, btw, nullptr, options);
+        FileStatus_e status = write(id, fp, buff, bytesToWrite, nullptr, options);
         if (status != FILE_STATUS_OK) return status;
         return sync(id, fp, options);
     }

@@ -88,19 +88,19 @@ FileStatus_e SDFileSystem::mkdir(const char* path) {
     return fresultToStatus(res);
 }
 
-FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uint32_t btw, uint32_t* bw, ReqOptions_e options) {
+FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint32_t* bytesWritten, ReqOptions_e options) {
     if (!mounted || !fp || !buff) return FILE_STATUS_ERROR;
     
 #ifdef SWO_LOGGING
-    swoWrite((const char*)buff, btw);
+    swoWrite((const char*)buff, bytesToWrite);
 #endif
 
     if (options == ReqOptions_e::SYNC) {
         uint32_t dummyBytesWritten = 0;
-        if (bw == nullptr) {
-            bw = &dummyBytesWritten; // Use a dummy variable if caller doesn't care about bytes written
+        if (bytesWritten == nullptr) {
+            bytesWritten = &dummyBytesWritten; // Use a dummy variable if caller doesn't care about bytes written
         }
-        FRESULT res = f_write(reinterpret_cast<FIL*>(&fp->storage[0]), buff, btw, reinterpret_cast<UINT*>(bw));
+        FRESULT res = f_write(reinterpret_cast<FIL*>(&fp->storage[0]), buff, bytesToWrite, reinterpret_cast<UINT*>(bytesWritten));
         res = (res == FR_OK) ? f_sync(reinterpret_cast<FIL*>(&fp->storage[0])) : res; // Sync only if write was successful
         return fresultToStatus(res);
     } else {
@@ -108,14 +108,14 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
         req.id = id;
         req.type = ReqType_e::WRITE;
         req.fp = fp;
-        req.totalSize = btw;
+        req.totalSize = bytesToWrite;
         req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
         SdReqBuf writeBuffMsg;
-        while (btw > 0) {
+        while (bytesToWrite > 0) {
             writeBuffMsg.id = id;
             writeBuffMsg.type = ReqType_e::WRITE;
-            uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
+            uint32_t chunkSize = (bytesToWrite < MAX_RW_BUFFER_SIZE) ? bytesToWrite : MAX_RW_BUFFER_SIZE;
             std::memcpy(writeBuffMsg.buff, buff, chunkSize);
             writeBuffMsg.size = chunkSize;
             (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
@@ -125,7 +125,7 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
             }
         
             buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
-            btw -= chunkSize; // Decrease remaining byte count
+            bytesToWrite -= chunkSize; // Decrease remaining byte count
         }
 
         if (requestQueue->push(&req) != osOK) {
@@ -136,25 +136,25 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
     }
 }
 
-FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t btw, ReqOptions_e options) {
+FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, ReqOptions_e options) {
     if (!mounted || !fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
 
 #ifdef SWO_LOGGING
-    swoWrite((const char*)buff, btw);
+    swoWrite((const char*)buff, bytesToWrite);
 #endif
 
     SdReqMsg req;
     req.id = id;
     req.type = ReqType_e::WRITE_SYNC;
     req.fp = fp;
-    req.totalSize = btw;
+    req.totalSize = bytesToWrite;
     req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
     SdReqBuf writeBuffMsg;
-    while (btw > 0) {
+    while (bytesToWrite > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType_e::WRITE_SYNC;
-        uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
+        uint32_t chunkSize = (bytesToWrite < MAX_RW_BUFFER_SIZE) ? bytesToWrite : MAX_RW_BUFFER_SIZE;
         std::memcpy(writeBuffMsg.buff, buff, chunkSize);
         writeBuffMsg.size = chunkSize;
         (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
@@ -164,7 +164,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
         }
         
         buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
-        btw -= chunkSize; // Decrease remaining byte count
+        bytesToWrite -= chunkSize; // Decrease remaining byte count
     }
 
     if (requestQueue->push(&req) != osOK) {
@@ -217,11 +217,11 @@ bool SDFileSystem::available() {
 }
 
 /* TODO: Verify in later PR
-FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions_e options) {
+FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint64_t ofs, ReqOptions_e options) {
     if (!fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
 
     #ifdef SWO_LOGGING
-        swoWrite((const char*)buff, btw);
+        swoWrite((const char*)buff, bytesToWrite);
     #endif
 
     if (!mounted) return FILE_STATUS_ERROR;
@@ -230,15 +230,15 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
     req.id = id;
     req.type = ReqType_e::WRITE_SEEK;
     req.fp = fp;
-    req.totalSize = btw;
+    req.totalSize = bytesToWrite;
     req.offset = ofs;
     req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
 
     SdReqBuf writeBuffMsg;
-    while (btw > 0) {
+    while (bytesToWrite > 0) {
         writeBuffMsg.id = id;
         writeBuffMsg.type = ReqType_e::WRITE_SEEK;
-        uint32_t chunkSize = (btw < MAX_RW_BUFFER_SIZE) ? btw : MAX_RW_BUFFER_SIZE;
+        uint32_t chunkSize = (bytesToWrite < MAX_RW_BUFFER_SIZE) ? bytesToWrite : MAX_RW_BUFFER_SIZE;
         std::memcpy(writeBuffMsg.buff, buff, chunkSize);
         writeBuffMsg.size = chunkSize;
         (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
@@ -248,7 +248,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
         }
         
         buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
-        btw -= chunkSize; // Decrease remaining byte count
+        bytesToWrite -= chunkSize; // Decrease remaining byte count
     }
 
     if (requestQueue->push(&req) != osOK) {

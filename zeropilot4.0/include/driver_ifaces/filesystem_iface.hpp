@@ -19,14 +19,14 @@ class IFileSystem {
             ManagerId_e id, 
             File* fp, 
             const void* buff, 
-            uint32_t btw, 
-            uint32_t* bw, 
+            uint32_t bytesToWrite, 
+            uint32_t* bytesWritten, 
             ReqOptions_e options = ReqOptions_e::ASYNC) = 0; // Write data to the file
         virtual FileStatus_e writeAndSync (
             ManagerId_e id, 
             File* fp, 
             const void* buff, 
-            uint32_t btw, 
+            uint32_t bytesToWrite, 
             ReqOptions_e options = ReqOptions_e::ASYNC) = 0;	// Write data to the file and sync immediately (for critical logs)
         virtual FileStatus_e sync (
             ManagerId_e id, 
@@ -39,7 +39,7 @@ class IFileSystem {
         /* TODO: Verify in later PR
         virtual FileStatus_e close (File* fp) = 0; // Close an open file object 
         virtual FileStatus_e read (File* fp, void* buff, uint32_t btr, uint32_t* br) = 0; // Read data from the file 
-        virtual FileStatus_e seek_and_write (ManagerId_e id, File* fp, const void* buff, uint32_t btw, uint64_t ofs, ReqOptions_e options = ReqOptions_e::ASYNC) = 0; // Seek and write data to the file
+        virtual FileStatus_e seek_and_write (ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint64_t ofs, ReqOptions_e options = ReqOptions_e::ASYNC) = 0; // Seek and write data to the file
         virtual FileStatus_e lseek (ManagerId_e id, File* fp, uint64_t ofs, ReqOptions_e options = ReqOptions_e::ASYNC) = 0; // Move file pointer of the file object
         virtual FileStatus_e tell(ManagerId_e id, File* fp, uint64_t* position, ReqOptions_e options = ReqOptions_e::ASYNC) = 0; // Get current file pointer position
 
