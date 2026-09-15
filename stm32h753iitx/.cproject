@@ -69,7 +69,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
@@ -102,7 +102,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
-									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad/include"/>
+									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
@@ -275,7 +275,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
-									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane/include"/>
+									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
@@ -410,7 +410,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
@@ -442,7 +442,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
-									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane/include"/>
+									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
@@ -577,7 +577,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
-									<listOptionValue builtIn="false" value="../boardfiles/drivers/logger"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/PrivateInclude"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
@@ -609,7 +609,7 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FatFs/src"/>
 									<listOptionValue builtIn="false" value="../boardfiles/utils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/filesystem"/>
-									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad/include"/>
+									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/h753iit-quad-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/motor"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/queue"/>
