@@ -78,11 +78,13 @@ namespace Logger {
         if (level == LogLevel_e::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
             fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount = 0;
+            lastSyncTime = systemUtils->getCurrentTimestampMs();
+            newWrite = false;
         } else {
             fileSystem->write(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount++;
+            newWrite = true;
         }
-        newWrite = true;
     }
     
     void sync() {
