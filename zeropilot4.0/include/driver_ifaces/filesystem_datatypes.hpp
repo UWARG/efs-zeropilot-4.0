@@ -7,7 +7,7 @@
 enum class ManagerId_e : uint8_t {
     SYSTEM = 0,
     ATTITUDE,
-    TELEMERTRY,
+    TELEMRETRY,
     NUM_MANAGERS
 };
 
