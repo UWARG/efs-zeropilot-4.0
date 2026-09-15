@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #define MAX_RW_BUFFER_SIZE 256  // Maximum buffer size for read/write operations, can be adjusted as needed
+#define MAX_FILE_NAME_LENGTH 255 // FAT long-filename limit
 
 enum class ManagerId_e : uint8_t {
     SYSTEM = 0,
@@ -40,7 +41,7 @@ typedef struct {
     uint16_t	date;		/* Modified date */
     uint16_t	time;		/* Modified time */
     uint8_t     isDir;		/* =1 if dir */
-    char	name[255 + 1];	/* Primary file name */
+    char	name[MAX_FILE_NAME_LENGTH + 1];	/* Primary file name */
 } FileInfo_t;
 
 struct PollResult {
