@@ -6,17 +6,6 @@
 #include "app_fatfs.h"
 
 class SDFileSystem : public IFileSystem {
-    private:
-        FATFS fsObj;
-        bool mounted;
-        
-        // Helper to convert mode string to FatFs mode flags
-        BYTE modeStringToFatfsFlags(const char* mode);
-
-        MessageQueue<SdReqMsg> *requestQueue;
-        MessageQueue<SdReqBuf> *bufferQueue;
-        IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
-
     public:
         SDFileSystem(MessageQueue<SdReqMsg> *reqQueue, MessageQueue<SdReqBuf> *bufQueue, IMessageQueue<PollResult> *respQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]);
         ~SDFileSystem() override;
@@ -44,4 +33,16 @@ class SDFileSystem : public IFileSystem {
         int printf (ManagerId_e id, File* fp, ReqOptions_e options, const char* str, ...) override;
         PollResult poll(ManagerId_e id, ReqType_e reqType) override;		
         */
+        
+    private:
+        FATFS fsObj;
+        bool mounted;
+        
+        // Helper to convert mode string to FatFs mode flags
+        BYTE modeStringToFatfsFlags(const char* mode);
+
+        MessageQueue<SdReqMsg> *requestQueue;
+        MessageQueue<SdReqBuf> *bufferQueue;
+        IMessageQueue<PollResult> **responseQueues; // Array of response queues for each manager ID
+
 };
