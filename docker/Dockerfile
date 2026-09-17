@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     make \
     gcc-arm-none-eabi \
+    libnewlib-arm-none-eabi \
     g++ \
     build-essential \
     libgtest-dev \
