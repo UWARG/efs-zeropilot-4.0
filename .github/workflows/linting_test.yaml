@@ -16,13 +16,21 @@ jobs:
       with:
         submodules: true
 
-    - name: Restore Docker image cache
-      uses: satackey/action-docker-layer-caching@v0.0.11
+    - name: Cache Docker image
+      uses: actions/cache@v4
       continue-on-error: true
       with:
-        key: efs-zeropilot-ci-v1.0.0-{hash}
-        restore-keys: |
-          efs-zeropilot-ci-v1.0.0-
+        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
+        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
+
+    - name: Load or pull Docker image
+      run: |
+        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
+          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
+        else
+          docker pull uwarg/efs-zeropilot-ci:v1.0.0
+          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
+        fi
 
     - name: Build main 
       run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./hwbuild.bash -c l552 -v plane
@@ -44,13 +52,21 @@ jobs:
       with:
         submodules: true
 
-    - name: Restore Docker image cache
-      uses: satackey/action-docker-layer-caching@v0.0.11
+    - name: Cache Docker image
+      uses: actions/cache@v4
       continue-on-error: true
       with:
-        key: efs-zeropilot-ci-v1.0.0-{hash}
-        restore-keys: |
-          efs-zeropilot-ci-v1.0.0-
+        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
+        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
+
+    - name: Load or pull Docker image
+      run: |
+        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
+          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
+        else
+          docker pull uwarg/efs-zeropilot-ci:v1.0.0
+          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
+        fi
 
     - name: Build main 
       run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./hwbuild.bash -c -v quad -b l552
