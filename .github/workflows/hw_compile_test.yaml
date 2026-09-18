@@ -27,25 +27,9 @@ jobs:
       with:
         submodules: true
 
-    - name: Cache Docker image
-      uses: actions/cache@v4
-      continue-on-error: true
-      with:
-        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
-        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
-
-    - name: Load or pull Docker image
-      run: |
-        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
-          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
-        else
-          docker pull uwarg/efs-zeropilot-ci:v1.0.0
-          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
-        fi
-
     - name: Build ${{ matrix.target.name }}
       run: |
-        docker run --rm -v ${{ github.workspace }}:/workspace uwarg/efs-zeropilot-ci:v1.0.0 \
+        docker run --rm -v ${{ github.workspace }}:/workspace uwarg/efs-zeropilot-ci:latest \
           stm32cubeide --launcher.suppressErrors -nosplash \
           -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
           -data /workspace -import /workspace/${{ matrix.target.name }} \

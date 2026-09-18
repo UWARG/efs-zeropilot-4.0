@@ -9,6 +9,8 @@ on:
 jobs:
   unit_test_plane:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -16,30 +18,20 @@ jobs:
       with:
         submodules: true
 
-    - name: Cache Docker image
-      uses: actions/cache@v4
-      continue-on-error: true
-      with:
-        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
-        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
-
-    - name: Load or pull Docker image
-      run: |
-        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
-          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
-        else
-          docker pull uwarg/efs-zeropilot-ci:v1.0.0
-          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
-        fi
-
     - name: Build tests
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v plane
+      working-directory: ./zeropilot4.0/tests
+      run: bash ./testbuild.bash -c -v plane
     
     - name: Run tests
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash -lc 'chmod +x build/gtestzeropilot4.0 && ./build/gtestzeropilot4.0'
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        chmod +x build/gtestzeropilot4.0
+        ./build/gtestzeropilot4.0
 
   unit_test_quad:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -47,24 +39,12 @@ jobs:
       with:
         submodules: true
 
-    - name: Cache Docker image
-      uses: actions/cache@v4
-      continue-on-error: true
-      with:
-        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
-        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
-
-    - name: Load or pull Docker image
-      run: |
-        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
-          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
-        else
-          docker pull uwarg/efs-zeropilot-ci:v1.0.0
-          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
-        fi
-
     - name: Build tests
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v quad
+      working-directory: ./zeropilot4.0/tests
+      run: bash ./testbuild.bash -c -v quad
     
     - name: Run tests
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash -lc 'chmod +x build/gtestzeropilot4.0 && ./build/gtestzeropilot4.0'
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        chmod +x build/gtestzeropilot4.0
+        ./build/gtestzeropilot4.0

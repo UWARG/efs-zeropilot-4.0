@@ -9,6 +9,8 @@ on:
 jobs:
   linting_test_plane:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -16,35 +18,26 @@ jobs:
       with:
         submodules: true
 
-    - name: Cache Docker image
-      uses: actions/cache@v4
-      continue-on-error: true
-      with:
-        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
-        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
-
-    - name: Load or pull Docker image
-      run: |
-        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
-          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
-        else
-          docker pull uwarg/efs-zeropilot-ci:v1.0.0
-          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
-        fi
-
     - name: Build main 
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./hwbuild.bash -c l552 -v plane
+      working-directory: ./zeropilot4.0
+      run: |
+        bash ./hwbuild.bash -c l552 -v plane
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v plane
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        bash ./testbuild.bash -c -v plane
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./lint.bash -v plane
+      working-directory: ./zeropilot4.0
+      run: bash ./lint.bash -v plane
 
   linting_test_quad:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -52,29 +45,18 @@ jobs:
       with:
         submodules: true
 
-    - name: Cache Docker image
-      uses: actions/cache@v4
-      continue-on-error: true
-      with:
-        path: /tmp/efs-zeropilot-ci-v1.0.0.tar
-        key: efs-zeropilot-ci-v1.0.0-${{ runner.os }}
-
-    - name: Load or pull Docker image
-      run: |
-        if [[ -f /tmp/efs-zeropilot-ci-v1.0.0.tar ]]; then
-          docker load --input /tmp/efs-zeropilot-ci-v1.0.0.tar
-        else
-          docker pull uwarg/efs-zeropilot-ci:v1.0.0
-          docker save --output /tmp/efs-zeropilot-ci-v1.0.0.tar uwarg/efs-zeropilot-ci:v1.0.0
-        fi
-
     - name: Build main 
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./hwbuild.bash -c -v quad -b l552
+      working-directory: ./zeropilot4.0
+      run: |
+        bash ./hwbuild.bash -c -v quad -b l552 
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v quad
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        bash ./testbuild.bash -c -v quad
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
-      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./lint.bash -v quad
+      working-directory: ./zeropilot4.0
+      run: bash ./lint.bash -v quad
