@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     gcc-arm-none-eabi \
     libnewlib-arm-none-eabi \
+    libstdc++-arm-none-eabi \
     g++ \
     build-essential \
     libgtest-dev \
