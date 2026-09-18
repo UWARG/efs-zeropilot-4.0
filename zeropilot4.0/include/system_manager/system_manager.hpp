@@ -42,7 +42,6 @@ static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -
 // Safety switch constants
 static constexpr uint32_t SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS = 2000;
 static constexpr uint32_t SM_SAFETY_SWITCH_BLINK_RATE_HZ = 2;
-static constexpr uint32_t SM_SAFETY_SWITCH_PREARM_MSG_INTERVAL_S = 10; // Send safety switch prearm message every 10 seconds
 
 class SystemManager {
     friend class SMParamSetup;
@@ -82,7 +81,6 @@ class SystemManager {
         bool isSafetySwitchEngaged;         // Flag to indicate if the safety switch is engaged
         uint32_t safetySwitchHoldCounterMs; // Counter to track how long the safety switch has been held
         bool safetySwitchTriggered;         // Flag to prevent toggling multiple times during a single long press
-        uint32_t safetySwitchPrearmCntrMs;  // Counter to track time since last prearm message was sent
         
         // Ordered by severity so arbitration can pick the highest
         enum class BitFailsafe_e : uint8_t {
@@ -168,4 +166,5 @@ inline const SystemManager::BitHandler_t SystemManager::BIT_HANDLERS[static_cast
     {ZP_BIT_ID::TM_LOOP_TIMING,         0,                                       "TM loop overrun",                 BitFailsafe_e::REPORT},
     {ZP_BIT_ID::IWDG_REFRESH,           0,                                       "PreArm: Watchdog refresh failed", BitFailsafe_e::REPORT},
     {ZP_BIT_ID::LOGGER_VALID,           0,                                       "Logger failed",                   BitFailsafe_e::REPORT},
+    {ZP_BIT_ID::SAFETY_SWITCH,          0,                                       "PreArm: Hardware Safety Switch",  BitFailsafe_e::REPORT},
 };

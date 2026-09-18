@@ -30,7 +30,6 @@ SystemManager::SystemManager(
         isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
         safetySwitchHoldCounterMs(0),
         safetySwitchTriggered(false),
-        safetySwitchPrearmCntrMs(0),
         rcConnected(false),
         bitFailsafe(BitFailsafe_e::NONE),
         bitFailReportCntrMs(0),
@@ -55,6 +54,7 @@ void SystemManager::smUpdate() {
     // Update the state of the safety switch if the driver is available
     if (safetySwitchDriver != nullptr) {
         (void)safetySwitchUpdate();
+        (void)ZP_BIT::report(ZP_BIT_ID::SAFETY_SWITCH, isSafetySwitchEngaged ? ZP_ERROR_NOT_READY : ZP_ERROR_OK);
     }
 
     // Get RC data from the RC receiver and passthrough to AM if new.
@@ -196,15 +196,6 @@ ZP_Error SystemManager::safetySwitchUpdate() {
         }
     }
 
-    // Handle "PreArm: Hardware Safety Switch" STATUSTEXT message
-    if (isSafetySwitchEngaged) {
-        safetySwitchPrearmCntrMs += SM_UPDATE_LOOP_DELAY_MS;
-
-        if (safetySwitchPrearmCntrMs >= (SM_SAFETY_SWITCH_PREARM_MSG_INTERVAL_S * 1000)) {
-            safetySwitchPrearmCntrMs = 0;
-            result |= sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "PreArm: Hardware Safety Switch");
-        }
-    }
     return result;
 }
 
