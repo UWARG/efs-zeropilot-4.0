@@ -9,8 +9,6 @@ on:
 jobs:
   linting_test_plane:
     runs-on: ubuntu-latest
-    container:
-      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -18,26 +16,27 @@ jobs:
       with:
         submodules: true
 
+    - name: Restore Docker image cache
+      uses: satackey/action-docker-layer-caching@v0.0.11
+      continue-on-error: true
+      with:
+        key: efs-zeropilot-ci-v1.0.0-{hash}
+        restore-keys: |
+          efs-zeropilot-ci-v1.0.0-
+
     - name: Build main 
-      working-directory: ./zeropilot4.0
-      run: |
-        bash ./hwbuild.bash -c l552 -v plane
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./hwbuild.bash -c l552 -v plane
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
-      working-directory: ./zeropilot4.0/tests
-      run: |
-        bash ./testbuild.bash -c -v plane
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v plane
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
-      working-directory: ./zeropilot4.0
-      run: bash ./lint.bash -v plane
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./lint.bash -v plane
 
   linting_test_quad:
     runs-on: ubuntu-latest
-    container:
-      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -45,18 +44,21 @@ jobs:
       with:
         submodules: true
 
+    - name: Restore Docker image cache
+      uses: satackey/action-docker-layer-caching@v0.0.11
+      continue-on-error: true
+      with:
+        key: efs-zeropilot-ci-v1.0.0-{hash}
+        restore-keys: |
+          efs-zeropilot-ci-v1.0.0-
+
     - name: Build main 
-      working-directory: ./zeropilot4.0
-      run: |
-        bash ./hwbuild.bash -c -v quad -b l552 
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./hwbuild.bash -c -v quad -b l552
         # Assuming hwbuild.bash configures CMake with -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     - name: Build tests
-      working-directory: ./zeropilot4.0/tests
-      run: |
-        bash ./testbuild.bash -c -v quad
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v quad
         # Same assumption for testbuild.bash
 
     - name: Run clang-tidy lint script
-      working-directory: ./zeropilot4.0
-      run: bash ./lint.bash -v quad
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0 uwarg/efs-zeropilot-ci:v1.0.0 bash ./lint.bash -v quad

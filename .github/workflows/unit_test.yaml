@@ -9,8 +9,6 @@ on:
 jobs:
   unit_test_plane:
     runs-on: ubuntu-latest
-    container:
-      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -18,20 +16,22 @@ jobs:
       with:
         submodules: true
 
+    - name: Restore Docker image cache
+      uses: satackey/action-docker-layer-caching@v0.0.11
+      continue-on-error: true
+      with:
+        key: efs-zeropilot-ci-v1.0.0-{hash}
+        restore-keys: |
+          efs-zeropilot-ci-v1.0.0-
+
     - name: Build tests
-      working-directory: ./zeropilot4.0/tests
-      run: bash ./testbuild.bash -c -v plane
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v plane
     
     - name: Run tests
-      working-directory: ./zeropilot4.0/tests
-      run: |
-        chmod +x build/gtestzeropilot4.0
-        ./build/gtestzeropilot4.0
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash -lc 'chmod +x build/gtestzeropilot4.0 && ./build/gtestzeropilot4.0'
 
   unit_test_quad:
     runs-on: ubuntu-latest
-    container:
-      image: uwarg/efs-zeropilot-ci:latest
 
     steps:
     - name: Checkout repo
@@ -39,12 +39,16 @@ jobs:
       with:
         submodules: true
 
+    - name: Restore Docker image cache
+      uses: satackey/action-docker-layer-caching@v0.0.11
+      continue-on-error: true
+      with:
+        key: efs-zeropilot-ci-v1.0.0-{hash}
+        restore-keys: |
+          efs-zeropilot-ci-v1.0.0-
+
     - name: Build tests
-      working-directory: ./zeropilot4.0/tests
-      run: bash ./testbuild.bash -c -v quad
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash ./testbuild.bash -c -v quad
     
     - name: Run tests
-      working-directory: ./zeropilot4.0/tests
-      run: |
-        chmod +x build/gtestzeropilot4.0
-        ./build/gtestzeropilot4.0
+      run: docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/zeropilot4.0/tests uwarg/efs-zeropilot-ci:v1.0.0 bash -lc 'chmod +x build/gtestzeropilot4.0 && ./build/gtestzeropilot4.0'

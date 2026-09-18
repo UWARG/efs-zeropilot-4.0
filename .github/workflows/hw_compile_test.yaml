@@ -27,9 +27,17 @@ jobs:
       with:
         submodules: true
 
+    - name: Restore Docker image cache
+      uses: satackey/action-docker-layer-caching@v0.0.11
+      continue-on-error: true
+      with:
+        key: efs-zeropilot-ci-v1.0.0-{hash}
+        restore-keys: |
+          efs-zeropilot-ci-v1.0.0-
+
     - name: Build ${{ matrix.target.name }}
       run: |
-        docker run --rm -v ${{ github.workspace }}:/workspace uwarg/efs-zeropilot-ci:latest \
+        docker run --rm -v ${{ github.workspace }}:/workspace uwarg/efs-zeropilot-ci:v1.0.0 \
           stm32cubeide --launcher.suppressErrors -nosplash \
           -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
           -data /workspace -import /workspace/${{ matrix.target.name }} \

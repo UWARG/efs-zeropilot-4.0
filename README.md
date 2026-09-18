@@ -99,10 +99,11 @@ GitHub Actions run on every PR and merge to main:
 - SITL build verification
 - Code linting
 
-We use the `uwarg/zeropilot-ci:latest` image for most of the CI jobs. This image is defined in [docker/Dockerfile](docker/Dockerfile). If modifications are needed the image can be built and pushed as follows:
+We use the `uwarg/efs-zeropilot-ci:v1.0.0` image for most of the CI jobs. This image is defined in [docker/Dockerfile](docker/Dockerfile). When modifying the image, publish it with a new version tag and update all CI workflow references to match. Do not overwrite an existing image tag.
 ```bash
-docker build -t uwarg/efs-zeropilot-ci:latest -f docker/Dockerfile .
-docker push uwarg/efs-zeropilot-ci:latest
+export CI_IMAGE_VERSION=v1.0.1
+docker build -t uwarg/efs-zeropilot-ci:${CI_IMAGE_VERSION} -f docker/Dockerfile .
+docker push uwarg/efs-zeropilot-ci:${CI_IMAGE_VERSION}
 ```
 
 
