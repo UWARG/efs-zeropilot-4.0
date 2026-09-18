@@ -4,27 +4,25 @@
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
-#define LOG_TIMING 0
+#define LOG_TIMING 1
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
+    IFileSystem *fileSystemDriver,
     ISafetySwitch *safetySwitchDriver,
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<TMMessage_t> *tmQueue) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
+        fileSystemDriver(fileSystemDriver),
         safetySwitchDriver(safetySwitchDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
-        smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         flightModes{},
         isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
@@ -41,10 +39,12 @@ SystemManager::SystemManager(
 {
     paramSetup.loadAllParams();
     paramSetup.bindAllParamCallbacks();
+    Logger::init(fileSystemDriver, systemUtilsDriver);
     systemUtilsDriver->profilerRegister("SM", &profilerId);
 }
 
 void SystemManager::smUpdate() {
+    Logger::sync();
 
     systemUtilsDriver->profilerBegin(profilerId);
 
@@ -66,7 +66,7 @@ void SystemManager::smUpdate() {
 
         if (!rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_INFO, "RC Connected");
-            // loggerDriver->log("RC Connected"); (TODO: Uncomment after rearchitecture)
+            Logger::log("RC Connected", LogLevel_e::LOG_INFO);
             rcConnected = true;
         }
     } else {
@@ -74,7 +74,7 @@ void SystemManager::smUpdate() {
 
         if ((oldDataCount * SM_UPDATE_LOOP_DELAY_MS > (ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000)) && rcConnected) {
             sendStatusTextToTelemetryManager(MAV_SEVERITY_CRITICAL, "RC Disconnected");
-            // loggerDriver->log("RC Disconnected"); (TODO: Uncomment after rearchitecture)
+            Logger::log("RC Disconnected", LogLevel_e::LOG_INFO);
             rcConnected = false;
         }
     }
@@ -116,11 +116,6 @@ void SystemManager::smUpdate() {
         if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_BATTERY_DATA_RATE_HZ) == 0) {
             sendBatteryDataToTelemetryManager(batteryData, 0);
         }
-    }
-
-    // Log if new messages
-    if (smLoggerQueue->count() > 0) {
-        sendMessagesToLogger();
     }
 
     // Send profiler stats at 1Hz
@@ -254,6 +249,12 @@ bool SystemManager::updateBatteryFSM() {
     return true;
 }
 
+SystemManager::~SystemManager() {
+    /* TODO: Verify in later PR
+    Logger::shutdown();
+    */
+}
+
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);
     tmQueue->push(&rcDataMsg);
@@ -324,16 +325,4 @@ FlightMode_e SystemManager::decodeRawFlightMode(float flightModeRawValue) {
     } else {
         return flightModes[5];
     }
-}
-
-void SystemManager::sendMessagesToLogger() {
-    static char messages[16][100];
-    int msgCount = 0;
-
-    while (smLoggerQueue->count() > 0) {
-        smLoggerQueue->get(&messages[msgCount]);
-        msgCount++;
-    }
-
-    // loggerDriver->log(messages, msgCount); (TODO: Uncomment after rearchitecture)
 }

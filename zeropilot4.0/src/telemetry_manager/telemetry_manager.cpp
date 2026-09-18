@@ -19,11 +19,11 @@ TelemetryManager::TelemetryManager(
     overflowMsgPending(false),
     currParamListTxIdx(ZP_PARAM::getCount()),
     profilerId(0),
-    paramSetup(this){
+    paramSetup(this) {
 
-    paramSetup.loadAllParams();
-    paramSetup.bindAllParamCallbacks();
-    systemUtilsDriver->profilerRegister("TM", &profilerId);
+        paramSetup.loadAllParams();
+        paramSetup.bindAllParamCallbacks();
+        systemUtilsDriver->profilerRegister("TM", &profilerId);
 }
 
 TelemetryManager::~TelemetryManager() = default;
