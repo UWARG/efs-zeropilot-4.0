@@ -41,27 +41,23 @@ ZP_Error RFD::restartRx() {
         return ZP_ERROR_NULLPTR;
     }
 
-    // Whatever was mid transfer is gone, so start the ring empty again
-    readIndex = 0;
-    writeIndex = 0;
-    currentSize = 0;
-    lastIdx = 0;
-
     HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
     if (status == HAL_BUSY) {
         return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
     } else if (status != HAL_OK) {
         return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
     }
+
+    readIndex = 0;
+    writeIndex = 0;
+    currentSize = 0;
+    lastIdx = 0;
+
     return ZP_ERROR_OK;
 }
 
 ZP_Error RFD::getRXTransferSize(uint16_t idx, uint16_t& output) {
-    if (idx > lastIdx) {
-        output = (uint16_t)(idx - lastIdx);
-    } else {
-        output = (uint16_t)(BUFFER_SIZE - lastIdx + idx);
-    }
+    output = (uint16_t)((idx + BUFFER_SIZE - lastIdx) % BUFFER_SIZE);
     return ZP_ERROR_OK;
 }
 
@@ -69,24 +65,22 @@ ZP_Error RFD::init() {
     return restartRx();
 }
 
-ZP_Error RFD::receiveCallback(uint16_t writeIdx) {
+ZP_Error RFD::receiveCallback(uint16_t dmaWritePos) {
     ZP_Error result = ZP_ERROR_OK;
 
-    if (HAL_UARTEx_GetRxEventType(huart) != HAL_UART_RXEVENT_HT) {
-        writeIndex = writeIdx % BUFFER_SIZE;
-        uint16_t transferSize = 0;
-        result |= getRXTransferSize(writeIndex, transferSize);
+    writeIndex = dmaWritePos % BUFFER_SIZE;
+    uint16_t transferSize = 0;
+    result |= getRXTransferSize(writeIndex, transferSize);
 
-        if ((currentSize + transferSize) > BUFFER_SIZE) {
-            readIndex = (readIndex + ((currentSize + transferSize) - BUFFER_SIZE)) % BUFFER_SIZE;
-            currentSize = BUFFER_SIZE;
-            result |= ZP_ERROR_MEMORY_OVERFLOW;
-        } else {
-            currentSize += transferSize;
-        }
-
-        lastIdx = writeIdx;
+    if ((currentSize + transferSize) > RX_CAPACITY) {
+        readIndex = (uint16_t)((writeIndex + BUFFER_SIZE - RX_CAPACITY) % BUFFER_SIZE);
+        currentSize = RX_CAPACITY;
+        result |= ZP_ERROR_MEMORY_OVERFLOW;
+    } else {
+        currentSize += transferSize;
     }
+
+    lastIdx = writeIndex;
 
     return result;
 }
@@ -96,43 +90,36 @@ ZP_Error RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_s
         return ZP_ERROR_NULLPTR;
     }
 
+    ZP_Error result = ZP_ERROR_OK;
     received_size = 0;
 
     // The DMA is not running, so reception was aborted by an error and has to be restarted
     if (huart->RxState == HAL_UART_STATE_READY) {
-        ZP_Error restartStatus = restartRx();
-        return (restartStatus == ZP_ERROR_OK) ? ZP_ERROR_NOT_READY : restartStatus;
+        return restartRx();
     }
 
-    if (readIndex == writeIndex) {
-        return ZP_ERROR_OK;
+    const uint16_t AVAILABLE = (uint16_t)((writeIndex + BUFFER_SIZE - readIndex) % BUFFER_SIZE);
+    if (AVAILABLE == 0) {
+        return result;
     }
 
-    int dataRead = 0;
-
-    if (readIndex < writeIndex) {
-        if ((writeIndex - readIndex) > bufferSize) {
-            return ZP_ERROR_RANGE;
-        }
-        memcpy(buffer, rxBuffer + readIndex, writeIndex - readIndex);
-        dataRead += writeIndex - readIndex;
-
-    // data wrapped around buffer
-    } else {
-        if ((BUFFER_SIZE - readIndex + writeIndex) > bufferSize) {
-            return ZP_ERROR_RANGE;
-        }
-        memcpy(buffer, rxBuffer + readIndex, BUFFER_SIZE - readIndex);
-        dataRead += BUFFER_SIZE - readIndex;
-
-        memcpy(buffer + dataRead, rxBuffer, writeIndex);
-        dataRead += writeIndex;
+    // Take what fits and leave the rest queued, rather than refusing to drain an oversized backlog
+    const uint16_t TO_READ = (AVAILABLE > bufferSize) ? bufferSize : AVAILABLE;
+    uint16_t firstChunk = (uint16_t)(BUFFER_SIZE - readIndex);
+    if (firstChunk > TO_READ) {
+        firstChunk = TO_READ;
     }
 
-    readIndex = (readIndex + dataRead) % BUFFER_SIZE;
-    currentSize -= dataRead;
-    received_size = dataRead;
-    return ZP_ERROR_OK;
+    memcpy(buffer, rxBuffer + readIndex, firstChunk);
+    if (TO_READ > firstChunk) {
+        memcpy(buffer + firstChunk, rxBuffer, (size_t)(TO_READ - firstChunk));
+    }
+
+    readIndex = (uint16_t)((readIndex + TO_READ) % BUFFER_SIZE);
+    currentSize = (currentSize > TO_READ) ? (uint16_t)(currentSize - TO_READ) : 0;
+    received_size = TO_READ;
+
+    return result;
 }
 
 UART_HandleTypeDef* RFD::getHuart() const {

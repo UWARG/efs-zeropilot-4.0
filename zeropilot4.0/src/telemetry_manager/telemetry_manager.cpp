@@ -32,13 +32,17 @@ TelemetryManager::~TelemetryManager() = default;
 void TelemetryManager::tmUpdate() {
     systemUtilsDriver->profilerBegin(profilerId);
     
-    ZP_Error linkStatus = receive();
+    ZP_Error linkReceiveStatus = receive();
     (void)processParamTx();
     (void)processTXMsgQueue();
 
     ZP_Error txStatus = transmit();
 
-    ZP_Error linkHealth = linkStatus;
+    ZP_Error linkHealth = ZP_ERROR_OK;
+    // Memory overflow is buffer overrun
+    if (linkReceiveStatus != ZP_ERROR_OK && linkReceiveStatus != ZP_ERROR_MEMORY_OVERFLOW) {
+        linkHealth |= linkReceiveStatus;
+    }
     linkHealth |= txStatus;
     (void)ZP_BIT::report(ZP_BIT_ID::TELEM_LINK_VALID, linkHealth);
 

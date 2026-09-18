@@ -20,7 +20,7 @@ public:
     UART_HandleTypeDef* getHuart() const;
 
     // DMA callback
-    ZP_Error receiveCallback(uint16_t size);
+    ZP_Error receiveCallback(uint16_t dmaWritePos);
 
     // Start DMA
     ZP_Error init();
