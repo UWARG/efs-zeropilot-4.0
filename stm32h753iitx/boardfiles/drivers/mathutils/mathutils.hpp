@@ -12,19 +12,19 @@ class MathUtils : public IMathUtils {
         float dspCosf(float x) override;
 
         float vectorNorm(const float* src, uint16_t dim) override;
-        bool vectorNormalize(const float* src, float* dst, uint16_t dim) override;
+        ZP_Error vectorNormalize(const float* src, float* dst, uint16_t dim) override;
 
-        bool matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override;
-        bool matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override;
-        bool matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA, 
+        ZP_Error matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override;
+        ZP_Error matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override;
+        ZP_Error matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA, 
                         const float* srcB, uint16_t colsB, float* dst) override;
-        bool matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) override;
-        bool matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) override;
+        ZP_Error matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) override;
+        ZP_Error matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) override;
         
-        bool matrixInverse(const float* src, uint16_t dim, float* dst) override;
+        ZP_Error matrixInverse(const float* src, uint16_t dim, float* dst) override;
 
         void skewSymmetric(const float* v3, float* dst3x3) override;
-        bool ensureSymmetric(float* M, uint16_t dim) override;
+        ZP_Error ensureSymmetric(float* M, uint16_t dim) override;
 
         // Quaternion Overrides
         void quatMultiply(const float* q1, const float* q2, float* qOut) override;

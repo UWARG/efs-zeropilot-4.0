@@ -21,27 +21,27 @@ class SITL_MathUtils : public IMathUtils {
             return std::sqrt(dot);
         }
 
-        bool vectorNormalize(const float* src, float* dst, uint16_t dim) override {
+        ZP_Error vectorNormalize(const float* src, float* dst, uint16_t dim) override {
             float norm = vectorNorm(src, dim);
-            if (norm < 1e-7f) return false;
+            if (norm < 1e-7f) return ZP_ERROR_INVALID_DATA;
             float invNorm = 1.0f / norm;
             for (uint16_t i = 0; i < dim; ++i) dst[i] = src[i] * invNorm;
-            return true;
+            return ZP_ERROR_OK;
         }
 
-        bool matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override {
+        ZP_Error matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override {
             uint32_t n = static_cast<uint32_t>(rows) * cols;
             for (uint32_t i = 0; i < n; ++i) dst[i] = srcA[i] + srcB[i];
-            return true;
+            return ZP_ERROR_OK;
         }
 
-        bool matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override {
+        ZP_Error matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) override {
             uint32_t n = static_cast<uint32_t>(rows) * cols;
             for (uint32_t i = 0; i < n; ++i) dst[i] = srcA[i] - srcB[i];
-            return true;
+            return ZP_ERROR_OK;
         }
 
-        bool matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA,
+        ZP_Error matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA,
                         const float* srcB, uint16_t colsB, float* dst) override {
             // srcB is (colsA x colsB), dst is (rowsA x colsB)
             for (uint16_t r = 0; r < rowsA; ++r) {
@@ -53,25 +53,25 @@ class SITL_MathUtils : public IMathUtils {
                     dst[r * colsB + c] = sum;
                 }
             }
-            return true;
+            return ZP_ERROR_OK;
         }
 
-        bool matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) override {
+        ZP_Error matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) override {
             for (uint16_t r = 0; r < rows; ++r) {
                 for (uint16_t c = 0; c < cols; ++c) {
                     dst[c * rows + r] = src[r * cols + c];
                 }
             }
-            return true;
+            return ZP_ERROR_OK;
         }
 
-        bool matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) override {
+        ZP_Error matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) override {
             uint32_t n = static_cast<uint32_t>(rows) * cols;
             for (uint32_t i = 0; i < n; ++i) dst[i] = src[i] * scale;
-            return true;
+            return ZP_ERROR_OK;
         }
 
-        bool matrixInverse(const float* src, uint16_t dim, float* dst) override {
+        ZP_Error matrixInverse(const float* src, uint16_t dim, float* dst) override {
             std::vector<float> a(src, src + static_cast<uint32_t>(dim) * dim);
             for (uint16_t i = 0; i < dim; ++i) {
                 for (uint16_t j = 0; j < dim; ++j) dst[i * dim + j] = (i == j) ? 1.0f : 0.0f;
@@ -84,7 +84,7 @@ class SITL_MathUtils : public IMathUtils {
                     float v = std::fabs(a[r * dim + col]);
                     if (v > best) { best = v; pivot = r; }
                 }
-                if (best < 1e-12f) return false; // singular
+                if (best < 1e-12f) return ZP_ERROR_INVALID_DATA; // singular
 
                 if (pivot != col) {
                     for (uint16_t j = 0; j < dim; ++j) {
@@ -109,7 +109,7 @@ class SITL_MathUtils : public IMathUtils {
                     }
                 }
             }
-            return true;
+            return ZP_ERROR_OK;
         }
 
         void skewSymmetric(const float* v3, float* dst3x3) override {
@@ -122,7 +122,7 @@ class SITL_MathUtils : public IMathUtils {
             dst3x3[6] = -y;    dst3x3[7] = x;     dst3x3[8] = 0.0f;
         }
 
-        bool ensureSymmetric(float* m, uint16_t dim) override {
+        ZP_Error ensureSymmetric(float* m, uint16_t dim) override {
             for (uint16_t r = 0; r < dim; ++r) {
                 for (uint16_t c = r + 1; c < dim; ++c) {
                     uint32_t idx1 = r * dim + c;
@@ -132,7 +132,7 @@ class SITL_MathUtils : public IMathUtils {
                     m[idx2] = val;
                 }
             }
-            return true;
+            return ZP_ERROR_OK;
         }
 
         void quatMultiply(const float* q1, const float* q2, float* qOut) override {
@@ -264,7 +264,7 @@ class SITL_MathUtils : public IMathUtils {
         void quatRotateVector(const float* q, const float* v3, float* vOut3) override {
             float rot[9];
             quatToRotationMatrix(q, rot);
-            matrixMult(rot, 3, 3, v3, 1, vOut3);
+            (void)matrixMult(rot, 3, 3, v3, 1, vOut3);
         }
 
         void quatToEuler(const float* q, float* euler3) override {

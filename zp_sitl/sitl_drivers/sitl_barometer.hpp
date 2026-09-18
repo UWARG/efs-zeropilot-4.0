@@ -10,9 +10,9 @@ class SITL_Barometer : public IBarometer {
         BaroData_t baroData = {0.0f, 0.0f, 0.0f};
         float maxCapacity = 1.0f;
     public:
-        bool readData(BaroData_t &data) override {
+        ZP_Error readData(BaroData_t &data) override {
             data = baroData;
-            return true;
+            return ZP_ERROR_OK;
         }
 
         /**

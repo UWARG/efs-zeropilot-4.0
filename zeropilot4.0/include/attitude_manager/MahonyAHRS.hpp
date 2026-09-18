@@ -10,11 +10,10 @@
 // 02/10/2011	SOH Madgwick	Optimised for reduced CPU load
 //
 //=============================================================================================
-#ifndef MAHONY_AHRS_H
-#define MAHONY_AHRS_H
+#pragma once
 #include <cmath>
 #include "imu_datatypes.hpp"
-
+#include "zp_error.h"
 //--------------------------------------------------------------------------------------------
 // Variable declaration
 
@@ -26,24 +25,20 @@ private:
 	float integralFBx, integralFBy, integralFBz;  // integral error terms scaled by Ki
 	float invSampleFreq;
 	float roll, pitch, yaw;
-	static float invSqrt(float x);
+	static ZP_Error invSqrt(float x, float &output);
+	bool isInitialized = false;
 
 //-------------------------------------------------------------------------------------------
 // Function declarations
 
 public:
 	Mahony();
-	void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
+	// Initializer
+	ZP_Error begin(float sampleFrequency);
 
-	void updateIMU(float gx, float gy, float gz, float ax, float ay, float az, float dt);
+	ZP_Error updateIMU(float gx, float gy, float gz, float ax, float ay, float az, float dt);
 
-	Attitude_t getAttitude() {
-		return {roll * 57.29578f, pitch * 57.29578f, yaw * 57.29578f + 180.0f};
-	}
+	ZP_Error getAttitude(Attitude_t& out_attitude);
 
-	Attitude_t getAttitudeRadians() {
-		return {roll, pitch, yaw};
-	}
+	ZP_Error getAttitudeRadians(Attitude_t& outAttitude);
 };
-
-#endif

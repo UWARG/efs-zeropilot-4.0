@@ -1,12 +1,11 @@
 #include "dshot.hpp"
 #include <cstring>
 
-static constexpr uint16_t DSHOT_1_CCR =	275;    // CCR for dshot300 logic 1 
-static constexpr uint16_t DSHOT_0_CCR =	137;    // CCR for dshot300 logic 0 
+static constexpr uint16_t DSHOT_1_CCR =	275; // CCR for dshot300 logic 1 
+static constexpr uint16_t DSHOT_0_CCR = 137; // CCR for dshot300 logic 0 
 
-static constexpr uint16_t MAX_THROTTLE = 2047;  // 11 bit max val
-static constexpr uint16_t OFFSET = 100;     // Armed standby throttle
-static constexpr uint16_t MIN_THROTTLE = 48 + OFFSET;    // 0-47 reserved for special commands
+static constexpr uint16_t MAX_THROTTLE = 2047; // 11 bit max val
+static constexpr uint16_t MIN_THROTTLE = 48; // 0-47 reserved for special commands
 
 static constexpr uint16_t THROTTLE_MASK = 0x7FF;
 static constexpr uint8_t THROTTLE_SHIFT = 5;
@@ -14,13 +13,12 @@ static constexpr uint8_t TEL_MASK = 1;
 static constexpr uint8_t TEL_SHIFT = 4;
 static constexpr uint8_t CRC_MASK = 0x0F;
 
-
 DshotMotorControl::DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, bool telReq):
     timer(timer), 
     timerChannel(timerChannel), 
     telReq(telReq){}
 
-void DshotMotorControl::set(uint32_t percent) {
+ZP_Error DshotMotorControl::set(uint32_t percent) {
     percent =  (percent > 100) ? 100 : percent;
 
     // Throttle 0 = disarm, 48-2047 = active throttle range
@@ -30,7 +28,11 @@ void DshotMotorControl::set(uint32_t percent) {
     }
 
     // 11 bits throttle + 1 bit telemetry request + 4 bits CRC
-    uint8_t crc = DshotMotorControl::calculateCrc(throttleVal, telReq);
+    uint8_t crc = 0;
+    ZP_Error result = DshotMotorControl::calculateCrc(throttleVal, telReq, crc);
+    
+    if (result != ZP_ERROR_OK) return result;
+    
     uint16_t frame = ( (throttleVal & THROTTLE_MASK) << THROTTLE_SHIFT ) | ( (telReq & TEL_MASK) << TEL_SHIFT ) | (crc & CRC_MASK);
 
     // Encode each bit to CRC val into temp buffer
@@ -43,22 +45,31 @@ void DshotMotorControl::set(uint32_t percent) {
     updateBuffer[DSHOT_BUF_LEN - 1] = 0;
 
     memcpy(dmaBuffer, updateBuffer, sizeof(updateBuffer));
-    if (HAL_TIM_PWM_Start_DMA(timer, timerChannel, (uint32_t*)dmaBuffer, DSHOT_BUF_LEN) != HAL_OK) {
-        // Error_Handler();    Error handling to be done
+    HAL_StatusTypeDef status = HAL_TIM_PWM_Start_DMA(timer, timerChannel, (uint32_t*)dmaBuffer, DSHOT_BUF_LEN);
+    if (status == HAL_BUSY) {
+        result |= ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
+    } else if (status != HAL_OK) {
+        result |= ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
     }
+    return result;
 }
 
-void DshotMotorControl::init() {
+ZP_Error DshotMotorControl::init() {
+    if (timer == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+
     timer->Init.Prescaler = 0;
     timer->Init.Period = 366;
     if (HAL_TIM_Base_Init(timer) != HAL_OK) {
-        // Error_Handler();
+        return ZP_ERROR_EXT_API | ZP_ERROR_CONFIG;
     }
     setArm(false);
-    this->set(0);
+    return this->set(0);
 }
 
-uint8_t DshotMotorControl::calculateCrc(uint16_t throttleVal, uint8_t telReq) {
+ZP_Error DshotMotorControl::calculateCrc(uint16_t throttleVal, uint8_t telReq, uint8_t& crc) {
     uint16_t preCrc = (throttleVal << 1) | telReq;
-    return (preCrc ^ (preCrc >> 4) ^ (preCrc >> 8)) & CRC_MASK;
+    crc = (preCrc ^ (preCrc >> 4) ^ (preCrc >> 8)) & CRC_MASK;
+    return ZP_ERROR_OK;
 }

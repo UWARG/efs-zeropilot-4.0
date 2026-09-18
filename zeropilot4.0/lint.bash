@@ -50,13 +50,11 @@ cmake --build .
 # Now run clang-tidy on host build directory
 echo "==> Running clang-tidy..."
 
-# Find source files (adjust if needed)
-src_files=$(find "$script_dir/src" "$script_dir/include" -name '*.cpp' -o -name '*.hpp')
-
-# Run clang-tidy with compile_commands from host build
-clang-tidy $src_files -p "$build_dir" \
-  --checks='readability-identifier-naming*' \
-  --warnings-as-errors='readability-identifier-naming*' \
-  --system-headers=false
+# Find source files.
+find "$script_dir/src" "$script_dir/include" \( -name '*.cpp' -o -name '*.hpp' \) -print0 |
+  xargs -0 clang-tidy -p "$build_dir" \
+    --checks='readability-identifier-naming*' \
+    --warnings-as-errors='readability-identifier-naming*' \
+    --system-headers=false
 
 echo "==> Done linting."

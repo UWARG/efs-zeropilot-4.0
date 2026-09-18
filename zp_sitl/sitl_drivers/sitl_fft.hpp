@@ -5,8 +5,8 @@
 
 class SITL_FFT : public IFFT {
     public:
-        bool init(uint16_t fftLen) override {
-            return arm_rfft_fast_init_f32(&fft, fftLen) == ARM_MATH_SUCCESS;
+        ZP_Error init(uint16_t fftLen) override {
+            return arm_rfft_fast_init_f32(&fft, fftLen) == ARM_MATH_SUCCESS ? ZP_ERROR_OK : (ZP_ERROR_EXT_API | ZP_ERROR_INVALID_ARG);
         }
         void runFFT(float *in, float *out, uint8_t dir) override {
             if (dir != 0 && dir != 1) return;

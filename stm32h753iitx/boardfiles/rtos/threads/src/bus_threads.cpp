@@ -16,7 +16,7 @@ void busMainLoopWrapper(void *arg)
   while(true)
   {
     if (canControllerHandle) {
-      canControllerHandle->routineTasks();
+      (void)canControllerHandle->routineTasks();
     }
 
     nextWakeUp += timeToTicks(BUS_UPDATE_LOOP_DELAY_MS);
