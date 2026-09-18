@@ -93,11 +93,19 @@ Note: Use --gtest_filter to run a specific or subset of tests: https://google.gi
 
 ## CI/CD
 
-GitHub Actions run on every push/PR:
+GitHub Actions run on every PR and merge to main:
 - Hardware compilation (both targets, Debug/Release)
 - Unit tests
 - SITL build verification
 - Code linting
+
+We use the `uwarg/efs-zeropilot-ci:v1.0.0` image for most of the CI jobs. This image is defined in [docker/Dockerfile](docker/Dockerfile). When modifying the image, increment the version tag, update all CI workflow references, and publish the new tag. Never overwrite an existing image version.
+```bash
+export CI_IMAGE_VERSION=v1.0.1
+docker build -t uwarg/efs-zeropilot-ci:${CI_IMAGE_VERSION} -f docker/Dockerfile .
+docker push uwarg/efs-zeropilot-ci:${CI_IMAGE_VERSION}
+```
+
 
 ## Hardware Targets
 
