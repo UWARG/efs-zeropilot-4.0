@@ -77,16 +77,16 @@ protected:
 };
 
 TEST_F(AttitudeManagerQuadTest, AllMotorsDisarmedOnStartup) {
-    EXPECT_CALL(motor1, set(0)).Times(AnyNumber());
-    EXPECT_CALL(motor2, set(0)).Times(AnyNumber());
-    EXPECT_CALL(motor3, set(0)).Times(AnyNumber());
-    EXPECT_CALL(motor4, set(0)).Times(AnyNumber());
+    EXPECT_CALL(motor1, set(0, _)).Times(AnyNumber());
+    EXPECT_CALL(motor2, set(0, _)).Times(AnyNumber());
+    EXPECT_CALL(motor3, set(0, _)).Times(AnyNumber());
+    EXPECT_CALL(motor4, set(0, _)).Times(AnyNumber());
 
     // any nonzero set() call is a test failure
-    EXPECT_CALL(motor1, set(Gt(0))).Times(0);
-    EXPECT_CALL(motor2, set(Gt(0))).Times(0);
-    EXPECT_CALL(motor3, set(Gt(0))).Times(0);
-    EXPECT_CALL(motor4, set(Gt(0))).Times(0);
+    EXPECT_CALL(motor1, set(Gt(0), _)).Times(0);
+    EXPECT_CALL(motor2, set(Gt(0), _)).Times(0);
+    EXPECT_CALL(motor3, set(Gt(0), _)).Times(0);
+    EXPECT_CALL(motor4, set(Gt(0), _)).Times(0);
 
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
@@ -94,21 +94,22 @@ TEST_F(AttitudeManagerQuadTest, AllMotorsDisarmedOnStartup) {
 }
 
 TEST_F(AttitudeManagerQuadTest, MotorOutputTest) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 60.0f;
     rcMsg.pitch = 70.0f;
     rcMsg.yaw = 55.0f;
     rcMsg.throttle = 80.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flightMode = FlightMode_e::ACRO;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
 
-    EXPECT_CALL(motor1, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(motor2, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(motor3, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(motor4, set(_)).Times(AtLeast(1));
+    EXPECT_CALL(motor1, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor2, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor3, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor4, set(_, _)).Times(AtLeast(1));
 
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
@@ -116,21 +117,22 @@ TEST_F(AttitudeManagerQuadTest, MotorOutputTest) {
 }
 
 TEST_F(AttitudeManagerQuadTest, DisarmThrottleZero) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 80.0f;
     rcMsg.arm = false;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flightMode = FlightMode_e::ACRO;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
 
-    EXPECT_CALL(motor1, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(motor2, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(motor3, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(motor4, set(0)).Times(AtLeast(1));
+    EXPECT_CALL(motor1, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor2, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor3, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor4, set(0, _)).Times(AtLeast(1));
 
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
@@ -141,10 +143,10 @@ TEST_F(AttitudeManagerQuadTest, FailsafeTriggered) {
     EXPECT_CALL(mockAMQueue, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockLogQueue, push(_)).Times(1);
 
-    EXPECT_CALL(motor1, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(motor2, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(motor3, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(motor4, set(0)).Times(AtLeast(1));
+    EXPECT_CALL(motor1, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor2, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor3, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(motor4, set(0, _)).Times(AtLeast(1));
 
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 
@@ -154,12 +156,13 @@ TEST_F(AttitudeManagerQuadTest, FailsafeTriggered) {
 }
 
 TEST_F(AttitudeManagerQuadTest, FailsafeRecovery) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flightMode = FlightMode_e::ACRO;
 
     testing::Sequence seq;
@@ -186,22 +189,23 @@ TEST_F(AttitudeManagerQuadTest, FailsafeRecovery) {
 }
 
 TEST_F(AttitudeManagerQuadTest, MotorClampingUpper) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 150.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flightMode = FlightMode_e::ACRO;
 
     EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
 
     // We use Ge(90) here because the motor output is clamped to 95% nominally due to ESC headroom
-    EXPECT_CALL(motor1, set(Ge(90)));
-    EXPECT_CALL(motor2, set(Ge(90)));
-    EXPECT_CALL(motor3, set(Ge(90)));
-    EXPECT_CALL(motor4, set(Ge(90)));
+    EXPECT_CALL(motor1, set(Ge(90), _));
+    EXPECT_CALL(motor2, set(Ge(90), _));
+    EXPECT_CALL(motor3, set(Ge(90), _));
+    EXPECT_CALL(motor4, set(Ge(90), _));
 
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
 

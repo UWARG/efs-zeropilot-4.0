@@ -35,6 +35,7 @@ typedef struct {
     float yaw;
     float throttle;
     bool arm;
+    bool isSafetyEngaged;
     #ifdef PLANE
     float flapAngle;
     #endif

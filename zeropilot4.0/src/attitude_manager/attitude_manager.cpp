@@ -32,14 +32,14 @@ AttitudeManager::AttitudeManager(
     activeCLAW(&manualCLAW),
     manualCLAW(),
     fbwaCLAW(AM_CONTROL_LOOP_PERIOD_S),
-    controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::MANUAL}),
+    controlMsg({50, 50, 50, 0, 0, 0, 0, FlightMode_e::MANUAL}),
     currentFlightMode(FlightMode_e::MANUAL),
     #endif
     #ifdef QUADCOPTER
     activeCLAW(&stabilizeCLAW),
     acroCLAW(AM_CONTROL_LOOP_PERIOD_S),
     stabilizeCLAW(AM_CONTROL_LOOP_PERIOD_S, acroCLAW),
-    controlMsg({50, 50, 50, 0, 0, FlightMode_e::STABILIZE}),
+    controlMsg({50, 50, 50, 0, 0, 0, FlightMode_e::STABILIZE}),
     currentFlightMode(FlightMode_e::STABILIZE),
     #endif
     droneState(DRONE_STATE_DEFAULT),
@@ -424,7 +424,7 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
         }
 
         // Send command to motor
-        motor->motorInstance->set(cmd);
+        motor->motorInstance->set(cmd, outputControlMsg.isSafetyEngaged);
     }
 }
 

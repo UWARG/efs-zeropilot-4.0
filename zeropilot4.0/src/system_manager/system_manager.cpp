@@ -272,6 +272,7 @@ void SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
     rcDataMessage.throttle = rcChannelReversed[2] ? 100.0f - rcData.throttle : rcData.throttle;
     rcDataMessage.yaw = rcChannelReversed[3] ? 100.0f - rcData.yaw : rcData.yaw;
     rcDataMessage.arm = (rcData.arm > SM_RC_ARM_THRESHOLD) && !isSafetySwitchEngaged;
+    rcDataMessage.isSafetyEngaged = isSafetySwitchEngaged;
     #ifdef PLANE
     rcDataMessage.flapAngle = rcData.aux2;
     #endif

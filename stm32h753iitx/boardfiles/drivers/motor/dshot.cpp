@@ -18,7 +18,18 @@ DshotMotorControl::DshotMotorControl(TIM_HandleTypeDef *timer, uint32_t timerCha
     timerChannel(timerChannel), 
     telReq(telReq){}
 
-void DshotMotorControl::set(uint32_t percent) {
+void DshotMotorControl::set(uint32_t percent, bool safetyEngaged) {
+    if (safetyEngaged != currentSafetyState) {
+        currentSafetyState = safetyEngaged;
+        if (currentSafetyState) {
+            HAL_TIM_PWM_Stop_DMA(timer, timerChannel);
+        }
+    }
+
+    if (safetyEngaged) {
+        return;
+    }
+
     percent =  (percent > 100) ? 100 : percent;
 
     // Throttle 0 = disarm, 48-2047 = active throttle range
