@@ -10,7 +10,7 @@ jobs:
   linting_test_plane:
     runs-on: ubuntu-latest
     container:
-      image: uwarg/efs-zeropilot-ci:latest
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
     - name: Checkout repo
@@ -37,7 +37,7 @@ jobs:
   linting_test_quad:
     runs-on: ubuntu-latest
     container:
-      image: uwarg/efs-zeropilot-ci:latest
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
     - name: Checkout repo

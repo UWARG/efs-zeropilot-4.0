@@ -10,7 +10,7 @@ jobs:
   compile_test_plane:
     runs-on: ubuntu-latest
     container:
-      image: uwarg/efs-zeropilot-ci:latest
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
     - name: Checkout the repo
@@ -25,7 +25,7 @@ jobs:
   compile_test_quad:
     runs-on: ubuntu-latest
     container:
-      image: uwarg/efs-zeropilot-ci:latest
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
     - name: Checkout the repo

@@ -29,7 +29,7 @@ jobs:
 
     - name: Build ${{ matrix.target.name }}
       run: |
-        docker run --rm -v ${{ github.workspace }}:/workspace uwarg/efs-zeropilot-ci:latest \
+        docker run --rm -v ${{ github.workspace }}:/workspace uwarg/efs-zeropilot-ci:v1.0.0 \
           stm32cubeide --launcher.suppressErrors -nosplash \
           -application org.eclipse.cdt.managedbuilder.core.headlessbuild \
           -data /workspace -import /workspace/${{ matrix.target.name }} \
