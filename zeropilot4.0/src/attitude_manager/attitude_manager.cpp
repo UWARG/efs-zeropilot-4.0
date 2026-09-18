@@ -10,6 +10,7 @@ AttitudeManager::AttitudeManager(
     IMathUtils *mathUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
+    IMagnetometer *magDriver,
     IFFT *fftDriver,
     IRangefinder *rangefinderDriver,
     IBarometer *barometerDriver,
@@ -21,6 +22,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    magCal(magDriver),
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
@@ -100,6 +102,11 @@ void AttitudeManager::amUpdate() {
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         sendServoOutputRawToTelemetryManager();
     }
+
+    // Drive the magnetometer through MagCal every cycle so a running
+    // calibration keeps collecting. The corrected field is not consumed yet;
+    // it lands here once the EKF above is enabled.
+    magCal.update();
 
     // Read barometer data
     BaroData_t baroData;

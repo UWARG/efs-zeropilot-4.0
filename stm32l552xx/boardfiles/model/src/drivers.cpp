@@ -38,6 +38,7 @@ RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -117,6 +118,7 @@ void initDrivers()
     telemLinkHandle = new RFD(&huart3);
     imuHandle = new IMU(&hspi2, GPIOF, GPIO_PIN_12, 0, IMU_ODR_1KHZ);
     pmHandle = new PowerModule(&hi2c1);
+    magHandle = new Magnetometer(&hi2c2);
     if (ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE) == 1) {
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
@@ -138,6 +140,7 @@ void initDrivers()
     gpsHandle->init();
     imuHandle->init();
     pmHandle->init();
+    magHandle->init();
     if (rangefinderHandle != nullptr) {
         rangefinderHandle->init();
     }
