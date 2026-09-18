@@ -4,18 +4,15 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    type: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
 jobs:
   unit_test_plane:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgtest-dev libgmock-dev
-
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
@@ -33,13 +30,10 @@ jobs:
 
   unit_test_quad:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgtest-dev libgmock-dev
-
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
