@@ -49,10 +49,10 @@ set(ZP_ERROR_INC
 )
 
 set(ZP_BIT_SRC
-    "src/bit/zp_bit.cpp"
+    "src/zp_bit/zp_bit.cpp"
 )
 set(ZP_BIT_INC
-    "include/bit/"
+    "include/zp_bit/"
 )
 
 # External library files (does not apply compiler warnings)
