@@ -171,7 +171,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
   MX_FATFS_Init();
-  MX_IWDG1_Init();
+//  MX_IWDG1_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 
@@ -199,7 +199,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   initModel();
