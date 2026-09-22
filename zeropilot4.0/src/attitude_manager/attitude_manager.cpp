@@ -2,6 +2,7 @@
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
+#include "logger.hpp"
 #include "unit_conversions.hpp"
 #include <limits>
 
@@ -15,7 +16,6 @@ AttitudeManager::AttitudeManager(
     IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue,
     MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
@@ -27,7 +27,6 @@ AttitudeManager::AttitudeManager(
     // ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
-    smLoggerQueue(smLoggerQueue),
     #ifdef PLANE
     activeCLAW(&manualCLAW),
     manualCLAW(),
@@ -91,7 +90,6 @@ AttitudeManager::AttitudeManager(
 }
 
 void AttitudeManager::amUpdate() {
-
     systemUtilsDriver->profilerBegin(profilerId);
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
@@ -247,9 +245,8 @@ void AttitudeManager::amUpdate() {
             #endif
             
             if (!failsafeTriggered) {
-                char errorMsg[100] = "Failsafe triggered";
-                smLoggerQueue->push(&errorMsg);
-                failsafeTriggered = true;
+              Logger::log("Failsafe triggered", LogLevel_e::LOG_WARN);
+              failsafeTriggered = true;
             }
             
             outputToMotors(motorOutputs, false);
@@ -261,8 +258,7 @@ void AttitudeManager::amUpdate() {
         noDataCount = 0;
 
         if (failsafeTriggered) {
-          char errorMsg[100] = "Motor control restored";
-          smLoggerQueue->push(&errorMsg);
+          Logger::log("Motor control restored", LogLevel_e::LOG_INFO);
           failsafeTriggered = false;
         }
     }

@@ -10,7 +10,7 @@ TIM3CH4: Rudder
 
 TIM4CH1: Throttle
 
-# Logger:
+# File System:
 ### SPI Communication
 SPI1: SD Card
 DMA1CH2: SPI TX
