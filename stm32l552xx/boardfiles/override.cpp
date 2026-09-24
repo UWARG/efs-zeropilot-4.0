@@ -51,7 +51,6 @@ void HAL_Delay(uint32_t Delay) {
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart == rcHandle->getHuart()){
-        rcHandle->parse();
         rcHandle->startDMA();
     } else if (huart == telemLinkHandle->getHuart()) {
       telemLinkHandle->receiveCallback(Size);
