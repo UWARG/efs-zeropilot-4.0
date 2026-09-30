@@ -25,6 +25,11 @@ bool Airspeed::init() {
 bool Airspeed::getAirspeedData(AirspeedData_t* data) {
     if (data == nullptr) return false;
 
+    // if a read had previously failed, reinit it so reading doesn't continuously return false
+    if (!initSuccess_) {
+        initSuccess_ = startReceive();
+    }
+
     // The DMA callback runs in interrupt context and writes 64-bit fields.
     // Briefly mask interrupts so the task receives one coherent snapshot.
     const uint32_t primask = __get_PRIMASK();
