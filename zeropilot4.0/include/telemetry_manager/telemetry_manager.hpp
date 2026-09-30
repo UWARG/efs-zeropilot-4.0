@@ -44,6 +44,7 @@ class TelemetryManager {
     void receive();
     void processParamTx();
     void enqueueParamValueTx(uint16_t index);
+    void enqueueCommandAckTx(uint16_t command_id, uint8_t result); 
 
     uint8_t profilerId;
     

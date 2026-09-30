@@ -235,6 +235,35 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             break;
         }
 
+        case MAVLINK_MSG_ID_COMMAND_LONG: { // ID 76
+            uint16_t command = mavlink_msg_command_long_get_command(&msg); 
+
+            switch (command)
+            {
+                case MAV_CMD_DO_MOTOR_TEST: { // ID 209
+                    float motor_instance = mavlink_msg_command_long_get_param1(&msg); 
+                    float throttle_type = mavlink_msg_command_long_get_param2(&msg);
+                    float throttle_value = mavlink_msg_command_long_get_param3(&msg);
+                    float timeout = mavlink_msg_command_long_get_param4(&msg);
+                    float motor_count = mavlink_msg_command_long_get_param5(&msg);
+                    float test_order = mavlink_msg_command_long_get_param6(&msg);
+
+                    // Motor Test Execution Code !! 
+
+                    enqueueCommandAckTx(command, MAV_RESULT_ACCEPTED);
+                    break;
+                }
+                
+                default:
+                    break;
+            }
+
+            break; 
+        }
+
+
+
+
         default:
             break;
     }
@@ -252,3 +281,25 @@ void TelemetryManager::enqueueParamValueTx(uint16_t index) {
     );
     packedMsgBuffer->push(&response);
 }
+
+
+
+void TelemetryManager::enqueueCommandAckTx(uint16_t command_id, uint8_t result){ 
+
+    mavlink_message_t ackMsg = {0};
+
+    mavlink_msg_command_ack_pack(
+        SYSTEM_ID,  
+        COMPONENT_ID,
+        &ackMsg, 
+        command_id, 
+        result, 
+        0, 0, 1, 1, 
+    );
+
+    packedMsgBuffer->push(&ackMsg); 
+
+}
+
+
+
