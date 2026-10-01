@@ -15,31 +15,31 @@ AcroMapping::AcroMapping(float control_iter_period_s) noexcept :
     rollLimitRate(0.0f),
     pitchLimitRate(0.0f),
     yawLimitRate(0.0f) {
-        rollPID.pidInitState();
-        pitchPID.pidInitState();
-        yawPID.pidInitState();
+        (void)rollPID.pidInitState();
+        (void)pitchPID.pidInitState();
+        (void)yawPID.pidInitState();
 }
 
 // Setter *roll* for PID consts
 void AcroMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    (void)rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Setter for *pitch* PID consts
 void AcroMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    (void)pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Setter for *yaw* PID consts
 void AcroMapping::setYawPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    yawPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    (void)yawPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Resetter for both roll and pitch PIDs (needed for unit testing)
 void AcroMapping::resetControlLoopState() noexcept {
-    rollPID.pidInitState();
-    pitchPID.pidInitState();
-    yawPID.pidInitState();
+    (void)rollPID.pidInitState();
+    (void)pitchPID.pidInitState();
+    (void)yawPID.pidInitState();
 }
 
 // Setter for *rollLimitRate* in rad / s
@@ -62,27 +62,32 @@ PID *AcroMapping::getRollPID() noexcept { return &rollPID; }
 PID *AcroMapping::getPitchPID() noexcept { return &pitchPID; }
 PID *AcroMapping::getYawPID() noexcept { return &yawPID; }
 
-void AcroMapping::activateFlightMode() {
+ZP_Error AcroMapping::activateFlightMode() {
     resetControlLoopState();
+    return ZP_ERROR_OK;
 }
 
 // Main control mapping function for ACRO mode
-RCMotorControlMessage_t AcroMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
+ZP_Error AcroMapping::runControl(RCMotorControlMessage_t &controlOutput, RCMotorControlMessage_t controlInput, const DroneState_t &droneState) {
+    ZP_Error result = ZP_ERROR_OK;
+
     // Setpoints: Maps [0, 100] to [-limit, +limit]
-    float rollRateSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitRate;
-    float pitchRateSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitRate;
-    float yawRateSetpoint = ((controlInputs.yaw / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * yawLimitRate;
+    float rollRateSetpoint = ((controlInput.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollLimitRate;
+    float pitchRateSetpoint = ((controlInput.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * pitchLimitRate;
+    float yawRateSetpoint = ((controlInput.yaw / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * yawLimitRate;
 
     float rollRateMeasured = droneState.rollRate;
     float pitchRateMeasured = droneState.pitchRate;
     float yawRateMeasured = droneState.yawRate;
 
+    controlOutput = controlInput;
+
     // Run PID, outputs control effort in [-1,1]
-    controlInputs.roll = rollPID.pidOutput(rollRateSetpoint, rollRateMeasured);
-    controlInputs.pitch = pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured);
-    controlInputs.yaw = yawPID.pidOutput(yawRateSetpoint, yawRateMeasured);
+    result |= rollPID.pidOutput(rollRateSetpoint, rollRateMeasured, controlOutput.roll);
+    result |= pitchPID.pidOutput(pitchRateSetpoint, pitchRateMeasured, controlOutput.pitch);
+    result |= yawPID.pidOutput(yawRateSetpoint, yawRateMeasured, controlOutput.yaw);
 
-    controlInputs.throttle /= 100.0f; // Throttle remains in [0, 1]
+    controlOutput.throttle /= 100.0f; // Throttle remains in [0, 1]
 
-    return controlInputs;
+    return result;
 }

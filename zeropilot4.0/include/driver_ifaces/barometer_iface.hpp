@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <cstdint>
+#include "zp_error.h"
 
 // Pressure and Temperature data
 typedef struct {
@@ -15,5 +16,5 @@ class IBarometer {
     public:
         virtual ~IBarometer() = default;
         
-        virtual bool readData(BaroData_t &data) = 0;
+        virtual ZP_Error readData(BaroData_t &data) = 0;
 };
