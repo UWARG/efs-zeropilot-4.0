@@ -6,12 +6,6 @@
 #include "unit_conversions.hpp"
 #include <limits>
 
-static inline float readParam(ZP_Error &result, ZP_PARAM_ID id) {
-    float value = 0.0f;
-    result |= ZP_PARAM::get(id, value);
-    return value;
-}
-
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
@@ -562,12 +556,17 @@ ZP_Error AttitudeManager::sendRangefinderDataToTelemetryManager(const Rangefinde
 
     float invalidQuaternion[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
+    float minDistance = 0.0f;
+    float maxDistance = 0.0f;
+    result |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_MIN, minDistance);
+    result |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_MAX, maxDistance);
+
     TMMessage_t rangefinderDataMsg;
     result |= distanceSensorDataPack(
         rangefinderDataMsg,
         systemUtilsDriver->getCurrentTimestampMs(), // time_boot_ms
-        readParam(result, ZP_PARAM_ID::RNGFND_MIN),
-        readParam(result, ZP_PARAM_ID::RNGFND_MAX),
+        minDistance,
+        maxDistance,
         rangefinderData.distance,
         1, // id
         0.01f, // covariance from datasheet of TF02
