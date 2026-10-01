@@ -118,7 +118,6 @@ void AttitudeManager::amUpdate() {
     ScaledImuBatch_t scaledImuData = {};
     ZP_Error imuStatus = imuDriver->readRawData(imuData);
     imuStatus |= imuDriver->scaleIMUData(imuData, scaledImuData);
-    (void)imuStatus;
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_DATA_VALID, imuStatus);
     for (int i = 0; i < scaledImuData.count; i++) {
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
