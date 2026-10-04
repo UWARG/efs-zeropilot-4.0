@@ -305,11 +305,11 @@ ZP_Error SystemManager::applyBitFailsafes() {
         }
     }
 
-    bitFailsafe = failsafe;
-
-    if (bitFailsafe == BitFailsafe_e::DISARM && REPORT_TICK) {
+    if (failsafe == BitFailsafe_e::DISARM && bitFailsafe != BitFailsafe_e::DISARM) {
         result |= sendStatusTextToTelemetryManager(MAV_SEVERITY_EMERGENCY, "Disarming");
     }
+
+    bitFailsafe = failsafe;
 
     return result;
 }
