@@ -1,12 +1,17 @@
+#pragma once
+
 // I2C Common Functions
 #include "stm32h7xx_hal.h"
 #include <cstdint>
+
+
 class I2cCommon {
 public:
     //Constructor
     /*This constructor initializes the I2cCommon class with the provided I2C 
-      handle and 7-bit address of the I2C device. It saves these parameters for 
-      use in subsequent I2C operations.*/
+      handle and device address, already shifted left by 1 for HAL of the I2C 
+      device (DO NOT SHIFT IT AGAIN). It saves these parameters for use in 
+      subsequent I2C operations.*/
     I2cCommon(I2C_HandleTypeDef* hi2c, uint8_t addr7);
 
 
@@ -78,6 +83,6 @@ private:
     //data saved by constructor
     //Pointer to the I2C handle
     I2C_HandleTypeDef* hi2c_;
-    //7-bit address of the I2C device
+    //7-bit address of the I2C device (shifted left by 1 for HAL)
     uint16_t addr_;
 };
