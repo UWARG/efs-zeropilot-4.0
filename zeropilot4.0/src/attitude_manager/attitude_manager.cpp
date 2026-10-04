@@ -201,11 +201,12 @@ void AttitudeManager::amUpdate() {
     // Get GPS data
     GpsData_t gpsData = {};
     ZP_Error gpsStatus = gpsDriver->readData(gpsData);
-    gpsStatus |= ZP_ERROR_INVALID_DATA;
-    (void)ZP_BIT::report(ZP_BIT_ID::GPS_DATA_VALID, gpsStatus);
     if (gpsData.isNew) {
         lastValidGps = gpsData;
+    } else {
+        gpsStatus |= ZP_ERROR_INVALID_DATA;
     }
+    (void)ZP_BIT::report(ZP_BIT_ID::GPS_DATA_VALID, gpsStatus);
     
     // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
@@ -234,10 +235,6 @@ void AttitudeManager::amUpdate() {
 
     // Get data from Queue and motor outputs
     ZP_Error controlRes = getControlInputs(&controlMsg);
-
-    if (controlRes != ZP_ERROR_NOT_READY) {
-        (void)controlRes;
-    }
 
     BitState_e rcState = BitState_e::UNKNOWN;
     (void)ZP_BIT::getLatched(ZP_BIT_ID::RC_DATA_VALID, rcState);
