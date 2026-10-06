@@ -185,8 +185,7 @@ TEST_F(AttitudeManagerTest, FailsafeTriggered) {
     EXPECT_EQ(logWrites, 1);
 }
 
-TEST_F(AttitudeManagerTest, FailsafeRecovery)
-{
+TEST_F(AttitudeManagerTest, FailsafeRecovery) {
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
@@ -221,8 +220,7 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery)
     EXPECT_EQ(logWrites, 2);
 }
 
-TEST_F(AttitudeManagerTest, MotorTrimApplied)
-{
+TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     ZP_PARAM::setParamById("SERVO1_TRIM", 1550); // 1550 us -> 55%
 
     RCMotorControlMessage_t rcMsg;
@@ -247,8 +245,7 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied)
     EXPECT_GT(rollValue, 50);
 }
 
-TEST_F(AttitudeManagerTest, MotorInverted)
-{
+TEST_F(AttitudeManagerTest, MotorInverted) {
     ZP_PARAM::setParamById("SERVO1_REVERSED", 1);
 
     RCMotorControlMessage_t rcMsg;
@@ -273,8 +270,7 @@ TEST_F(AttitudeManagerTest, MotorInverted)
     EXPECT_GT(rollValue, 50);
 }
 
-TEST_F(AttitudeManagerTest, MotorClampingUpper)
-{
+TEST_F(AttitudeManagerTest, MotorClampingUpper) {
     RCMotorControlMessage_t rcMsg;
     rcMsg.roll = 150.0f;
     rcMsg.pitch = 50.0f;
@@ -294,8 +290,7 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper)
     am.amUpdate();
 }
 
-TEST_F(AttitudeManagerTest, RawIMUTelemetrySent)
-{
+TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
     RawImu_t rawImu{};
     rawImu.xacc = 100;
     rawImu.yacc = -200;
@@ -309,8 +304,7 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent)
 
     int rawImuCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
-        .WillRepeatedly(Invoke([&rawImuCount](TMMessage_t *msg)
-                               {
+        .WillRepeatedly(Invoke([&rawImuCount](TMMessage_t *msg) {
             if (msg->dataType == TMMessage_t::RAW_IMU_DATA) {
                 rawImuCount++;
             }
@@ -326,8 +320,7 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent)
     EXPECT_EQ(rawImuCount, AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ);
 }
 
-TEST_F(AttitudeManagerTest, AttitudeTelemetrySent)
-{
+TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
     ScaledImu_t scaledImu{};
     scaledImu.xacc = 0.1f;
     scaledImu.yacc = -0.2f;
@@ -341,8 +334,7 @@ TEST_F(AttitudeManagerTest, AttitudeTelemetrySent)
 
     int attitudeCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
-        .WillRepeatedly(Invoke([&attitudeCount](TMMessage_t *msg)
-                               {
+        .WillRepeatedly(Invoke([&attitudeCount](TMMessage_t *msg) {
             if (msg->dataType == TMMessage_t::ATTITUDE_DATA) {
                 attitudeCount++;
             }
@@ -358,8 +350,7 @@ TEST_F(AttitudeManagerTest, AttitudeTelemetrySent)
     EXPECT_EQ(attitudeCount, AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ);
 }
 
-TEST_F(AttitudeManagerTest, RawGPSTelemetrySent)
-{
+TEST_F(AttitudeManagerTest, RawGPSTelemetrySent) {
     GpsData_t gpsData;
     gpsData.time = {23, 3, 15, 12, 30, 45};
     gpsData.latitude = 43.6532f;
@@ -377,8 +368,7 @@ TEST_F(AttitudeManagerTest, RawGPSTelemetrySent)
 
     int gpsCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
-        .WillRepeatedly(Invoke([&gpsCount](TMMessage_t *msg)
-                               {
+        .WillRepeatedly(Invoke([&gpsCount](TMMessage_t *msg){
             if (msg->dataType == TMMessage_t::GPS_RAW_DATA) {
                 gpsCount++;
             }
@@ -394,12 +384,10 @@ TEST_F(AttitudeManagerTest, RawGPSTelemetrySent)
     EXPECT_EQ(gpsCount, AM_TELEMETRY_GPS_DATA_RATE_HZ);
 }
 
-TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent)
-{
+TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent) {
     int servoOutputCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
-        .WillRepeatedly(Invoke([&servoOutputCount](TMMessage_t *msg)
-                               {
+        .WillRepeatedly(Invoke([&servoOutputCount](TMMessage_t *msg) {
             if (msg->dataType == TMMessage_t::SERVO_OUTPUT_RAW) {
                 servoOutputCount++;
             }
@@ -411,6 +399,6 @@ TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent)
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
     }
-
+    
     EXPECT_EQ(servoOutputCount, AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ);
 }

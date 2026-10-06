@@ -20,7 +20,6 @@ TelemetryManager::TelemetryManager(
     currParamListTxIdx(ZP_PARAM::getCount()),
     profilerId(0),
     paramSetup(this) {
-
         paramSetup.loadAllParams();
         paramSetup.bindAllParamCallbacks();
         systemUtilsDriver->profilerRegister("TM", &profilerId);

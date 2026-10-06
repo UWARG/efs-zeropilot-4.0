@@ -9,12 +9,12 @@ class IFileSystem {
     public:
         virtual ~IFileSystem() = default;
 
-        // NOTE:  for functions like inits that do not happen in a thread, can use the SYNC option to force the operation, functions that don't take IDs are always synchronous
+        // NOTE: for functions like inits that do not happen in a thread, can use the SYNC option to force the operation, functions that don't take IDs are always synchronous
 
         virtual FileStatus_e open (
             File* fp, 
             const char* path, 
-            const char* mode) = 0;	// Open or create a file
+            const char* mode) = 0; // Open or create a file
         virtual FileStatus_e write (
             ManagerId_e id, 
             File* fp, 
@@ -27,7 +27,7 @@ class IFileSystem {
             File* fp, 
             const void* buff, 
             uint32_t bytesToWrite, 
-            ReqOptions_e options = ReqOptions_e::ASYNC) = 0;	// Write data to the file and sync immediately (for critical logs)
+            ReqOptions_e options = ReqOptions_e::ASYNC) = 0; // Write data to the file and sync immediately (for critical logs)
         virtual FileStatus_e sync (
             ManagerId_e id, 
             File* fp, 

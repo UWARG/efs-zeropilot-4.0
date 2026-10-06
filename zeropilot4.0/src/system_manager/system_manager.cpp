@@ -4,7 +4,7 @@
 #include "attitude_manager.hpp"
 #include "telemetry_manager.hpp"
 
-#define LOG_TIMING 1
+#define LOG_TIMING 0
 
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
@@ -248,12 +248,11 @@ bool SystemManager::updateBatteryFSM() {
 
     return true;
 }
-
+/* TODO: Verify in later PR
 SystemManager::~SystemManager() {
-    /* TODO: Verify in later PR
     Logger::shutdown();
-    */
 }
+*/
 
 void SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     TMMessage_t rcDataMsg = rcDataPack(systemUtilsDriver->getCurrentTimestampMs(), rcData.controlSignals, INPUT_CHANNELS);

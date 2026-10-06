@@ -74,7 +74,6 @@ namespace Logger {
         buffer[totalLen] = '\n';
         buffer[totalLen + 1] = '\0';
         
-        // fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
         if (level == LogLevel_e::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
             fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount = 0;
