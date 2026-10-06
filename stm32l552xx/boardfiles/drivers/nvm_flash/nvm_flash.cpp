@@ -5,7 +5,7 @@
 #define WRITE_ENABLE 0x06
 #define WRITE_DISABLE 0x04
 #define PAGE_PROGRAM   0x02
-#define READ 0x03
+#define READ_PAGE 0x03
 #define READ_STATUS 0x05
 #define FLAG_STATUS 0x70
 #define CLEAR_FLAG 0x50
@@ -15,6 +15,9 @@ NVMFlash::NVMFlash(SPI_HandleTypeDef *spiHandle, GPIO_TypeDef *csPort, uint16_t 
 	spiHandle(spiHandle), csPort(csPort), csPin(csPin) {
 	mounted = false;
 }
+
+IMessageQueue<NvmTxMsg> *NVMFlash::txQueue = nullptr;
+IMessageQueue<NvmRxMsg> *NVMFlash::rxQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)] = {nullptr};
 
 int NVMFlash::format() {
 	HAL_StatusTypeDef st = eraseFull();
@@ -116,266 +119,82 @@ void NVMFlash::init() {
 	mount();
 }
 
-int NVMFlash::write(AbstractMessage *msg) {
-	// ensure that chip is mounted
+int NVMFlash::enqueue(ManagerId_e caller, NvmOpType_e op, AbstractMessage *msg) {
 	if (!mounted) {
-		return -1;   // not mounted yet
+		return -1;
 	}
-	if (msg->packed_size() == 0 || msg->packed_size() > FTL_MAX_PAYLOAD) {
-		return -2;   // invalid length
+	if (!txQueue || !rxQueues[static_cast<size_t>(caller)]) {
+		return -2;
 	}
 
-	uint32_t idx = state.next_idx;      // which block to use
-	uint32_t addr_base = indexToBaseAddr(idx);
-	uint32_t id = state.next_id;       // record ID
-
-	uint8_t data[200];
-	uint16_t len;
-	msg->pack(data, len);
-
-	// ======================= Erase the 4 KB block we are going to use
-	// TODO: make a low priority task erase in background to save time on writes?
-	HAL_StatusTypeDef st = erase4k(addr_base);
-	if (st != HAL_OK) {
+	NvmTxMsg txMsg;
+	txMsg.caller = caller;
+	txMsg.opType = op;
+	txMsg.recordId = msg->id;
+	txMsg.len = msg->packed_size();
+	int packRes = msg->pack(txMsg.payload, txMsg.len);
+	if (packRes != 0) {
 		return -3;
 	}
-	// Build header
-	FtlRecordHeader hdr;
-	memset(&hdr, 0xFF, sizeof(hdr));   // start with entire header as if erased
-	hdr.id = id;
-	hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
-	hdr.length = msg->packed_size();
-	hdr.crc = crc32((const uint8_t *)data, len);
 
-	// ============================  actually write to the chip
-
-	// program header into first 256-byte page
-	st = pageProgram(addr_base, (const uint8_t *) &hdr, (uint16_t) sizeof(hdr));
-	if (st != HAL_OK) return -4;
-
-	// program payload (actual data) starting at FTL_PAYLOAD_OFFSET
-	const uint8_t *src = (const uint8_t *)data;	// convert void data pointer to uint8_t pointer
-	uint32_t remaining = len;	// use this to track what is left, must write page by page
-	uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
-
-	while (remaining > 0) {
-		// if remaining bytes is larger than one page, write 256, otherwise if at end of data, write < 256 bytes
-		uint16_t chunk = (remaining > FLASH_PAGE_SIZE_256) ? FLASH_PAGE_SIZE_256: (uint16_t) remaining;
-
-		st = pageProgram(write_addr, src, chunk);
-		if (st != HAL_OK) {
-			return -5;
-		}
-
-		src        += chunk;
-		write_addr += chunk;
-		remaining  -= chunk;
-	}
-
-	// =========================================== now must update in-RAM FTL state
-
-	// If this is the first ever record:
-	if (state.head_idx == 0xFFFFFFFFu) {
-		state.head_idx = idx;
-		state.tail_idx = idx;
-	} else {
-		state.head_idx = idx;
-
-		// If we just overwrote the oldest record, move tail forward
-		if (idx == state.tail_idx) {
-			uint32_t new_tail = state.tail_idx + 1u;
-			if (new_tail >= FTL_NUM_UNITS) {
-				new_tail = 0u;
-			}
-			state.tail_idx = new_tail;
-		}
-	}
-
-	// Compute next index (circular)
-	uint32_t next = idx + 1u;
-	if (next >= FTL_NUM_UNITS) {
-		next = 0u;
-	}
-	state.next_idx = next;
-
-
-	state.next_id = id + 1u; // increment id by 1, wraparound happens naturally
-
-	msg->id = id;
-
-	return 0;
-}
-
-int NVMFlash::read(AbstractMessage *msg) {
-	if (!mounted) {
-		// Ensures the chip is mounted
-		return -1;
-	}
-
-	uint32_t idx = state.tail_idx;
-	FtlRecordHeader header;
-
-	// Search the chip for the matching ID block using the circular buffer
-	while (true) {
-		memset(&header, 0xFF, sizeof(header));
-		readData(indexToBaseAddr(idx), (uint8_t*) &header, (uint16_t) sizeof(header));
-
-		if (header.status == FTL_STATUS_VALID && header.id == msg->id) {
-			// Matching ID block found
-			break;
-		}
-
-		if (idx == state.head_idx) {
-			// Looped through all indices, did not find the matching ID block
-			return -2;
-		}
-
-		idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
-	}
-
-	uint32_t addr_base = indexToBaseAddr(idx);
-	uint8_t out[200];
-	// TODO: Add success/error check to readData
-	readData(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
-
-	msg->unpack(out, header.length);
-
-	return 0;
-}
-
-int NVMFlash::erase(AbstractMessage *msg) {
-	//wait for write to finish
-	HAL_StatusTypeDef wait_result = waitReady(MAX_TIMEOUT);
-
-	if(wait_result != HAL_OK)
-	{
-		return -1;
-	}
-
-	if (!mounted) {
-		// Ensures the chip is mounted
-		return -2;
-	}
-
-	uint32_t idx = state.tail_idx;
-	FtlRecordHeader header;
-
-	// Search the chip for the matching ID block using the circular buffer
-	while (true) {
-		memset(&header, 0xFF, sizeof(header));
-		readData(indexToBaseAddr(idx), (uint8_t*) &header, (uint16_t) sizeof(header));
-
-		if (header.status == FTL_STATUS_VALID && header.id == msg->id) {
-			// Matching ID block found
-			break;
-		}
-
-		if (idx == state.head_idx) {
-			// Looped through all indices, did not find the matching ID block
-			return -3;
-		}
-
-		idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
-	}
-
-	uint32_t block_address = indexToBaseAddr(idx);
-
-	//erase the block
-	HAL_StatusTypeDef result = erase4k(block_address);
-
-	switch(result){
-	//erase succeeded
-	case HAL_OK:
-		return 0;
-
-	//erase ran into an error
-	case HAL_ERROR:
-		return -4;
-
-	//erase timed out
-	case HAL_TIMEOUT:
-		return -5;
-	}
-
-	return 0;
-}
-
-int NVMFlash::update(AbstractMessage *msg) {
-	//check mount
-	if (!mounted) {
-		return -1;
-	}
-
-	//Wait ongoing write
-	HAL_StatusTypeDef st = waitReady(MAX_TIMEOUT);
-	if (st != HAL_OK) {
-		return -2;
-	}
-
-	if (msg->packed_size() == 0 || msg->packed_size() > FTL_MAX_PAYLOAD) {
-		return -3;   // invalid length
-	}
-
-	uint8_t data[FTL_MAX_PAYLOAD];
-	uint16_t len;
-	msg->pack(data, len);
-
-	int res = read(msg);
-	if (res == -2) {
+	int enqueueRes = txQueue->push(&txMsg);
+	if (enqueueRes != 0) {
 		return -4;
 	}
 
-	uint32_t idx = state.next_idx;      // which block to use
-	uint32_t addr_base = indexToBaseAddr(idx);
-	uint32_t id = msg->id;       // record ID
-
-	// ======================= Erase the 4 KB block we are going to use
-	st = erase4k(addr_base);
-	if (st != HAL_OK) {
-		return -5;
-	}
-
-	FtlRecordHeader hdr;
-	memset(&hdr, 0xFF, sizeof(hdr));
-	hdr.id = id;
-	hdr.length = len;
-	hdr.status = FTL_STATUS_VALID;
-	hdr.crc = crc32((const uint8_t*) data, len);
-
-	st = pageProgram(addr_base, (const uint8_t*) &hdr, (uint16_t) sizeof(hdr));
-	if (st != HAL_OK) {
-		return -6;
-	}
-
-	const uint8_t* src = (const uint8_t*) data;
-	uint32_t remaining = len;
-	uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
-
-	while (remaining > 0) {
-		uint16_t chunk = remaining > FLASH_PAGE_SIZE_256 ? FLASH_PAGE_SIZE_256 : (uint16_t) remaining;
-
-		st = pageProgram(write_addr, src, chunk);
-		if (st != HAL_OK) {
-			return -7;
-		}
-
-		src 	   += chunk;
-		write_addr += chunk;
-		remaining  -= chunk;
-	}
-
-	state.head_idx = idx;
-	if (idx == state.tail_idx) {
-		state.tail_idx = (state.tail_idx + 1u) % FTL_NUM_UNITS;
-	}
-	state.next_idx = (idx + 1u) % FTL_NUM_UNITS;
-
-	res = erase(msg);
-	if (res != 0) {
-		return -8;
-	}
-
 	return 0;
+}
+bool NVMFlash::poll(ManagerId_e caller, NvmRxMsg *out) {
+	if (!mounted) {
+		return false;
+	}
+	if (!rxQueues[static_cast<size_t>(caller)]) {
+		return false;
+	}
+
+	return rxQueues[static_cast<size_t>(caller)]->get(out) == 0;
+}
+void NVMFlash::ftlUpdate() {
+	if (!mounted) {
+		return;
+	}
+	if (!txQueue || txQueue->count() == 0) {
+		return;
+	}
+
+	NvmTxMsg txMsg;
+	if (txQueue->get(&txMsg) != 0) {
+		return;
+	}
+
+	NvmRxMsg rxMsg;
+	rxMsg.opType = txMsg.opType;
+	rxMsg.recordId = txMsg.recordId;
+	rxMsg.len = 0;
+	
+	switch (txMsg.opType) {
+		case NvmOpType_e::WRITE:
+			rxMsg.status = writeRaw(txMsg.payload, txMsg.len, &rxMsg.recordId);
+			break;
+		case NvmOpType_e::READ:
+			rxMsg.status = readRaw(txMsg.recordId, rxMsg.payload, &rxMsg.len);
+			break;
+		case NvmOpType_e::ERASE:
+			rxMsg.status = eraseRaw(txMsg.recordId);
+			break;
+		case NvmOpType_e::UPDATE:
+			rxMsg.status = updateRaw(txMsg.recordId, txMsg.payload, txMsg.len);
+			break;
+	}
+
+	rxQueues[static_cast<size_t>(txMsg.caller)]->push(&rxMsg);
+}
+
+void NVMFlash::attachQueues(IMessageQueue<NvmTxMsg> *tx, IMessageQueue<NvmRxMsg> *rx[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]) {
+	txQueue = tx;
+	for (size_t i = 0; i < static_cast<size_t>(ManagerId_e::NUM_MANAGERS); i++) {
+		rxQueues[i] = rx[i];
+	}
 }
 
 void NVMFlash::csLow() {
@@ -513,7 +332,7 @@ HAL_StatusTypeDef NVMFlash::pageProgram(uint32_t addr24, const uint8_t *data, ui
  * addr24 is where the data will start from, and increment
  */
 void NVMFlash::readData(uint32_t addr24, uint8_t *out, uint16_t len) {
-    uint8_t hdr[4] = { READ,
+    uint8_t hdr[4] = { READ_PAGE,
                        (uint8_t)(addr24 >> 16),
                        (uint8_t)(addr24 >> 8),
                        (uint8_t)(addr24) };
@@ -521,6 +340,254 @@ void NVMFlash::readData(uint32_t addr24, uint8_t *out, uint16_t len) {
     tx(hdr, sizeof(hdr));   // send cmd+addr
     rx(out, len);           // then clock out data
     csHigh();
+}
+
+int NVMFlash::writeRaw(const uint8_t *data, uint16_t len, uint32_t *outId) {
+	// ensure that chip is mounted
+	if (!mounted) {
+		return -1;   // not mounted yet
+	}
+	if (len == 0 || len > FTL_MAX_PAYLOAD) {
+		return -2;   // invalid length
+	}
+
+	uint32_t idx = state.next_idx;      // which block to use
+	uint32_t addr_base = indexToBaseAddr(idx);
+	uint32_t id = state.next_id;       // record ID
+
+	// ======================= Erase the 4 KB block we are going to use
+	// TODO: make a low priority task erase in background to save time on writes?
+	HAL_StatusTypeDef st = erase4k(addr_base);
+	if (st != HAL_OK) {
+		return -3;
+	}
+	// Build header
+	FtlRecordHeader hdr;
+	memset(&hdr, 0xFF, sizeof(hdr));   // start with entire header as if erased
+	hdr.id = id;
+	hdr.status = FTL_STATUS_VALID;     // TODO: set this as valid but add crc
+	hdr.length = len;
+	hdr.crc = crc32((const uint8_t *)data, len);
+
+	// ============================  actually write to the chip
+
+	// program header into first 256-byte page
+	st = pageProgram(addr_base, (const uint8_t *) &hdr, (uint16_t) sizeof(hdr));
+	if (st != HAL_OK) return -4;
+
+	// program payload (actual data) starting at FTL_PAYLOAD_OFFSET
+	const uint8_t *src = (const uint8_t *)data;	// convert void data pointer to uint8_t pointer
+	uint32_t remaining = len;	// use this to track what is left, must write page by page
+	uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
+
+	while (remaining > 0) {
+		// if remaining bytes is larger than one page, write 256, otherwise if at end of data, write < 256 bytes
+		uint16_t chunk = (remaining > FLASH_PAGE_SIZE_256) ? FLASH_PAGE_SIZE_256: (uint16_t) remaining;
+
+		st = pageProgram(write_addr, src, chunk);
+		if (st != HAL_OK) {
+			return -5;
+		}
+
+		src        += chunk;
+		write_addr += chunk;
+		remaining  -= chunk;
+	}
+
+	// =========================================== now must update in-RAM FTL state
+
+	// If this is the first ever record:
+	if (state.head_idx == 0xFFFFFFFFu) {
+		state.head_idx = idx;
+		state.tail_idx = idx;
+	} else {
+		state.head_idx = idx;
+
+		// If we just overwrote the oldest record, move tail forward
+		if (idx == state.tail_idx) {
+			uint32_t new_tail = state.tail_idx + 1u;
+			if (new_tail >= FTL_NUM_UNITS) {
+				new_tail = 0u;
+			}
+			state.tail_idx = new_tail;
+		}
+	}
+
+	// Compute next index (circular)
+	uint32_t next = idx + 1u;
+	if (next >= FTL_NUM_UNITS) {
+		next = 0u;
+	}
+	state.next_idx = next;
+
+	state.next_id = id + 1u; // increment id by 1, wraparound happens naturally
+
+	*outId = id;
+
+	return 0;
+}
+int NVMFlash::readRaw(uint32_t id, uint8_t *out, uint16_t *len) {
+	if (!mounted) {
+		// Ensures the chip is mounted
+		return -1;
+	}
+
+	uint32_t idx = state.tail_idx;
+	FtlRecordHeader header;
+
+	// Search the chip for the matching ID block using the circular buffer
+	while (true) {
+		memset(&header, 0xFF, sizeof(header));
+		readData(indexToBaseAddr(idx), (uint8_t*) &header, (uint16_t) sizeof(header));
+
+		if (header.status == FTL_STATUS_VALID && header.id == id) {
+			// Matching ID block found
+			break;
+		}
+
+		if (idx == state.head_idx) {
+			// Looped through all indices, did not find the matching ID block
+			return -2;
+		}
+
+		idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
+	}
+
+	uint32_t addr_base = indexToBaseAddr(idx);
+	// TODO: Add success/error check to readData
+	readData(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
+
+	*len = header.length;
+
+	return 0;
+}
+int NVMFlash::eraseRaw(uint32_t id) {
+	HAL_StatusTypeDef wait_result = waitReady(MAX_TIMEOUT);
+
+	if(wait_result != HAL_OK) {
+		return -1;
+	}
+
+	if (!mounted) {
+		// Ensures the chip is mounted
+		return -2;
+	}
+
+	uint32_t idx = state.tail_idx;
+	FtlRecordHeader header;
+
+	// Search the chip for the matching ID block using the circular buffer
+	while (true) {
+		memset(&header, 0xFF, sizeof(header));
+		readData(indexToBaseAddr(idx), (uint8_t*) &header, (uint16_t) sizeof(header));
+
+		if (header.status == FTL_STATUS_VALID && header.id == id) {
+			// Matching ID block found
+			break;
+		}
+
+		if (idx == state.head_idx) {
+			// Looped through all indices, did not find the matching ID block
+			return -3;
+		}
+
+		idx = (idx + 1) % FTL_NUM_UNITS; // Ensures wrapping
+	}
+
+	uint32_t block_address = indexToBaseAddr(idx);
+
+	//erase the block
+	HAL_StatusTypeDef result = erase4k(block_address);
+
+	switch(result){
+	//erase succeeded
+	case HAL_OK:
+		return 0;
+
+	//erase ran into an error
+	case HAL_ERROR:
+		return -4;
+
+	//erase timed out
+	case HAL_TIMEOUT:
+		return -5;
+	}
+
+	return 0;
+}
+int NVMFlash::updateRaw(uint32_t id, const uint8_t *data, uint16_t len) {
+	//check mount
+	if (!mounted) {
+		return -1;
+	}
+
+	//Wait ongoing write
+	HAL_StatusTypeDef st = waitReady(MAX_TIMEOUT);
+	if (st != HAL_OK) {
+		return -2;
+	}
+
+	if (len == 0 || len > FTL_MAX_PAYLOAD) {
+		return -3;   // invalid length
+	}
+
+	uint8_t buf[FTL_MAX_PAYLOAD];
+	uint16_t readLen = 0;
+	int res = readRaw(id, buf, &readLen);
+	if (res == -2) {
+		return -4;
+	}
+
+	uint32_t idx = state.next_idx;      // which block to use
+	uint32_t addr_base = indexToBaseAddr(idx);
+
+	// ======================= Erase the 4 KB block we are going to use
+	st = erase4k(addr_base);
+	if (st != HAL_OK) {
+		return -5;
+	}
+
+	FtlRecordHeader hdr;
+	memset(&hdr, 0xFF, sizeof(hdr));
+	hdr.id = id;
+	hdr.length = len;
+	hdr.status = FTL_STATUS_VALID;
+	hdr.crc = crc32((const uint8_t*) data, len);
+
+	st = pageProgram(addr_base, (const uint8_t*) &hdr, (uint16_t) sizeof(hdr));
+	if (st != HAL_OK) {
+		return -6;
+	}
+
+	const uint8_t* src = (const uint8_t*) data;
+	uint32_t remaining = len;
+	uint32_t write_addr = addr_base + FTL_PAYLOAD_OFFSET;
+
+	while (remaining > 0) {
+		uint16_t chunk = remaining > FLASH_PAGE_SIZE_256 ? FLASH_PAGE_SIZE_256 : (uint16_t) remaining;
+
+		st = pageProgram(write_addr, src, chunk);
+		if (st != HAL_OK) {
+			return -7;
+		}
+
+		src 	   += chunk;
+		write_addr += chunk;
+		remaining  -= chunk;
+	}
+
+	state.head_idx = idx;
+	if (idx == state.tail_idx) {
+		state.tail_idx = (state.tail_idx + 1u) % FTL_NUM_UNITS;
+	}
+	state.next_idx = (idx + 1u) % FTL_NUM_UNITS;
+
+	res = eraseRaw(id);
+	if (res != 0) {
+		return -8;
+	}
+
+	return 0;
 }
 
 /*
@@ -549,10 +616,10 @@ inline uint32_t NVMFlash::indexToBaseAddr(uint32_t unit_index) {
     return (unit_index * FTL_UNIT_SIZE);  // FTL_DATA_BASE is 0, so this is fine
 }
 
-void NVMFlash::test_message(){
-	BatteryLog send(0, 5, 10, 50);
-	int write_res = write(&send);
+// void NVMFlash::test_message(){
+// 	BatteryLog send(0, 5, 10, 50);
+// 	int write_res = write(&send);
 
-	BatteryLog recv(0, 0, 0, 0);
-	int read_res = read(&recv);
-}
+// 	BatteryLog recv(0, 0, 0, 0);
+// 	int read_res = read(&recv);
+// }

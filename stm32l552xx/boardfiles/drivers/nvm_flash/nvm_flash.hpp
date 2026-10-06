@@ -5,6 +5,7 @@
 
 #include "nvm_flash_iface.hpp"
 #include "battery_log.hpp"
+#include <queue_iface.hpp>
 
 class NVMFlash : public INVMFlash {
 public:
@@ -14,11 +15,17 @@ public:
 	int mount() override;
 	void init() override;
 
-	int write(AbstractMessage *msg) override;
-	int read(AbstractMessage *msg) override;
-	int erase(AbstractMessage *msg) override;
-	int update(AbstractMessage *msg) override;
+	int enqueue(ManagerId_e caller, NvmOpType_e op, AbstractMessage *msg) override;
+	bool poll(ManagerId_e caller, NvmRxMsg *out) override;
+	void ftlUpdate() override;
+
+	static void attachQueues(IMessageQueue<NvmTxMsg> *tx, IMessageQueue<NvmRxMsg> *rx[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)]);
+
 	void test_message() override;
+
+protected:
+	static IMessageQueue<NvmTxMsg> *txQueue;
+	static IMessageQueue<NvmRxMsg> *rxQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];
 
 private:
 	SPI_HandleTypeDef *spiHandle;
@@ -92,6 +99,11 @@ private:
 	HAL_StatusTypeDef eraseFull();
 	HAL_StatusTypeDef pageProgram(uint32_t addr24, const uint8_t *data, uint16_t len);
 	void readData(uint32_t addr24, uint8_t *out, uint16_t len);
+
+	int writeRaw(const uint8_t *data, uint16_t len, uint32_t *outId);
+	int readRaw(uint32_t id, uint8_t *out, uint16_t *len);
+	int eraseRaw(uint32_t id);
+	int updateRaw(uint32_t id, const uint8_t *data, uint16_t len);
 
 	static uint32_t crc32(const uint8_t *data, uint32_t len);
 	static inline uint32_t indexToBaseAddr(uint32_t unit_index);
