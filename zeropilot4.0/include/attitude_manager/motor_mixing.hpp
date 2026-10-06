@@ -1,0 +1,15 @@
+#pragma once
+#include "rc_motor_control.hpp"
+#include "motor_datatype.hpp"
+#include <cmath>
+
+class MotorMixing{
+    public:
+        #ifdef PLANE
+        static void fixedWingMoterMixer(const RCMotorControlMessage_t outputControlMsg, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        #endif
+        #ifdef QUADCOPTER
+        static void quadMotorMixer(const RCMotorControlMessage_t outputControlMsg, MotorGroupInstance_t *mainMotorGroup, float* motorPercent);
+        static void quadGroundIdle(MotorGroupInstance_t *mainMotorGroup, float* motorPercent, float motSpinArm);
+        #endif
+};

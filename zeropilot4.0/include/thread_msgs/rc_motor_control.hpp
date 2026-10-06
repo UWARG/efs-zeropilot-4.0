@@ -1,16 +1,28 @@
 #pragma once
 #include <cstdint>
 
-// Flight modes for PLANE: numbering aligns to ArduPilot's MAVLink mapping for MissionPlanner compatibility
-enum class PlaneFlightMode_e : uint32_t {
+// Flight modes: numbering aligns to ArduPilot's MAVLink mapping for MissionPlanner compatibility
+enum class FlightMode_e : uint32_t {
+    #ifdef PLANE
     MANUAL  = 0,
     FBWA    = 5
+    #endif
+    #ifdef QUADCOPTER
+    STABILIZE = 0,
+    ACRO = 1
+    #endif
 };
 
-inline bool isValidPlaneFlightMode(uint32_t val) {
-    switch (static_cast<PlaneFlightMode_e>(val)) {
-        case PlaneFlightMode_e::MANUAL:
-        case PlaneFlightMode_e::FBWA:
+inline bool isValidFlightMode(uint32_t val) {
+    switch (static_cast<FlightMode_e>(val)) {
+        #ifdef PLANE
+        case FlightMode_e::MANUAL:
+        case FlightMode_e::FBWA:
+        #endif
+        #ifdef QUADCOPTER
+        case FlightMode_e::ACRO:
+        case FlightMode_e::STABILIZE:
+        #endif
             return true;
         default:
             return false;
@@ -23,6 +35,8 @@ typedef struct {
     float yaw;
     float throttle;
     bool arm;
+    #ifdef PLANE
     float flapAngle;
-    PlaneFlightMode_e flightMode;
+    #endif
+    FlightMode_e flightMode;
 } RCMotorControlMessage_t;

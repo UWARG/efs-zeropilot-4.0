@@ -15,21 +15,67 @@ class AMParamSetup : public IParamSetup {
    private:
     AttitudeManager* am;
 
-    // FBWA param callbacks
+    // Flightmode param callbacks
+    #ifdef PLANE
     static bool updatePIDRollKp(AttitudeManager* ctx, float val);
     static bool updatePIDRollKi(AttitudeManager* ctx, float val);
     static bool updatePIDRollKd(AttitudeManager* ctx, float val);
     static bool updatePIDRollTau(AttitudeManager* ctx, float val);
     static bool updatePIDRollIMax(AttitudeManager* ctx, float val);
+    static bool updatePIDRollFF(AttitudeManager* ctx, float val);
     static bool updatePIDPitchKp(AttitudeManager* ctx, float val);
     static bool updatePIDPitchKi(AttitudeManager* ctx, float val);
     static bool updatePIDPitchKd(AttitudeManager* ctx, float val);
     static bool updatePIDPitchTau(AttitudeManager* ctx, float val);
     static bool updatePIDPitchIMax(AttitudeManager* ctx, float val);
+    static bool updatePIDPitchFF(AttitudeManager* ctx, float val);
     static bool updateKffRddrmix(AttitudeManager* ctx, float val);
     static bool updateRollLimitDeg(AttitudeManager* ctx, float val);
     static bool updatePitchLimMaxDeg(AttitudeManager* ctx, float val);
     static bool updatePitchLimMinDeg(AttitudeManager* ctx, float val);
+    #endif
+    #ifdef QUADCOPTER
+    static bool updateRatePIDRollKp(AttitudeManager* ctx, float val);
+    static bool updateRatePIDRollKi(AttitudeManager* ctx, float val);
+    static bool updateRatePIDRollKd(AttitudeManager* ctx, float val);
+    static bool updateRatePIDRollTau(AttitudeManager* ctx, float val);
+    static bool updateRatePIDRollIMax(AttitudeManager* ctx, float val);
+    static bool updateRatePIDPitchKp(AttitudeManager* ctx, float val);
+    static bool updateRatePIDPitchKi(AttitudeManager* ctx, float val);
+    static bool updateRatePIDPitchKd(AttitudeManager* ctx, float val);
+    static bool updateRatePIDPitchTau(AttitudeManager* ctx, float val);
+    static bool updateRatePIDPitchIMax(AttitudeManager* ctx, float val);
+    static bool updateRatePIDYawKp(AttitudeManager* ctx, float val);
+    static bool updateRatePIDYawKi(AttitudeManager* ctx, float val);
+    static bool updateRatePIDYawKd(AttitudeManager* ctx, float val);
+    static bool updateRatePIDYawTau(AttitudeManager* ctx, float val);
+    static bool updateRatePIDYawIMax(AttitudeManager* ctx, float val);
+    static bool updateRollPitchLimitRate(AttitudeManager* ctx, float val);
+    static bool updateYawLimitRate(AttitudeManager* ctx, float val);
+
+    static bool updateAngPIDRollKp(AttitudeManager* ctx, float val);
+    static bool updateAngPIDRollKi(AttitudeManager* ctx, float val);
+    static bool updateAngPIDRollKd(AttitudeManager* ctx, float val);
+    static bool updateAngPIDRollTau(AttitudeManager* ctx, float val);
+    static bool updateAngPIDRollIMax(AttitudeManager* ctx, float val);
+    static bool updateAngPIDPitchKp(AttitudeManager* ctx, float val);
+    static bool updateAngPIDPitchKi(AttitudeManager* ctx, float val);
+    static bool updateAngPIDPitchKd(AttitudeManager* ctx, float val);
+    static bool updateAngPIDPitchTau(AttitudeManager* ctx, float val);
+    static bool updateAngPIDPitchIMax(AttitudeManager* ctx, float val);
+    static bool updateRollPitchLimitAng(AttitudeManager* ctx, float val);
+    static bool updateMotSpinMin(AttitudeManager* ctx, float val);
+    static bool updateMotSpinMax(AttitudeManager* ctx, float val);
+    static bool updateMotSpinArm(AttitudeManager* ctx, float val);
+    #endif
+
+    // FFT Harmonic Notch Filter param callbacks
+    static bool updateHarmonicNotchEnabled(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchWindowSize(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchMinFreqHz(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchBandwidthHz(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchAttenuationDB(AttitudeManager* ctx, float val);
+    static bool updateHarmonicNotchHarmonicsMask(AttitudeManager* ctx, float val);
 
     // Servo param callback helpers
     static bool setServoTrim(AttitudeManager* ctx, uint8_t ch, float val);

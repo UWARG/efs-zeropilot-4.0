@@ -59,7 +59,7 @@ SBUSReceiver::SBUSReceiver(UART_HandleTypeDef* uart) : uart(uart) {
 }
 
 
-UART_HandleTypeDef* SBUSReceiver::getHUART() {
+UART_HandleTypeDef* SBUSReceiver::getHuart() {
     return uart;
 }
 

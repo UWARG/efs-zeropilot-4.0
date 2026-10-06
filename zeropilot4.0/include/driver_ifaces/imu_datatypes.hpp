@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// unscaled, NED frame
+// Unscaled, FRD frame
 typedef struct {
     int16_t xacc;
     int16_t yacc;
@@ -11,16 +11,18 @@ typedef struct {
     int16_t ygyro;
     int16_t zgyro;
     uint32_t timestamp;
+    uint8_t imuId;
 } RawImu_t;
 
 typedef struct {
-    float xacc;
-    float yacc;
-    float zacc;
-    float xgyro;
-    float ygyro;
-    float zgyro;
+    float xacc; // m/s^2
+    float yacc; // m/s^2
+    float zacc; // m/s^2
+    float xgyro; // rad/s
+    float ygyro; // rad/s
+    float zgyro; // rad/s
     uint32_t timestamp;
+    uint8_t imuId;
 } ScaledImu_t;
 
 // Attitude in radians
@@ -29,6 +31,13 @@ typedef struct {
     float pitch;
     float yaw;
 } Attitude_t;
+
+// Gyro Bias in rad/s
+typedef struct {
+    float x;
+    float y;
+    float z;
+} GyroBias_t;
 
 typedef struct {
     RawImu_t *data;

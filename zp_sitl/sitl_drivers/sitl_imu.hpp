@@ -1,6 +1,7 @@
 #pragma once
 #include "imu_iface.hpp"
 #include "sitl_driver_configs.hpp"
+#include "unit_conversions.hpp"
 #include <cmath>
 
 class SITL_IMU : public IIMU {
@@ -35,9 +36,9 @@ public:
 
         // Accelerometer: Gravity projection (assuming 1g static)
         // LSB_PER_G = ACCEL_SCALE (e.g., 2048)
-        float ax = -Config::GRAVITY * sp;
-        float ay =  Config::GRAVITY * sr * cp;
-        float az =  Config::GRAVITY * cr * cp;
+        float ax = Config::GRAVITY * sp;
+        float ay = -Config::GRAVITY * sr * cp;
+        float az = -Config::GRAVITY * cr * cp;
         
         // Convert m/s^2 to LSB: (Value / 9.81) * Scale_Factor
         constexpr float ACCEL_TO_LSB = (float)Config::ACCEL_SCALE / Config::GRAVITY;
@@ -58,7 +59,15 @@ public:
     }
     
     RawImuBatch_t readRawData() override {
-        return rawBatch; // Single-sample batch backed by rawData
+        return rawBatch;
+    }
+
+    float getODRHz() override {
+        return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
+    }
+
+    GyroBias_t getGyroStartupBias(uint8_t imuId) override {
+        return GyroBias_t{0.0f, 0.0f, 0.0f}; // No startup bias in simulation
     }
 
     /**
@@ -73,10 +82,10 @@ public:
             scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
             scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-            // Convert LSB back to rad/s: (Raw / Scale) -> deg/s -> rad/s
-            scaledData.xgyro = ((float)raw.xgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-            scaledData.ygyro = ((float)raw.ygyro / Config::GYRO_SCALE) * DEG_TO_RAD;
-            scaledData.zgyro = ((float)raw.zgyro / Config::GYRO_SCALE) * DEG_TO_RAD;
+            // Convert LSB back to rad/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
 
             scaledData.timestamp = raw.timestamp;
         }

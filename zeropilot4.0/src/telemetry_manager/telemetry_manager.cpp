@@ -65,8 +65,14 @@ void TelemetryManager::processTXMsgQueue() {
         switch (tmqMessage.dataType) {
             case TMMessage_t::HEARTBEAT_DATA: {
                 auto heartbeatData = tmqMessage.tmMessageData.heartbeatData;
-                mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_FIXED_WING, MAV_AUTOPILOT_ARDUPILOTMEGA,
-                	heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
+                #ifdef PLANE
+                    mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_FIXED_WING, MAV_AUTOPILOT_ARDUPILOTMEGA,
+                	    heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
+                #endif
+                #ifdef QUADCOPTER
+                     mavlink_msg_heartbeat_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_ARDUPILOTMEGA,
+                	    heartbeatData.baseMode, heartbeatData.customMode, heartbeatData.systemStatus);
+                #endif
                 break;
             }
 
@@ -116,6 +122,18 @@ void TelemetryManager::processTXMsgQueue() {
             case TMMessage_t::ATTITUDE_DATA: {
                 auto attitudeData = tmqMessage.tmMessageData.attitudeData;
                 mavlink_msg_attitude_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, attitudeData.roll, attitudeData.pitch, attitudeData.yaw, attitudeData.rollspeed, attitudeData.pitchspeed, attitudeData.yawspeed);
+                break;
+            }
+
+            case TMMessage_t::SCALED_PRESSURE_DATA: {
+                auto scaledPressureData = tmqMessage.tmMessageData.scaledPressureData;
+                mavlink_msg_scaled_pressure_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, scaledPressureData.pressAbs, scaledPressureData.pressDiff, scaledPressureData.temperature, scaledPressureData.temperaturePressDiff);
+                break;
+            }
+
+            case TMMessage_t::DISTANCE_SENSOR_DATA: {
+                auto distanceSensorData = tmqMessage.tmMessageData.distanceSensorData;
+                mavlink_msg_distance_sensor_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, tmqMessage.timeBootMs, distanceSensorData.minDistance, distanceSensorData.maxDistance, distanceSensorData.currentDistance, MAV_DISTANCE_SENSOR_LASER, distanceSensorData.id, MAV_SENSOR_ROTATION_PITCH_270, distanceSensorData.covariance, distanceSensorData.horizontalFov, distanceSensorData.verticalFov, distanceSensorData.quaternion, distanceSensorData.signalQuality);
                 break;
             }
 

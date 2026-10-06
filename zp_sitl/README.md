@@ -1,10 +1,12 @@
 # ZeroPilot SITL
 
-Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dynamics.
+Software-in-the-Loop simulation for ZeroPilot autopilot using JSBSim flight dynamics for plane and AirSim flight dynamics for quadcopter.
 
 ## Structure
 
-- `sitl_main.py` - Python simulation loop integrating JSBSim with ZeroPilot
+- `sitl_plane_jsbsim.py` - Python simulation loop integrating JSBSim with ZeroPilot for PLANE build
+- `sitl_plane_fgfs.py` - Python simulation loop integrating FlightGear with ZeroPilot for PLANE build
+- `sitl_quad_airsim.py` - Python simulation loop integrating AirSim with ZeroPilot for QUADCOPTER build
 - `zeropilot_wrapper.cpp` - Python C extension wrapping ZeroPilot managers
 - `sitl_drivers/` - Software-in-the-Loop driver implementations
 - `scripts/` - Contains build automation and FlightGear launch scripts
@@ -25,30 +27,33 @@ source venv/bin/activate
 # On Windows:
 venv\Scripts\activate
 
-# Install dependencies
+# Dependencies for plane:
 pip install -r requirements.txt
+
+# Dependencies for quadcopter:
+pip install numpy==1.19.0
+pip install msgpack-rpc-python==0.4.1
+pip install backports.ssl_match_hostname==3.7.0.1
+pip install airsim --no-build-isolation
 ```
 
-### Main Target (Web Dashboard)
+### Plane Web Dashboard Target
 
-To build and run the simulation with the browser-based UI:
+To build and run the simulation for PLANE: 
 ```bash
-# Build the C++ extension
-./scripts/build_sitl.sh
-
-# Start the simulation
-python sitl_main.py
+./scripts/build_sitl.sh PLANE   # Build the C++ extension
+python sitl_plane_jsbsim.py     # Start the simulation
 ```
 
-Open `http://localhost:8080` to control the simulation. You can use the sliders or connect a joystick. It also streams MAVLink onto UDP at `127.0.0.1:14550` so you can connect MissionPlanner alongside the UI. Optionally, set port and ip address for MAVLink through `python sitl_main.py --ip <ip> --port <port>`.
+Open `http://localhost:8080` to control the simulation. You can use the sliders or connect a joystick. It also streams MAVLink onto UDP at `127.0.0.1:14550` so you can connect MissionPlanner alongside the UI. Optionally, set port and ip address for MAVLink through `python sitl_plane_jsbsim.py --ip <ip> --port <port>`.
 
-### FGFS Target
+### Plane FGFS Target
 
 If you install [FlightGear](https://www.flightgear.org/) you can visualize the simulation in real-time. The SITL script automatically generates a UDP output directive to stream flight data to FlightGear.
 
 Run the FGFS SITL target via:
 ```bash
-./scripts/build_sitl.sh
+./scripts/build_sitl.sh PLANE
 python sitl_fgfs.py
 ```
 
@@ -57,6 +62,19 @@ Launch FGFS via `./scripts/start_fgfs.sh` (requires having fgfs in your $PATH):
 # This script runs fgfs --fdm=null --native-fdm=socket,in,60,,5550,udp --aircraft=c172p
 ./scripts/start_fgfs.sh
 ```
+
+### Quadcopter AirSim Target
+
+To build and run the simulation: 
+```bash
+./scripts/build_sitl.sh QUADCOPTER   # Build the C++ extension
+python sitl_quad_airsim.py     # Start the simulation
+```
+Download Blocks.zip @ https://github.com/Microsoft/AirSim/releases. Open Blocks.exe and select "No" for quadcopter simulation. Connect a controller to your laptop for controls.
+
+### button_testing.py
+
+Run the test to determine which channel on the controller corresponds to which channel in pygame when connecting to a new controller.
 
 ## SITL Drivers
 
@@ -79,7 +97,7 @@ If you just wrote a hardware driver and need to add SITL support:
    - Pass to relevant manager constructor
    - Add update call in `ZP_updatePlant()` with plant data
 
-3. **Update from simulation** (`sitl_main.py`):
+3. **Update from simulation** (`sitl_plane_jsbsim.py`):
    - Call `zp.update_from_plant()` with new parameters in simulation loop
 
 Example pattern:

@@ -88,6 +88,6 @@ void CRSFReceiver::parse() {
     rcData.isDataNew = true;
 }
 
-UART_HandleTypeDef * CRSFReceiver::getHUART() {
+UART_HandleTypeDef * CRSFReceiver::getHuart() {
 	return uart;
 }

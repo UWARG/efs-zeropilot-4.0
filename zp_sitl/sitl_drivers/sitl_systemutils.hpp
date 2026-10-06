@@ -2,6 +2,7 @@
 #include "systemutils_iface.hpp"
 #include <chrono>
 #include <thread>
+#include <cmath>
 
 class SITL_SystemUtils : public ISystemUtils {
 private:

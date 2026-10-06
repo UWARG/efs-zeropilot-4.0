@@ -4,16 +4,20 @@
 #include "telemetry_manager.hpp"
 #include "attitude_manager.hpp"
 #include "sitl_drivers/sitl_systemutils.hpp"
+#include "sitl_drivers/sitl_mathutils.hpp"
 #include "sitl_drivers/sitl_iwdg.hpp"
 #include "sitl_drivers/sitl_logger.hpp"
 #include "sitl_drivers/sitl_rc.hpp"
 #include "sitl_drivers/sitl_powermodule.hpp"
+#include "sitl_drivers/sitl_barometer.hpp"
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_logqueue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
+#include "sitl_drivers/sitl_fft.hpp"
+#include "sitl_drivers/sitl_rangefinder.hpp"
 #include <functional>
 #include <string>
 #include <queue>
@@ -48,6 +52,8 @@ typedef struct {
     AttitudeManager* am;
     
     SITL_SystemUtils* sysUtils;
+    SITL_MathUtils* mathUtils;
+    SITL_FFT *fft;
     SITL_Queue<RCMotorControlMessage_t>* amQueue;
     SITL_Queue<TMMessage_t>* tmQueue;
     SITL_LogQueue* logQueue;
@@ -56,11 +62,14 @@ typedef struct {
     
     SITL_IWDG* iwdg;
     SITL_Logger* logger;
+    ISafetySwitch* safetySwitch;
     SITL_RC* rc;
     SITL_PowerModule* pm;
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
+    SITL_Rangefinder *rangefinder;
+    SITL_Barometer* barometer;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
     
     MotorInstance_t motors[SITL_NUM_MOTORS];
@@ -77,6 +86,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->tm;
     delete self->am;
     delete self->sysUtils;
+    delete self->mathUtils;
     delete self->amQueue;
     delete self->tmQueue;
     delete self->logQueue;
@@ -85,9 +95,11 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->logger;
     delete self->rc;
     delete self->pm;
+    delete self->barometer;
     delete self->telem;
     delete self->imu;
     delete self->gps;
+    delete self->rangefinder;
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -108,6 +120,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::init();
 
         self->sysUtils = new SITL_SystemUtils();
+        self->mathUtils = new SITL_MathUtils();
+        self->fft = new SITL_FFT();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
         self->tmQueue = new SITL_Queue<TMMessage_t>();
         self->logQueue = new SITL_LogQueue();
@@ -115,11 +129,14 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         
         self->iwdg = new SITL_IWDG();
         self->logger = new SITL_Logger();
+        self->safetySwitch = nullptr; // Safety switch is not used in SITL
         self->rc = new SITL_RC();
         self->pm = new SITL_PowerModule();
+        self->barometer = new SITL_Barometer();
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
+        self->rangefinder = new SITL_Rangefinder();
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
             self->motors[i] = {self->sitlMotors[i]};
@@ -132,37 +149,67 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO1_MIN", 1000);
         ZP_PARAM::setParamById("SERVO1_MAX", 2000);
         ZP_PARAM::setParamById("SERVO1_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::AILERON));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO1_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_1));
+        #endif
 
         ZP_PARAM::setParamById("SERVO2_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO2_MIN", 1000);
         ZP_PARAM::setParamById("SERVO2_MAX", 2000);
         ZP_PARAM::setParamById("SERVO2_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::ELEVATOR));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO2_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_2));
+        #endif
 
         ZP_PARAM::setParamById("SERVO3_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO3_MIN", 1000);
         ZP_PARAM::setParamById("SERVO3_MAX", 2000);
         ZP_PARAM::setParamById("SERVO3_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::THROTTLE));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO3_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_3));
+        #endif
 
         ZP_PARAM::setParamById("SERVO4_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO4_MIN", 1000);
         ZP_PARAM::setParamById("SERVO4_MAX", 2000);
         ZP_PARAM::setParamById("SERVO4_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::RUDDER));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO4_FUNCTION", static_cast<float>(MotorFunction_e::MOTOR_4));
+        #endif
 
         ZP_PARAM::setParamById("SERVO5_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO5_MIN", 1000);
         ZP_PARAM::setParamById("SERVO5_MAX", 2000);
         ZP_PARAM::setParamById("SERVO5_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::FLAP));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO5_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        #endif
 
         ZP_PARAM::setParamById("SERVO6_TRIM", 1500);
         ZP_PARAM::setParamById("SERVO6_MIN", 1000);
         ZP_PARAM::setParamById("SERVO6_MAX", 2000);
         ZP_PARAM::setParamById("SERVO6_REVERSED", 0);
+        #ifdef PLANE
         ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::GROUND_STEERING));
+        #endif
+        #ifdef QUADCOPTER
+        ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
+        #endif
 
         ZP_PARAM::setParamById("SERVO7_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
         ZP_PARAM::setParamById("SERVO8_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
@@ -172,8 +219,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::setParamById("SERVO12_FUNCTION", static_cast<float>(MotorFunction_e::DISABLED));
 
         self->sm = new SystemManager(
-            self->sysUtils, self->iwdg, self->logger, self->rc, self->pm,
-            self->amQueue, self->tmQueue, self->logQueue
+            self->sysUtils, self->iwdg, self->logger, self->safetySwitch, self->rc, 
+            self->pm, self->amQueue, self->tmQueue, self->logQueue
         );
         
         self->tm = new TelemetryManager(
@@ -181,7 +228,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->gps, self->imu,
+            self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->rangefinder, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
@@ -199,17 +246,23 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
     double p_rad_s, q_rad_s, r_rad_s;
     double lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg;
     float fuel_lbs, rpm;
-    
-    if (!PyArg_ParseTuple(args, "ddddddddddff",
+    float rangefinder_alt;
+    double baro_pressure_kpa, baro_temp_c;
+
+    if (!PyArg_ParseTuple(args, "ddddddddddfffdd",
         &roll_rad, &pitch_rad,
         &p_rad_s, &q_rad_s, &r_rad_s,
         &lat_deg, &lon_deg, &alt_m, &ground_speed_mps, &course_deg,
-        &fuel_lbs, &rpm))
+        &fuel_lbs, &rpm,
+        &rangefinder_alt,
+        &baro_pressure_kpa, &baro_temp_c))
         return NULL;
-    
+
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
     self->pm->update_from_plant(fuel_lbs, rpm);
+    self->rangefinder->update_from_plant(rangefinder_alt);
+    self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);
     
     Py_RETURN_NONE;
 }
@@ -223,11 +276,21 @@ static PyObject* ZP_setBatteryCapacity(ZPObject* self, PyObject* args) {
 }
 
 static PyObject* ZP_setRC(ZPObject* self, PyObject* args) {
+    #ifdef PLANE
     float roll, pitch, yaw, throttle, arm, flap, fltmode;
     if (!PyArg_ParseTuple(args, "fffffff", &roll, &pitch, &yaw, &throttle, &arm, &flap, &fltmode))
         return NULL;
-    
+
     self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, flap, fltmode);
+    #endif
+    #ifdef QUADCOPTER
+    float roll, pitch, yaw, throttle, arm, fltmode;
+    if (!PyArg_ParseTuple(args, "ffffff", &roll, &pitch, &yaw, &throttle, &arm, &fltmode))
+        return NULL;
+
+    self->rc->update_from_commands(roll, pitch, yaw, throttle, arm, 0.0f, fltmode);
+    #endif
+    
     Py_RETURN_NONE;
 }
 
@@ -257,14 +320,26 @@ static PyObject* ZP_update(ZPObject* self, PyObject* args) {
 
 static PyObject* ZP_getMotorOutputs(ZPObject* self, PyObject* args) {
     // Motors indexed by servo param order: aileron, elevator, throttle, rudder, flap, steering
+
+    #ifdef PLANE 
     uint32_t roll = self->sitlMotors[0]->get();
     uint32_t pitch = self->sitlMotors[1]->get();
     uint32_t throttle = self->sitlMotors[2]->get();
     uint32_t yaw = self->sitlMotors[3]->get();
     uint32_t flap = self->sitlMotors[4]->get();
     uint32_t steer = self->sitlMotors[5]->get();
-    
+
     return Py_BuildValue("(iiiiii)", roll, pitch, yaw, throttle, flap, steer);
+    #endif
+
+    #ifdef QUADCOPTER
+    uint32_t motor_1 = self->sitlMotors[0]->get();
+    uint32_t motor_2 = self->sitlMotors[1]->get();
+    uint32_t motor_3 = self->sitlMotors[2]->get();
+    uint32_t motor_4 = self->sitlMotors[3]->get();
+
+    return Py_BuildValue("(iiii)", motor_1, motor_2, motor_3, motor_4);
+    #endif
 }
 
 static PyObject* ZP_getTelemMessages(ZPObject* self, PyObject* args) {

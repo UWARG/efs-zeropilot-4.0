@@ -4,17 +4,23 @@ set -e
 
 script_dir=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
 clean="false"
+vehicle_type="plane"
 
 usage() {
-    echo "Usage: $0 [-c]"
+    echo "Usage: $0 [-c] [-v] <vehicle_type>"
     exit 1
 }
 
 # parse args
-while getopts "c" opt; do
+while getopts "cv:" opt; do
     case "${opt}" in
         c)
             clean="true"
+            ;;
+        v)
+            if [[ "$OPTARG" == "quad" || "$OPTARG" == "plane" ]]; then
+                vehicle_type="$OPTARG"
+            fi
             ;;
         *)
             usage
@@ -49,7 +55,11 @@ if [[ ! -f "CMakeCache.txt" ]]; then
 
     echo "generating cmake..."
     echo "generator: $generator"
-    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G "$generator" ..
+    if [[ "$vehicle_type" == "plane" ]]; then
+        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G "$generator" -DPLANE_BUILD=ON ..
+    elif [[ "$vehicle_type" == "quad" ]]; then
+        cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G "$generator" -DQUADCOPTER_BUILD=ON ..
+    fi
 fi
 
 echo && echo "building..."

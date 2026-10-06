@@ -28,8 +28,8 @@
 // Definitions
 
 #define DEFAULT_SAMPLE_FREQ	512.0f	// sample frequency in Hz
-#define TWO_KP_DEF	(30.0f)	// proportional gain
-#define TWO_KI_DEF	(2.0f)	// integral gain
+#define TWO_KP_DEF	(1.0f)	// proportional gain
+#define TWO_KI_DEF	(0.05f)	// integral gain
 
 
 //============================================================================================
@@ -62,11 +62,6 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 	float halfex, halfey, halfez;
 	float qa, qb, qc;
 
-	// Convert gyroscope degrees/sec to radians/sec
-	gx *= 0.0174533f;
-	gy *= 0.0174533f;
-	gz *= 0.0174533f;
-
 	// Compute feedback only if accelerometer measurement valid
 	// (avoids NaN in accelerometer normalisation)
 	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
@@ -78,9 +73,9 @@ void Mahony::updateIMU(float gx, float gy, float gz, float ax, float ay, float a
 		az *= recipNorm;
 
 		// Estimated direction of gravity
-		halfvx = q1 * q3 - q0 * q2;
-		halfvy = q0 * q1 + q2 * q3;
-		halfvz = q0 * q0 - 0.5f + q3 * q3;
+		halfvx = q0 * q2 - q1 * q3;
+		halfvy = -(q0 * q1 + q2 * q3);
+		halfvz = 0.5f - q0 * q0 - q3 * q3;
 
 		// Error is sum of cross product between estimated
 		// and measured direction of gravity
