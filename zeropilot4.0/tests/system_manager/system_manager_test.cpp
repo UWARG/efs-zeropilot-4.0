@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <cstring>
 #include "system_manager.hpp"
 #include "zp_params.hpp"
+#include "zp_bit.hpp"
 #include "mock_systemutils.hpp"
 #include "mock_iwdg.hpp"
 #include "mock_logger.hpp"
@@ -13,6 +15,15 @@ using ::testing::_;
 using ::testing::Return;
 using ::testing::Invoke;
 using ::testing::NiceMock;
+using ::testing::DoAll;
+using ::testing::SetArgReferee;
+
+// ZP_PARAM::get reports through an out param; these tests only need the value
+static float paramValue(ZP_PARAM_ID id) {
+    float value = 0.0f;
+    (void)ZP_PARAM::get(id, value);
+    return value;
+}
 
 class SystemManagerTest : public ::testing::Test {
 protected:
@@ -29,10 +40,12 @@ protected:
     NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
 
     void SetUp() override {
-        ZP_PARAM::init();
+        (void)ZP_PARAM::init();
+        // BIT holds a static clock pointer and static state, so re-point and reset it per test
+        (void)ZP_BIT::init(&mockSystemUtils);
 
         RC_FAILSAFE_ITERATIONS =
-            ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000) / SM_UPDATE_LOOP_DELAY_MS) + 5;
+            ((paramValue(ZP_PARAM_ID::RC_FS_TIMEOUT) * 1000) / SM_UPDATE_LOOP_DELAY_MS) + 5;
     }
 };
 
@@ -57,9 +70,9 @@ TEST_F(SystemManagerTest, RCFailsafeStopsForwarding) {
     RCControl staleRCData = validRCData;
     staleRCData.isDataNew = false;
 
-    EXPECT_CALL(mockRC, getRCData())
-        .WillOnce(Return(validRCData))
-        .WillRepeatedly(Return(staleRCData));
+    EXPECT_CALL(mockRC, getRCData(_))
+        .WillOnce(DoAll(SetArgReferee<0>(validRCData), Return(ZP_ERROR_OK)))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(staleRCData), Return(ZP_ERROR_OK)));
 
     EXPECT_CALL(mockAMQueue, push(_)).Times(1); 
 
@@ -80,7 +93,7 @@ TEST_F(SystemManagerTest, HeartbeatSentToTelemetry) {
             if (msg->dataType == TMMessage_t::HEARTBEAT_DATA) {
                 heartbeatCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
@@ -99,7 +112,7 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
     rcData.roll = 60.0f;
     rcData.pitch = 70.0f;
     
-    EXPECT_CALL(mockRC, getRCData()).WillRepeatedly(Return(rcData));
+    EXPECT_CALL(mockRC, getRCData(_)).WillRepeatedly(DoAll(SetArgReferee<0>(rcData), Return(ZP_ERROR_OK)));
     
     int rcDataCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
@@ -107,7 +120,7 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
             if (msg->dataType == TMMessage_t::RC_DATA) {
                 rcDataCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
@@ -121,7 +134,7 @@ TEST_F(SystemManagerTest, RCDataSentToTelemetry) {
 }
 
 TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
-    EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(true));
+    EXPECT_CALL(mockPM, readData(_)).WillRepeatedly(Return(ZP_ERROR_OK));
 
     int batteryDataCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
@@ -129,7 +142,7 @@ TEST_F(SystemManagerTest, BatteryDataSentToTelemetry) {
             if (msg->dataType == TMMessage_t::BATTERY_DATA) {
                 batteryDataCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
@@ -149,11 +162,11 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
     EXPECT_CALL(mockPM, readData(_))
         .WillRepeatedly(::testing::Invoke([](PMData_t* data) {
             data->busVoltage =
-                (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT) + ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT)) / 2.0f;
+                (paramValue(ZP_PARAM_ID::BATT_LOW_VOLT) + paramValue(ZP_PARAM_ID::BATT_CRT_VOLT)) / 2.0f;
             data->current = 1.0f;
             data->charge = 0;
             data->energy = 0;
-            return true;
+            return ZP_ERROR_OK;
         }));
 
     bool sawLow = false;
@@ -165,14 +178,14 @@ TEST_F(SystemManagerTest, BatteryLowDetection) {
                 MAV_BATTERY_CHARGE_STATE_LOW) {
                 sawLow = true;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
                      &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToLow =
-        (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to low state
+        (paramValue(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to low state
 
     const int totalLoops =
         loopsToLow + SM_SCHEDULING_RATE_HZ;  // one extra cycle to ensure telemetry boundary
@@ -192,11 +205,11 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
     EXPECT_CALL(mockPM, readData(_))
         .WillRepeatedly(::testing::Invoke([](PMData_t* data) {
             data->busVoltage =
-                ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT) - 0.1f;
+                paramValue(ZP_PARAM_ID::BATT_CRT_VOLT) - 0.1f;
             data->current = 1.0f;
             data->charge = 0;
             data->energy = 0;
-            return true;
+            return ZP_ERROR_OK;
         }));
 
     bool sawCritical = false;
@@ -208,14 +221,14 @@ TEST_F(SystemManagerTest, BatteryCritDetection) {
                 MAV_BATTERY_CHARGE_STATE_CRITICAL) {
                 sawCritical = true;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
                      &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
 
     const int loopsToCritical =
-        (ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to critical state
+        (paramValue(ZP_PARAM_ID::BATT_LOW_TIMER) * 1000) / SM_UPDATE_LOOP_DELAY_MS; // number of loops to transition to critical state
 
     const int totalLoops =
         loopsToCritical + SM_SCHEDULING_RATE_HZ;  // one extra cycle to ensure telemetry boundary
@@ -236,12 +249,12 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         float pwm;
         FlightMode_e expected;
     } testCases[] = {
-        {1165.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE1)))},
-        {1295.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE2)))},
-        {1425.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE3)))},
-        {1555.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE4)))},
-        {1685.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE5)))},
-        {1815.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(ZP_PARAM::get(ZP_PARAM_ID::FLTMODE6)))}
+        {1165.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(paramValue(ZP_PARAM_ID::FLTMODE1)))},
+        {1295.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(paramValue(ZP_PARAM_ID::FLTMODE2)))},
+        {1425.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(paramValue(ZP_PARAM_ID::FLTMODE3)))},
+        {1555.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(paramValue(ZP_PARAM_ID::FLTMODE4)))},
+        {1685.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(paramValue(ZP_PARAM_ID::FLTMODE5)))},
+        {1815.0f, static_cast<FlightMode_e>(static_cast<uint32_t>(paramValue(ZP_PARAM_ID::FLTMODE6)))}
     };
 
     SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr, &mockRC, 
@@ -254,7 +267,7 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         rcData.arm = 100.0f; // Armed to ensure data flows
 
         // Expect the RC driver to return our test value
-        EXPECT_CALL(mockRC, getRCData()).WillOnce(Return(rcData));
+        EXPECT_CALL(mockRC, getRCData(_)).WillOnce(DoAll(SetArgReferee<0>(rcData), Return(ZP_ERROR_OK)));
 
         // Verify the exact enum reaches the Attitude Manager queue
         EXPECT_CALL(mockAMQueue, push(::testing::Field(&RCMotorControlMessage_t::flightMode, test.expected)))
@@ -266,4 +279,63 @@ TEST_F(SystemManagerTest, RCFlightmodeSwitching) {
         ::testing::Mock::VerifyAndClearExpectations(&mockRC);
         ::testing::Mock::VerifyAndClearExpectations(&mockAMQueue);
     }
+}
+
+TEST_F(SystemManagerTest, CriticalReportBitSendsTextWithoutDisarmFailsafe) {
+    // BIT debounce needs a clock that moves
+    uint32_t nowMs = 0;
+    ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Invoke([&nowMs]() { return nowMs; }));
+
+    // Keep the battery healthy so IMU_DATA_VALID is the only failing BIT
+    ON_CALL(mockPM, readData(_)).WillByDefault(Invoke([](PMData_t* data) {
+        data->busVoltage = paramValue(ZP_PARAM_ID::BATT_LOW_VOLT) + 5.0f;
+        return ZP_ERROR_OK;
+    }));
+
+    RCControl rc;
+    rc.arm = 100.0f;
+    rc.isDataNew = true;
+    ON_CALL(mockRC, getRCData(_)).WillByDefault(DoAll(SetArgReferee<0>(rc), Return(ZP_ERROR_OK)));
+
+    int failTexts = 0;
+    int disarmTexts = 0;
+    uint8_t failSeverity = 0;
+    ON_CALL(mockTMQueue, push(_)).WillByDefault(Invoke([&](TMMessage_t* msg) {
+        if (msg->dataType == TMMessage_t::STATUSTEXT_DATA) {
+            if (std::strcmp(msg->tmMessageData.statusTextData.text, "PreArm: IMU data invalid") == 0) {
+                failTexts++;
+                failSeverity = msg->tmMessageData.statusTextData.severity;
+            } else if (std::strcmp(msg->tmMessageData.statusTextData.text, "Disarming") == 0) {
+                disarmTexts++;
+            }
+        }
+        return ZP_ERROR_OK;
+    }));
+
+    bool lastArm = true;
+    ON_CALL(mockAMQueue, push(_)).WillByDefault(Invoke([&lastArm](RCMotorControlMessage_t* msg) {
+        lastArm = msg->arm;
+        return ZP_ERROR_OK;
+    }));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue);
+
+    // IMU_DATA_VALID is CRITICAL with a REPORT failsafe. AM owns it, so fail it directly past its debounce
+    (void)ZP_BIT::report(ZP_BIT_ID::IMU_DATA_VALID, ZP_ERROR_FAIL);
+    nowMs += BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::IMU_DATA_VALID)].failMs;
+    (void)ZP_BIT::report(ZP_BIT_ID::IMU_DATA_VALID, ZP_ERROR_FAIL);
+
+    const int REPORT_PERIOD_TICKS = SM_TELEMETRY_BIT_FAIL_PERIOD_S * SM_SCHEDULING_RATE_HZ;
+    const int TICKS = 2 * REPORT_PERIOD_TICKS + SM_SCHEDULING_RATE_HZ;
+    for (int i = 0; i < TICKS; i++) {
+        sm.smUpdate();
+        nowMs += SM_UPDATE_LOOP_DELAY_MS;
+    }
+
+    EXPECT_GE(failTexts, 2) << "the failure text repeats while the BIT is failing";
+    EXPECT_LE(failTexts, TICKS / REPORT_PERIOD_TICKS + 1) << "and is rate limited";
+    EXPECT_EQ(failSeverity, MAV_SEVERITY_CRITICAL) << "a CRITICAL BIT reports at critical severity";
+    EXPECT_EQ(disarmTexts, 0) << "a REPORT failsafe must not trigger the disarm action";
+    EXPECT_FALSE(lastArm) << "a CRITICAL BIT still blocks arming through the pre-arm check";
 }

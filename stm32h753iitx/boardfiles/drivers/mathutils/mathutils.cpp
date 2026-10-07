@@ -2,6 +2,8 @@
 #include <cmath>
 #include <algorithm>
 
+static ZP_Error armStatusToZpError(arm_status status);
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
 #endif
@@ -23,66 +25,66 @@ float MathUtils::vectorNorm(const float* src, uint16_t dim) {
     return norm;
 }
 
-bool MathUtils::vectorNormalize(const float* src, float* dst, uint16_t dim) {
+ZP_Error MathUtils::vectorNormalize(const float* src, float* dst, uint16_t dim) {
     float norm = vectorNorm(src, dim);
     if (norm < 1e-7f) {
-        return false; // Prevent division by zero
+        return ZP_ERROR_INVALID_DATA; // Prevent division by zero
     }
     float invNorm = 1.0f / norm;
     arm_scale_f32(src, invNorm, dst, dim);
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool MathUtils::matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) {
+ZP_Error MathUtils::matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) {
     arm_matrix_instance_f32 A, B, Out;
     arm_mat_init_f32(&A, rows, cols, const_cast<float*>(srcA));
     arm_mat_init_f32(&B, rows, cols, const_cast<float*>(srcB));
     arm_mat_init_f32(&Out, rows, cols, dst);
 
-    return arm_mat_add_f32(&A, &B, &Out) == ARM_MATH_SUCCESS;
+    return armStatusToZpError(arm_mat_add_f32(&A, &B, &Out));
 }
 
-bool MathUtils::matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) {
+ZP_Error MathUtils::matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) {
     arm_matrix_instance_f32 A, B, Out;
     arm_mat_init_f32(&A, rows, cols, const_cast<float*>(srcA));
     arm_mat_init_f32(&B, rows, cols, const_cast<float*>(srcB));
     arm_mat_init_f32(&Out, rows, cols, dst);
 
-    return arm_mat_sub_f32(&A, &B, &Out) == ARM_MATH_SUCCESS;
+    return armStatusToZpError(arm_mat_sub_f32(&A, &B, &Out));
 }
 
-bool MathUtils::matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA, 
+ZP_Error MathUtils::matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA, 
                            const float* srcB, uint16_t colsB, float* dst) {
     arm_matrix_instance_f32 A, B, Out;
     arm_mat_init_f32(&A, rowsA, colsA, const_cast<float*>(srcA));
     arm_mat_init_f32(&B, colsA, colsB, const_cast<float*>(srcB)); // colsA is rowsB
     arm_mat_init_f32(&Out, rowsA, colsB, dst);
 
-    return arm_mat_mult_f32(&A, &B, &Out) == ARM_MATH_SUCCESS;
+    return armStatusToZpError(arm_mat_mult_f32(&A, &B, &Out));
 }
 
-bool MathUtils::matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) {
+ZP_Error MathUtils::matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) {
     arm_matrix_instance_f32 In, Out;
     arm_mat_init_f32(&In, rows, cols, const_cast<float*>(src));
     arm_mat_init_f32(&Out, cols, rows, dst);
 
-    return arm_mat_trans_f32(&In, &Out) == ARM_MATH_SUCCESS;
+    return armStatusToZpError(arm_mat_trans_f32(&In, &Out));
 }
 
-bool MathUtils::matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) {
+ZP_Error MathUtils::matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) {
     arm_matrix_instance_f32 In, Out;
     arm_mat_init_f32(&In, rows, cols, const_cast<float*>(src));
     arm_mat_init_f32(&Out, rows, cols, dst);
 
-    return arm_mat_scale_f32(&In, scale, &Out) == ARM_MATH_SUCCESS;
+    return armStatusToZpError(arm_mat_scale_f32(&In, scale, &Out));
 }
 
-bool MathUtils::matrixInverse(const float* src, uint16_t dim, float* dst) {
+ZP_Error MathUtils::matrixInverse(const float* src, uint16_t dim, float* dst) {
     arm_matrix_instance_f32 In, Out;
     arm_mat_init_f32(&In, dim, dim, const_cast<float*>(src));
     arm_mat_init_f32(&Out, dim, dim, dst);
 
-    return arm_mat_inverse_f32(&In, &Out) == ARM_MATH_SUCCESS;
+    return armStatusToZpError(arm_mat_inverse_f32(&In, &Out));
 }
 
 void MathUtils::skewSymmetric(const float* v3, float* dst3x3) {
@@ -95,7 +97,7 @@ void MathUtils::skewSymmetric(const float* v3, float* dst3x3) {
     dst3x3[6] = -y;    dst3x3[7] = x;     dst3x3[8] = 0.0f;
 }
 
-bool MathUtils::ensureSymmetric(float* M, uint16_t dim) {
+ZP_Error MathUtils::ensureSymmetric(float* M, uint16_t dim) {
     // Computes M = (M + M^T) / 2 in-place without needing supplementary buffers
     for (uint16_t r = 0; r < dim; ++r) {
         for (uint16_t c = r + 1; c < dim; ++c) {
@@ -106,7 +108,7 @@ bool MathUtils::ensureSymmetric(float* M, uint16_t dim) {
             M[idx2] = val;
         }
     }
-    return true;
+    return ZP_ERROR_OK;
 }
 
 void MathUtils::quatMultiply(const float* q1, const float* q2, float* qOut) {
@@ -138,7 +140,7 @@ void MathUtils::quatRotateVector(const float* q, const float* v3, float* vOut3) 
     float R[9];
     quatToRotationMatrix(q, R);
     // Multiply R (3x3) by v3 (3x1)
-    matrixMult(R, 3, 3, v3, 1, vOut3);
+    (void)matrixMult(R, 3, 3, v3, 1, vOut3);
 }
 
 void MathUtils::quatExponential(const float* rotVec3, float* qOut) {
@@ -236,4 +238,15 @@ void MathUtils::quatToEuler(const float* q, float* euler3) {
     float siny_cosp = 2.0f * (w * z + x * y);
     float cosy_cosp = 1.0f - 2.0f * (y * y + z * z);
     euler3[2] = std::atan2(siny_cosp, cosy_cosp);
+}
+
+static ZP_Error armStatusToZpError(arm_status status) {
+    if (status == ARM_MATH_SUCCESS) {
+        return ZP_ERROR_OK;
+    } else if (status == ARM_MATH_SIZE_MISMATCH || status == ARM_MATH_ARGUMENT_ERROR) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_INVALID_ARG;
+    } else if (status == ARM_MATH_SINGULAR) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_INVALID_DATA;
+    }
+    return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
 }

@@ -43,10 +43,10 @@ void HAL_Delay(uint32_t Delay) {
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart == rcHandle->getHuart()) {
-        rcHandle->parse();
-        rcHandle->startDMA();
+        (void)rcHandle->parse();
+        (void)rcHandle->startDMA();
     } else if (huart == telemLinkHandle->getHuart()) {
-      telemLinkHandle->receiveCallback(Size);
+      (void)telemLinkHandle->receiveCallback(Size);
     }
     else if (huart == gpsHandle->getHuart()) {
       gpsHandle->rxCallback(Size);
@@ -73,7 +73,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
-    rcHandle->startDMA();
+    (void)rcHandle->startDMA();
   }
   else if (huart == gpsHandle->getHuart()) {
 	  uint32_t error = HAL_UART_GetError(huart);
@@ -94,6 +94,27 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
 		__HAL_UART_CLEAR_OREFLAG(huart);
 	  }
 	  gpsHandle->rxCallback(0);
+  } else if (huart == telemLinkHandle->getHuart()) {
+    uint32_t error = HAL_UART_GetError(huart);
+
+    if (error & HAL_UART_ERROR_PE) {
+      __HAL_UART_CLEAR_PEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_NE) {
+      __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_FE) {
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE) {
+      __HAL_UART_CLEAR_OREFLAG(huart);
+    }
+
+    // Reception is aborted by the error, and nothing else would ever start it again
+    (void)telemLinkHandle->restartRx();
   }
 }
 

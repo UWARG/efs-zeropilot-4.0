@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 class IMathUtils {
     protected:
@@ -15,18 +16,18 @@ class IMathUtils {
 
         // --- Vector Math ---
         virtual float vectorNorm(const float* src, uint16_t dim) = 0;
-        virtual bool vectorNormalize(const float* src, float* dst, uint16_t dim) = 0;
+        virtual ZP_Error vectorNormalize(const float* src, float* dst, uint16_t dim) = 0;
 
         // --- Matrix Operations ---
-        virtual bool matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) = 0;
-        virtual bool matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) = 0;
-        virtual bool matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA, 
+        virtual ZP_Error matrixAdd(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) = 0;
+        virtual ZP_Error matrixSub(const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols) = 0;
+        virtual ZP_Error matrixMult(const float* srcA, uint16_t rowsA, uint16_t colsA, 
                                 const float* srcB, uint16_t colsB, float* dst) = 0;
-        virtual bool matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) = 0;
-        virtual bool matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) = 0;
-        virtual bool matrixInverse(const float* src, uint16_t dim, float* dst) = 0;
+        virtual ZP_Error matrixTranspose(const float* src, uint16_t rows, uint16_t cols, float* dst) = 0;
+        virtual ZP_Error matrixScale(const float* src, float scale, float* dst, uint16_t rows, uint16_t cols) = 0;
+        virtual ZP_Error matrixInverse(const float* src, uint16_t dim, float* dst) = 0;
         virtual void skewSymmetric(const float* v3, float* dst3x3) = 0;
-        virtual bool ensureSymmetric(float* M, uint16_t dim) = 0;
+        virtual ZP_Error ensureSymmetric(float* M, uint16_t dim) = 0;
 
         // --- Quaternion Operations (q = [w, x, y, z]) ---
         virtual void quatMultiply(const float* q1, const float* q2, float* qOut) = 0;
