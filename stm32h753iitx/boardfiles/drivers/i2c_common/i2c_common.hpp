@@ -9,11 +9,10 @@ class I2cCommon {
 public:
     //Constructor
     /*This constructor initializes the I2cCommon class with the provided I2C 
-      handle and device address, already shifted left by 1 for HAL of the I2C 
-      device (DO NOT SHIFT IT AGAIN). It saves these parameters for use in 
-      subsequent I2C operations.*/
+      handle and the 7-bit address of the I2C device (DO NOT PRE-SHIFT IT). The 
+      constructor shifts the address left by 1 for HAL and saves both 
+      parameters for use in subsequent I2C operations.*/
     I2cCommon(I2C_HandleTypeDef* hi2c, uint8_t addr7);
-
 
     //getI2C
     /* Returns the I2C handle this device is on.*/
@@ -74,6 +73,33 @@ public:
 
     //writeInterrupt (TBD)
 
+    //transmitPolling / receivePolling
+    /* Raw (non-register) transfers in polling mode, for devices that use
+       command/response frames instead of a register map (e.g. TF02-Pro).
+       Returns true if the transfer succeeded, false on error, busy, or 
+       timeout.*/
+
+    /* Transmit. Takes a pointer to the source buffer, the number of bytes to
+       send, and a timeout in ms. The buffer must hold at least `size` bytes.*/
+    bool transmitPolling(const uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+    /* Receive. Takes a pointer to the destination buffer, the number of bytes
+       to read, and a timeout in ms. The buffer must hold at least `size` bytes.*/
+    bool receivePolling(uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+
+
+    //transmitInterrupt / receiveInterrupt
+    /* Raw (non-register) transfers in interrupt mode. Returns immediately: true
+       means the transfer was started, false if HAL rejected it (e.g. the bus is
+       busy).*/
+
+    /* Transmit. Takes a pointer to the source buffer and the number of bytes to
+       send. The buffer must stay valid until the transfer completes, so pass
+       a member or a static, never a local variable.*/
+    bool transmitInterrupt(const uint8_t* pData, uint16_t size);
+    /* Receive. Takes a pointer to the destination buffer and the number of
+       bytes to read. The buffer must stay valid until the transfer completes
+       and hold at least `size` bytes.*/
+    bool receiveInterrupt(uint8_t* pData, uint16_t size);
 
 private:    
     //default constants

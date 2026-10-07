@@ -2,6 +2,7 @@
 
 #include "stm32h7xx_hal.h"
 #include "rangefinder_iface.hpp"
+#include "i2c_common.hpp"
 
 class Rangefinder : public IRangefinder {
 public:
@@ -17,7 +18,7 @@ public:
     I2C_HandleTypeDef *getI2C();
 
 private:
-    I2C_HandleTypeDef *hi2c;
+    I2cCommon i2cCommon;
     RangefinderData_t data = {};
     volatile bool dataFilled = false;
 
@@ -28,7 +29,5 @@ private:
     uint8_t computeChecksum();
     uint32_t lastTransferTick = 0;
 
-    HAL_StatusTypeDef writeDataBlocking(uint8_t* cmd, uint16_t cmdSize, uint32_t delay);
-    HAL_StatusTypeDef readDataBlocking(uint8_t* receiveBuffer, uint16_t size, uint32_t delay);
-    HAL_StatusTypeDef sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize, const uint8_t *expectedResp, uint16_t expectedRespSize);
+    bool sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize, const uint8_t *expectedResp, uint16_t expectedRespSize);
 };
