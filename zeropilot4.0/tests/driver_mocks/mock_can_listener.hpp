@@ -6,5 +6,5 @@
 
 class MockCanListener : public ICanListener {
     public:
-        MOCK_METHOD(void, onTransfer, (CanardRxTransfer *transfer), (override));
+        MOCK_METHOD(ZP_Error, onTransfer, (CanardRxTransfer *transfer), (override));
 };

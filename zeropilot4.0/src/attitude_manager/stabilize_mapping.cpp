@@ -14,24 +14,24 @@ StabilizeMapping::StabilizeMapping(float control_iter_period_s, AcroMapping &acr
     decimationCounter(0),
     stabilizeRollCmd(STABILIZE_PID_OUTPUT_SHIFT),
     stabilizePitchCmd(STABILIZE_PID_OUTPUT_SHIFT) {
-        rollPID.pidInitState();
-        pitchPID.pidInitState();
+        (void)rollPID.pidInitState();
+        (void)pitchPID.pidInitState();
 }
 
 // Setter for *roll* PID consts
 void StabilizeMapping::setRollPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    (void)rollPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Setter for *pitch* PID consts
 void StabilizeMapping::setPitchPIDConstants(float newKp, float newKi, float newKd, float newTau, uint8_t newIMaxPct) noexcept {
-    pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
+    (void)pitchPID.setConstants(newKp, newKi, newKd, newTau, newIMaxPct);
 }
 
 // Resetter for both roll and pitch PIDs (needed for unit testing)
 void StabilizeMapping::resetControlLoopState() noexcept {
-    rollPID.pidInitState();
-    pitchPID.pidInitState();
+    (void)rollPID.pidInitState();
+    (void)pitchPID.pidInitState();
     decimationCounter = 0;
     stabilizeRollCmd = STABILIZE_PID_OUTPUT_SHIFT;
     stabilizePitchCmd = STABILIZE_PID_OUTPUT_SHIFT;
@@ -46,34 +46,43 @@ void StabilizeMapping::setRollPitchLimitAngle(float newRollPitchLimitAngle) noex
 PID *StabilizeMapping::getRollPID() noexcept { return &rollPID; }
 PID *StabilizeMapping::getPitchPID() noexcept { return &pitchPID; }
 
-void StabilizeMapping::activateFlightMode() {
+ZP_Error StabilizeMapping::activateFlightMode() {
     resetControlLoopState();
     acroCLAW.resetControlLoopState();
+    return ZP_ERROR_OK;
 }
 
 // Main control mapping function for STABILIZE mode
-RCMotorControlMessage_t StabilizeMapping::runControl(RCMotorControlMessage_t controlInputs, const DroneState_t &droneState) {
+ZP_Error StabilizeMapping::runControl(RCMotorControlMessage_t &controlOutput, RCMotorControlMessage_t controlInput, const DroneState_t &droneState) {
+    ZP_Error result = ZP_ERROR_OK;
+
     // Outer angle loop runs once every ANGLE_LOOP_TO_INNER_LOOP_RATIO calls
     if (decimationCounter == 0) {
         // Setpoints: Maps [0, 100] to [-limit, +limit]
-        float rollAngleSetpoint = ((controlInputs.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
-        float pitchAngleSetpoint = ((controlInputs.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
+        float rollAngleSetpoint = ((controlInput.roll / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
+        float pitchAngleSetpoint = ((controlInput.pitch / MAX_RC_INPUT_VAL) * 2.0f - 1.0f) * rollPitchLimitAngle;
 
         float rollAngleMeasured = droneState.roll;
         float pitchAngleMeasured = droneState.pitch;
 
         // Run PID (output control efforts in [-1,1]), then scale back to RC controller range [0,100] for acro control loop
-        stabilizeRollCmd = (rollPID.pidOutput(rollAngleSetpoint, rollAngleMeasured) * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
-        stabilizePitchCmd = (pitchPID.pidOutput(pitchAngleSetpoint, pitchAngleMeasured) * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
+        float rollPidOut = 0.0f;
+        float pitchPidOut = 0.0f;
+        result |= rollPID.pidOutput(rollAngleSetpoint, rollAngleMeasured, rollPidOut);
+        result |= pitchPID.pidOutput(pitchAngleSetpoint, pitchAngleMeasured, pitchPidOut);
+
+        stabilizeRollCmd = (rollPidOut * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
+        stabilizePitchCmd = (pitchPidOut * STABILIZE_PID_OUTPUT_SCALE) + STABILIZE_PID_OUTPUT_SHIFT;
     }
 
     decimationCounter = (decimationCounter + 1) % ANGLE_LOOP_TO_INNER_LOOP_RATIO;
 
-    controlInputs.roll = stabilizeRollCmd;
-    controlInputs.pitch = stabilizePitchCmd;
+    RCMotorControlMessage_t acroInput = controlInput;
+    acroInput.roll = stabilizeRollCmd;
+    acroInput.pitch = stabilizePitchCmd;
 
     // Run acro control at the full AM loop rate
-    controlInputs = acroCLAW.runControl(controlInputs, droneState);
+    result |= acroCLAW.runControl(controlOutput, acroInput, droneState);
 
-    return controlInputs;
+    return result;
 }

@@ -11,6 +11,7 @@
 #include "cmsis_os2.h"
 #include "museq.hpp"
 #include "systemutils.hpp"
+#include "zp_error.h"
 #include "can_listener_iface.hpp"
 
 class CANController {
@@ -92,7 +93,7 @@ private:
 	int16_t publishDnaAllocationResponse(uint8_t nodeId, const uint8_t* unique_id, uint8_t unique_id_len);
 	void enableFilter();
 	
-	bool dequeueRxFrame(RawCanFrame *frame);
+	ZP_Error dequeueRxFrame(RawCanFrame *frame);
 	void handleRxFrame(const RawCanFrame &frame);
 	
 	static uint8_t dlcToLength(uint32_t dlc);
@@ -112,13 +113,13 @@ public:
 		CanardRxTransfer* transfer);
 
 	// Called as much as possible
-	bool routineTasks();
+	ZP_Error routineTasks();
 
-	bool enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data);
+	ZP_Error enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data);
 
 	// Register a listener for a type
 	// A driver can call this once per message type that it needs
-	bool subscribe(ICanListener *listener, uint16_t dataTypeId, uint64_t signature);
+	ZP_Error subscribe(ICanListener *listener, uint16_t dataTypeId, uint64_t signature);
 
 	int16_t broadcastObj(
 		CanardTxTransfer* transfer

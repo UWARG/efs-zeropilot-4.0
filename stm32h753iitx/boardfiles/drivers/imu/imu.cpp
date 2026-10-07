@@ -94,7 +94,7 @@ IMU::IMU(SPI_HandleTypeDef *spiHandle,
     imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
 }
 
-int IMU::init() {
+ZP_Error IMU::init() {
     csHigh();
     SystemUtils::dwtInit();
     reset();
@@ -145,22 +145,30 @@ int IMU::init() {
     }
     flushFIFO();
 
-    return (address == ICM42688P_IMU_WHOAMI) ? 0 : -1;
+    return (address == ICM42688P_IMU_WHOAMI) ? ZP_ERROR_OK : ZP_ERROR_CONFIG;
 }
 
-RawImuBatch_t IMU::readRawData() {
+ZP_Error IMU::readRawData(RawImuBatch_t &rawDataBatch) {
     // Dont start another dma transaction when in the middle of one transaction
     if (!dmaDone) {
         rawImuDataBatch.count = 0;
-        return rawImuDataBatch;
+        rawDataBatch = rawImuDataBatch;
+        return ZP_ERROR_OK;
     }
     setBank(0);
-    RawImuBatch_t batch = getBatch();
+    rawDataBatch = getBatch();
     beginRead();
-    return batch;
+    return ZP_ERROR_OK;
 }
 
-ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
+ZP_Error IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) {
+    if (rawDataBatch.data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+    if (rawDataBatch.count > MAX_PACKETS) {
+        return ZP_ERROR_RANGE;
+    }
+
     for (int i = 0; i < rawDataBatch.count; i++) {
         scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
         scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
@@ -175,7 +183,8 @@ ScaledImuBatch_t IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch) {
     scaledImuDataBatch.data = scaledData;
     scaledImuDataBatch.readTime = rawImuDataBatch.readTime;
 
-    return scaledImuDataBatch;
+    scaledDataBatch = scaledImuDataBatch;
+    return ZP_ERROR_OK;
 }
 
 void IMU::txRxCallback() {

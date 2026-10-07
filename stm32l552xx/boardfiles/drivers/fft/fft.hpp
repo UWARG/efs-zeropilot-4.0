@@ -5,7 +5,7 @@
 
 class FFT : public IFFT {
     public:
-        bool init(uint16_t fftLen) override;
+        ZP_Error init(uint16_t fftLen) override;
 
         void runFFT(float *input_buffer, float *output_buffer, uint8_t direction) override;
 
