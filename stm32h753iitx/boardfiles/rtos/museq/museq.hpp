@@ -1,7 +1,6 @@
 #pragma once
 
 #include "cmsis_os.h"
-#include "gps_datatypes.hpp"
 #include "gps_iface.hpp"
 
 /* --- mutexes --- */
