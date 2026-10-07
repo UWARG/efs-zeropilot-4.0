@@ -103,6 +103,16 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
     }
 }
 
+bool CANController::subscribe(ICanListener *listener, uint16_t dataTypeId, uint64_t signature) {
+	if (listener == nullptr || subscriptionCount >= MAX_SUBSCRIPTIONS) {
+		return false;
+	}
+
+	subscriptions[subscriptionCount] = {listener, dataTypeId, signature};
+	subscriptionCount++;
+	return true;
+}
+
 bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data) {
 	const uint32_t head = canRxHead;
 	const uint32_t nextHead = (head + 1U) % CAN_RX_RING_SLOTS;
