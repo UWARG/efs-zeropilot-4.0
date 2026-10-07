@@ -78,7 +78,14 @@ bool CANController::CanardShouldAcceptTransfer(
         }
 
         default: {
-            return false;
+            bool found = false;
+            for (uint8_t i = 0; i < subscriptionCount && !found; i++) {
+                if (subscriptions[i].dataTypeId == dataTypeId) {
+                    *outDataTypeSignature = subscriptions[i].signature;
+                    found = true;
+                }
+            }
+            return found;
         }
     }
 }
@@ -98,6 +105,11 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
         }
 
         default: {
+            for (uint8_t i = 0; i < subscriptionCount; i++) {
+                if (subscriptions[i].dataTypeId == transfer->data_type_id) {
+                    subscriptions[i].listener->onTransfer(transfer);
+                }
+            }
             break;
         }
     }
