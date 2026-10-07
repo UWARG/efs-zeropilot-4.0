@@ -1,11 +1,15 @@
 #include "power_module.hpp"
 
 
-PowerModule::PowerModule(I2C_HandleTypeDef* hi2c) : hi2c(hi2c) {}
+PowerModule::PowerModule(I2C_HandleTypeDef* hi2c) : i2cCommon(hi2c,INA228_ADDR) {}
+
+I2C_HandleTypeDef* PowerModule::getI2C() {
+    return i2cCommon.getI2C();
+}
 
 bool PowerModule::init() {
     callbackCount = 0;
-    bool success = (HAL_I2C_IsDeviceReady(hi2c, INA228_ADDR << 1, 1, 100) == HAL_OK);
+    bool success = i2cCommon.isDeviceReady();
     if (!success) return false;
 
     uint8_t pData[2]; // tmp buffer for writing to registers
@@ -13,52 +17,32 @@ bool PowerModule::init() {
     // Perform a soft reset of the INA228 by writing to the configuration register
     pData[0] = (CONFIG_RESET >> 8) & 0xFF;  
     pData[1] = CONFIG_RESET & 0xFF;         
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_CONFIG.byte_size, 100) == HAL_OK);
+    success &= i2cCommon.writePolling(REG_CONFIG.address, pData, REG_CONFIG.byte_size, 100);
 
     HAL_Delay(5); // Give the chip a few milliseconds to process the reset
 
     // Set the actual operating configuration
-    pData[0] = (CONFIG_VALUE >> 8) & 0xFF;  
+    pData[0] = (CONFIG_VALUE >> 8) & 0xFF;      
     pData[1] = CONFIG_VALUE & 0xFF;         
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_CONFIG.byte_size, 100) == HAL_OK);
+    success &= i2cCommon.writePolling(REG_CONFIG.address, pData, REG_CONFIG.byte_size, 100);
 
     // Write the ADC configuration for continuous reading and 16 samples averaged
     pData[0] = (ADC_CONFIG_VALUE >> 8) & 0xFF;  
     pData[1] = ADC_CONFIG_VALUE & 0xFF;         
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_ADC_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_ADC_CONFIG.byte_size, 100) == HAL_OK);
+    success &= i2cCommon.writePolling(REG_ADC_CONFIG.address, pData, REG_ADC_CONFIG.byte_size, 100);
 
     // Write the shunt calibration value to the appropriate register
     pData[0] = (SHUNT_CAL_VALUE >> 8) & 0x7F;  
     pData[1] = SHUNT_CAL_VALUE & 0xFF;     
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_SHUNT_CAL.address, I2C_MEMADD_SIZE_8BIT, pData, REG_SHUNT_CAL.byte_size, 100) == HAL_OK);
+    success &= i2cCommon.writePolling(REG_SHUNT_CAL.address, pData, REG_SHUNT_CAL.byte_size, 100);
 
     // Start the DMA loop
     if (success) {
         dataFilled = 0;
-        parse(hi2c);
+        parse();
     }
 
     return success;
-}
-
-bool PowerModule::writeRegister(
-                                uint16_t memAddress,
-                                uint8_t * pData,
-                                uint16_t size,
-                                I2C_HandleTypeDef *hi2c) {
-
-    return HAL_I2C_Mem_Write_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
-
-}
-
-bool PowerModule::readRegister(
-                                uint16_t memAddress,
-                                uint8_t * pData,
-                                uint16_t size,
-                                I2C_HandleTypeDef *hi2c) {
-
-    return HAL_I2C_Mem_Read_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK;
-
 }
 
 void PowerModule::I2C_MemRxCpltCallback() {
@@ -67,19 +51,19 @@ void PowerModule::I2C_MemRxCpltCallback() {
 
     switch(callbackCount) {
         case 1: // read current
-            success = readRegister(REG_CURRENT.address, currentData, REG_CURRENT.byte_size, hi2c);
+            success = i2cCommon.readDMA(REG_CURRENT.address, currentData, REG_CURRENT.byte_size);
             break;
         case 2: // read power
-            success = readRegister(REG_POWER.address, powerData, REG_POWER.byte_size, hi2c);
+            success = i2cCommon.readDMA(REG_POWER.address, powerData, REG_POWER.byte_size);
             break;
         case 3: // read charge
-            success = readRegister(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size, hi2c);
+            success = i2cCommon.readDMA(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size);
             break;
         case 4: // read energy
-            success = readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
+            success = i2cCommon.readDMA(REG_ENERGY.address, energyData, REG_ENERGY.byte_size);
             break;
         case 5: // read die temperature
-            readRegister(REG_DIETEMP.address, dietempData, REG_DIETEMP.byte_size, hi2c);
+            success = i2cCommon.readDMA(REG_DIETEMP.address, dietempData, REG_DIETEMP.byte_size);
             break;
         case 6:
             callbackCount = 0;
@@ -103,18 +87,18 @@ void PowerModule::I2C_ErrorCallback() {
     callbackCount = 0;
 }
 
-void PowerModule::parse(I2C_HandleTypeDef *hi2c) {
+void PowerModule::parse() {
     if (dataFilled) return;
     
     // Start the cycle
     callbackCount = 0;
-    readRegister(REG_VBUS.address, vbusData, REG_VBUS.byte_size, hi2c);
+    i2cCommon.readDMA(REG_VBUS.address, vbusData, REG_VBUS.byte_size);
 }
 
 bool PowerModule::readData(PMData_t *data) {
     // No fresh sample set yet, kick off the cycle or restarting it if it stalled, and report no fresh data
     if (!dataFilled) {
-        parse(hi2c);
+        parse();
         return false;
     }
 
@@ -160,11 +144,11 @@ bool PowerModule::readData(PMData_t *data) {
 
     // Reset dataFilled flag and restart the parsing cycle
     dataFilled = 0;
-    parse(hi2c);
+    parse();
 
     return true;
 }
 
 I2C_HandleTypeDef* PowerModule::getI2C() {
-    return hi2c;
+    return i2cCommon.getI2C();
 }

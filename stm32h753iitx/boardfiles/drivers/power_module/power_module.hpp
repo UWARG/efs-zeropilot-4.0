@@ -2,6 +2,7 @@
 
 #include "stm32h7xx_hal.h"
 #include "power_module_iface.hpp"
+#include "i2c_common.hpp"
 #include <cmath>
 #include <cstdint>
 
@@ -58,10 +59,8 @@ class PowerModule : public IPowerModule {
 
     private:
         PMData_t processedData;
-        I2C_HandleTypeDef *hi2c;
-        bool writeRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        bool readRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        void parse(I2C_HandleTypeDef *hi2c);
+        I2cCommon i2cCommon;
+        void parse();
 
 
         uint8_t vbusData[3];
