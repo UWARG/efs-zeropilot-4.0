@@ -172,7 +172,7 @@ TEST_F(TelemetryManagerTest, ScaledPressureDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer, mockRtcmSharedBuffer);
     tm.tmUpdate();
 }
 
