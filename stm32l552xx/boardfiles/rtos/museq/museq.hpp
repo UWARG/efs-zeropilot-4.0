@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cmsis_os.h"
+#include "gps_iface.hpp"
 
 /* --- mutexes --- */
 /* declare mutexes begin*/
@@ -14,6 +15,8 @@ void initMutexes();
 /* declare semaphores end */
 
 void initSemphrs();
+
+extern RtcmCorrectionData_t sharedRtcmBuffer;
 
 /* --- queues --- */
 /* declare queues begin */
