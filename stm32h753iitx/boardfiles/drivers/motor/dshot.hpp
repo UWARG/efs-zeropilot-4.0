@@ -13,13 +13,14 @@ class DshotMotorControl : public IMotorControl{
         /**
          * @brief sets dshot throttle output
          * @param percent throttle percentage(0-100), 0 sends disarm command
+         * @param safetyEngaged if true, will stop sending throttle output to ESCs
          */
-        void set(uint32_t percent, bool safetyEngaged = false) override;
+        ZP_Error set(uint32_t percent, bool safetyEngaged = false) override;
 
         /**
          * @brief starts arming sequence for ESC
          */
-        void init() override;
+        ZP_Error init() override;
 
     private:
         bool currentSafetyState = false;
@@ -31,5 +32,5 @@ class DshotMotorControl : public IMotorControl{
         uint16_t updateBuffer[DSHOT_BUF_LEN] = {0};
         uint16_t dmaBuffer[DSHOT_BUF_LEN] = {0};
 
-        static uint8_t calculateCrc(uint16_t throttleVal, uint8_t telReq);
+        static ZP_Error calculateCrc(uint16_t throttleVal, uint8_t telReq, uint8_t& crc);
 };

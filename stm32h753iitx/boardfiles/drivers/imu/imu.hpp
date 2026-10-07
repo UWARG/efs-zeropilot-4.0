@@ -33,11 +33,11 @@ class IMU : public IIMU {
 			float uiFiltCutoffHz = 50.0f, ImuUiFiltOrder_t uiFiltOrder = IMU_UI_FILT_ORD_1ST);
 	
 		// Initialization
-		int init() override;
+		ZP_Error init() override;
 	
 		// Data reading, first read returns all 0s, subsequent reads return latest data
-		RawImuBatch_t readRawData() override; // non-blocking
-		ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override;
+		ZP_Error readRawData(RawImuBatch_t &rawDataBatch) override; // non-blocking
+		ZP_Error scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) override;
 	
 		void txRxCallback(); // Called in HAL_SPI_TxRxCpltCallback
 	

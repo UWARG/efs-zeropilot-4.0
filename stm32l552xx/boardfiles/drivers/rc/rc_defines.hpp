@@ -16,7 +16,7 @@ static constexpr uint8_t FOOTER_ = 0x00;
 
 //---CRSF Defines----
 
-static constexpr uint8_t  CRSF_BYTE_COUNT     = 64;
+static constexpr uint8_t  CRSF_PACKET_SIZE    = 64;
 static constexpr uint8_t  CRSF_SYNC_BYTE      = 0xC8;     // CRSF SYNC for most packets
 static constexpr uint8_t  CRSF_SYNC_ALT       = 0xEE;     // EdgeTX “outgoing” SYNC
 

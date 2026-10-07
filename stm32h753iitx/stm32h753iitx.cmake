@@ -20,7 +20,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 set(C_FLAGS            "-std=gnu11")
-set(CPP_FLAGS          "-std=gnu++14 -fno-exceptions -fno-rtti -fno-use-cxa-atexit")
+set(CPP_FLAGS          "-std=gnu++17 -fno-exceptions -fno-rtti -fno-use-cxa-atexit")
 set(MCU_FLAGS          "-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb --specs=nano.specs")
 set(OPTIMIZATION_FLAGS_DEBUG "-O0 -ffunction-sections -fdata-sections")
 set(OPTIMIZATION_FLAGS_RELEASE "-O3 -ffunction-sections -fdata-sections")
