@@ -54,7 +54,7 @@ private:
 	volatile uint32_t canRxHead = 0; // Write idx
 	volatile uint32_t canRxTail = 0; // Read idx
 
-	// this is read only after the initDrivers() function finishes
+	// This is read only after the initDrivers() function finishes
 	static constexpr uint8_t MAX_SUBSCRIPTIONS = 16;
 	Subscription subscriptions[MAX_SUBSCRIPTIONS] {};
 	uint8_t subscriptionCount = 0;
@@ -117,8 +117,9 @@ public:
 
 	ZP_Error enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data);
 
-	// Register a listener for a type
-	// A driver can call this once per message type that it needs
+	/* Register a listener for a type
+	 * A driver can call this once per message type that it needs
+	 */
 	ZP_Error subscribe(ICanListener *listener, uint16_t dataTypeId, uint64_t signature);
 
 	int16_t broadcastObj(

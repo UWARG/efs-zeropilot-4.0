@@ -78,14 +78,13 @@ bool CANController::CanardShouldAcceptTransfer(
         }
 
         default: {
-            bool found = false;
-            for (uint8_t i = 0; i < subscriptionCount && !found; i++) {
+            for (uint8_t i = 0; i < subscriptionCount; i++) {
                 if (subscriptions[i].dataTypeId == dataTypeId) {
                     *outDataTypeSignature = subscriptions[i].signature;
-                    found = true;
+                    return true;
                 }
             }
-            return found;
+            return false;
         }
     }
 }
