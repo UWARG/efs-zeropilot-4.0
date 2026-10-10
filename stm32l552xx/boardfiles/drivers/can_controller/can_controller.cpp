@@ -78,6 +78,12 @@ bool CANController::CanardShouldAcceptTransfer(
         }
 
         default: {
+            for (uint8_t i = 0; i < subscriptionCount; i++) {
+                if (subscriptions[i].dataTypeId == dataTypeId) {
+                    *outDataTypeSignature = subscriptions[i].signature;
+                    return true;
+                }
+            }
             return false;
         }
     }
@@ -98,9 +104,28 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
         }
 
         default: {
+            for (uint8_t i = 0; i < subscriptionCount; i++) {
+                if (subscriptions[i].dataTypeId == transfer->data_type_id) {
+                    (void)subscriptions[i].listener->onTransfer(transfer);
+                }
+            }
             break;
         }
     }
+}
+
+ZP_Error CANController::subscribe(ICanListener *listener, uint16_t dataTypeId, uint64_t signature) {
+	if (listener == nullptr) {
+		return ZP_ERROR_NULLPTR;
+	}
+
+	if (subscriptionCount >= MAX_SUBSCRIPTIONS) {
+		return ZP_ERROR_MEMORY_OVERFLOW;
+	}
+
+	subscriptions[subscriptionCount] = {listener, dataTypeId, signature};
+	subscriptionCount++;
+	return ZP_ERROR_OK;
 }
 
 ZP_Error CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data) {
