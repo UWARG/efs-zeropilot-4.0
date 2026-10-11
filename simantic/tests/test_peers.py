@@ -74,8 +74,8 @@ def test_baro_is_read_over_i2c(run):
     assert bus["baro"] > 1000
 
 
-@pytest.mark.xfail(strict=True, reason="sim 0.6.6: the baro peer serves PRESS_DATA over DMA but SCALED_PRESSURE.press_abs "
-                   "is 0 / not a pressure (an earlier note saw 1004 hPa on 0.6.4); not yet traced")
+@pytest.mark.xfail(strict=True, reason="firmware: attitude_manager.cpp declares `BaroData_t baroData;` uninitialised, "
+                   "readData() fills it only on the tick a DMA sample is ready, and SCALED_PRESSURE is sent every tick anyway")
 def test_baro_reaches_scaled_pressure(run):
     msgs, _, _ = run
     assert 1000 < struct.unpack_from("<f", last(msgs, SCALED_PRESSURE), 4)[0] < 1008  # hPa

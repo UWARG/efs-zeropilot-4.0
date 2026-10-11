@@ -22,8 +22,11 @@ top of the file. Edit them, or add behaviour, that is what they are for.
 Peers are **sim only**: nobody has compared them to the real part on a bench.
 What was matched to a NUCLEO-H753ZI on a logic analyser is the MCU model underneath
 (UART clocks, I2C, SPI, TIM1 PWM, FDCAN timing). Sensor data is fixed, with no noise,
-motion or injected failures. Known open item: `SCALED_PRESSURE.press_abs` is not a plausible
-pressure even though the baro peer answers; `test_baro_reaches_scaled_pressure` is marked `xfail` for it.
+motion or injected failures. Known firmware bug the peers expose: `AttitudeManager` (`attitude_manager.cpp`, "Read barometer data")
+declares `BaroData_t baroData;` uninitialised. `Barometer::readData()` fills it only on the tick a DMA
+sample has completed, but `SCALED_PRESSURE` is sent on its own tick regardless, so most messages carry stack
+garbage instead of a pressure. The baro peer's bytes decode to 100.4 kPa with the driver's own formula.
+`test_baro_reaches_scaled_pressure` is a strict `xfail` and flips to a failure once that is fixed.
 
 ## 1. Install `sim` (macOS arm64 or Linux x64)
 
