@@ -11,13 +11,6 @@
 # writes. A full FIFO drops new pairs; an empty one reads 0x00.
 # Source: TDK ICP-20100 datasheet DS-000416 rev 1.3.
 #
-# P_KPA/T_C are the fixed fallback world (~80 m ASL, room temperature) used
-# when PLANT has no live pressure/temperature (zp_plant.Plant, the kinematic
-# model). zp_jsbsim_plant.JSBSimPlant's pressure_kpa/temp_c (from the model's
-# own atmosphere at its current altitude) are read live instead when present
-# (simantic-dev/simantic-core#352, W4).
-from zp_plant import PLANT
-
 P_KPA, T_C = 100.4, 22.0  # the world: ~80 m ASL, room temperature
 
 MODE_ODR_HZ = (25, 120, 40, 2, 25)  # MEAS_CONFIG mode 0..4: DS-000416 2.2 Table 2 (mode 4 = factory default config)
@@ -43,10 +36,8 @@ class Slave:
         self.ticks = 0   # ODR ticks of this run already pushed into the FIFO
 
     def _sample(self):
-        p_kpa = getattr(PLANT, "pressure_kpa", P_KPA)
-        t_c = getattr(PLANT, "temp_c", T_C)
-        p = raw20(int((p_kpa - 70.0) * 131072 / 40.0))
-        t = raw20(int((t_c - 25.0) * 262144 / 65.0))
+        p = raw20(int((P_KPA - 70.0) * 131072 / 40.0))
+        t = raw20(int((T_C - 25.0) * 262144 / 65.0))
         return bytes([p & 0xFF, (p >> 8) & 0xFF, (p >> 16) & 0x0F,
                       t & 0xFF, (t >> 8) & 0xFF, (t >> 16) & 0x0F])
 

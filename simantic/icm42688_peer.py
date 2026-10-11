@@ -14,15 +14,9 @@
 import math
 import struct
 
-from zp_plant import PLANT
-
-# W4 (simantic-dev/simantic-core#352): pitch/gyro used to be the fixed
-# constants below (stationary, nose up 10 degrees) -- now they come live from
-# zp_plant.PLANT, which tim_actuator_peer.py drives from the firmware's own
-# TIM1 PWM output. PLANT starts at the same 10 degree nose-up trim, so a run
-# with no actuator movement yet reproduces the old fixed behavior exactly.
-# The driver negates X and Z; with these signs the firmware reports roll 0,
-# pitch -10 deg at that trim.
+# The board sits stationary, nose up PITCH_TRIM_DEG. The driver negates X and
+# Z; with these signs the firmware reports roll 0, pitch -10 deg.
+PITCH_TRIM_DEG = 10.0
 
 ODR_HZ = {1: 32000, 2: 16000, 3: 8000, 4: 4000, 5: 2000, 6: 1000, 7: 200, 8: 100,
           9: 50, 10: 25, 11: 12.5, 15: 500}  # GYRO_ODR code: DS-000347 5.6 (reset code 6 = 1 kHz)
@@ -68,7 +62,7 @@ class Slave:
 
     def _gyro_raw(self):
         lsb_dps = 16.4 * (1 << ((self.regs[GYRO_CONFIG0] >> 5) & 7))  # GYRO_FS_SEL, 16.4 LSB/dps at +-2000: DS-000347 Table 1, 5.6
-        return tuple(int(g * lsb_dps) for g in PLANT.gyro_dps())
+        return tuple(int(g * lsb_dps) for g in (0.0, 0.0, 0.0))  # stationary
 
     def _packet(self):
         if self._fifo_count() == 0:
@@ -76,7 +70,8 @@ class Slave:
         ts = int(self.t_on + self.next * self._period_us())
         self.next += 1
         lsb_g = 2048 << ((self.regs[ACCEL_CONFIG0] >> 5) & 3)   # ACCEL_FS_SEL: +-16/8/4/2 g (DS-000347 5.6)
-        ax, ay, az = PLANT.accel_g()
+        theta = math.radians(PITCH_TRIM_DEG)
+        ax, ay, az = math.sin(theta), 0.0, math.cos(theta)  # gravity in the body frame, g
         accel = (int(lsb_g * ax), int(lsb_g * ay), int(lsb_g * az))
         gyro = self._gyro_raw()
         # Packet 3: header accel|gyro|ODR timestamp (0x68), accel, gyro, temp, timestamp (DS-000347 6.1)

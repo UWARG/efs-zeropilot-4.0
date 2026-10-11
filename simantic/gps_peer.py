@@ -24,10 +24,7 @@
 # starts NAV-PVT at exactly the rate the firmware asked for -- it never
 # assumes "5 Hz" on its own.
 
-import math
 import struct
-
-from zp_plant import PLANT
 
 UBX_SYNC1, UBX_SYNC2 = 0xB5, 0x62
 
@@ -53,11 +50,7 @@ DEFAULT_RATE_NAV = 1
 FIX_TYPE_3D = 3
 GNSS_FIX_OK = 0x01
 
-# A plausible static 3D fix (WARG's test field, Waterloo, ON) -- also the
-# JSBSim plant's own home position (zp_jsbsim_plant.HOME_LAT_DEG/HOME_LON_DEG),
-# so a run with the kinematic fallback (no lat/lon/alt state) reproduces this
-# fixed fix exactly, and a JSBSim-backed run starts here before drifting with
-# the aircraft's own position (simantic-dev/simantic-core#352, W4).
+# A plausible static 3D fix (WARG's test field, Waterloo, ON); velocity is zero.
 LAT_DEG = 43.4723
 LON_DEG = -80.5449
 ALT_M = 334.0
@@ -95,20 +88,10 @@ def nav_pvt(itow_ms: int) -> bytes:
     payload[20] = FIX_TYPE_3D
     payload[21] = GNSS_FIX_OK
     payload[23] = NUM_SV
-    lat_deg = getattr(PLANT, "lat_deg", LAT_DEG)
-    lon_deg = getattr(PLANT, "lon_deg", LON_DEG)
-    alt_m = getattr(PLANT, "alt_m", ALT_M)
     struct.pack_into("<iiii", payload, 24,
-                      round(lon_deg * 1e7), round(lat_deg * 1e7),
-                      round(alt_m * 1000), round(alt_m * 1000))  # height == hMSL
-    # hAcc/vAcc(40,44) left at 0.
-    vel_ned = getattr(PLANT, "vel_ned_mps", None)
-    if vel_ned is not None:
-        vn, ve, vd = (round(v * 1000) for v in vel_ned)  # mm/s, UBX-NAV-PVT convention
-        g_speed = round(math.hypot(vn, ve))
-        head_mot = round(math.degrees(math.atan2(ve, vn)) % 360.0 * 1e5)  # 1e-5 deg
-        struct.pack_into("<iiiII", payload, 48, vn, ve, vd, g_speed, head_mot)
-    # velN/E/D/gSpeed/headMot stay 0 on the kinematic fallback (no ground track).
+                      round(LON_DEG * 1e7), round(LAT_DEG * 1e7),
+                      round(ALT_M * 1000), round(ALT_M * 1000))  # height == hMSL
+    # hAcc/vAcc(40,44) and velN/E/D/gSpeed/headMot left at 0.
     return frame(CLASS_NAV, ID_NAV_PVT, bytes(payload))
 
 
