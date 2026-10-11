@@ -1,0 +1,37 @@
+# WARG ZeroPilot 4.0 plane build with a scripted device on every bus
+# (boardfiles/model/src/drivers.cpp initDrivers()). Run via ./run.sh.
+#
+#   bus     part           script             what the firmware needs
+#   SDMMC1  blank 64 MB    -                  HAL_SD_Init completes; f_mount fails, firmware carries on
+#   USART6  u-blox GPS1    gps_peer.py        UBX at 230400 (huart6); feeds AttitudeManager
+#   USART3  u-blox GPS2    gps_peer.py        UBX at 115200 (huart3); boot ACKs only
+#   SPI1    ICM-42688-Px2  icm42688_peer.py   WHO_AM_I 0x47, gyro cal, FIFO via DMA; CS PC4 / PC5
+#   I2C1    INA228 0x45    ina228_peer.py     register file, VBUS/CURRENT/... via DMA
+#   I2C2    ICP-20100 0x63 icp20100_peer.py   rev B, FIR warm-up, PRESS_DATA via DMA
+#   I2C3    TF02-Pro 0x10  tf02pro_peer.py    cmd/resp frames, 9-byte data frame
+#   UART4   CRSF receiver  crsf_peer.py       RC_CHANNELS_PACKED at 250 Hz, 420000 8N1
+#   FDCAN1  DroneCAN node  dronecan_peer.py   3-stage anonymous allocation, NodeStatus 1 Hz
+machines:
+  dut:
+    mcu: STM32H753IITX
+    elf: zp4-h753.elf
+    parts:
+      - { name: card,        type: sd-card,     bus: sdmmc1, size: 16MiB }
+      - { name: gpspeer1,    type: uart-device, baud: 230400, script: gps_peer.py }
+      - { name: gpspeer2,    type: uart-device, baud: 115200, script: gps_peer.py }
+      - { name: imu0,        type: spi-device,  bus: spi1, cs: PC4, script: icm42688_peer.py }
+      - { name: imu1,        type: spi-device,  bus: spi1, cs: PC5, script: icm42688_peer.py }
+      - { name: power,       type: i2c-device,  bus: i2c1, address: 0x45, script: ina228_peer.py }
+      - { name: baro,        type: i2c-device,  bus: i2c2, address: 0x63, script: icp20100_peer.py }
+      - { name: rangefinder, type: i2c-device,  bus: i2c3, address: 0x10, script: tf02pro_peer.py }
+      - { name: rcpeer,      type: uart-device, baud: 420000, script: crsf_peer.py }
+      - { name: canpeer,     type: can-node,    script: dronecan_peer.py }
+media:
+  - type: uart
+    connect: [dut.usart6, dut.gpspeer1]     # GPS1
+  - type: uart
+    connect: [dut.usart3, dut.gpspeer2]     # GPS2
+  - type: uart
+    connect: [dut.uart4, dut.rcpeer]        # CRSF receiver
+  - type: can
+    connect: [dut.fdcan1, dut.canpeer]      # one DroneCAN node
