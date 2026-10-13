@@ -5,6 +5,6 @@
 
 class MockMagnetometer : public IMagnetometer {
     public:
-        MOCK_METHOD(bool, init, (), (override));
-        MOCK_METHOD(MagData_t, readData, (), (override));
+        MOCK_METHOD(ZP_Error, init, (), (override));
+        MOCK_METHOD(ZP_Error, readData, (MagData_t &data), (override));
 };

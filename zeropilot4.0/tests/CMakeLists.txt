@@ -6,6 +6,7 @@ project(gtestzeropilot4.0)
 # attitude manager test files
 set(AM_TSRC
     attitude_manager/attitude_manager_telemetry_test.cpp
+    attitude_manager/attitude_manager_mag_test.cpp
     attitude_manager/pid_test.cpp
 )
 
@@ -44,8 +45,7 @@ set(ALL_TSRC
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
-# GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "-g")
 

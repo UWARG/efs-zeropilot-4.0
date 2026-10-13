@@ -1,6 +1,7 @@
 #pragma once
 
 #include "magnetometer_iface.hpp"
+#include "zp_error.h"
 #include "stm32h7xx_hal.h"
 #include <cstdint>
 
@@ -17,8 +18,8 @@ class Magnetometer : public IMagnetometer {
                      uint16_t csPin,
                      uint8_t address);
 
-        bool init() override;
-        MagData_t readData() override;
+        ZP_Error init() override;
+        ZP_Error readData(MagData_t &data) override;
 
         // Called from HAL I2C callbacks in override.cpp
         void masterTxCpltCallback();
@@ -58,8 +59,11 @@ class Magnetometer : public IMagnetometer {
         uint8_t status;
         uint16_t regValue;
 
+        bool initialized;
         volatile ReadState_e state;
         volatile bool sampleReady;
+        // Raw ZP_Error bits raised from the I2C callbacks, drained by readData()
+        volatile uint32_t pendingError;
         uint32_t conversionDoneMs;
         uint32_t transferStartMs;
 
@@ -68,18 +72,18 @@ class Magnetometer : public IMagnetometer {
 
         MagData_t magData;
 
-        bool transceive(uint8_t *txData, uint16_t txSize, uint8_t *rxData, uint16_t rxSize);
-        bool sendCommand(uint8_t command);
-        bool writeRegister(uint8_t reg, uint16_t value);
-        bool readRegister(uint8_t reg);
-        bool setGain(uint8_t newGain);
-        bool setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t newZRes);
-        bool setFilter(uint8_t newFilter);
-        bool setOversampling(uint8_t newOsr);
-        bool refreshConfigCache();
+        ZP_Error transceive(uint8_t *txData, uint16_t txSize, uint8_t *rxData, uint16_t rxSize);
+        ZP_Error sendCommand(uint8_t command);
+        ZP_Error writeRegister(uint8_t reg, uint16_t value);
+        ZP_Error readRegister(uint8_t reg);
+        ZP_Error setGain(uint8_t newGain);
+        ZP_Error setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t newZRes);
+        ZP_Error setFilter(uint8_t newFilter);
+        ZP_Error setOversampling(uint8_t newOsr);
+        ZP_Error refreshConfigCache();
 
-        void startMeasurement();
-        void readMeasurement();
-        void decode();
+        ZP_Error startMeasurement();
+        ZP_Error readMeasurement();
+        ZP_Error decode();
         uint32_t conversionTimeMs() const;
 };

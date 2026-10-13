@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 typedef struct {
     float x;             // uT, uncalibrated
@@ -24,8 +25,11 @@ class IMagnetometer {
     public:
         virtual ~IMagnetometer() = default;
 
-        virtual bool init() = 0;
+        virtual ZP_Error init() = 0;
 
-        // Non blocking; isNew false until a sample completes.
-        virtual MagData_t readData() = 0;
+        /*
+        @brief Non blocking. isNew is false until a sample completes, which is not an error
+        @retval a bus or sensor fault seen since the last call
+        */
+        virtual ZP_Error readData(MagData_t &data) = 0;
 };

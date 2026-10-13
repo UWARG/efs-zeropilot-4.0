@@ -120,6 +120,8 @@ static constexpr uint8_t CONFIG_X_RES = MLX90393_RES_16;
 static constexpr uint8_t CONFIG_Y_RES = MLX90393_RES_16;
 static constexpr uint8_t CONFIG_Z_RES = MLX90393_RES_15;
 
+static ZP_Error halToZpError(HAL_StatusTypeDef status);
+
 Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16_t csPin)
     : Magnetometer(hi2c, csPort, csPin, MLX90393_DEFAULT_ADDR) {}
 
@@ -138,15 +140,18 @@ Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16
       osr(CONFIG_OSR),
       status(0),
       regValue(0),
+      initialized(false),
       state(IDLE),
       sampleReady(false),
+      pendingError(0),
       conversionDoneMs(0),
       transferStartMs(0),
       txByte(0),
       rxBuffer{0},
       magData{} {}
 
-bool Magnetometer::init() {
+ZP_Error Magnetometer::init() {
+    initialized = false;
 
     if (csPort != nullptr) {
         HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
@@ -154,60 +159,71 @@ bool Magnetometer::init() {
     }
 
     if (HAL_I2C_IsDeviceReady(hi2c, halAddress, 2, INIT_TIMEOUT_MS) != HAL_OK) {
-        return false;
+        return ZP_ERROR_EXT_API | ZP_ERROR_NACK;
     }
 
-    sendCommand(MLX90393_CMD_EXIT);
+    // Leaves any mode a previous boot left running. Fails harmlessly when idle.
+    (void)sendCommand(MLX90393_CMD_EXIT);
     HAL_Delay(1);
 
-    if (!sendCommand(MLX90393_CMD_RESET)) {
-        return false;
+    ZP_Error result = sendCommand(MLX90393_CMD_RESET);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     HAL_Delay(2);
 
-    if (!refreshConfigCache()) {
-        return false;
+    result = refreshConfigCache();
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
 
-    if (!setFilter(CONFIG_FILTER)) {
-        return false;
+    result = setFilter(CONFIG_FILTER);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
-    if (!setOversampling(CONFIG_OSR)) {
-        return false;
+    result = setOversampling(CONFIG_OSR);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
-    if (!setResolution(CONFIG_X_RES, CONFIG_Y_RES, CONFIG_Z_RES)) {
-        return false;
+    result = setResolution(CONFIG_X_RES, CONFIG_Y_RES, CONFIG_Z_RES);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
 
-    if (!refreshConfigCache()) {
-        return false;
+    result = refreshConfigCache();
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
 
     state = IDLE;
     sampleReady = false;
+    pendingError = 0;
     magData = {};
+    initialized = true;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::transceive(uint8_t *txData, uint16_t txSize, uint8_t *rxData, uint16_t rxSize) {
-    if (HAL_I2C_Master_Transmit(hi2c, halAddress, txData, txSize, INIT_TIMEOUT_MS) != HAL_OK) {
-        return false;
+ZP_Error Magnetometer::transceive(uint8_t *txData, uint16_t txSize, uint8_t *rxData, uint16_t rxSize) {
+    ZP_Error result = halToZpError(HAL_I2C_Master_Transmit(hi2c, halAddress, txData, txSize, INIT_TIMEOUT_MS));
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
-    return HAL_I2C_Master_Receive(hi2c, halAddress, rxData, rxSize, INIT_TIMEOUT_MS) == HAL_OK;
+    return halToZpError(HAL_I2C_Master_Receive(hi2c, halAddress, rxData, rxSize, INIT_TIMEOUT_MS));
 }
 
-bool Magnetometer::sendCommand(uint8_t command) {
+ZP_Error Magnetometer::sendCommand(uint8_t command) {
     uint8_t tx = command;
     uint8_t rx = 0;
-    if (!transceive(&tx, 1, &rx, 1)) {
-        return false;
+    ZP_Error result = transceive(&tx, 1, &rx, 1);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     status = rx;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::writeRegister(uint8_t reg, uint16_t value) {
+ZP_Error Magnetometer::writeRegister(uint8_t reg, uint16_t value) {
     uint8_t tx[4] = {
         MLX90393_CMD_WRITE_REGISTER,
         static_cast<uint8_t>(value >> 8),
@@ -215,34 +231,38 @@ bool Magnetometer::writeRegister(uint8_t reg, uint16_t value) {
         static_cast<uint8_t>(reg << 2),
     };
     uint8_t rx = 0;
-    if (!transceive(tx, 4, &rx, 1)) {
-        return false;
+    ZP_Error result = transceive(tx, 4, &rx, 1);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     status = rx;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::readRegister(uint8_t reg) {
+ZP_Error Magnetometer::readRegister(uint8_t reg) {
     uint8_t tx[2] = {MLX90393_CMD_READ_REGISTER, static_cast<uint8_t>(reg << 2)};
     uint8_t rx[3] = {0};
-    if (!transceive(tx, 2, rx, 3)) {
-        return false;
+    ZP_Error result = transceive(tx, 2, rx, 3);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     status = rx[0];
     regValue = static_cast<uint16_t>(rx[1] << 8 | rx[2]);
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::refreshConfigCache() {
-    if (!readRegister(MLX90393_CONF1)) {
-        return false;
+ZP_Error Magnetometer::refreshConfigCache() {
+    ZP_Error result = readRegister(MLX90393_CONF1);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     gain = (regValue & GAIN_MASK) >> GAIN_SHIFT;
     hallconf = regValue & HALLCONF_MASK;
     tcmpEn = (regValue & TCMP_EN_MASK) >> TCMP_EN_SHIFT;
 
-    if (!readRegister(MLX90393_CONF3)) {
-        return false;
+    result = readRegister(MLX90393_CONF3);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     xRes = (regValue & X_RES_MASK) >> X_RES_SHIFT;
     yRes = (regValue & Y_RES_MASK) >> Y_RES_SHIFT;
@@ -250,94 +270,110 @@ bool Magnetometer::refreshConfigCache() {
     filter = (regValue & FILTER_MASK) >> FILTER_SHIFT;
     osr = (regValue & OSR_MASK) >> OSR_SHIFT;
 
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::setGain(uint8_t newGain) {
-    if (!readRegister(MLX90393_CONF1)) {
-        return false;
+ZP_Error Magnetometer::setGain(uint8_t newGain) {
+    ZP_Error result = readRegister(MLX90393_CONF1);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     const uint16_t VALUE = (regValue & ~GAIN_MASK) | (newGain << GAIN_SHIFT);
-    if (!writeRegister(MLX90393_CONF1, VALUE)) {
-        return false;
+    result = writeRegister(MLX90393_CONF1, VALUE);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     gain = newGain;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t newZRes) {
+ZP_Error Magnetometer::setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t newZRes) {
 
     if (tcmpEn == 1 &&
         (newXRes >= MLX90393_RES_17 || newYRes >= MLX90393_RES_17 || newZRes >= MLX90393_RES_17)) {
-        return false;
+        return ZP_ERROR_INVALID_ARG;
     }
 
-    if (!readRegister(MLX90393_CONF3)) {
-        return false;
+    ZP_Error result = readRegister(MLX90393_CONF3);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     uint16_t value = regValue;
     value = (value & ~X_RES_MASK) | (newXRes << X_RES_SHIFT);
     value = (value & ~Y_RES_MASK) | (newYRes << Y_RES_SHIFT);
     value = (value & ~Z_RES_MASK) | (newZRes << Z_RES_SHIFT);
 
-    if (!writeRegister(MLX90393_CONF3, value)) {
-        return false;
+    result = writeRegister(MLX90393_CONF3, value);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     xRes = newXRes;
     yRes = newYRes;
     zRes = newZRes;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::setFilter(uint8_t newFilter) {
+ZP_Error Magnetometer::setFilter(uint8_t newFilter) {
 
     if (hallconf == HALLCONF_0XC) {
         if (osr == 0x00 && (newFilter == 0 || newFilter == 1)) {
-            return false;
+            return ZP_ERROR_INVALID_ARG;
         }
         if (osr == 0x01 && newFilter == 0) {
-            return false;
+            return ZP_ERROR_INVALID_ARG;
         }
     }
 
-    if (!readRegister(MLX90393_CONF3)) {
-        return false;
+    ZP_Error result = readRegister(MLX90393_CONF3);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     const uint16_t VALUE = (regValue & ~FILTER_MASK) | (newFilter << FILTER_SHIFT);
-    if (!writeRegister(MLX90393_CONF3, VALUE)) {
-        return false;
+    result = writeRegister(MLX90393_CONF3, VALUE);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     filter = newFilter;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool Magnetometer::setOversampling(uint8_t newOsr) {
+ZP_Error Magnetometer::setOversampling(uint8_t newOsr) {
 
     if (hallconf == HALLCONF_0XC) {
         if (filter == 0x00 && (newOsr == 0 || newOsr == 1)) {
-            return false;
+            return ZP_ERROR_INVALID_ARG;
         }
         if (filter == 0x01 && newOsr == 0) {
-            return false;
+            return ZP_ERROR_INVALID_ARG;
         }
     }
 
-    if (!readRegister(MLX90393_CONF3)) {
-        return false;
+    ZP_Error result = readRegister(MLX90393_CONF3);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     const uint16_t VALUE = (regValue & ~OSR_MASK) | (newOsr << OSR_SHIFT);
-    if (!writeRegister(MLX90393_CONF3, VALUE)) {
-        return false;
+    result = writeRegister(MLX90393_CONF3, VALUE);
+    if (result != ZP_ERROR_OK) {
+        return result;
     }
     osr = newOsr;
-    return true;
+    return ZP_ERROR_OK;
 }
 
-MagData_t Magnetometer::readData() {
+ZP_Error Magnetometer::readData(MagData_t &data) {
+    if (!initialized) {
+        magData.isNew = false;
+        data = magData;
+        return ZP_ERROR_NOT_READY;
+    }
+
+    ZP_Error result(pendingError);
+    pendingError = 0;
 
     if (sampleReady) {
         sampleReady = false;
-        decode();
+        result |= decode();
     } else {
         magData.isNew = false;
     }
@@ -346,12 +382,12 @@ MagData_t Magnetometer::readData() {
 
     switch (state) {
         case IDLE:
-            startMeasurement();
+            result |= startMeasurement();
             break;
 
         case WAIT_CONV:
             if (static_cast<int32_t>(NOW - conversionDoneMs) >= 0) {
-                readMeasurement();
+                result |= readMeasurement();
             }
             break;
 
@@ -360,31 +396,37 @@ MagData_t Magnetometer::readData() {
             if (NOW - transferStartMs > TRANSFER_TIMEOUT_MS &&
                 hi2c->State == HAL_I2C_STATE_READY) {
                 state = IDLE;
+                result |= ZP_ERROR_TIMEOUT;
             }
             break;
     }
 
-    return magData;
+    data = magData;
+    return result;
 }
 
-void Magnetometer::startMeasurement() {
+ZP_Error Magnetometer::startMeasurement() {
     txByte = MLX90393_CMD_START_MEASUREMENT | ZYXT;
     transferStartMs = HAL_GetTick();
     state = SM_TX;
 
-    if (HAL_I2C_Master_Transmit_IT(hi2c, halAddress, &txByte, 1) != HAL_OK) {
+    const ZP_Error STATUS = halToZpError(HAL_I2C_Master_Transmit_IT(hi2c, halAddress, &txByte, 1));
+    if (STATUS != ZP_ERROR_OK) {
         state = IDLE;
     }
+    return STATUS;
 }
 
-void Magnetometer::readMeasurement() {
+ZP_Error Magnetometer::readMeasurement() {
     txByte = MLX90393_CMD_READ_MEASUREMENT | ZYXT;
     transferStartMs = HAL_GetTick();
     state = RM_TX;
 
-    if (HAL_I2C_Master_Transmit_IT(hi2c, halAddress, &txByte, 1) != HAL_OK) {
+    const ZP_Error STATUS = halToZpError(HAL_I2C_Master_Transmit_IT(hi2c, halAddress, &txByte, 1));
+    if (STATUS != ZP_ERROR_OK) {
         state = IDLE;
     }
+    return STATUS;
 }
 
 void Magnetometer::masterTxCpltCallback() {
@@ -394,6 +436,7 @@ void Magnetometer::masterTxCpltCallback() {
 
             if (HAL_I2C_Master_Receive_IT(hi2c, halAddress, &status, 1) != HAL_OK) {
                 state = IDLE;
+                pendingError |= (ZP_ERROR_EXT_API | ZP_ERROR_FAIL).raw();
             }
             break;
 
@@ -401,6 +444,7 @@ void Magnetometer::masterTxCpltCallback() {
             state = RM_RX;
             if (HAL_I2C_Master_Receive_IT(hi2c, halAddress, rxBuffer, MEASUREMENT_BYTES) != HAL_OK) {
                 state = IDLE;
+                pendingError |= (ZP_ERROR_EXT_API | ZP_ERROR_FAIL).raw();
             }
             break;
 
@@ -413,8 +457,8 @@ void Magnetometer::masterRxCpltCallback() {
     switch (state) {
         case SM_RX:
             if (status & MLX90393_STATUS_ERROR) {
-
                 state = IDLE;
+                pendingError |= ZP_ERROR_INVALID_DATA.raw();
                 break;
             }
             conversionDoneMs = HAL_GetTick() + conversionTimeMs();
@@ -433,7 +477,8 @@ void Magnetometer::masterRxCpltCallback() {
 }
 
 void Magnetometer::errorCallback() {
-
+    const bool NACKED = (HAL_I2C_GetError(hi2c) & HAL_I2C_ERROR_AF) != 0;
+    pendingError |= (ZP_ERROR_EXT_API | (NACKED ? ZP_ERROR_NACK : ZP_ERROR_FAIL)).raw();
     state = IDLE;
 }
 
@@ -442,12 +487,12 @@ uint32_t Magnetometer::conversionTimeMs() const {
     return static_cast<uint32_t>(TCONV) + 1 + CONVERSION_MARGIN_MS;
 }
 
-void Magnetometer::decode() {
+ZP_Error Magnetometer::decode() {
     const uint8_t SAMPLE_STATUS = rxBuffer[0];
 
     if (SAMPLE_STATUS & MLX90393_STATUS_ERROR) {
         magData.isNew = false;
-        return;
+        return ZP_ERROR_INVALID_DATA;
     }
 
     const uint8_t *cursor = rxBuffer + 1;
@@ -492,8 +537,20 @@ void Magnetometer::decode() {
     magData.rawZ = raw[2];
     magData.timestamp = NOW;
     magData.isNew = true;
+    return ZP_ERROR_OK;
 }
 
 I2C_HandleTypeDef *Magnetometer::getI2C() {
     return hi2c;
+}
+
+static ZP_Error halToZpError(HAL_StatusTypeDef status) {
+    if (status == HAL_OK) {
+        return ZP_ERROR_OK;
+    } else if (status == HAL_TIMEOUT) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
+    } else if (status == HAL_BUSY) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
+    }
+    return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
 }

@@ -38,11 +38,16 @@ MagCal::MagCal(IMagnetometer *magDriver)
       axisMin{0},
       axisMax{0} {}
 
-MagData_t MagCal::update() {
-    MagData_t data = magDriver->readData();
+ZP_Error MagCal::update(MagData_t &data) {
+    if (magDriver == nullptr) {
+        data.isNew = false;
+        return ZP_ERROR_NULLPTR;
+    }
 
-    if (!data.isNew) {
-        return data;
+    ZP_Error status = magDriver->readData(data);
+
+    if (status != ZP_ERROR_OK || !data.isNew) {
+        return status;
     }
 
     float field[3] = {data.x, data.y, data.z};
@@ -58,65 +63,69 @@ MagData_t MagCal::update() {
     data.x = field[0];
     data.y = field[1];
     data.z = field[2];
-    return data;
+    return ZP_ERROR_OK;
 }
 
-void MagCal::startCalibration() {
+ZP_Error MagCal::startCalibration() {
     if (state == MAG_CAL_STATE_COLLECTING) {
-        return;
+        return ZP_ERROR_BUSY;
     }
 
     resetAccumulators();
     error = MAG_CAL_ERR_NONE;
     state = MAG_CAL_STATE_COLLECTING;
+    return ZP_ERROR_OK;
 }
 
-void MagCal::cancelCalibration() {
+ZP_Error MagCal::cancelCalibration() {
     if (state != MAG_CAL_STATE_COLLECTING) {
-        return;
+        return ZP_ERROR_OK;
     }
 
     resetAccumulators();
     state = MAG_CAL_STATE_IDLE;
+    return ZP_ERROR_OK;
 }
 
-MagCalStatus_t MagCal::getStatus() const {
-    MagCalStatus_t out = {};
-    out.state = state;
-    out.error = error;
-    out.sampleCount = sampleCount;
+ZP_Error MagCal::getStatus(MagCalStatus_t &outStatus) const {
+    outStatus = {};
+    outStatus.state = state;
+    outStatus.error = error;
+    outStatus.sampleCount = sampleCount;
 
     if (state != MAG_CAL_STATE_COLLECTING) {
-        out.progressPercent = (state == MAG_CAL_STATE_SUCCESS) ? 100 : 0;
-        return out;
+        outStatus.progressPercent = (state == MAG_CAL_STATE_SUCCESS) ? 100 : 0;
+        return ZP_ERROR_OK;
     }
 
     // The window opens on the first sample, so there is no progress to report
     // until one has landed.
     if (!haveStartMs) {
-        out.progressPercent = 0;
-        return out;
+        outStatus.progressPercent = 0;
+        return ZP_ERROR_OK;
     }
 
     const uint32_t ELAPSED = lastSampleMs - startMs;
-    out.progressPercent = (ELAPSED >= COLLECT_DURATION_MS)
-                              ? 100
-                              : static_cast<uint8_t>((ELAPSED * 100U) / COLLECT_DURATION_MS);
-    return out;
+    outStatus.progressPercent = (ELAPSED >= COLLECT_DURATION_MS)
+                                    ? 100
+                                    : static_cast<uint8_t>((ELAPSED * 100U) / COLLECT_DURATION_MS);
+    return ZP_ERROR_OK;
 }
 
-const MagCalConstants_t &MagCal::getConstants() const {
-    return constants;
+ZP_Error MagCal::getConstants(MagCalConstants_t &outConstants) const {
+    outConstants = constants;
+    return ZP_ERROR_OK;
 }
 
-void MagCal::setConstants(const MagCalConstants_t &newConstants) {
+ZP_Error MagCal::setConstants(const MagCalConstants_t &newConstants) {
     constants = newConstants;
     error = MAG_CAL_ERR_NONE;
     state = MAG_CAL_STATE_IDLE;
+    return ZP_ERROR_OK;
 }
 
-void MagCal::resetToDefaults() {
-    setConstants(DEFAULT_CAL_CONSTANTS);
+ZP_Error MagCal::resetToDefaults() {
+    return setConstants(DEFAULT_CAL_CONSTANTS);
 }
 
 void MagCal::applyCorrection(float field[3]) const {
@@ -206,10 +215,10 @@ void MagCal::addSample(const float field[3], uint32_t nowMs) {
         return;
     }
 
-    state = solve() ? MAG_CAL_STATE_SUCCESS : MAG_CAL_STATE_FAILED;
+    state = (solve() == ZP_ERROR_OK) ? MAG_CAL_STATE_SUCCESS : MAG_CAL_STATE_FAILED;
 }
 
-bool MagCal::invert4x4(const float src[16], float dst[16]) {
+ZP_Error MagCal::invert4x4(const float src[16], float dst[16]) {
 
     double aug[4][8] = {};
     for (uint8_t i = 0; i < 4; i++) {
@@ -227,7 +236,7 @@ bool MagCal::invert4x4(const float src[16], float dst[16]) {
             }
         }
         if (std::fabs(aug[pivot][col]) < 1e-12) {
-            return false;
+            return ZP_ERROR_INVALID_DATA;
         }
         if (pivot != col) {
             for (uint8_t j = 0; j < 8; j++) {
@@ -256,13 +265,13 @@ bool MagCal::invert4x4(const float src[16], float dst[16]) {
             dst[i * 4 + j] = static_cast<float>(aug[i][4 + j]);
         }
     }
-    return true;
+    return ZP_ERROR_OK;
 }
 
-bool MagCal::solve() {
+ZP_Error MagCal::solve() {
     if (sampleCount < MIN_SAMPLES) {
         error = MAG_CAL_ERR_TOO_FEW_SAMPLES;
-        return false;
+        return ZP_ERROR_INVALID_DATA;
     }
 
     float radius[3];
@@ -280,13 +289,13 @@ bool MagCal::solve() {
         radius[1] < MIN_SPAN_RATIO * radiusMax ||
         radius[2] < MIN_SPAN_RATIO * radiusMax) {
         error = MAG_CAL_ERR_POOR_COVERAGE;
-        return false;
+        return ZP_ERROR_INVALID_DATA;
     }
 
     float inverse[16];
-    if (!invert4x4(normalMatrix, inverse)) {
+    if (invert4x4(normalMatrix, inverse) != ZP_ERROR_OK) {
         error = MAG_CAL_ERR_SINGULAR;
-        return false;
+        return ZP_ERROR_INVALID_DATA;
     }
 
     float beta[4] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -304,13 +313,13 @@ bool MagCal::solve() {
 
     if (FIELD_SQUARED <= 0.0f) {
         error = MAG_CAL_ERR_IMPLAUSIBLE_FIELD;
-        return false;
+        return ZP_ERROR_RANGE;
     }
 
     const float FIELD = sqrtf(FIELD_SQUARED);
     if (FIELD < MIN_FIELD_UT || FIELD > MAX_FIELD_UT) {
         error = MAG_CAL_ERR_IMPLAUSIBLE_FIELD;
-        return false;
+        return ZP_ERROR_RANGE;
     }
 
     constants.hardIron[0] = BX;
@@ -327,5 +336,5 @@ bool MagCal::solve() {
     constants.softIron[8] = RADIUS_MEAN / radius[2];
 
     error = MAG_CAL_ERR_NONE;
-    return true;
+    return ZP_ERROR_OK;
 }

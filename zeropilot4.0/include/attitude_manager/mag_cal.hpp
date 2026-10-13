@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "magnetometer_iface.hpp"
+#include "zp_error.h"
 
 typedef enum : uint8_t {
     MAG_CAL_STATE_IDLE = 0,
@@ -55,19 +56,21 @@ class MagCal {
          * Reads the driver and returns the sample with the current correction
          * applied. Non blocking; isNew is false until a sample completes.
          * While collecting, the uncorrected field is fed to the fit.
+         * @retval the driver's status, passed through unchanged
          */
-        MagData_t update();
+        ZP_Error update(MagData_t &data);
 
-        void startCalibration();
-        void cancelCalibration();
+        // ZP_ERROR_BUSY if a calibration is already collecting
+        ZP_Error startCalibration();
+        ZP_Error cancelCalibration();
 
-        MagCalStatus_t getStatus() const;
+        ZP_Error getStatus(MagCalStatus_t &outStatus) const;
 
-        const MagCalConstants_t &getConstants() const;
+        ZP_Error getConstants(MagCalConstants_t &outConstants) const;
 
         // For constants restored from NVM or ZP params rather than a live fit.
-        void setConstants(const MagCalConstants_t &newConstants);
-        void resetToDefaults();
+        ZP_Error setConstants(const MagCalConstants_t &newConstants);
+        ZP_Error resetToDefaults();
 
     private:
         static constexpr uint32_t MIN_SAMPLES = 60;
@@ -95,6 +98,6 @@ class MagCal {
         void resetAccumulators();
         void addSample(const float field[3], uint32_t nowMs);
         void applyCorrection(float field[3]) const;
-        bool solve();
-        static bool invert4x4(const float src[16], float dst[16]);
+        ZP_Error solve();
+        static ZP_Error invert4x4(const float src[16], float dst[16]);
 };

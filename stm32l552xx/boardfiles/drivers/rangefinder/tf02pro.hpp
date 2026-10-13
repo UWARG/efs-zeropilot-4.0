@@ -7,8 +7,8 @@ class Rangefinder : public IRangefinder {
 public:
     Rangefinder(I2C_HandleTypeDef *hi2c);
 
-    int init() override;
-    RangefinderData_t readData() override;
+    ZP_Error init() override;
+    ZP_Error readData(RangefinderData_t &outData) override;
 
     void txCallback();
     void rxCallback();
@@ -24,11 +24,11 @@ private:
     static constexpr uint8_t READ_RESPONSE_LENGTH = 9;
     uint8_t rxBuffer[READ_RESPONSE_LENGTH] = {0};
 
-    void restartTransfer();
+    ZP_Error restartTransfer();
     uint8_t computeChecksum();
     uint32_t lastTransferTick = 0;
 
-    HAL_StatusTypeDef writeDataBlocking(uint8_t* cmd, uint16_t cmdSize, uint32_t delay);
-    HAL_StatusTypeDef readDataBlocking(uint8_t* receiveBuffer, uint16_t size, uint32_t delay);
-    HAL_StatusTypeDef sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize, const uint8_t *expectedResp, uint16_t expectedRespSize);
+    ZP_Error writeDataBlocking(uint8_t* cmd, uint16_t cmdSize, uint32_t delay);
+    ZP_Error readDataBlocking(uint8_t* receiveBuffer, uint16_t size, uint32_t delay);
+    ZP_Error sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize, const uint8_t *expectedResp, uint16_t expectedRespSize);
 };

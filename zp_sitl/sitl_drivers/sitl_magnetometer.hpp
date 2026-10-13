@@ -11,10 +11,10 @@ private:
     bool sampleReady = false;
 
 public:
-    bool init() override {
+    ZP_Error init() override {
         magData = {};
         magData.timestamp = 0;
-        return true;
+        return ZP_ERROR_OK;
     }
 
     /**
@@ -59,9 +59,10 @@ public:
      * Non blocking, matching mlx90393.cpp: isNew is true only on the read that
      * consumes a fresh sample.
      */
-    MagData_t readData() override {
+    ZP_Error readData(MagData_t &data) override {
         magData.isNew = sampleReady;
         sampleReady = false;
-        return magData;
+        data = magData;
+        return ZP_ERROR_OK;
     }
 };

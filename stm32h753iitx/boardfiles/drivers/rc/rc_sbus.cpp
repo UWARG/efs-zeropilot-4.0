@@ -63,36 +63,58 @@ UART_HandleTypeDef* SBUSReceiver::getHuart() {
     return uart;
 }
 
-RCControl SBUSReceiver::getRCData() {
-	RCControl tmp = rcData;
+ZP_Error SBUSReceiver::getRCData(RCControl &data) {
+    data = rcData;
     rcData.isDataNew = false;
-    return tmp;
+    return ZP_ERROR_OK;
 }
 
-void SBUSReceiver::init() {
+ZP_Error SBUSReceiver::init() {
     rcData.isDataNew = false;
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
+    return startDMA();
 }
 
-void SBUSReceiver::startDMA() {
-    HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
+ZP_Error SBUSReceiver::startDMA() {
+    if (uart == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
+    if (status == HAL_BUSY) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
+    } else if (status != HAL_OK) {
+        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
+    }
+    return ZP_ERROR_OK;
 }
 
-void SBUSReceiver::parse() {
-    
+ZP_Error SBUSReceiver::parse() {
+    ZP_Error result = ZP_ERROR_OK;
     uint8_t *buf = (uint8_t*)rawSbus;
+    float sbusResult = 0.0f;
 
     if ((buf[0] == HEADER_) && (buf[SBUS_PACKET_SIZE-1] == FOOTER_)) {
 
         for (int i = 0; i < SBUS_CHANNEL_COUNT; i++) {
-            rcData.controlSignals[i] = sbusToRCControl(buf, i);
+            result |= sbusToRCControl(buf, i, sbusResult);
+            if (result == ZP_ERROR_OK) {
+                rcData.controlSignals[i] = sbusResult;
+            } else {
+                break;
+            }
         }
-
-        rcData.isDataNew = true;
+        if (result == ZP_ERROR_OK) {    
+            rcData.isDataNew = true;
+        }
+    } else {
+        result |= ZP_ERROR_PARSE;
     }
+
+    return result;
 }
 
-float SBUSReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx) {
+ZP_Error SBUSReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx, float &output) {
+    ZP_Error result = ZP_ERROR_OK;
     uint16_t res = 0;
 
     for (int i = 0; i < SBUS_MAX_BTYES_PER_CHANNEL; i++) {
@@ -115,5 +137,6 @@ float SBUSReceiver::sbusToRCControl(uint8_t *buf, int channelMappingIdx) {
         // continue
     }
 
-    return static_cast<float>((res - SBUS_RANGE_MIN) * (100.0f / SBUS_RANGE_RANGE));
+    output = static_cast<float>((res - SBUS_RANGE_MIN) * (100.0f / SBUS_RANGE_RANGE));
+    return result;
 }
