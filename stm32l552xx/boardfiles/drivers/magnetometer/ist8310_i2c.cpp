@@ -15,15 +15,15 @@ constexpr float kRadiansToDegrees = 57.29577951308232F;
 }  // namespace
 
 Ist8310::Ist8310(I2C_HandleTypeDef *i2c, uint8_t address)
-    : i2c_(i2c), address_(address), ready_(false)
+    : i2c_handle(i2c), address(address), ready(false)
 {
 }
 
 bool Ist8310::init()
 {
-  ready_ = false;
+  ready = false;
 
-  if ((i2c_ == nullptr) || !probe()) {
+  if ((i2c_handle == nullptr) || !probe()) {
     return false;
   }
 
@@ -42,25 +42,25 @@ bool Ist8310::init()
     return false;
   }
 
-  ready_ = true;
+  ready = true;
   return true;
 }
 
 bool Ist8310::read(Sample &sample)
 {
-  if (!ready_ || !writeRegister(kControl1, kSingleMeasurement)) {
-    ready_ = false;
+  if (!ready || !writeRegister(kControl1, kSingleMeasurement)) {
+    ready = false;
     return false;
   }
 
   if (!waitForDataReady()) {
-    ready_ = false;
+    ready = false;
     return false;
   }
 
   uint8_t data[6] = {};
   if (!readRegisters(kDataXLow, data, sizeof(data))) {
-    ready_ = false;
+    ready = false;
     return false;
   }
 
@@ -79,19 +79,19 @@ bool Ist8310::read(Sample &sample)
 
 uint8_t Ist8310::address() const
 {
-  return address_;
+  return address;
 }
 
 bool Ist8310::isReady() const
 {
-  return ready_;
+  return ready;
 }
 
 bool Ist8310::probe()
 {
   constexpr uint8_t kCandidateAddresses[] = {0x0E, 0x0C, 0x0D, 0x0F};
 
-  const uint8_t preferred_address = address_;
+  const uint8_t preferred_address = address;
   uint8_t who_am_i = 0U;
   if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue)) {
     return true;
@@ -102,7 +102,7 @@ bool Ist8310::probe()
       continue;
     }
 
-    address_ = candidate;
+    address = candidate;
 
     who_am_i = 0U;
     if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue)) {
@@ -110,7 +110,7 @@ bool Ist8310::probe()
     }
   }
 
-  address_ = kDefaultAddress;
+  address = kDefaultAddress;
   return false;
 }
 
@@ -143,14 +143,14 @@ bool Ist8310::waitForDataReady()
 
 bool Ist8310::writeRegister(uint8_t reg, uint8_t value)
 {
-  return HAL_I2C_Mem_Write(i2c_, static_cast<uint16_t>(address_) << 1U, reg,
+  return HAL_I2C_Mem_Write(i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
                            I2C_MEMADD_SIZE_8BIT, &value, 1U,
                            kI2cTimeoutMilliseconds) == HAL_OK;
 }
 
 bool Ist8310::readRegister(uint8_t reg, uint8_t &value) const
 {
-  return HAL_I2C_Mem_Read(i2c_, static_cast<uint16_t>(address_) << 1U, reg,
+  return HAL_I2C_Mem_Read(i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
                           I2C_MEMADD_SIZE_8BIT, &value, 1U,
                           kI2cTimeoutMilliseconds) == HAL_OK;
 }
@@ -158,7 +158,7 @@ bool Ist8310::readRegister(uint8_t reg, uint8_t &value) const
 bool Ist8310::readRegisters(uint8_t reg, uint8_t *data,
                             uint16_t length) const
 {
-  return HAL_I2C_Mem_Read(i2c_, static_cast<uint16_t>(address_) << 1U, reg,
+  return HAL_I2C_Mem_Read(i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
                           I2C_MEMADD_SIZE_8BIT, data, length,
                           kI2cTimeoutMilliseconds) == HAL_OK;
 }

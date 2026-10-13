@@ -66,9 +66,9 @@ private:
                               uint8_t least_significant);
   static float calculateHeading(float x_microtesla, float y_microtesla);
 
-  I2C_HandleTypeDef *i2c_;
-  uint8_t address_;
-  bool ready_;
+  I2C_HandleTypeDef *i2c_handle;
+  uint8_t address;
+  bool ready;
 };
 
 
