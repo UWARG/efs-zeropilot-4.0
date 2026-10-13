@@ -123,7 +123,7 @@ ZP_Error Ist8310::read(Sample *sample)
                           &sample->heading_degrees);
 }
 
-ZP_Error Ist8310::address(uint8_t *out_address) const
+ZP_Error Ist8310::getAddress(uint8_t *out_address) const
 {
   if (out_address == nullptr) {
     return ZP_ERROR_NULLPTR;

@@ -35,7 +35,7 @@ public:
   ZP_Error init();
   ZP_Error read(Sample *sample);
 
-  ZP_Error address(uint8_t *out_address) const;
+  ZP_Error getAddress(uint8_t *out_address) const;
   ZP_Error isReady(bool *out_ready) const;
 
 private:
