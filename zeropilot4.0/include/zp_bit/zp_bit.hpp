@@ -33,6 +33,7 @@ enum class ZP_BIT_ID : uint16_t { // NOLINT
     RANGEFINDER_INIT,
     MOTOR_INIT,
     CAN_INIT,
+    MAG_INIT,
 
     // CONTINUOUS
     RC_DATA_VALID,
@@ -41,6 +42,7 @@ enum class ZP_BIT_ID : uint16_t { // NOLINT
     BARO_DATA_VALID,
     PM_DATA_VALID,
     RANGEFINDER_DATA_VALID,
+    MAG_DATA_VALID,
     TELEM_LINK_VALID,
     BATT_LOW,
     BATT_CRITICAL,
@@ -125,6 +127,7 @@ inline constexpr BitConfig_t BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::NUM_BIT
     {"RANGEFINDER_INIT", BitPhase_e::POWER_ON, BitLevel_e::WARNING,  0, 0},
     {"MOTOR_INIT",       BitPhase_e::POWER_ON, BitLevel_e::CRITICAL, 0, 0}, 
     {"CAN_INIT",         BitPhase_e::POWER_ON, BitLevel_e::WARNING,  0, 0},
+    {"MAG_INIT",         BitPhase_e::POWER_ON, BitLevel_e::WARNING,  0, 0},
 
     {"RC_DATA_VALID",     BitPhase_e::CONTINUOUS, BitLevel_e::CRITICAL, 500,  150},
     {"IMU_DATA_VALID",    BitPhase_e::CONTINUOUS, BitLevel_e::CRITICAL, 50,   50},
@@ -132,6 +135,7 @@ inline constexpr BitConfig_t BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::NUM_BIT
     {"BARO_DATA_VALID",   BitPhase_e::CONTINUOUS, BitLevel_e::WARNING,  1000, 500},
     {"PM_DATA_VALID",     BitPhase_e::CONTINUOUS, BitLevel_e::WARNING,  2000, 500},
     {"RNGFND_DATA_VALID", BitPhase_e::CONTINUOUS, BitLevel_e::WARNING,  2000, 500},
+    {"MAG_DATA_VALID",    BitPhase_e::CONTINUOUS, BitLevel_e::WARNING,  1000, 500},
     {"TELEM_LINK_VALID",  BitPhase_e::CONTINUOUS, BitLevel_e::WARNING,  3000, 1000},
     {"BATT_LOW",          BitPhase_e::CONTINUOUS, BitLevel_e::WARNING,  0,    0},
     {"BATT_CRITICAL",     BitPhase_e::CONTINUOUS, BitLevel_e::CRITICAL, 0,    0},
