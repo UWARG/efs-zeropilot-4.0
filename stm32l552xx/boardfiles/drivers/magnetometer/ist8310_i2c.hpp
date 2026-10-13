@@ -7,6 +7,7 @@
 #define IST8310_DRIVER_IST8310_I2C_HPP_
 
 #include "stm32l5xx_hal.h"
+#include "zp_error.h"
 
 #include <cstdint>
 
@@ -31,11 +32,11 @@ public:
   explicit Ist8310(I2C_HandleTypeDef *i2c,
                    uint8_t address = kDefaultAddress);
 
-  bool init();
-  bool read(Sample &sample);
+  ZP_Error init();
+  ZP_Error read(Sample *sample);
 
-  uint8_t address() const;
-  bool isReady() const;
+  ZP_Error address(uint8_t *out_address) const;
+  ZP_Error isReady(bool *out_ready) const;
 
 private:
   enum Register : uint8_t
@@ -55,16 +56,18 @@ private:
   static constexpr uint8_t kAverage16 = 0x24;
   static constexpr uint8_t kNormalPulseDuration = 0xC0;
 
-  bool probe();
-  bool configure();
-  bool waitForDataReady();
-  bool writeRegister(uint8_t reg, uint8_t value);
-  bool readRegister(uint8_t reg, uint8_t &value) const;
-  bool readRegisters(uint8_t reg, uint8_t *data, uint16_t length) const;
+  ZP_Error probe();
+  ZP_Error configure();
+  ZP_Error waitForDataReady();
+  ZP_Error writeRegister(uint8_t reg, uint8_t value);
+  ZP_Error readRegister(uint8_t reg, uint8_t *value) const;
+  ZP_Error readRegisters(uint8_t reg, uint8_t *data, uint16_t length) const;
 
-  static int16_t combineBytes(uint8_t most_significant,
-                              uint8_t least_significant);
-  static float calculateHeading(float x_microtesla, float y_microtesla);
+  static ZP_Error combineBytes(uint8_t most_significant,
+                               uint8_t least_significant,
+                               int16_t *out_value);
+  static ZP_Error calculateHeading(float x_microtesla, float y_microtesla,
+                                   float *out_heading);
 
   I2C_HandleTypeDef *i2c_handle;
   uint8_t address;

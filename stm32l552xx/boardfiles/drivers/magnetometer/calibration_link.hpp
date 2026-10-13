@@ -9,13 +9,13 @@ public:
     explicit Ist8310Magnetometer(Ist8310 *driver) : driver_(driver) {}
 
     bool init() override {
-        return driver_->init();
+        return driver_->init() == ZP_ERROR_OK;
     }
 
     MagData_t readData() override {
         MagData_t data = {};
         Ist8310::Sample sample = {};
-        data.isNew = driver_->read(sample);
+        data.isNew = driver_->read(&sample) == ZP_ERROR_OK;
         if (data.isNew) {
             data.x = sample.x_microtesla;
             data.y = sample.y_microtesla;

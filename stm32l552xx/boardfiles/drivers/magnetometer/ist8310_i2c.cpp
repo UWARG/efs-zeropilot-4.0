@@ -19,82 +19,137 @@ Ist8310::Ist8310(I2C_HandleTypeDef *i2c, uint8_t address)
 {
 }
 
-bool Ist8310::init()
+namespace
+{
+ZP_Error halStatusToError(HAL_StatusTypeDef status)
+{
+  switch (status)
+  {
+    case HAL_OK:
+      return ZP_ERROR_OK;
+    case HAL_TIMEOUT:
+      return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
+    case HAL_BUSY:
+      return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
+    case HAL_ERROR:
+    default:
+      return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
+  }
+}
+}  // namespace
+
+ZP_Error Ist8310::init()
 {
   ready = false;
 
-  if ((i2c_handle == nullptr) || !probe()) {
-    return false;
+  if (i2c_handle == nullptr) {
+    return ZP_ERROR_NULLPTR;
   }
 
-  if (!writeRegister(kControl2, kSoftReset)) {
-    return false;
+  ZP_Error error = probe();
+  if (error != ZP_ERROR_OK) {
+    return error;
   }
 
+  error = writeRegister(kControl2, kSoftReset);
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
   HAL_Delay(kResetDelayMilliseconds);
 
   uint8_t who_am_i = 0U;
-  if (!readRegister(kWhoAmI, who_am_i) || (who_am_i != kWhoAmIValue)) {
-    return false;
+  error = readRegister(kWhoAmI, &who_am_i);
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
+  if (who_am_i != kWhoAmIValue) {
+    return ZP_ERROR_INVALID_DATA;
   }
 
-  if (!configure()) {
-    return false;
+  error = configure();
+  if (error != ZP_ERROR_OK) {
+    return error;
   }
 
   ready = true;
-  return true;
+  return ZP_ERROR_OK;
 }
 
-bool Ist8310::read(Sample &sample)
+ZP_Error Ist8310::read(Sample *sample)
 {
-  if (!ready || !writeRegister(kControl1, kSingleMeasurement)) {
-    ready = false;
-    return false;
+  if (sample == nullptr) {
+    return ZP_ERROR_NULLPTR;
+  }
+  if (!ready) {
+    return ZP_ERROR_NOT_READY;
   }
 
-  if (!waitForDataReady()) {
+  ZP_Error error = writeRegister(kControl1, kSingleMeasurement);
+  if (error != ZP_ERROR_OK) {
     ready = false;
-    return false;
+    return error;
+  }
+
+  error = waitForDataReady();
+  if (error != ZP_ERROR_OK) {
+    ready = false;
+    return error;
   }
 
   uint8_t data[6] = {};
-  if (!readRegisters(kDataXLow, data, sizeof(data))) {
+  error = readRegisters(kDataXLow, data, sizeof(data));
+  if (error != ZP_ERROR_OK) {
     ready = false;
-    return false;
+    return error;
   }
 
-  sample.x_raw = combineBytes(data[1], data[0]);
-  sample.y_raw = combineBytes(data[3], data[2]);
-  sample.z_raw = combineBytes(data[5], data[4]);
+  error = combineBytes(data[1], data[0], &sample->x_raw);
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
+  error = combineBytes(data[3], data[2], &sample->y_raw);
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
+  error = combineBytes(data[5], data[4], &sample->z_raw);
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
 
-  sample.x_microtesla = static_cast<float>(sample.x_raw) * kMicroteslaPerLsb;
-  sample.y_microtesla = static_cast<float>(sample.y_raw) * kMicroteslaPerLsb;
-  sample.z_microtesla = static_cast<float>(sample.z_raw) * kMicroteslaPerLsb;
-  sample.heading_degrees = calculateHeading(sample.x_microtesla,
-                                            sample.y_microtesla);
-
-  return true;
+  sample->x_microtesla = static_cast<float>(sample->x_raw) * kMicroteslaPerLsb;
+  sample->y_microtesla = static_cast<float>(sample->y_raw) * kMicroteslaPerLsb;
+  sample->z_microtesla = static_cast<float>(sample->z_raw) * kMicroteslaPerLsb;
+  return calculateHeading(sample->x_microtesla, sample->y_microtesla,
+                          &sample->heading_degrees);
 }
 
-uint8_t Ist8310::address() const
+ZP_Error Ist8310::address(uint8_t *out_address) const
 {
-  return address;
+  if (out_address == nullptr) {
+    return ZP_ERROR_NULLPTR;
+  }
+  *out_address = address;
+  return ZP_ERROR_OK;
 }
 
-bool Ist8310::isReady() const
+ZP_Error Ist8310::isReady(bool *out_ready) const
 {
-  return ready;
+  if (out_ready == nullptr) {
+    return ZP_ERROR_NULLPTR;
+  }
+  *out_ready = ready;
+  return ZP_ERROR_OK;
 }
 
-bool Ist8310::probe()
+ZP_Error Ist8310::probe()
 {
   constexpr uint8_t kCandidateAddresses[] = {0x0E, 0x0C, 0x0D, 0x0F};
 
   const uint8_t preferred_address = address;
   uint8_t who_am_i = 0U;
-  if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue)) {
-    return true;
+  if (readRegister(kWhoAmI, &who_am_i) == ZP_ERROR_OK &&
+      who_am_i == kWhoAmIValue) {
+    return ZP_ERROR_OK;
   }
 
   for (uint8_t candidate : kCandidateAddresses) {
@@ -105,78 +160,96 @@ bool Ist8310::probe()
     address = candidate;
 
     who_am_i = 0U;
-    if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue)) {
-      return true;
+    if (readRegister(kWhoAmI, &who_am_i) == ZP_ERROR_OK &&
+        who_am_i == kWhoAmIValue) {
+      return ZP_ERROR_OK;
     }
   }
 
   address = kDefaultAddress;
-  return false;
+  return ZP_ERROR_EXT_API | ZP_ERROR_NACK;
 }
 
-bool Ist8310::configure()
+ZP_Error Ist8310::configure()
 {
-  return writeRegister(kAverageControl, kAverage16) &&
-         writeRegister(kPulseDurationControl, kNormalPulseDuration);
+  ZP_Error error = writeRegister(kAverageControl, kAverage16);
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
+  return writeRegister(kPulseDurationControl, kNormalPulseDuration);
 }
 
-bool Ist8310::waitForDataReady()
+ZP_Error Ist8310::waitForDataReady()
 {
   const uint32_t start = HAL_GetTick();
 
   while ((HAL_GetTick() - start) < kDataReadyTimeoutMilliseconds)
   {
     uint8_t status = 0U;
-    if (!readRegister(kStatus1, status)) {
-      return false;
+    ZP_Error error = readRegister(kStatus1, &status);
+    if (error != ZP_ERROR_OK) {
+      return error;
     }
 
     if ((status & kStatusDataReady) != 0U) {
-      return true;
+      return ZP_ERROR_OK;
     }
 
     HAL_Delay(1U);
   }
 
-  return false;
+  return ZP_ERROR_TIMEOUT;
 }
 
-bool Ist8310::writeRegister(uint8_t reg, uint8_t value)
+ZP_Error Ist8310::writeRegister(uint8_t reg, uint8_t value)
 {
-  return HAL_I2C_Mem_Write(i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
-                           I2C_MEMADD_SIZE_8BIT, &value, 1U,
-                           kI2cTimeoutMilliseconds) == HAL_OK;
+  return halStatusToError(HAL_I2C_Mem_Write(
+      i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
+      I2C_MEMADD_SIZE_8BIT, &value, 1U, kI2cTimeoutMilliseconds));
 }
 
-bool Ist8310::readRegister(uint8_t reg, uint8_t &value) const
+ZP_Error Ist8310::readRegister(uint8_t reg, uint8_t *value) const
 {
-  return HAL_I2C_Mem_Read(i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
-                          I2C_MEMADD_SIZE_8BIT, &value, 1U,
-                          kI2cTimeoutMilliseconds) == HAL_OK;
+  return readRegisters(reg, value, 1U);
 }
 
-bool Ist8310::readRegisters(uint8_t reg, uint8_t *data,
-                            uint16_t length) const
+ZP_Error Ist8310::readRegisters(uint8_t reg, uint8_t *data,
+                                 uint16_t length) const
 {
-  return HAL_I2C_Mem_Read(i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
-                          I2C_MEMADD_SIZE_8BIT, data, length,
-                          kI2cTimeoutMilliseconds) == HAL_OK;
+  if (data == nullptr) {
+    return ZP_ERROR_NULLPTR;
+  }
+  if (length == 0U) {
+    return ZP_ERROR_INVALID_ARG;
+  }
+  return halStatusToError(HAL_I2C_Mem_Read(
+      i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
+      I2C_MEMADD_SIZE_8BIT, data, length, kI2cTimeoutMilliseconds));
 }
 
-int16_t Ist8310::combineBytes(uint8_t most_significant,
-                              uint8_t least_significant)
+ZP_Error Ist8310::combineBytes(uint8_t most_significant,
+                               uint8_t least_significant, int16_t *out_value)
 {
-  return static_cast<int16_t>((static_cast<uint16_t>(most_significant) << 8U) |
-                              least_significant);
+  if (out_value == nullptr) {
+    return ZP_ERROR_NULLPTR;
+  }
+  *out_value = static_cast<int16_t>(
+      (static_cast<uint16_t>(most_significant) << 8U) | least_significant);
+  return ZP_ERROR_OK;
 }
 
-float Ist8310::calculateHeading(float x_microtesla, float y_microtesla)
+ZP_Error Ist8310::calculateHeading(float x_microtesla, float y_microtesla,
+                                   float *out_heading)
 {
+  if (out_heading == nullptr) {
+    return ZP_ERROR_NULLPTR;
+  }
   // Preserve the board-frame convention used by the original firmware.
   float heading = std::atan2(-y_microtesla, x_microtesla) * kRadiansToDegrees;
   if (heading < 0.0F) {
     heading += 360.0F;
   }
 
-  return heading;
+  *out_heading = heading;
+  return ZP_ERROR_OK;
 }
