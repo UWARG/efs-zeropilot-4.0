@@ -5,6 +5,6 @@
 
 class MockRangefinder : public IRangefinder {
     public: 
-        MOCK_METHOD(int, init, (), (override));
-        MOCK_METHOD(RangefinderData_t, readData, (), (override));
+        MOCK_METHOD(ZP_Error, init, (), (override));
+        MOCK_METHOD(ZP_Error, readData, (RangefinderData_t &data), (override));
 };

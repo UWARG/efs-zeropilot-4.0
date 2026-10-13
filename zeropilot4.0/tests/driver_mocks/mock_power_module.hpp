@@ -5,5 +5,5 @@
 
 class MockPowerModule : public IPowerModule {
 public:
-    MOCK_METHOD(bool, readData, (PMData_t *data), (override));
+    MOCK_METHOD(ZP_Error, readData, (PMData_t *data), (override));
 };
