@@ -23,26 +23,22 @@ bool Ist8310::init()
 {
   ready_ = false;
 
-  if ((i2c_ == nullptr) || !probe())
-  {
+  if ((i2c_ == nullptr) || !probe()) {
     return false;
   }
 
-  if (!writeRegister(kControl2, kSoftReset))
-  {
+  if (!writeRegister(kControl2, kSoftReset)) {
     return false;
   }
 
   HAL_Delay(kResetDelayMilliseconds);
 
   uint8_t who_am_i = 0U;
-  if (!readRegister(kWhoAmI, who_am_i) || (who_am_i != kWhoAmIValue))
-  {
+  if (!readRegister(kWhoAmI, who_am_i) || (who_am_i != kWhoAmIValue)) {
     return false;
   }
 
-  if (!configure())
-  {
+  if (!configure()) {
     return false;
   }
 
@@ -52,21 +48,18 @@ bool Ist8310::init()
 
 bool Ist8310::read(Sample &sample)
 {
-  if (!ready_ || !writeRegister(kControl1, kSingleMeasurement))
-  {
+  if (!ready_ || !writeRegister(kControl1, kSingleMeasurement)) {
     ready_ = false;
     return false;
   }
 
-  if (!waitForDataReady())
-  {
+  if (!waitForDataReady()) {
     ready_ = false;
     return false;
   }
 
   uint8_t data[6] = {};
-  if (!readRegisters(kDataXLow, data, sizeof(data)))
-  {
+  if (!readRegisters(kDataXLow, data, sizeof(data))) {
     ready_ = false;
     return false;
   }
@@ -100,23 +93,19 @@ bool Ist8310::probe()
 
   const uint8_t preferred_address = address_;
   uint8_t who_am_i = 0U;
-  if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue))
-  {
+  if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue)) {
     return true;
   }
 
-  for (uint8_t candidate : kCandidateAddresses)
-  {
-    if (candidate == preferred_address)
-    {
+  for (uint8_t candidate : kCandidateAddresses) {
+    if (candidate == preferred_address) {
       continue;
     }
 
     address_ = candidate;
 
     who_am_i = 0U;
-    if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue))
-    {
+    if (readRegister(kWhoAmI, who_am_i) && (who_am_i == kWhoAmIValue)) {
       return true;
     }
   }
@@ -138,13 +127,11 @@ bool Ist8310::waitForDataReady()
   while ((HAL_GetTick() - start) < kDataReadyTimeoutMilliseconds)
   {
     uint8_t status = 0U;
-    if (!readRegister(kStatus1, status))
-    {
+    if (!readRegister(kStatus1, status)) {
       return false;
     }
 
-    if ((status & kStatusDataReady) != 0U)
-    {
+    if ((status & kStatusDataReady) != 0U) {
       return true;
     }
 
@@ -187,8 +174,7 @@ float Ist8310::calculateHeading(float x_microtesla, float y_microtesla)
 {
   // Preserve the board-frame convention used by the original firmware.
   float heading = std::atan2(-y_microtesla, x_microtesla) * kRadiansToDegrees;
-  if (heading < 0.0F)
-  {
+  if (heading < 0.0F) {
     heading += 360.0F;
   }
 
