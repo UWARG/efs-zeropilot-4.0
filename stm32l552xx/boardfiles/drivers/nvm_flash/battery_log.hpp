@@ -1,3 +1,5 @@
+#pragma once
+
 #include "nvm_flash_message.hpp"
 
 class BatteryLog : public AbstractMessage {
