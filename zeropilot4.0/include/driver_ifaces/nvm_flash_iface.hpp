@@ -66,16 +66,14 @@ public:
 	bool poll(NvmRxMsg *out) {
 		return driver->poll(id, out);
 	}
-	bool pollInto(int *status, AbstractMessage *msg) {
-		NvmRxMsg rxMsg;
-		if (!driver->poll(id, &rxMsg)) {
+	bool pollInto(NvmRxMsg *rxMsg, AbstractMessage *msg) {
+		if (!driver->poll(id, rxMsg)) {
 			return false;
 		}
 
-		*status = rxMsg.status;
-		msg->id = rxMsg.recordId;
-		if (status == 0 && rxMsg.len > 0) {
-			msg->unpack(rxMsg.payload, rxMsg.len);
+		msg->id = rxMsg->recordId;
+		if (rxMsg->status == 0 && rxMsg->len > 0) {
+			msg->unpack(rxMsg->payload, rxMsg->len);
 		}
 		return true;
 	}
