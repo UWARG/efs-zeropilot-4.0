@@ -21,9 +21,3 @@ ZP_Error spiTransmitReceiveData(const SpiCommonDevice_t& device, const uint8_t* 
 
 // Function for SPI transmit and receive
 ZP_Error spiTransmitReceiveDataDMA(const SpiCommonDevice_t& device, uint8_t* txBuf, uint8_t* rxBuf, uint16_t size);
-
-
-
-
-
-
