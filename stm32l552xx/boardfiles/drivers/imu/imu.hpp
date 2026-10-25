@@ -5,6 +5,7 @@
 #include "stm32l5xx_hal.h"
 #include <cstdint>
 #include "imu_datatypes.hpp"
+#include "spi_iface.hpp"
 
 typedef enum : uint8_t {
 	IMU_ODR_32KHZ = 0b0001,
@@ -58,6 +59,7 @@ class IMU : public IIMU {
 		SPI_HandleTypeDef *spi;
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
+		SpiDevice spiDevice;
 		const uint8_t imuId;
 		const ImuOdrConfig_t imuOdr;
 		const float uiFiltCutoffHz;

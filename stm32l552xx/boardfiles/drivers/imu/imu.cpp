@@ -80,6 +80,7 @@ IMU::IMU(SPI_HandleTypeDef *spiHandle,
     spi(spiHandle),
     csPort(csPort),
     csPin(csPin),
+    spiDevice{csPort, csPin, spiHandle},
     imuId(imuId),
     imuOdr(odrConfig),
     uiFiltCutoffHz(uiFiltCutoffHz),
@@ -237,10 +238,10 @@ HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t
         return status;
     }
     uint8_t txBuf[2] = {registerAddr, data};
-    csLow();
-    status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
-    csHigh();
-    return status;
+    if (spiDevice.spiTransmitData(txBuf, 2, HAL_MAX_DELAY) != ZP_ERROR_OK) {
+        return HAL_ERROR;
+    }
+    return HAL_OK;
 }
 
 HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, uint8_t length) {
@@ -255,14 +256,13 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t*
     uint8_t rx[MAX_READ_LEN + 1] = {0};
 
     tx[0] = (uint8_t)(registerAddr | 0b10000000); // Set 8-th bit to 1 for read, page 53
-
-    csLow();
-    status = HAL_SPI_TransmitReceive(spi, tx, rx, length + 1, HAL_MAX_DELAY); // +1 to length to send the dummy byte
-    csHigh();
-
+    ZP_Error errStatus = spiDevice.spiTransmitReceiveData(tx, rx, length + 1, HAL_MAX_DELAY);
     memcpy(data, &rx[1], length);
-
-    return status;
+    // +1 to length to send the dummy byte
+    if (errStatus != ZP_ERROR_OK) {
+        return HAL_ERROR;
+    }
+    return HAL_OK;
 }
 
 HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
@@ -270,20 +270,19 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
         return HAL_OK;
     }
     uint8_t txBuf[2] = {REG_BANK_SEL, bank};
-    csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
-    csHigh();
-
+    if (spiDevice.spiTransmitData(txBuf, 2, HAL_MAX_DELAY) != ZP_ERROR_OK) {
+        return HAL_ERROR;
+    }
     currRegisterBank = bank;
-    return status;
+    return HAL_OK;
 }
 
 void IMU::csLow() {
-    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
+    spiDevice.spiCsLow();
 }
 
 void IMU::csHigh() {
-    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
+    spiDevice.spiCsHigh();
 }
 
 void IMU::reset() {
@@ -302,13 +301,11 @@ void IMU::flushFIFO() {
 }
 
 void IMU::dmaTransfer() {
-    csLow();
     switch (rxFlag) {
         case COUNT: {
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
             // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
-            if (HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3) != HAL_OK) {
-                csHigh();
+            if (spiDevice.spiTransmitReceiveDataDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3) != ZP_ERROR_OK) {
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
                 fifoSize = 0;
@@ -319,11 +316,10 @@ void IMU::dmaTransfer() {
         case DATA: {
             fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
             if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
-            
+
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
 
-            if (HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != HAL_OK) {
-                csHigh();
+            if (spiDevice.spiTransmitReceiveDataDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != ZP_ERROR_OK) {
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
                 fifoSize = 0;

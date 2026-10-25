@@ -1,4 +1,5 @@
 #include "motor.hpp"
+#include "spi_iface.hpp"
 
 MotorControl::MotorControl(TIM_HandleTypeDef *timer, uint32_t timerChannel, uint32_t minDutyCycle, uint32_t maxDutyCycle, uint8_t servoIdx) : 
     timer(timer), 
@@ -37,14 +38,6 @@ void MotorControl::enableServo(GPIO_TypeDef* enGpioBase, uint16_t enGpioNum) {
 ZP_Error MotorControl::enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi) {
     uint8_t rx[2];
     static constexpr uint8_t tx[2] = {0xFF, 0xAC};
-
-    HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_RESET);
-    HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, tx, rx, 2, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(csGpioBase, csGpioNum, GPIO_PIN_SET);
-
-    if (status == HAL_OK) {
-        return ZP_ERROR_OK;
-    } else {
-        return ZP_ERROR_FAIL;
-    }
+    SpiDevice servoSwitch(csGpioBase, csGpioNum, hspi);
+    return servoSwitch.spiTransmitReceiveData(tx, rx, 2, HAL_MAX_DELAY);
 }
