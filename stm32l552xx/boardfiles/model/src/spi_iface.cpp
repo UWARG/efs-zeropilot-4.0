@@ -1,24 +1,29 @@
 #include "spi_iface.hpp"
 
-void spiCsLow(const SpiCommonDevice_t &device) {
-	HAL_GPIO_WritePin(device.csGPIOPort, device.csGPIOPin, GPIO_PIN_RESET);
+SpiDevice::SpiDevice(GPIO_TypeDef *csGPIOPort, uint16_t csGPIOPin, SPI_HandleTypeDef *hspi):
+	csGPIOPort(csGPIOPort),
+	csGPIOPin(csGPIOPin), 
+	hspi(hspi) {}
+
+void SpiDevice::spiCsLow() {
+	HAL_GPIO_WritePin(csGPIOPort, csGPIOPin, GPIO_PIN_RESET);
 }
 
-void spiCsHigh(const SpiCommonDevice_t &device) {
-	HAL_GPIO_WritePin(device.csGPIOPort, device.csGPIOPin, GPIO_PIN_SET);
+void SpiDevice::spiCsHigh() {
+	HAL_GPIO_WritePin(csGPIOPort, csGPIOPin, GPIO_PIN_SET);
 }
 
 // function to transmit
-ZP_Error spiTransmitData(const SpiCommonDevice_t &device, const uint8_t *txBuf, uint16_t size, uint32_t timeout) {
+ZP_Error SpiDevice::spiTransmitData(const uint8_t *txBuf, uint16_t size, uint32_t timeout) {
 	// Checking if the pointers will be nullptrs or not
-	if (txBuf == nullptr || device.hspi == nullptr) {
+	if (txBuf == nullptr || hspi == nullptr) {
 		return ZP_ERROR_NULLPTR;
 	}
 
 	// SPI Communication
-	spiCsLow(device);
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(device.hspi, const_cast<uint8_t *>(txBuf), size, timeout);
-	spiCsHigh(device);
+	spiCsLow();
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, const_cast<uint8_t *>(txBuf), size, timeout);
+	spiCsHigh();
 
 	if (status == HAL_OK) {
 		return ZP_ERROR_OK;
@@ -27,15 +32,15 @@ ZP_Error spiTransmitData(const SpiCommonDevice_t &device, const uint8_t *txBuf, 
 }
 
 // Function to receive data
-ZP_Error spiTransmitReceiveData(const SpiCommonDevice_t &device, const uint8_t *txBuf, uint8_t *rxBuf, uint16_t size, uint32_t timeout) {
-	if (txBuf == nullptr || rxBuf == nullptr || device.hspi == nullptr) {
+ZP_Error SpiDevice::spiTransmitReceiveData(const uint8_t *txBuf, uint8_t *rxBuf, uint16_t size, uint32_t timeout) {
+	if (txBuf == nullptr || rxBuf == nullptr || hspi == nullptr) {
 		return ZP_ERROR_NULLPTR;
 	}
 
 	// SPI Communication
-	spiCsLow(device);
-	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(device.hspi, const_cast<uint8_t *>(txBuf), rxBuf, size, timeout);
-	spiCsHigh(device);
+	spiCsLow();
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, const_cast<uint8_t *>(txBuf), rxBuf, size, timeout);
+	spiCsHigh();
 
 	if (status == HAL_OK) {
 		return ZP_ERROR_OK;
@@ -44,19 +49,19 @@ ZP_Error spiTransmitReceiveData(const SpiCommonDevice_t &device, const uint8_t *
 }
 
 // Function for SPI transmit and receive
-ZP_Error spiTransmitReceiveDataDMA(const SpiCommonDevice_t &device, uint8_t *txBuf, uint8_t *rxBuf, uint16_t size) {
-	if (txBuf == nullptr || rxBuf == nullptr || device.hspi == nullptr) {
+ZP_Error SpiDevice::spiTransmitReceiveDataDMA(uint8_t *txBuf, uint8_t *rxBuf, uint16_t size) {
+	if (txBuf == nullptr || rxBuf == nullptr || hspi == nullptr) {
 		return ZP_ERROR_NULLPTR;
 	}
 
 	// SPI Communication
-	spiCsLow(device);
-	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_DMA(device.hspi, txBuf, rxBuf, size);
+	spiCsLow();
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive_DMA(hspi, txBuf, rxBuf, size);
 
 	// only turns CS line high if status is not ok
 	if (status != HAL_OK) {
-		spiCsHigh(device);
-		return ZP_ERROR_FAIL;
+		spiCsHigh();
+		return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
 	}
 	return ZP_ERROR_OK;
 }

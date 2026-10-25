@@ -38,6 +38,6 @@ void MotorControl::enableServo(GPIO_TypeDef* enGpioBase, uint16_t enGpioNum) {
 ZP_Error MotorControl::enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi) {
     uint8_t rx[2];
     static constexpr uint8_t tx[2] = {0xFF, 0xAC};
-
-    return spiTransmitReceiveData({csGpioBase, csGpioNum, hspi}, tx, rx, 2, HAL_MAX_DELAY);
+    SpiDevice servoSwitch(csGpioBase, csGpioNum, hspi);
+    return servoSwitch.spiTransmitReceiveData(tx, rx, 2, HAL_MAX_DELAY);
 }

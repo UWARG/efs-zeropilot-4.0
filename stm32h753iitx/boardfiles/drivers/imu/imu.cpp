@@ -238,7 +238,7 @@ HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t
         return status;
     }
     uint8_t txBuf[2] = {registerAddr, data};
-    if (spiTransmitData(spiDevice, txBuf, 2, HAL_MAX_DELAY) != ZP_ERROR_OK) {
+    if (spiDevice.spiTransmitData(txBuf, 2, HAL_MAX_DELAY) != ZP_ERROR_OK) {
         return HAL_ERROR;
     }
     return HAL_OK;
@@ -256,7 +256,7 @@ HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t*
     uint8_t rx[MAX_READ_LEN + 1] = {0};
 
     tx[0] = (uint8_t)(registerAddr | 0b10000000); // Set 8-th bit to 1 for read, page 53
-    ZP_Error errStatus = spiTransmitReceiveData(spiDevice, tx, rx, length + 1, HAL_MAX_DELAY);
+    ZP_Error errStatus = spiDevice.spiTransmitReceiveData(tx, rx, length + 1, HAL_MAX_DELAY);
     memcpy(data, &rx[1], length);
     // +1 to length to send the dummy byte
     if (errStatus != ZP_ERROR_OK) {
@@ -270,7 +270,7 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
         return HAL_OK;
     }
     uint8_t txBuf[2] = {REG_BANK_SEL, bank};
-    if (spiTransmitData(spiDevice, txBuf, 2, HAL_MAX_DELAY) != ZP_ERROR_OK) {
+    if (spiDevice.spiTransmitData(txBuf, 2, HAL_MAX_DELAY) != ZP_ERROR_OK) {
         return HAL_ERROR;
     }
     currRegisterBank = bank;
@@ -278,11 +278,11 @@ HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
 }
 
 void IMU::csLow() {
-    spiCsLow(spiDevice);
+    spiDevice.spiCsLow();
 }
 
 void IMU::csHigh() {
-    spiCsHigh(spiDevice);
+    spiDevice.spiCsHigh();
 }
 
 void IMU::reset() {
@@ -305,7 +305,7 @@ void IMU::dmaTransfer() {
         case COUNT: {
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
             // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
-            if (spiTransmitReceiveDataDMA(spiDevice, (uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3) != ZP_ERROR_OK) {
+            if (spiDevice.spiTransmitReceiveDataDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3) != ZP_ERROR_OK) {
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
                 fifoSize = 0;
@@ -319,7 +319,7 @@ void IMU::dmaTransfer() {
 
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
 
-            if (spiTransmitReceiveDataDMA(spiDevice, (uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != ZP_ERROR_OK) {
+            if (spiDevice.spiTransmitReceiveDataDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != ZP_ERROR_OK) {
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
                 fifoSize = 0;
