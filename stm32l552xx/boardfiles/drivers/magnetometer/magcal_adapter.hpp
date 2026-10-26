@@ -6,16 +6,16 @@
 
 class Ist8310Magnetometer : public IMagnetometer {
 public:
-    explicit Ist8310Magnetometer(Ist8310 *driver) : driver_(driver) {}
+    explicit Ist8310Magnetometer(Ist8310 *driver) : driver(driver) {}
 
     bool init() override {
-        return driver_->init() == ZP_ERROR_OK;
+        return driver->init() == ZP_ERROR_OK;
     }
 
     MagData_t readData() override {
         MagData_t data = {};
         Ist8310::Sample sample = {};
-        data.isNew = driver_->read(&sample) == ZP_ERROR_OK;
+        data.isNew = driver->read(&sample) == ZP_ERROR_OK;
         if (data.isNew) {
             data.x = sample.x_microtesla;
             data.y = sample.y_microtesla;
@@ -29,5 +29,5 @@ public:
     }
 
 private:
-    Ist8310 *driver_;
+    Ist8310 *driver;
 };
