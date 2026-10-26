@@ -3,8 +3,7 @@
  * @brief I2C driver for the iSentek IST8310 three-axis magnetometer.
  */
 
-#ifndef IST8310_DRIVER_IST8310_I2C_HPP_
-#define IST8310_DRIVER_IST8310_I2C_HPP_
+#pragma once
 
 #include "stm32l5xx_hal.h"
 #include "zp_error.h"
@@ -73,4 +72,3 @@ private:
   uint8_t address;
   bool ready;
 };
-#endif  // IST8310_DRIVER_IST8310_I2C_HPP_
