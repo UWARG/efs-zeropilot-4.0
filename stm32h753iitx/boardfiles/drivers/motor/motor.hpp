@@ -12,7 +12,7 @@ class MotorControl : public IMotorControl {
          * @brief sets PWM motor output
          * @param percent PWM value 0-100
          */
-        ZP_Error set(uint32_t percent) override;
+        ZP_Error set(uint32_t percent, bool safetyEngaged = false) override;
 
         /**
          * @brief starts PWM output
@@ -32,6 +32,8 @@ class MotorControl : public IMotorControl {
         static ZP_Error enableServoSwitch(GPIO_TypeDef* csGpioBase, uint16_t csGpioNum, SPI_HandleTypeDef *hspi);
 
     private:
+        bool currentSafetyState = false;
+
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;
         const uint32_t minCCR;

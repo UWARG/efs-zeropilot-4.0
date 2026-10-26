@@ -365,6 +365,8 @@ ZP_Error SystemManager::sendRCDataToAttitudeManager(const RCControl &rcData) {
         const bool BIT_PREARM_OK = (prearmCheck(blockingBit) == ZP_ERROR_OK);
 
         rcDataMessage.arm = (rcData.arm > SM_RC_ARM_THRESHOLD) && !isSafetySwitchEngaged && BIT_PREARM_OK && (bitFailsafe != BitFailsafe_e::DISARM);
+        rcDataMessage.isSafetyEngaged = isSafetySwitchEngaged;
+        
         #ifdef PLANE
         rcDataMessage.flapAngle = rcData.aux2;
         #endif

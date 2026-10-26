@@ -114,24 +114,25 @@ protected:
 };
 
 TEST_F(AttitudeManagerTest, MotorOutputTest) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 60.0f;
     rcMsg.pitch = 70.0f;
     rcMsg.yaw = 55.0f;
     rcMsg.throttle = 80.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flapAngle = 30.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
 
     EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    EXPECT_CALL(mockRollMotor, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(mockPitchMotor, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(mockYawMotor, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(mockThrottleMotor, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(mockFlapMotor, set(_)).Times(AtLeast(1));
-    EXPECT_CALL(mockSteeringMotor, set(_)).Times(AtLeast(1));
+    EXPECT_CALL(mockRollMotor, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockPitchMotor, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockYawMotor, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockThrottleMotor, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockFlapMotor, set(_, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockSteeringMotor, set(_, _)).Times(AtLeast(1));
     
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
@@ -139,19 +140,20 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
 }
 
 TEST_F(AttitudeManagerTest, DisarmThrottleZero) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 80.0f;
     rcMsg.arm = false;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
 
     EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    EXPECT_CALL(mockThrottleMotor, set(0));
+    EXPECT_CALL(mockThrottleMotor, set(0, _));
     
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
@@ -162,12 +164,12 @@ TEST_F(AttitudeManagerTest, FailsafeTriggered) {
     EXPECT_CALL(mockAMQueue, count(_)).WillRepeatedly(DoAll(SetArgReferee<0>(0), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockLogQueue, push(_)).Times(1);
     
-    EXPECT_CALL(mockRollMotor, set(50)).Times(AtLeast(1));
-    EXPECT_CALL(mockPitchMotor, set(50)).Times(AtLeast(1));
-    EXPECT_CALL(mockYawMotor, set(50)).Times(AtLeast(1));
-    EXPECT_CALL(mockThrottleMotor, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(mockFlapMotor, set(0)).Times(AtLeast(1));
-    EXPECT_CALL(mockSteeringMotor, set(50)).Times(AtLeast(1));
+    EXPECT_CALL(mockRollMotor, set(50, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockPitchMotor, set(50, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockYawMotor, set(50, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockThrottleMotor, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockFlapMotor, set(0, _)).Times(AtLeast(1));
+    EXPECT_CALL(mockSteeringMotor, set(50, _)).Times(AtLeast(1));
     
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
@@ -177,12 +179,13 @@ TEST_F(AttitudeManagerTest, FailsafeTriggered) {
 }
 
 TEST_F(AttitudeManagerTest, FailsafeRecovery) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
@@ -212,20 +215,21 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery) {
 TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     ZP_PARAM::setParamById("SERVO1_TRIM", 1550);  // 1550 us -> 55%
     
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 50.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
     EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    uint8_t rollValue = 0;
-    EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint32_t val) { rollValue = val; return ZP_ERROR_OK; }));
+    uint32_t rollValue = 0;
+    EXPECT_CALL(mockRollMotor, set(_, _)).WillOnce(Invoke([&rollValue](uint32_t val, bool) { rollValue = val; return ZP_ERROR_OK; }));
     
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
@@ -237,20 +241,21 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied) {
 TEST_F(AttitudeManagerTest, MotorInverted) {
     ZP_PARAM::setParamById("SERVO1_REVERSED", 1);
     
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 30.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
     EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    uint8_t rollValue = 0;
-    EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint32_t val) { rollValue = val; return ZP_ERROR_OK; }));
+    uint32_t rollValue = 0;
+    EXPECT_CALL(mockRollMotor, set(_, _)).WillOnce(Invoke([&rollValue](uint32_t val, bool) { rollValue = val; return ZP_ERROR_OK; }));
     
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
@@ -260,19 +265,20 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
 }
 
 TEST_F(AttitudeManagerTest, MotorClampingUpper) {
-    RCMotorControlMessage_t rcMsg;
+    RCMotorControlMessage_t rcMsg{};
     rcMsg.roll = 150.0f;
     rcMsg.pitch = 50.0f;
     rcMsg.yaw = 50.0f;
     rcMsg.throttle = 50.0f;
     rcMsg.arm = true;
+    rcMsg.isSafetyEngaged = false;
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
     EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    EXPECT_CALL(mockRollMotor, set(100));
+    EXPECT_CALL(mockRollMotor, set(100, _));
     
     AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
     
