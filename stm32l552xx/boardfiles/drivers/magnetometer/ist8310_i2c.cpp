@@ -120,7 +120,7 @@ ZP_Error Ist8310::read(Sample *sample)
   sample->y_microtesla = static_cast<float>(sample->y_raw) * kMicroteslaPerLsb;
   sample->z_microtesla = static_cast<float>(sample->z_raw) * kMicroteslaPerLsb;
   return calculateHeading(sample->x_microtesla, sample->y_microtesla,
-                          &sample->heading_degrees);
+                          sample->heading_degrees);
 }
 
 ZP_Error Ist8310::getAddress(uint8_t *out_address) const
@@ -239,17 +239,14 @@ ZP_Error Ist8310::combineBytes(uint8_t most_significant,
 }
 
 ZP_Error Ist8310::calculateHeading(float x_microtesla, float y_microtesla,
-                                   float *out_heading)
+                                   float &out_heading)
 {
-  if (out_heading == nullptr) {
-    return ZP_ERROR_NULLPTR;
-  }
   // Preserve the board-frame convention used by the original firmware.
   float heading = std::atan2(-y_microtesla, x_microtesla) * kRadiansToDegrees;
   if (heading < 0.0F) {
     heading += 360.0F;
   }
 
-  *out_heading = heading;
+  out_heading = heading;
   return ZP_ERROR_OK;
 }
