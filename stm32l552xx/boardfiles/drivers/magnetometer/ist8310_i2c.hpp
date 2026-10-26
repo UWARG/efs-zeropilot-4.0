@@ -39,7 +39,7 @@ public:
   ZP_Error isReady(bool *out_ready) const;
 
 private:
-  enum Register : uint8_t
+  enum Register_e : uint8_t
   {
     kWhoAmI = 0x00,
     kStatus1 = 0x02,
