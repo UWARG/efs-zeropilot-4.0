@@ -73,7 +73,4 @@ private:
   uint8_t address;
   bool ready;
 };
-
-
-
 #endif  // IST8310_DRIVER_IST8310_I2C_HPP_
