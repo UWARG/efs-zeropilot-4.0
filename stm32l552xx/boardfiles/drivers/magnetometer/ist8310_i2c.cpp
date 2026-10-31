@@ -3,6 +3,7 @@
  * @brief I2C driver for the iSentek IST8310 three-axis magnetometer.
  */
 #include "ist8310_i2c.hpp"
+#include "utils.h"
 
 #include <cmath>
 
@@ -18,25 +19,6 @@ Ist8310::Ist8310(I2C_HandleTypeDef *i2c, uint8_t address)
     : i2c_handle(i2c), address(address), ready(false)
 {
 }
-
-namespace
-{
-ZP_Error halStatusToError(HAL_StatusTypeDef status)
-{
-  switch (status)
-  {
-    case HAL_OK:
-      return ZP_ERROR_OK;
-    case HAL_TIMEOUT:
-      return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
-    case HAL_BUSY:
-      return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    case HAL_ERROR:
-    default:
-      return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-  }
-}
-}  // namespace
 
 ZP_Error Ist8310::init()
 {
