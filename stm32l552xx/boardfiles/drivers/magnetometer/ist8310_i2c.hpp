@@ -18,23 +18,21 @@ public:
   static constexpr uint8_t WHO_AM_I_VALUE = 0x10;
   static constexpr float MICROTESLA_PER_LSB = 0.3F;
 
-  struct Sample
-  {
-    int16_t x_raw;
-    int16_t y_raw;
-    int16_t z_raw;
-    float x_microtesla;
-    float y_microtesla;
-    float z_microtesla;
-    float heading_degrees;
-  };
-
   explicit Ist8310(I2C_HandleTypeDef *i2c,
                    uint8_t address = DEFAULT_ADDRESS);
 
   ZP_Error init() override;
-  ZP_Error read(Sample *sample);
   ZP_Error readData(MagData_t &data) override;
+
+  // Heading in degrees, 0 to 360, from the X and Y field in microtesla
+  static ZP_Error calculateHeading(float x_microtesla, float y_microtesla,
+                                   float &out_heading);
+
+  // Called from the I2C interrupt callbacks
+  void masterTxCpltCallback();
+  void masterRxCpltCallback();
+  void errorCallback();
+  I2C_HandleTypeDef *getI2C();
 
   ZP_Error getAddress(uint8_t *out_address) const;
   ZP_Error isReady(bool *out_ready) const;
@@ -57,9 +55,22 @@ private:
   static constexpr uint8_t AVERAGE16 = 0x24;
   static constexpr uint8_t NORMAL_PULSE_DIRECTION = 0xC0;
 
+  static constexpr uint8_t DATA_BYTES = 6;
+
+  enum ReadState_e
+  {
+    kIdle,
+    kStartTx,
+    kWaitConversion,
+    kPointerTx,
+    kDataRx,
+  };
+
   ZP_Error probe();
   ZP_Error configure();
-  ZP_Error waitForDataReady();
+  ZP_Error startMeasurement();
+  ZP_Error readMeasurement();
+  void decode();
   ZP_Error writeRegister(uint8_t reg, uint8_t value);
   ZP_Error readRegister(uint8_t reg, uint8_t *value) const;
   ZP_Error readRegisters(uint8_t reg, uint8_t *data, uint16_t length) const;
@@ -67,10 +78,17 @@ private:
   static ZP_Error combineBytes(uint8_t most_significant,
                                uint8_t least_significant,
                                int16_t *out_value);
-  static ZP_Error calculateHeading(float x_microtesla, float y_microtesla,
-                                   float &out_heading);
 
   I2C_HandleTypeDef *i2c_handle;
   uint8_t address;
   bool ready;
+
+  volatile ReadState_e state;
+  volatile bool sample_ready;
+  volatile uint32_t pending_error;
+  uint32_t conversion_done_ms;
+  uint32_t transfer_start_ms;
+  uint8_t tx_buffer[2];
+  uint8_t rx_buffer[DATA_BYTES];
+  MagData_t mag_data;
 };

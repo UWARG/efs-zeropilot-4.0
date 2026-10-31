@@ -11,12 +11,24 @@ namespace
 {
 constexpr uint32_t kI2cTimeoutMilliseconds = 100U;
 constexpr uint32_t kResetDelayMilliseconds = 50U;
-constexpr uint32_t kDataReadyTimeoutMilliseconds = 20U;
+// Datasheet minimum is 6 ms with 16x averaging, with margin on top of that
+constexpr uint32_t kConversionTimeMilliseconds = 10U;
+constexpr uint32_t kTransferTimeoutMilliseconds = 100U;
 constexpr float kRadiansToDegrees = 57.29577951308232F;
 }  // namespace
 
 Ist8310::Ist8310(I2C_HandleTypeDef *i2c, uint8_t address)
-    : i2c_handle(i2c), address(address), ready(false)
+    : i2c_handle(i2c),
+      address(address),
+      ready(false),
+      state(kIdle),
+      sample_ready(false),
+      pending_error(0U),
+      conversion_done_ms(0U),
+      transfer_start_ms(0U),
+      tx_buffer{0},
+      rx_buffer{0},
+      mag_data{}
 {
 }
 
@@ -53,73 +65,57 @@ ZP_Error Ist8310::init()
     return error;
   }
 
+  state = kIdle;
+  sample_ready = false;
+  pending_error = 0U;
+  mag_data = {};
   ready = true;
   return ZP_ERROR_OK;
 }
 
-ZP_Error Ist8310::read(Sample *sample)
+ZP_Error Ist8310::readData(MagData_t &data)
 {
-  if (sample == nullptr) {
-    return ZP_ERROR_NULLPTR;
-  }
   if (!ready) {
+    mag_data.isNew = false;
+    data = mag_data;
     return ZP_ERROR_NOT_READY;
   }
 
-  ZP_Error error = writeRegister(kControl1, SINGLE_MEASUREMENT);
-  if (error != ZP_ERROR_OK) {
-    ready = false;
-    return error;
+  ZP_Error error(pending_error);
+  pending_error = 0U;
+
+  if (sample_ready) {
+    sample_ready = false;
+    decode();
+  } else {
+    mag_data.isNew = false;
   }
 
-  error = waitForDataReady();
-  if (error != ZP_ERROR_OK) {
-    ready = false;
-    return error;
+  const uint32_t now = HAL_GetTick();
+
+  switch (state)
+  {
+    case kIdle:
+      error |= startMeasurement();
+      break;
+
+    case kWaitConversion:
+      if (static_cast<int32_t>(now - conversion_done_ms) >= 0) {
+        error |= readMeasurement();
+      }
+      break;
+
+    default:
+      // A transfer is in flight. Give up on it if the bus went quiet.
+      if ((now - transfer_start_ms) > kTransferTimeoutMilliseconds &&
+          i2c_handle->State == HAL_I2C_STATE_READY) {
+        state = kIdle;
+        error |= ZP_ERROR_TIMEOUT;
+      }
+      break;
   }
 
-  uint8_t data[6] = {};
-  error = readRegisters(kDataXLow, data, sizeof(data));
-  if (error != ZP_ERROR_OK) {
-    ready = false;
-    return error;
-  }
-
-  error = combineBytes(data[1], data[0], &sample->x_raw);
-  if (error != ZP_ERROR_OK) {
-    return error;
-  }
-  error = combineBytes(data[3], data[2], &sample->y_raw);
-  if (error != ZP_ERROR_OK) {
-    return error;
-  }
-  error = combineBytes(data[5], data[4], &sample->z_raw);
-  if (error != ZP_ERROR_OK) {
-    return error;
-  }
-
-  sample->x_microtesla = static_cast<float>(sample->x_raw) * MICROTESLA_PER_LSB;
-  sample->y_microtesla = static_cast<float>(sample->y_raw) * MICROTESLA_PER_LSB;
-  sample->z_microtesla = static_cast<float>(sample->z_raw) * MICROTESLA_PER_LSB;
-  return calculateHeading(sample->x_microtesla, sample->y_microtesla,
-                          sample->heading_degrees);
-}
-
-ZP_Error Ist8310::readData(MagData_t &data)
-{
-  Sample sample = {};
-  const ZP_Error error = read(&sample);
-
-  data.isNew = (error == ZP_ERROR_OK);
-  if (data.isNew) {
-    data.x = sample.x_microtesla;
-    data.y = sample.y_microtesla;
-    data.z = sample.z_microtesla;
-    data.rawX = sample.x_raw;
-    data.rawY = sample.y_raw;
-    data.rawZ = sample.z_raw;
-    data.timestamp = HAL_GetTick();
-  }
+  data = mag_data;
   return error;
 }
 
@@ -179,26 +175,110 @@ ZP_Error Ist8310::configure()
   return writeRegister(kPulseDurationControl, NORMAL_PULSE_DIRECTION);
 }
 
-ZP_Error Ist8310::waitForDataReady()
+ZP_Error Ist8310::startMeasurement()
 {
-  const uint32_t start = HAL_GetTick();
+  tx_buffer[0] = kControl1;
+  tx_buffer[1] = SINGLE_MEASUREMENT;
+  transfer_start_ms = HAL_GetTick();
+  state = kStartTx;
 
-  while ((HAL_GetTick() - start) < kDataReadyTimeoutMilliseconds)
+  const ZP_Error status = halStatusToError(HAL_I2C_Master_Transmit_IT(
+      i2c_handle, static_cast<uint16_t>(address) << 1U, tx_buffer, 2U));
+  if (status != ZP_ERROR_OK) {
+    state = kIdle;
+  }
+  return status;
+}
+
+ZP_Error Ist8310::readMeasurement()
+{
+  // Point the register pointer at the first data byte, then read the data
+  tx_buffer[0] = kDataXLow;
+  transfer_start_ms = HAL_GetTick();
+  state = kPointerTx;
+
+  const ZP_Error status = halStatusToError(HAL_I2C_Master_Transmit_IT(
+      i2c_handle, static_cast<uint16_t>(address) << 1U, tx_buffer, 1U));
+  if (status != ZP_ERROR_OK) {
+    state = kIdle;
+  }
+  return status;
+}
+
+void Ist8310::masterTxCpltCallback()
+{
+  switch (state)
   {
-    uint8_t status = 0U;
-    ZP_Error error = readRegister(kStatus1, &status);
-    if (error != ZP_ERROR_OK) {
-      return error;
-    }
+    case kStartTx:
+      conversion_done_ms = HAL_GetTick() + kConversionTimeMilliseconds;
+      state = kWaitConversion;
+      break;
 
-    if ((status & STATUS_DATA_READY) != 0U) {
-      return ZP_ERROR_OK;
-    }
+    case kPointerTx:
+      state = kDataRx;
+      if (HAL_I2C_Master_Receive_IT(i2c_handle,
+                                    static_cast<uint16_t>(address) << 1U,
+                                    rx_buffer, DATA_BYTES) != HAL_OK) {
+        state = kIdle;
+        pending_error |= (ZP_ERROR_EXT_API | ZP_ERROR_FAIL).raw();
+      }
+      break;
 
-    HAL_Delay(1U);
+    default:
+      break;
+  }
+}
+
+void Ist8310::masterRxCpltCallback()
+{
+  if (state == kDataRx) {
+    sample_ready = true;
+  }
+  state = kIdle;
+}
+
+void Ist8310::errorCallback()
+{
+  // The bus can be shared, so only react when one of our transfers is in flight
+  if (state != kStartTx && state != kPointerTx && state != kDataRx) {
+    return;
   }
 
-  return ZP_ERROR_TIMEOUT;
+  if ((HAL_I2C_GetError(i2c_handle) & HAL_I2C_ERROR_AF) != 0U) {
+    pending_error |= (ZP_ERROR_EXT_API | ZP_ERROR_NACK).raw();
+  } else {
+    pending_error |= (ZP_ERROR_EXT_API | ZP_ERROR_FAIL).raw();
+  }
+  state = kIdle;
+}
+
+void Ist8310::decode()
+{
+  int16_t raw_x = 0;
+  int16_t raw_y = 0;
+  int16_t raw_z = 0;
+
+  ZP_Error error = combineBytes(rx_buffer[1], rx_buffer[0], &raw_x);
+  error |= combineBytes(rx_buffer[3], rx_buffer[2], &raw_y);
+  error |= combineBytes(rx_buffer[5], rx_buffer[4], &raw_z);
+  if (error != ZP_ERROR_OK) {
+    pending_error |= error.raw();
+    return;
+  }
+
+  mag_data.rawX = raw_x;
+  mag_data.rawY = raw_y;
+  mag_data.rawZ = raw_z;
+  mag_data.x = static_cast<float>(raw_x) * MICROTESLA_PER_LSB;
+  mag_data.y = static_cast<float>(raw_y) * MICROTESLA_PER_LSB;
+  mag_data.z = static_cast<float>(raw_z) * MICROTESLA_PER_LSB;
+  mag_data.timestamp = HAL_GetTick();
+  mag_data.isNew = true;
+}
+
+I2C_HandleTypeDef *Ist8310::getI2C()
+{
+  return i2c_handle;
 }
 
 ZP_Error Ist8310::writeRegister(uint8_t reg, uint8_t value)
