@@ -11,6 +11,7 @@
 
 #include <cstdint>
 
+// PR 216 inherits a class from PR 196
 class Ist8310 : public IMagnetometer
 {
 public:
