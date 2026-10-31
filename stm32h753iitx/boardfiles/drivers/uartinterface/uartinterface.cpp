@@ -39,7 +39,7 @@ ZP_Error UARTInterface::transmit(uint8_t* pData, uint16_t size){
 }
 
 ZP_Error UARTInterface::transmitDMA(uint8_t* pData, uint16_t size){
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, pData, size, HAL_MAX_DELAY);
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, pData, size);
     return statusCheck(status);
     // either BUSY or FAIL or OK
 }
