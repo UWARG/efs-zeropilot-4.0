@@ -51,7 +51,7 @@ ZP_Error Ist8310::init()
     return error;
   }
 
-  error = writeRegister(kControl2, kSoftReset);
+  error = writeRegister(kControl2, SOFT_RESET);
   if (error != ZP_ERROR_OK) {
     return error;
   }
@@ -62,7 +62,7 @@ ZP_Error Ist8310::init()
   if (error != ZP_ERROR_OK) {
     return error;
   }
-  if (who_am_i != kWhoAmIValue) {
+  if (who_am_i != WHO_AM_I_VALUE) {
     return ZP_ERROR_INVALID_DATA;
   }
 
@@ -84,7 +84,7 @@ ZP_Error Ist8310::read(Sample *sample)
     return ZP_ERROR_NOT_READY;
   }
 
-  ZP_Error error = writeRegister(kControl1, kSingleMeasurement);
+  ZP_Error error = writeRegister(kControl1, SINGLE_MEASUREMENT);
   if (error != ZP_ERROR_OK) {
     ready = false;
     return error;
@@ -116,9 +116,9 @@ ZP_Error Ist8310::read(Sample *sample)
     return error;
   }
 
-  sample->x_microtesla = static_cast<float>(sample->x_raw) * kMicroteslaPerLsb;
-  sample->y_microtesla = static_cast<float>(sample->y_raw) * kMicroteslaPerLsb;
-  sample->z_microtesla = static_cast<float>(sample->z_raw) * kMicroteslaPerLsb;
+  sample->x_microtesla = static_cast<float>(sample->x_raw) * MICROTESLA_PER_LSB;
+  sample->y_microtesla = static_cast<float>(sample->y_raw) * MICROTESLA_PER_LSB;
+  sample->z_microtesla = static_cast<float>(sample->z_raw) * MICROTESLA_PER_LSB;
   return calculateHeading(sample->x_microtesla, sample->y_microtesla,
                           sample->heading_degrees);
 }
@@ -148,7 +148,7 @@ ZP_Error Ist8310::probe()
   const uint8_t preferred_address = address;
   uint8_t who_am_i = 0U;
   if (readRegister(kWhoAmI, &who_am_i) == ZP_ERROR_OK &&
-      who_am_i == kWhoAmIValue) {
+      who_am_i == WHO_AM_I_VALUE) {
     return ZP_ERROR_OK;
   }
 
@@ -161,22 +161,22 @@ ZP_Error Ist8310::probe()
 
     who_am_i = 0U;
     if (readRegister(kWhoAmI, &who_am_i) == ZP_ERROR_OK &&
-        who_am_i == kWhoAmIValue) {
+        who_am_i == WHO_AM_I_VALUE) {
       return ZP_ERROR_OK;
     }
   }
 
-  address = kDefaultAddress;
+  address = DEFAULT_ADDRESS;
   return ZP_ERROR_EXT_API | ZP_ERROR_NACK;
 }
 
 ZP_Error Ist8310::configure()
 {
-  ZP_Error error = writeRegister(kAverageControl, kAverage16);
+  ZP_Error error = writeRegister(kAverageControl, AVERAGE16);
   if (error != ZP_ERROR_OK) {
     return error;
   }
-  return writeRegister(kPulseDurationControl, kNormalPulseDuration);
+  return writeRegister(kPulseDurationControl, NORMAL_PULSE_DIRECTION);
 }
 
 ZP_Error Ist8310::waitForDataReady()
@@ -191,7 +191,7 @@ ZP_Error Ist8310::waitForDataReady()
       return error;
     }
 
-    if ((status & kStatusDataReady) != 0U) {
+    if ((status & STATUS_DATA_READY) != 0U) {
       return ZP_ERROR_OK;
     }
 

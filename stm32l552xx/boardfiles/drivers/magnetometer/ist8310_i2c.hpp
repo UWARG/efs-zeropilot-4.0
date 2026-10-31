@@ -13,9 +13,9 @@
 class Ist8310
 {
 public:
-  static constexpr uint8_t kDefaultAddress = 0x0E;
-  static constexpr uint8_t kWhoAmIValue = 0x10;
-  static constexpr float kMicroteslaPerLsb = 0.3F;
+  static constexpr uint8_t DEFAULT_ADDRESS = 0x0E;
+  static constexpr uint8_t WHO_AM_I_VALUE = 0x10;
+  static constexpr float MICROTESLA_PER_LSB = 0.3F;
 
   struct Sample
   {
@@ -29,7 +29,7 @@ public:
   };
 
   explicit Ist8310(I2C_HandleTypeDef *i2c,
-                   uint8_t address = kDefaultAddress);
+                   uint8_t address = DEFAULT_ADDRESS);
 
   ZP_Error init();
   ZP_Error read(Sample *sample);
@@ -49,11 +49,11 @@ private:
     kPulseDurationControl = 0x42,
   };
 
-  static constexpr uint8_t kStatusDataReady = 0x01;
-  static constexpr uint8_t kSingleMeasurement = 0x01;
-  static constexpr uint8_t kSoftReset = 0x01;
-  static constexpr uint8_t kAverage16 = 0x24;
-  static constexpr uint8_t kNormalPulseDuration = 0xC0;
+  static constexpr uint8_t STATUS_DATA_READY = 0x01;
+  static constexpr uint8_t SINGLE_MEASUREMENT = 0x01;
+  static constexpr uint8_t SOFT_RESET = 0x01;
+  static constexpr uint8_t AVERAGE16 = 0x24;
+  static constexpr uint8_t NORMAL_PULSE_DIRECTION = 0xC0;
 
   ZP_Error probe();
   ZP_Error configure();
