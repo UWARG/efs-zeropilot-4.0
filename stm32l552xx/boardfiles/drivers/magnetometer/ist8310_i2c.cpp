@@ -40,7 +40,14 @@ ZP_Error Ist8310::init()
     return ZP_ERROR_NULLPTR;
   }
 
-  ZP_Error error = probe();
+  // Start from a clean peripheral. A bus fault can leave the I2C peripheral
+  // stuck busy, which only a reset clears.
+  ZP_Error error = resetBus();
+  if (error != ZP_ERROR_OK) {
+    return error;
+  }
+
+  error = probe();
   if (error != ZP_ERROR_OK) {
     return error;
   }
@@ -106,9 +113,10 @@ ZP_Error Ist8310::readData(MagData_t &data)
       break;
 
     default:
-      // A transfer is in flight. Give up on it if the bus went quiet.
-      if ((now - transfer_start_ms) > kTransferTimeoutMilliseconds &&
-          i2c_handle->State == HAL_I2C_STATE_READY) {
+      // A transfer is in flight. If it has not finished in time, the bus is
+      // stuck (the HAL can stay busy forever), so reset the peripheral and retry.
+      if ((now - transfer_start_ms) > kTransferTimeoutMilliseconds) {
+        error |= resetBus();
         state = kIdle;
         error |= ZP_ERROR_TIMEOUT;
       }
@@ -203,6 +211,13 @@ ZP_Error Ist8310::readMeasurement()
     state = kIdle;
   }
   return status;
+}
+
+ZP_Error Ist8310::resetBus()
+{
+  ZP_Error error = halStatusToError(HAL_I2C_DeInit(i2c_handle));
+  error |= halStatusToError(HAL_I2C_Init(i2c_handle));
+  return error;
 }
 
 void Ist8310::masterTxCpltCallback()

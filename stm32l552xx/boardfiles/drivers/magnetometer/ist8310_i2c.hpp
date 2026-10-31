@@ -72,6 +72,7 @@ private:
   ZP_Error startMeasurement();
   ZP_Error readMeasurement();
   void decode();
+  ZP_Error resetBus();
   ZP_Error writeRegister(uint8_t reg, uint8_t value);
   ZP_Error readRegister(uint8_t reg, uint8_t *value) const;
   ZP_Error readRegisters(uint8_t reg, uint8_t *data, uint16_t length) const;
