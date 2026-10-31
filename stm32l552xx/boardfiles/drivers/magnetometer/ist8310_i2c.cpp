@@ -105,6 +105,24 @@ ZP_Error Ist8310::read(Sample *sample)
                           sample->heading_degrees);
 }
 
+ZP_Error Ist8310::readData(MagData_t &data)
+{
+  Sample sample = {};
+  const ZP_Error error = read(&sample);
+
+  data.isNew = (error == ZP_ERROR_OK);
+  if (data.isNew) {
+    data.x = sample.x_microtesla;
+    data.y = sample.y_microtesla;
+    data.z = sample.z_microtesla;
+    data.rawX = sample.x_raw;
+    data.rawY = sample.y_raw;
+    data.rawZ = sample.z_raw;
+    data.timestamp = HAL_GetTick();
+  }
+  return error;
+}
+
 ZP_Error Ist8310::getAddress(uint8_t *out_address) const
 {
   if (out_address == nullptr) {

@@ -5,12 +5,13 @@
 
 #pragma once
 
+#include "magnetometer_iface.hpp"
 #include "stm32l5xx_hal.h"
 #include "zp_error.h"
 
 #include <cstdint>
 
-class Ist8310
+class Ist8310 : public IMagnetometer
 {
 public:
   static constexpr uint8_t DEFAULT_ADDRESS = 0x0E;
@@ -31,8 +32,9 @@ public:
   explicit Ist8310(I2C_HandleTypeDef *i2c,
                    uint8_t address = DEFAULT_ADDRESS);
 
-  ZP_Error init();
+  ZP_Error init() override;
   ZP_Error read(Sample *sample);
+  ZP_Error readData(MagData_t &data) override;
 
   ZP_Error getAddress(uint8_t *out_address) const;
   ZP_Error isReady(bool *out_ready) const;
