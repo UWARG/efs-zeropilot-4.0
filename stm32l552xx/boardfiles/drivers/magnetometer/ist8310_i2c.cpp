@@ -254,17 +254,10 @@ void Ist8310::errorCallback()
 
 void Ist8310::decode()
 {
-  int16_t raw_x = 0;
-  int16_t raw_y = 0;
-  int16_t raw_z = 0;
-
-  ZP_Error error = combineBytes(rx_buffer[1], rx_buffer[0], &raw_x);
-  error |= combineBytes(rx_buffer[3], rx_buffer[2], &raw_y);
-  error |= combineBytes(rx_buffer[5], rx_buffer[4], &raw_z);
-  if (error != ZP_ERROR_OK) {
-    pending_error |= error.raw();
-    return;
-  }
+  // Little endian pairs, 2's complement: X_L X_H Y_L Y_H Z_L Z_H
+  const int16_t raw_x = static_cast<int16_t>((rx_buffer[1] << 8U) | rx_buffer[0]);
+  const int16_t raw_y = static_cast<int16_t>((rx_buffer[3] << 8U) | rx_buffer[2]);
+  const int16_t raw_z = static_cast<int16_t>((rx_buffer[5] << 8U) | rx_buffer[4]);
 
   mag_data.rawX = raw_x;
   mag_data.rawY = raw_y;
@@ -305,17 +298,6 @@ ZP_Error Ist8310::readRegisters(uint8_t reg, uint8_t *data,
   return halStatusToError(HAL_I2C_Mem_Read(
       i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
       I2C_MEMADD_SIZE_8BIT, data, length, kI2cTimeoutMilliseconds));
-}
-
-ZP_Error Ist8310::combineBytes(uint8_t most_significant,
-                               uint8_t least_significant, int16_t *out_value)
-{
-  if (out_value == nullptr) {
-    return ZP_ERROR_NULLPTR;
-  }
-  *out_value = static_cast<int16_t>(
-      (static_cast<uint16_t>(most_significant) << 8U) | least_significant);
-  return ZP_ERROR_OK;
 }
 
 ZP_Error Ist8310::calculateHeading(float x_microtesla, float y_microtesla,
