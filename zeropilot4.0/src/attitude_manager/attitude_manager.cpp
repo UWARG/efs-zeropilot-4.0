@@ -226,9 +226,13 @@ void AttitudeManager::amUpdate() {
     if (controlRes != true) {
         ++noDataCount;
 
+        // If no data reveived for longer than RC_FS_TIMEOUT
         if (noDataCount * AM_UPDATE_LOOP_DELAY_MS > ((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000)) {
+            
+            // create new RCMotorControlMessage_t struct object called motorOutputs with all value defaulted to 0
             RCMotorControlMessage_t motorOutputs{0};
 
+            
             #ifdef PLANE
             motorOutputs.roll = 50;
             motorOutputs.pitch = 50;
