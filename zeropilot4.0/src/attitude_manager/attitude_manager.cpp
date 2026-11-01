@@ -4,7 +4,7 @@
 #include "motor_functions.hpp"
 #include "logger.hpp"
 #include "unit_conversions.hpp"
-#include <limits>
+#include <cmath>
 
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
@@ -24,7 +24,7 @@ AttitudeManager::AttitudeManager(
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
-    // ekf(mathUtilsDriver),
+    ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
     #ifdef PLANE
@@ -52,6 +52,8 @@ AttitudeManager::AttitudeManager(
     groundIdlePrev(false),
     lastTimestamp(0),
     haveLastImuTimestamp(false),
+    accelAccum{0.0f, 0.0f, 0.0f},
+    accelAccumCount(0),
     profilerId(0),
     paramSetup(this) {
         paramSetup.loadAllParams();
@@ -60,7 +62,6 @@ AttitudeManager::AttitudeManager(
         harmonicNotchConfig.sampleFreqHz = imuDriver->getODRHz();
         harmonicNotchFilter.init(harmonicNotchConfig);
 
-        /* TODO: Uncomment once using EKF
         // Init the EKF
         AHRSEKF::Config ekfCfg = {
             .gyroCov = 4.78e-6f,
@@ -68,8 +69,9 @@ AttitudeManager::AttitudeManager(
             .magCov = 3.6e-5f,
             .gyroBiasCov = 1.0e-6f,
             .accelBiasCov = 0.0f,
-            .accelGateThreshold = std::numeric_limits<float>::max(), // Turning off gating bc if start position is not leveled, then gating prevents convergence
+            .accelGateThreshold = 16.3f,
             .magGateThreshold = 16.3f,
+            .accelRejectCountLimit = 30, //  Around 300ms at the 100Hz correction rate
             .pInitAtt = 1e-2f,
             .pInitBiasGyro = 1e-3f,
             .pInitBiasAccel = 0.0f, // Assume P is a diagonal matrix
@@ -77,11 +79,45 @@ AttitudeManager::AttitudeManager(
             .magInertial = {1, 0, 0}
         };
         float initGyro[3] = {0.0f, 0.0f, 0.0f};
+
+        // Seed the EKF with the accel actually measured while stationary at startup
+        // instead of assuming the vehicle starts level
+        AccelStartup_t accelStartup = imuDriver->getAccelStartupMean(0);
+        float startupAccelMag = std::sqrt(accelStartup.x * accelStartup.x +
+                                           accelStartup.y * accelStartup.y +
+                                           accelStartup.z * accelStartup.z);
         float initAccel[3] = {0.0f, 0.0f, -9.81f};
-        float initMag[3] = {1.0f, 0.0f, 0.0f};
         float initQuat[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+        if (startupAccelMag > 5.0f && startupAccelMag < 15.0f) { // Sanity bound around 1g
+            initAccel[0] = accelStartup.x;
+            initAccel[1] = accelStartup.y;
+            initAccel[2] = accelStartup.z;
+
+            // Calculate the quaternion based on the accel measured at startup
+            float refAccelNorm[3] = {0.0f, 0.0f, -1.0f};
+            float measAccelNorm[3] = {
+                accelStartup.x / startupAccelMag,
+                accelStartup.y / startupAccelMag,
+                accelStartup.z / startupAccelMag
+            };
+            float dot = refAccelNorm[0] * measAccelNorm[0] +
+                        refAccelNorm[1] * measAccelNorm[1] +
+                        refAccelNorm[2] * measAccelNorm[2];
+            if (dot > -0.9999f) { // Skip if upside down at startup, falls back to level
+                float cross[3] = {
+                    refAccelNorm[1] * measAccelNorm[2] - refAccelNorm[2] * measAccelNorm[1],
+                    refAccelNorm[2] * measAccelNorm[0] - refAccelNorm[0] * measAccelNorm[2],
+                    refAccelNorm[0] * measAccelNorm[1] - refAccelNorm[1] * measAccelNorm[0]
+                };
+                float q[4] = {1.0f + dot, cross[0], cross[1], cross[2]};
+                float qNorm[4];
+                mathUtilsDriver->quatNormalize(q, qNorm);
+                mathUtilsDriver->quatInverse(qNorm, initQuat);
+            }
+        }
+
+        float initMag[3] = {1.0f, 0.0f, 0.0f};
         ekf.init(initGyro, initAccel, initMag, initQuat, ekfCfg);
-        */
 
         // Activate the activeCLAW
         activeCLAW->activateFlightMode();
@@ -115,12 +151,20 @@ void AttitudeManager::amUpdate() {
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
             harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
         }
+
+        // Notch-filtered copy for the rate controllers only. The EKF propagates on the
+        // un-notched gyro further below so the notch's group delay and per-window
+        // coefficient transients don't leak into attitude estimation.
+        float notchedGyro[3] = {
+            scaledImuData.data[i].xgyro,
+            scaledImuData.data[i].ygyro,
+            scaledImuData.data[i].zgyro
+        };
         // By nature of FFT algorithm there is a correction latency dependant on the FFT length and sample rate.
-        harmonicNotchFilter.apply(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
-       
-        /* TODO: Uncomment once using EKF
+        harmonicNotchFilter.apply(notchedGyro[0], notchedGyro[1], notchedGyro[2]);
+
+        // Kept after the notch so IMU0 still feeds the FFT a continuous sample stream.
         if (scaledImuData.data[i].imuId != 0) continue; // Only use IMU0 for EKF
-        */
 
         /*
         We use uint16_t instead of uint32_t as single IMU logic relies on uint16_t wraparound
@@ -138,45 +182,41 @@ void AttitudeManager::amUpdate() {
         }
 
         GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(scaledImuData.data[i].imuId);
-        droneState.rollRate = scaledImuData.data[i].xgyro - startupGyroBias.x;
-        droneState.pitchRate = scaledImuData.data[i].ygyro - startupGyroBias.y;
-        droneState.yawRate = scaledImuData.data[i].zgyro - startupGyroBias.z;
+        droneState.rollRate = notchedGyro[0] - startupGyroBias.x;
+        droneState.pitchRate = notchedGyro[1] - startupGyroBias.y;
+        droneState.yawRate = notchedGyro[2] - startupGyroBias.z;
 
         float dt = deltaTicks * TIMESTAMP_RESOLUTION;
-        
-        mahonyFilter.updateIMU(
-            scaledImuData.data[i].xgyro - startupGyroBias.x,
-            scaledImuData.data[i].ygyro - startupGyroBias.y,
-            scaledImuData.data[i].zgyro - startupGyroBias.z,
-            scaledImuData.data[i].xacc,
-            scaledImuData.data[i].yacc,
-            scaledImuData.data[i].zacc,
-            dt
-        );
 
-        /* TODO: Uncomment once using EKF
         float gyro[3] = {
             scaledImuData.data[i].xgyro,
             scaledImuData.data[i].ygyro,
             scaledImuData.data[i].zgyro
         };
-        float accel[3] = {
-            scaledImuData.data[i].xacc, 
-            scaledImuData.data[i].yacc, 
-            scaledImuData.data[i].zacc
-        };
+        accelAccum[0] += scaledImuData.data[i].xacc;
+        accelAccum[1] += scaledImuData.data[i].yacc;
+        accelAccum[2] += scaledImuData.data[i].zacc;
+        accelAccumCount++;
 
         ekf.stateExtrapolation(gyro, dt);
-        if (amSchedulingCounter % 10 == 0) { // Correct accel once for every 10 gyro updates
+        // Correct accel once for every 10 gyro updates, using the average of the
+        // samples rather than a single reading so a corrupted vibration spike can't 
+        // dominate the correction
+        if (amSchedulingCounter % 10 == 0 && accelAccumCount > 0) {
+            float accel[3] = {
+                accelAccum[0] / accelAccumCount,
+                accelAccum[1] / accelAccumCount,
+                accelAccum[2] / accelAccumCount
+            };
             ekf.correctionAccelerometer(accel);
+            for (int i = 0; i < 3; i++) {
+                accelAccum[i] = 0.0f;
+            }
+            accelAccumCount = 0;
         }
-        GyroBias_t gyroBias = ekf.getGyroBias();
-
-        break; // for now only use one imu message per am loop
-        */
     }
 
-    Attitude_t attitude = mahonyFilter.getAttitudeRadians();
+    Attitude_t attitude = ekf.getAttitudeRadians();
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;

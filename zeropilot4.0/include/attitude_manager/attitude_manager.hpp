@@ -67,8 +67,8 @@ private:
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;
-    // AHRSEKF ekf;
-    Mahony mahonyFilter;
+    AHRSEKF ekf;
+    // Mahony mahonyFilter;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
     IMessageQueue<TMMessage_t> *tmQueue;
@@ -109,6 +109,9 @@ private:
     static constexpr float TIMESTAMP_RESOLUTION = 0.000001f; // Default IMU timestamp resolution 1us
     uint32_t lastTimestamp;
     bool haveLastImuTimestamp;
+
+    float accelAccum[3];
+    uint16_t accelAccumCount;
 
     bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 

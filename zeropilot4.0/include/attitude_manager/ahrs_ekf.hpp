@@ -63,6 +63,7 @@ public:
         float accelBiasCov;
         float accelGateThreshold;
         float magGateThreshold;
+        uint16_t accelRejectCountLimit;
         float pInitAtt;
         float pInitBiasGyro;
         float pInitBiasAccel;
@@ -95,6 +96,8 @@ private:
     float magCovMat[9];
     float gyroBiasCovMat[9];
     float accelBiasCovMat[9];
+
+    uint16_t accelRejectCount = 0;
 
     // Kalman update for a measurement with jacobian H = [h0, 0, H2], where h0 is
     // 3x3 and H2 is I when the measurement observes the accel bias states, else 0

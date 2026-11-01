@@ -11,6 +11,7 @@
 #define UB0_REG_FIFO_CONFIG          0x16
 #define UB0_REG_FIFO_CONFIG1         0x5F
 #define UB0_REG_INTF_CONFIG0         0x4C
+#define UB0_REG_ACCEL_DATA_X1        0x1F
 #define UB0_REG_GYRO_DATA_X1         0x25
 #define UB0_REG_FIFO_DATA            0x30
 #define UB0_REG_FIFO_COUNTH          0x2E
@@ -32,7 +33,7 @@
 #define FIFO_HEADER_ACCEL_BIT  0x40
 #define FIFO_HEADER_GYRO_BIT   0x20
 
-#define GYRO_SAMPLE_COUNT         1000
+#define STARTUP_SAMPLE_COUNT      1000
 #define GYRO_CAL_RETRY_LIMIT      10
 #define GYRO_MOVING_THRESHOLD_LSB 33 // Corresponds to ~2 deg/s
 
@@ -107,20 +108,25 @@ int IMU::init() {
     HAL_Delay(60); // Wait after sensors are turned on
     uint8_t address = whoAmI();
 
-    // Collect samples to calculate gyro bias
+    // Collect samples to calculate gyro bias and the startup accel mean 
     for (uint8_t calAttempt = 0; calAttempt < GYRO_CAL_RETRY_LIMIT; calAttempt++) {
-        uint8_t buf[6] = {};
+        uint8_t buf[12] = {};
         int32_t gyroSum[3] = {0};
+        int64_t accelSum[3] = {0};
         int16_t gyroMax[3] = {INT16_MIN, INT16_MIN, INT16_MIN};
         int16_t gyroMin[3] = {INT16_MAX, INT16_MAX, INT16_MAX};
         bool moving = false;
 
-        for (uint16_t sampleCount = 0; (sampleCount < GYRO_SAMPLE_COUNT) && (!moving); sampleCount++) {
-            readRegister(0, UB0_REG_GYRO_DATA_X1, buf, 6); // Read GYRO_DATA_X1, GYRO_DATA_X0, GYRO_DATA_Y1, GYRO_DATA_Y0, GYRO_DATA_Z1, GYRO_DATA_Z0
+        for (uint16_t sampleCount = 0; (sampleCount < STARTUP_SAMPLE_COUNT) && (!moving); sampleCount++) {
+            readRegister(0, UB0_REG_ACCEL_DATA_X1, buf, 12);
+            int16_t accelVal[3] = {0};
+            accelVal[0] = -(int16_t)((buf[0] << 8) | buf[1]);
+            accelVal[1] = (int16_t)((buf[2] << 8) | buf[3]);
+            accelVal[2] = -(int16_t)((buf[4] << 8) | buf[5]);
             int16_t gyroVal[3] = {0};
-            gyroVal[0] = -(int16_t)((buf[0] << 8) | buf[1]);
-            gyroVal[1] = (int16_t)((buf[2] << 8) | buf[3]);
-            gyroVal[2] = -(int16_t)((buf[4] << 8) | buf[5]);
+            gyroVal[0] = -(int16_t)((buf[6] << 8) | buf[7]);
+            gyroVal[1] = (int16_t)((buf[8] << 8) | buf[9]);
+            gyroVal[2] = -(int16_t)((buf[10] << 8) | buf[11]);
             for (int i = 0; i < 3; i++) {
                 if (gyroVal[i] < gyroMin[i]) gyroMin[i] = gyroVal[i];
                 if (gyroVal[i] > gyroMax[i]) gyroMax[i] = gyroVal[i];
@@ -128,6 +134,7 @@ int IMU::init() {
                     moving = true;
                 } else {
                     gyroSum[i] += gyroVal[i];
+                    accelSum[i] += accelVal[i];
                 }
             }
             HAL_Delay(1);
@@ -137,9 +144,13 @@ int IMU::init() {
             HAL_Delay(500);
         } else {
             // Find average and convert to rad/s
-            gyroBias.x = ((float)gyroSum[0] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
-            gyroBias.y = ((float)gyroSum[1] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
-            gyroBias.z = ((float)gyroSum[2] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.x = ((float)gyroSum[0] / STARTUP_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.y = ((float)gyroSum[1] / STARTUP_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.z = ((float)gyroSum[2] / STARTUP_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            // Find average and convert to m/s^2
+            accelStartup.x = ((float)accelSum[0] / STARTUP_SAMPLE_COUNT) / ACCEL_SEN_SCALE_FACTOR;
+            accelStartup.y = ((float)accelSum[1] / STARTUP_SAMPLE_COUNT) / ACCEL_SEN_SCALE_FACTOR;
+            accelStartup.z = ((float)accelSum[2] / STARTUP_SAMPLE_COUNT) / ACCEL_SEN_SCALE_FACTOR;
             break;
         }
     }
@@ -464,4 +475,8 @@ float IMU::getODRHz() {
 
 GyroBias_t IMU::getGyroStartupBias(uint8_t imuId) {
     return (this->imuId == imuId) ? gyroBias : GyroBias_t{0.0f, 0.0f, 0.0f};
+}
+
+AccelStartup_t IMU::getAccelStartupMean(uint8_t imuId) {
+    return (this->imuId == imuId) ? accelStartup : AccelStartup_t{0.0f, 0.0f, 0.0f};
 }

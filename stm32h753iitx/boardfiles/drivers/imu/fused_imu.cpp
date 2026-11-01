@@ -156,3 +156,7 @@ float FusedIMU::getODRHz() {
 GyroBias_t FusedIMU::getGyroStartupBias(uint8_t imuId) {
     return imu[imuId]->getGyroStartupBias(imuId);
 }
+
+AccelStartup_t FusedIMU::getAccelStartupMean(uint8_t imuId) {
+    return imu[imuId]->getAccelStartupMean(imuId);
+}

@@ -40,6 +40,12 @@ typedef struct {
 } GyroBias_t;
 
 typedef struct {
+    float x;
+    float y;
+    float z;
+} AccelStartup_t;
+
+typedef struct {
     RawImu_t *data;
     uint16_t count;
     uint32_t readTime; // Time the fifo(last data packet) was read, in us

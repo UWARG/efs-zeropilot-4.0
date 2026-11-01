@@ -10,4 +10,5 @@ public:
     MOCK_METHOD(ScaledImuBatch_t, scaleIMUData, (const RawImuBatch_t &rawDataBatch), (override));
     MOCK_METHOD(float, getODRHz, (), (override));
     MOCK_METHOD(GyroBias_t, getGyroStartupBias, (uint8_t imuId), (override));
+    MOCK_METHOD(AccelStartup_t, getAccelStartupMean, (uint8_t imuId), (override));
 };
