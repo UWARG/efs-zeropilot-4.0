@@ -320,8 +320,12 @@ ZP_Error Ist8310::calculateHeading(float x_microtesla, float y_microtesla,
 {
   // Preserve the board-frame convention used by the original firmware.
   float heading = std::atan2(-y_microtesla, x_microtesla) * kRadiansToDegrees;
+  heading = std::fmod(heading + YAW_OFFSET_DEGREES, 360.0F);
   if (heading < 0.0F) {
     heading += 360.0F;
+  }
+  if (heading >= 360.0F) {
+    heading -= 360.0F;
   }
 
   out_heading = heading;
