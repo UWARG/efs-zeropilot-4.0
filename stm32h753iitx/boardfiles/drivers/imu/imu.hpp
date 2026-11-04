@@ -5,6 +5,7 @@
 #include "stm32h7xx_hal.h"
 #include <cstdint>
 #include "imu_datatypes.hpp"
+#include "spi_iface.hpp"
 
 typedef enum : uint8_t {
 	IMU_ODR_32KHZ = 0b0001,
@@ -58,6 +59,7 @@ class IMU : public IIMU {
 		SPI_HandleTypeDef *spi;
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
+		ISpi iSpiDevice;
 		const uint8_t imuId;
 		const ImuOdrConfig_t imuOdr;
 		const float uiFiltCutoffHz;
@@ -86,12 +88,10 @@ class IMU : public IIMU {
 		GyroBias_t gyroBias = {};
 
 		// Utility functions, blocking
-		HAL_StatusTypeDef writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); 
-		HAL_StatusTypeDef readRegister(uint8_t bank, uint8_t registerAddr, uint8_t *data, uint8_t length); 
-		HAL_StatusTypeDef setBank(uint8_t bank);
+		ZP_Error writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data); 
+		ZP_Error readRegister(uint8_t bank, uint8_t registerAddr, uint8_t *data, uint8_t length); 
+		ZP_Error setBank(uint8_t bank);
 
-		void csLow();
-		void csHigh();
 		void reset();
 		uint8_t whoAmI();
 		void flushFIFO();
