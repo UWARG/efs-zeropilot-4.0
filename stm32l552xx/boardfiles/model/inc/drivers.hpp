@@ -9,6 +9,7 @@
 #include "rc_sbus.hpp"
 #include "rc_crsf.hpp"
 #include "rc_motor_control.hpp"
+#include "motorTestMessage_t.hpp"
 #include "tm_queue.hpp"
 #include "mavlink.h"
 #include "queue.hpp"
@@ -41,6 +42,7 @@ extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
+extern MessageQueue<MotorTestMessage_t> *motorTestQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;

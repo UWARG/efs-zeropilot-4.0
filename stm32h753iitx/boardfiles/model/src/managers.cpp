@@ -23,7 +23,8 @@ void initManagers()
         fftHandle,
         rangefinderHandle,
         barometerHandle,
-        amRCQueueHandle, 
+        amRCQueueHandle,
+        motorTestQueueHandle,
         tmQueueHandle, 
         smLoggerQueueHandle, 
         &mainMotorGroup
@@ -48,6 +49,7 @@ void initManagers()
         telemLinkHandle,
         tmQueueHandle,
         amRCQueueHandle,
+        motorTestQueueHandle,
         messageBufferHandle
     );
 }

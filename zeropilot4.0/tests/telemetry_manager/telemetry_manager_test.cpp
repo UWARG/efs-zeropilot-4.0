@@ -17,6 +17,7 @@ protected:
     MockTelemLink mockTelemLink;
     MockMessageQueue<TMMessage_t> mockTMQueue;
     MockMessageQueue<RCMotorControlMessage_t> mockAMQueue;
+    MockMessageQueue<MotorTestMessage_t> mockMotorTestQueue;
     MockMessageQueue<mavlink_message_t> mockPackedMsgBuffer;
 
     void SetUp() override {
@@ -33,7 +34,7 @@ TEST_F(TelemetryManagerTest, HeartbeatProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -51,7 +52,7 @@ TEST_F(TelemetryManagerTest, StatusTextProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -64,7 +65,7 @@ TEST_F(TelemetryManagerTest, GPSRawDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -82,7 +83,7 @@ TEST_F(TelemetryManagerTest, ServoOutputRawProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -96,7 +97,7 @@ TEST_F(TelemetryManagerTest, RCDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -114,7 +115,7 @@ TEST_F(TelemetryManagerTest, BatteryDataProcessing_Normal) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -132,7 +133,7 @@ TEST_F(TelemetryManagerTest, BatteryDataProcessing_CriticalFault) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
 
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -145,7 +146,7 @@ TEST_F(TelemetryManagerTest, RawIMUDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -158,7 +159,7 @@ TEST_F(TelemetryManagerTest, AttitudeDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -171,7 +172,7 @@ TEST_F(TelemetryManagerTest, ScaledPressureDataProcessing) {
     EXPECT_CALL(mockPackedMsgBuffer, count()).WillRepeatedly(Return(0));
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -188,7 +189,7 @@ TEST_F(TelemetryManagerTest, TransmitWhenBufferNotEmpty) {
     EXPECT_CALL(mockTelemLink, transmit(_, _)).Times(1);
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
 }
 
@@ -198,6 +199,51 @@ TEST_F(TelemetryManagerTest, NoTransmitWhenBufferEmpty) {
     EXPECT_CALL(mockTelemLink, transmit(_, _)).Times(0);
     EXPECT_CALL(mockTelemLink, receive(_, _)).WillOnce(Return(0));
     
-    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockPackedMsgBuffer);
+    TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue, &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
     tm.tmUpdate();
+}
+
+TEST_F(TelemetryManagerTest, MotorTestQueueDeliveryAndFailureAck) {
+    // Exercise success, full queue, and a failed push after the capacity check.
+    for (int scenario = 0; scenario < 3; ++scenario) {
+        mavlink_message_t command{};
+        mavlink_msg_command_long_pack(42, 1, &command, 1, 1,
+            MAV_CMD_DO_MOTOR_TEST, 0, 2.0f, 1.0f, 12.5f, 3.0f, 4.0f, 0.0f, 0.0f);
+        uint8_t bytes[MAVLINK_MAX_PACKET_LEN]{};
+        const uint16_t length = mavlink_msg_to_send_buffer(bytes, &command);
+
+        EXPECT_CALL(mockTelemLink, receive(_, _))
+            .WillOnce(::testing::Invoke([&](uint8_t *buffer, uint16_t) {
+                memcpy(buffer, bytes, length);
+                return length;
+            }));
+        EXPECT_CALL(mockTMQueue, count()).WillOnce(Return(0));
+        EXPECT_CALL(mockPackedMsgBuffer, count()).WillOnce(Return(0));
+        EXPECT_CALL(mockMotorTestQueue, remainingCapacity())
+            .WillOnce(Return(scenario == 1 ? 0 : 1));
+        EXPECT_CALL(mockMotorTestQueue, push(_)).Times(scenario == 1 ? 0 : 1)
+            .WillRepeatedly(::testing::Invoke([&](MotorTestMessage_t *request) {
+                EXPECT_FLOAT_EQ(request->motor_instance, 2.0f);
+                EXPECT_FLOAT_EQ(request->throttle_type, 1.0f);
+                EXPECT_FLOAT_EQ(request->throttle_value, 12.5f);
+                EXPECT_FLOAT_EQ(request->timeout, 3.0f);
+                EXPECT_FLOAT_EQ(request->motor_count, 4.0f);
+                EXPECT_FLOAT_EQ(request->test_order, 0.0f);
+                return scenario == 2 ? -1 : 0;
+            }));
+        EXPECT_CALL(mockPackedMsgBuffer, push(_))
+            .WillOnce(::testing::Invoke([&](mavlink_message_t *message) {
+                EXPECT_EQ(message->msgid, MAVLINK_MSG_ID_COMMAND_ACK);
+                mavlink_command_ack_t ack{};
+                mavlink_msg_command_ack_decode(message, &ack);
+                EXPECT_EQ(ack.command, MAV_CMD_DO_MOTOR_TEST);
+                EXPECT_EQ(ack.result, scenario == 0 ? MAV_RESULT_ACCEPTED
+                                                   : MAV_RESULT_TEMPORARILY_REJECTED);
+                return 0;
+            }));
+
+        TelemetryManager tm(&mockSystemUtils, &mockTelemLink, &mockTMQueue,
+                            &mockAMQueue, &mockMotorTestQueue, &mockPackedMsgBuffer);
+        tm.tmUpdate();
+    }
 }

@@ -14,6 +14,7 @@ AttitudeManager::AttitudeManager(
     IRangefinder *rangefinderDriver,
     IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
+    IMessageQueue<MotorTestMessage_t> *motorTestQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
     MotorGroupInstance_t *mainMotorGroup
@@ -26,6 +27,7 @@ AttitudeManager::AttitudeManager(
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     // ekf(mathUtilsDriver),
     amQueue(amQueue),
+    motorTestQueue(motorTestQueue),
     tmQueue(tmQueue),
     smLoggerQueue(smLoggerQueue),
     #ifdef PLANE

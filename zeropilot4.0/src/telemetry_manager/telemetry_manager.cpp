@@ -9,12 +9,14 @@ TelemetryManager::TelemetryManager(
     ITelemLink *telemLinkDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
+    IMessageQueue<MotorTestMessage_t> *motorTestQueue,
     IMessageQueue<mavlink_message_t> *packedMsgBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
     telemLinkDriver(telemLinkDriver),
     tmTXQueueDriver(tmTXQueueDriver),
     amQueueDriver(amQueueDriver),
+    motorTestQueue(motorTestQueue),
     packedMsgBuffer(packedMsgBuffer),
     overflowMsgPending(false),
     currParamListTxIdx(ZP_PARAM::getCount()),
@@ -241,16 +243,20 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             switch (command)
             {
                 case MAV_CMD_DO_MOTOR_TEST: { // ID 209
-                    float motor_instance = mavlink_msg_command_long_get_param1(&msg); 
-                    float throttle_type = mavlink_msg_command_long_get_param2(&msg);
-                    float throttle_value = mavlink_msg_command_long_get_param3(&msg);
-                    float timeout = mavlink_msg_command_long_get_param4(&msg);
-                    float motor_count = mavlink_msg_command_long_get_param5(&msg);
-                    float test_order = mavlink_msg_command_long_get_param6(&msg);
+                    MotorTestMessage_t request{
+                        mavlink_msg_command_long_get_param1(&msg),
+                        mavlink_msg_command_long_get_param2(&msg),
+                        mavlink_msg_command_long_get_param3(&msg),
+                        mavlink_msg_command_long_get_param4(&msg),
+                        mavlink_msg_command_long_get_param5(&msg),
+                        mavlink_msg_command_long_get_param6(&msg)
+                    };
 
-                    // Motor Test Execution Code !! 
-
-                    enqueueCommandAckTx(command, MAV_RESULT_ACCEPTED);
+                    // Avoid waiting on a full queue in the telemetry update loop.
+                    const bool queued = motorTestQueue->remainingCapacity() > 0
+                        && motorTestQueue->push(&request) == 0;
+                    enqueueCommandAckTx(command, queued ? MAV_RESULT_ACCEPTED
+                                                       : MAV_RESULT_TEMPORARILY_REJECTED);
                     break;
                 }
                 

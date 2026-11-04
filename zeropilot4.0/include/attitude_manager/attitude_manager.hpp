@@ -19,6 +19,7 @@
 #include "rangefinder_iface.hpp"
 #include "barometer_iface.hpp"
 #include "MahonyAHRS.hpp"
+#include "motorTestMessage_t.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
 #define AM_TELEMETRY_GPS_DATA_RATE_HZ 5
@@ -47,6 +48,7 @@ public:
         IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
+        IMessageQueue<MotorTestMessage_t> *motorTestQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
         MotorGroupInstance_t *mainMotorGroup
@@ -73,6 +75,7 @@ private:
     Mahony mahonyFilter;
 
     IMessageQueue<RCMotorControlMessage_t> *amQueue;
+    IMessageQueue<MotorTestMessage_t> *motorTestQueue;
     IMessageQueue<TMMessage_t> *tmQueue;
     IMessageQueue<char[100]> *smLoggerQueue;
 

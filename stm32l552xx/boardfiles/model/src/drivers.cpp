@@ -41,6 +41,7 @@ PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
+MessageQueue<MotorTestMessage_t> *motorTestQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
@@ -124,6 +125,7 @@ void initDrivers()
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
+    motorTestQueueHandle = new MessageQueue<MotorTestMessage_t>(&motorTestQueueId);
     smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);

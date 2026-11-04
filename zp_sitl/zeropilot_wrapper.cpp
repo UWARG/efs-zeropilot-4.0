@@ -55,6 +55,7 @@ typedef struct {
     SITL_MathUtils* mathUtils;
     SITL_FFT *fft;
     SITL_Queue<RCMotorControlMessage_t>* amQueue;
+    SITL_Queue<MotorTestMessage_t>* motorTestQueue;
     SITL_Queue<TMMessage_t>* tmQueue;
     SITL_LogQueue* logQueue;
     SITL_Queue<mavlink_message_t>* mavlinkQueue;
@@ -87,6 +88,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->sysUtils;
     delete self->mathUtils;
     delete self->amQueue;
+    delete self->motorTestQueue;
     delete self->tmQueue;
     delete self->logQueue;
     delete self->mavlinkQueue;
@@ -122,6 +124,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->mathUtils = new SITL_MathUtils();
         self->fft = new SITL_FFT();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
+        self->motorTestQueue = new SITL_Queue<MotorTestMessage_t>(16);
         self->tmQueue = new SITL_Queue<TMMessage_t>();
         self->logQueue = new SITL_LogQueue();
         self->mavlinkQueue = new SITL_Queue<mavlink_message_t>();
@@ -223,12 +226,12 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->tm = new TelemetryManager(
-            self->sysUtils, self->telem, self->tmQueue, self->amQueue, self->mavlinkQueue
+            self->sysUtils, self->telem, self->tmQueue, self->amQueue, self->motorTestQueue, self->mavlinkQueue
         );
         
         self->am = new AttitudeManager(
             self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->rangefinder, self->barometer,
-            self->amQueue, self->tmQueue, self->logQueue,
+            self->amQueue, self->motorTestQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );
         

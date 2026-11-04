@@ -1,5 +1,6 @@
 #include "museq.hpp"
 #include "rc_motor_control.hpp"
+#include "motorTestMessage_t.hpp"
 #include "tm_queue.hpp"
 #include "mavlink.h"
 
@@ -7,6 +8,7 @@
 /* define mutexes begin */
 osMutexId_t itmMutex;
 osMessageQueueId_t amQueueId;
+osMessageQueueId_t motorTestQueueId;
 osMessageQueueId_t smLoggerQueueId;
 osMessageQueueId_t tmQueueId;
 osMessageQueueId_t messageBufferId;
@@ -40,6 +42,7 @@ void initSemphrs()
 void initQueues()
 {
   amQueueId = osMessageQueueNew(16, sizeof(RCMotorControlMessage_t), NULL);
+  motorTestQueueId = osMessageQueueNew(16, sizeof(MotorTestMessage_t), NULL);
   smLoggerQueueId = osMessageQueueNew(16, sizeof(char[100]), NULL);
   tmQueueId = osMessageQueueNew(16, sizeof(TMMessage_t), NULL);
   messageBufferId = osMessageQueueNew(16, sizeof(mavlink_message_t), NULL);

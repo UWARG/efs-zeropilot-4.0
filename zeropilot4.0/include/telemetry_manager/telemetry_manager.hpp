@@ -20,6 +20,7 @@
 #include "rc_motor_control.hpp"
 #include "telemlink_iface.hpp"
 #include "tm_param_setup.hpp"
+#include "motorTestMessage_t.hpp"
 class TelemetryManager {
     friend class TMParamSetup;
 
@@ -28,6 +29,7 @@ class TelemetryManager {
     ITelemLink *telemLinkDriver;                            // Driver used to actually send mavlink messages
     IMessageQueue<TMMessage_t> *tmTXQueueDriver;            // Driver that receives messages from other managers
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;   // Driver that currently is only used to set arm/disarm
+    IMessageQueue<MotorTestMessage_t> *motorTestQueue;
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
     mavlink_status_t status;
     mavlink_message_t overflowBuf;
@@ -49,7 +51,7 @@ class TelemetryManager {
     uint8_t profilerId;
     
   public:
-    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,IMessageQueue<mavlink_message_t> *packedMsgBuffer);
+    TelemetryManager(ISystemUtils *systemUtilsDriver, ITelemLink *telemLinkDriver, IMessageQueue<TMMessage_t>  *tmTXQueueDriver,  IMessageQueue<RCMotorControlMessage_t> *amQueueDriver, IMessageQueue<MotorTestMessage_t> *motorTestQueue, IMessageQueue<mavlink_message_t> *packedMsgBuffer);
     ~TelemetryManager();
 
     void tmUpdate();
