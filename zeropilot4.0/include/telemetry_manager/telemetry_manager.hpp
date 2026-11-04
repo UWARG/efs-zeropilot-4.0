@@ -29,7 +29,7 @@ class TelemetryManager {
     ITelemLink *telemLinkDriver;                            // Driver used to actually send mavlink messages
     IMessageQueue<TMMessage_t> *tmTXQueueDriver;            // Driver that receives messages from other managers
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;   // Driver that currently is only used to set arm/disarm
-    IMessageQueue<MotorTestMessage_t> *motorTestQueue;
+    IMessageQueue<MotorTestMessage_t> *motorTestQueue; //queue to send motorTest details
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
     mavlink_status_t status;
     mavlink_message_t overflowBuf;

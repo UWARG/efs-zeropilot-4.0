@@ -9,7 +9,7 @@ TelemetryManager::TelemetryManager(
     ITelemLink *telemLinkDriver,
     IMessageQueue<TMMessage_t> *tmTXQueueDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver,
-    IMessageQueue<MotorTestMessage_t> *motorTestQueue,
+    IMessageQueue<MotorTestMessage_t> *motorTestQueue, //queue for mavlink motortest with new struct/thread
     IMessageQueue<mavlink_message_t> *packedMsgBuffer
 ) :
     systemUtilsDriver(systemUtilsDriver),
@@ -244,6 +244,7 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             {
                 case MAV_CMD_DO_MOTOR_TEST: { // ID 209
                     MotorTestMessage_t request{
+                        //automatically stores the following in the motorTest struct
                         mavlink_msg_command_long_get_param1(&msg),
                         mavlink_msg_command_long_get_param2(&msg),
                         mavlink_msg_command_long_get_param3(&msg),
@@ -252,11 +253,8 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
                         mavlink_msg_command_long_get_param6(&msg)
                     };
 
-                    // Avoid waiting on a full queue in the telemetry update loop.
-                    const bool queued = motorTestQueue->remainingCapacity() > 0
-                        && motorTestQueue->push(&request) == 0;
-                    enqueueCommandAckTx(command, queued ? MAV_RESULT_ACCEPTED
-                                                       : MAV_RESULT_TEMPORARILY_REJECTED);
+                   
+                    enqueueCommandAckTx(command, MAV_RESULT_ACCEPTED);
                     break;
                 }
                 
