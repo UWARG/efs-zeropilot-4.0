@@ -6,6 +6,7 @@ project(gtestzeropilot4.0)
 # attitude manager test files
 set(AM_TSRC
     attitude_manager/attitude_manager_telemetry_test.cpp
+    attitude_manager/attitude_manager_mag_test.cpp
     attitude_manager/pid_test.cpp
 )
 
