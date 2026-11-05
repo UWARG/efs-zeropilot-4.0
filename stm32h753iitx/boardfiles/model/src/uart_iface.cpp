@@ -1,10 +1,10 @@
-#include "uart_iface.hpp"
+#include "uart.hpp"
 
 UARTInterface::UARTInterface(UART_HandleTypeDef *huart) {
     this->huart = huart;
 }
 
-ZP_Error UARTInterface::errorToZpError() {
+ZP_Error UARTInterface::uartErrorToZpError() {
     switch (HAL_UART_GetError(this->huart)) {
         case HAL_UART_ERROR_NONE:   return ZP_ERROR_OK;
         case HAL_UART_ERROR_PE:     return ZP_ERROR_CRC;
@@ -17,12 +17,12 @@ ZP_Error UARTInterface::errorToZpError() {
     }
 }
 
-ZP_Error UARTInterface::statusToZpError(HAL_StatusTypeDef status) {
+ZP_Error UARTInterface::uartStatusToZpError(HAL_StatusTypeDef status) {
     switch (status) {
         case HAL_TIMEOUT:       return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
         case HAL_BUSY:          return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
         case HAL_OK:            return ZP_ERROR_OK;
-        case HAL_ERROR:         return errorToZpError();
+        case HAL_ERROR:         return uartErrorToZpError();
         default:                return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
     }
 }
@@ -44,12 +44,12 @@ ZP_Error UARTInterface::getState(){
 
 ZP_Error UARTInterface::transmit(uint8_t* pData, uint16_t size){
     HAL_StatusTypeDef status = HAL_UART_Transmit(huart, pData, size, HAL_MAX_DELAY);
-    return statusToZpError(status);
+    return uartStatusToZpError(status);
 }
 
 ZP_Error UARTInterface::transmitDMA(uint8_t* pData, uint16_t size){
     HAL_StatusTypeDef status = HAL_UART_Transmit_DMA(huart, pData, size);
-    return statusToZpError(status);
+    return uartStatusToZpError(status);
 }
 
 ZP_Error UARTInterface::receive(uint8_t *pData, uint16_t size, uint32_t deadline){
@@ -57,12 +57,12 @@ ZP_Error UARTInterface::receive(uint8_t *pData, uint16_t size, uint32_t deadline
     if (remainingTick <= 0) return ZP_ERROR_TIMEOUT;
 
     HAL_StatusTypeDef status = HAL_UART_Receive(huart, pData, size, (uint32_t)remainingTick);
-    return statusToZpError(status);
+    return uartStatusToZpError(status);
 }
 
 ZP_Error UARTInterface::restartDMA(uint8_t *pData, uint16_t size){
     HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, pData, size);
     // line below only runs for GPS, confirm if we care about this for rc drivers...
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-    return statusToZpError(status);
+    return uartStatusToZpError(status);
 }
