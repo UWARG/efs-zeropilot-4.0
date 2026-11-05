@@ -44,6 +44,7 @@ CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 
@@ -146,6 +147,7 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
+    magHandle = new Magnetometer(&hi2c2);
     float rngfndEnable = 0.0f;
     paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE, rngfndEnable);
     if (static_cast<int>(rngfndEnable) == 1) {
@@ -172,12 +174,13 @@ void initDrivers() {
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
     (void)ZP_BIT::report(ZP_BIT_ID::RC_INIT, rcHandle->init());
-    
+
     (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gps1Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::GPS2_INIT, gps2Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::MAG_INIT, magHandle->init());
     if (rangefinderHandle != nullptr) {
         (void)ZP_BIT::report(ZP_BIT_ID::RANGEFINDER_INIT,
                              rangefinderHandle->init());
