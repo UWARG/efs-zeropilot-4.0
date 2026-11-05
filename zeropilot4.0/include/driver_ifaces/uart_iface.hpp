@@ -10,20 +10,12 @@ class UARTInterface {
 
     private:
         UART_HandleTypeDef *huart;
+        ZP_Error errorToZpError(); 
+        ZP_Error statusToZpError(HAL_StatusTypeDef status);
         void setBit(uint32_t reg, uint32_t bit);
         ZP_Error getState();
         ZP_Error transmit(uint8_t* pData, uint16_t size);
         ZP_Error transmitDMA(uint8_t* pData, uint16_t size);
         ZP_Error receive(uint8_t *pData, uint16_t size, uint32_t deadline);
         ZP_Error restartDMA(uint8_t *pData, uint16_t size);
-
-        // modify this so its specific to UART!
-        inline ZP_Error statusToZpError(HAL_StatusTypeDef status) {
-            switch (status) {
-                case HAL_TIMEOUT:       return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
-                case HAL_BUSY:          return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-                case HAL_OK:            return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-                default:                return ZP_ERROR_OK;
-            }
-        }
 };
