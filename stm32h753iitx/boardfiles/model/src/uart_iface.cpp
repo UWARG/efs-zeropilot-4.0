@@ -21,9 +21,9 @@ ZP_Error UARTInterface::statusToZpError(HAL_StatusTypeDef status) {
     switch (status) {
         case HAL_TIMEOUT:       return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
         case HAL_BUSY:          return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-        case HAL_OK:            return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
+        case HAL_OK:            return ZP_ERROR_OK;
         case HAL_ERROR:         return errorToZpError();
-        default:                return ZP_ERROR_OK;
+        default:                return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
     }
 }
 
@@ -31,8 +31,8 @@ UART_HandleTypeDef* UARTInterface::getHuart(){
     return this->huart;
 }
 
-void UARTInterface::setBit(uint32_t reg, uint32_t bit){
-    SET_BIT(reg, bit);   
+void UARTInterface::setBit(volatile uint32_t &reg, uint32_t bit){
+    SET_BIT(reg, bit);
 }
 
 ZP_Error UARTInterface::getState(){
@@ -48,7 +48,7 @@ ZP_Error UARTInterface::transmit(uint8_t* pData, uint16_t size){
 }
 
 ZP_Error UARTInterface::transmitDMA(uint8_t* pData, uint16_t size){
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, pData, size);
+    HAL_StatusTypeDef status = HAL_UART_Transmit_DMA(huart, pData, size);
     return statusToZpError(status);
 }
 
@@ -61,8 +61,8 @@ ZP_Error UARTInterface::receive(uint8_t *pData, uint16_t size, uint32_t deadline
 }
 
 ZP_Error UARTInterface::restartDMA(uint8_t *pData, uint16_t size){
-    HAL_StatusTypeDef status = HAL_UART_Transmit_DMA(huart, pData, size);
+    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, pData, size);
     // line below only runs for GPS, confirm if we care about this for rc drivers...
-    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT); 
+    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
     return statusToZpError(status);
 }
