@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <cmath>
+#include <utility>
 #include "attitude_manager.hpp"
 #include "mag_cal.hpp"
 #include "zp_params.hpp"
@@ -20,6 +22,7 @@ using ::testing::Return;
 using ::testing::DoAll;
 using ::testing::SetArgReferee;
 using ::testing::Invoke;
+using ::testing::Eq;
 using ::testing::NiceMock;
 
 static constexpr uint32_t MAG_FAIL_MS = BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::MAG_DATA_VALID)].failMs;
@@ -31,6 +34,76 @@ static MagData_t newSample(float x, float y, float z) {
     data.z = z;
     data.isNew = true;
     return data;
+}
+
+// Float Gauss-Jordan with partial pivoting, standing in for arm_mat_inverse_f32
+static ZP_Error invertForTest(const float *src, uint16_t dim, float *dst) {
+    if (dim != 4) {
+        return ZP_ERROR_INVALID_ARG;
+    }
+
+    float aug[4][8] = {};
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            aug[i][j] = src[i * 4 + j];
+        }
+        aug[i][4 + i] = 1.0f;
+    }
+
+    for (int col = 0; col < 4; col++) {
+        int pivot = col;
+        for (int row = col + 1; row < 4; row++) {
+            if (std::fabs(aug[row][col]) > std::fabs(aug[pivot][col])) {
+                pivot = row;
+            }
+        }
+        if (aug[pivot][col] == 0.0f) {
+            return ZP_ERROR_INVALID_DATA;
+        }
+        for (int j = 0; j < 8; j++) {
+            std::swap(aug[col][j], aug[pivot][j]);
+        }
+
+        const float DIAG = aug[col][col];
+        for (int j = 0; j < 8; j++) {
+            aug[col][j] /= DIAG;
+        }
+        for (int row = 0; row < 4; row++) {
+            if (row == col) {
+                continue;
+            }
+            const float FACTOR = aug[row][col];
+            for (int j = 0; j < 8; j++) {
+                aug[row][j] -= FACTOR * aug[col][j];
+            }
+        }
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            dst[i * 4 + j] = aug[i][4 + j];
+        }
+    }
+    return ZP_ERROR_OK;
+}
+
+// Runs a full collection window over evenly spread directions, so the fit is solved
+static void collectSphere(MagCal &magCal, MagData_t &sample, const float hardIron[3], float field) {
+    static constexpr int SAMPLES = 200;
+    static const float GOLDEN_ANGLE = 2.39996323f;
+
+    MagData_t data = {};
+    for (int i = 0; i < SAMPLES; i++) {
+        const float Z = 1.0f - 2.0f * (static_cast<float>(i) + 0.5f) / SAMPLES;
+        const float RADIUS = std::sqrt(1.0f - Z * Z);
+        const float ANGLE = GOLDEN_ANGLE * static_cast<float>(i);
+
+        sample = newSample(hardIron[0] + field * RADIUS * std::cos(ANGLE),
+                           hardIron[1] + field * RADIUS * std::sin(ANGLE),
+                           hardIron[2] + field * Z);
+        sample.timestamp = (MagCal::COLLECT_DURATION_MS * static_cast<uint32_t>(i)) / (SAMPLES - 1);
+        ASSERT_EQ(magCal.update(data), ZP_ERROR_OK);
+    }
 }
 
 class AttitudeManagerMagTest : public ::testing::Test {
@@ -147,7 +220,8 @@ TEST(MagCalTest, UpdatePassesDriverErrorThrough) {
     NiceMock<MockMagnetometer> mockMag;
     ON_CALL(mockMag, readData(_)).WillByDefault(DoAll(SetArgReferee<0>(MagData_t{}), Return(ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT)));
 
-    MagCal magCal(&mockMag);
+    NiceMock<MockMathUtils> mockMath;
+    MagCal magCal(&mockMag, &mockMath);
     MagData_t data = {};
 
     EXPECT_EQ(magCal.update(data), ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT);
@@ -158,7 +232,8 @@ TEST(MagCalTest, UpdateAppliesCorrection) {
     NiceMock<MockMagnetometer> mockMag;
     ON_CALL(mockMag, readData(_)).WillByDefault(DoAll(SetArgReferee<0>(newSample(15.0f, -5.0f, 40.0f)), Return(ZP_ERROR_OK)));
 
-    MagCal magCal(&mockMag);
+    NiceMock<MockMathUtils> mockMath;
+    MagCal magCal(&mockMag, &mockMath);
     MagCalConstants_t constants = {
         {5.0f, -5.0f, 0.0f},
         {2.0f, 0.0f, 0.0f,
@@ -178,7 +253,8 @@ TEST(MagCalTest, UpdateAppliesCorrection) {
 }
 
 TEST(MagCalTest, NullDriverReportsNullptr) {
-    MagCal magCal(nullptr);
+    NiceMock<MockMathUtils> mockMath;
+    MagCal magCal(nullptr, &mockMath);
     MagData_t data = {};
 
     EXPECT_EQ(magCal.update(data), ZP_ERROR_NULLPTR);
@@ -187,7 +263,8 @@ TEST(MagCalTest, NullDriverReportsNullptr) {
 
 TEST(MagCalTest, StartWhileCollectingIsBusy) {
     NiceMock<MockMagnetometer> mockMag;
-    MagCal magCal(&mockMag);
+    NiceMock<MockMathUtils> mockMath;
+    MagCal magCal(&mockMag, &mockMath);
 
     EXPECT_EQ(magCal.startCalibration(), ZP_ERROR_OK);
     EXPECT_EQ(magCal.startCalibration(), ZP_ERROR_BUSY);
@@ -209,7 +286,8 @@ TEST(MagCalTest, TooFewSamplesFailsCalibration) {
         return ZP_ERROR_OK;
     }));
 
-    MagCal magCal(&mockMag);
+    NiceMock<MockMathUtils> mockMath;
+    MagCal magCal(&mockMag, &mockMath);
     ASSERT_EQ(magCal.startCalibration(), ZP_ERROR_OK);
 
     // Two samples spanning the whole window: the fit runs and rejects them
@@ -229,4 +307,80 @@ TEST(MagCalTest, TooFewSamplesFailsCalibration) {
     ASSERT_EQ(magCal.getConstants(constants), ZP_ERROR_OK);
     EXPECT_FLOAT_EQ(constants.softIron[0], 1.0f);
     EXPECT_FLOAT_EQ(constants.hardIron[0], 0.0f);
+}
+
+TEST(MagCalTest, CalibrationRecoversHardIronUsingMathUtils) {
+    NiceMock<MockMagnetometer> mockMag;
+    NiceMock<MockMathUtils> mockMath;
+    MagData_t sample = {};
+    ON_CALL(mockMag, readData(_)).WillByDefault(Invoke([&sample](MagData_t &out) {
+        out = sample;
+        return ZP_ERROR_OK;
+    }));
+    EXPECT_CALL(mockMath, matrixInverse(_, Eq(4), _)).WillOnce(Invoke(invertForTest));
+
+    MagCal magCal(&mockMag, &mockMath);
+    ASSERT_EQ(magCal.startCalibration(), ZP_ERROR_OK);
+
+    const float HARD_IRON[3] = {-9.95f, -25.11f, 3.17f};
+    collectSphere(magCal, sample, HARD_IRON, 53.5f);
+
+    MagCalStatus_t status = {};
+    ASSERT_EQ(magCal.getStatus(status), ZP_ERROR_OK);
+    ASSERT_EQ(status.state, MAG_CAL_STATE_SUCCESS);
+    EXPECT_EQ(status.error, MAG_CAL_ERR_NONE);
+
+    MagCalConstants_t constants = {};
+    ASSERT_EQ(magCal.getConstants(constants), ZP_ERROR_OK);
+    EXPECT_NEAR(constants.hardIron[0], HARD_IRON[0], 0.05f);
+    EXPECT_NEAR(constants.hardIron[1], HARD_IRON[1], 0.05f);
+    EXPECT_NEAR(constants.hardIron[2], HARD_IRON[2], 0.05f);
+    EXPECT_NEAR(constants.fieldStrength, 53.5f, 0.05f);
+}
+
+TEST(MagCalTest, FailedInverseReportsSingular) {
+    NiceMock<MockMagnetometer> mockMag;
+    NiceMock<MockMathUtils> mockMath;
+    MagData_t sample = {};
+    ON_CALL(mockMag, readData(_)).WillByDefault(Invoke([&sample](MagData_t &out) {
+        out = sample;
+        return ZP_ERROR_OK;
+    }));
+    ON_CALL(mockMath, matrixInverse(_, _, _)).WillByDefault(Return(ZP_ERROR_INVALID_DATA));
+
+    MagCal magCal(&mockMag, &mockMath);
+    ASSERT_EQ(magCal.startCalibration(), ZP_ERROR_OK);
+
+    const float HARD_IRON[3] = {0.0f, 0.0f, 0.0f};
+    collectSphere(magCal, sample, HARD_IRON, 50.0f);
+
+    MagCalStatus_t status = {};
+    ASSERT_EQ(magCal.getStatus(status), ZP_ERROR_OK);
+    EXPECT_EQ(status.state, MAG_CAL_STATE_FAILED);
+    EXPECT_EQ(status.error, MAG_CAL_ERR_SINGULAR);
+
+    MagCalConstants_t constants = {};
+    ASSERT_EQ(magCal.getConstants(constants), ZP_ERROR_OK);
+    EXPECT_FLOAT_EQ(constants.softIron[0], 1.0f);
+    EXPECT_FLOAT_EQ(constants.hardIron[0], 0.0f);
+}
+
+TEST(MagCalTest, NullMathUtilsFailsCalibration) {
+    NiceMock<MockMagnetometer> mockMag;
+    MagData_t sample = {};
+    ON_CALL(mockMag, readData(_)).WillByDefault(Invoke([&sample](MagData_t &out) {
+        out = sample;
+        return ZP_ERROR_OK;
+    }));
+
+    MagCal magCal(&mockMag, nullptr);
+    ASSERT_EQ(magCal.startCalibration(), ZP_ERROR_OK);
+
+    const float HARD_IRON[3] = {0.0f, 0.0f, 0.0f};
+    collectSphere(magCal, sample, HARD_IRON, 50.0f);
+
+    MagCalStatus_t status = {};
+    ASSERT_EQ(magCal.getStatus(status), ZP_ERROR_OK);
+    EXPECT_EQ(status.state, MAG_CAL_STATE_FAILED);
+    EXPECT_EQ(status.error, MAG_CAL_ERR_SINGULAR);
 }

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "magnetometer_iface.hpp"
+#include "mathutils_iface.hpp"
 #include "zp_error.h"
 
 typedef enum : uint8_t {
@@ -50,7 +51,7 @@ class MagCal {
     public:
         static constexpr uint32_t COLLECT_DURATION_MS = 30000;
 
-        explicit MagCal(IMagnetometer *magDriver);
+        MagCal(IMagnetometer *magDriver, IMathUtils *mathUtils);
 
         /**
          * Reads the driver and returns the sample with the current correction
@@ -80,6 +81,7 @@ class MagCal {
         static constexpr float MAX_FIELD_UT = 200.0f;
 
         IMagnetometer *magDriver;
+        IMathUtils *mathUtils;
 
         MagCalConstants_t constants;
         MagCalState_t state;
@@ -99,5 +101,4 @@ class MagCal {
         void addSample(const float field[3], uint32_t nowMs);
         void applyCorrection(float field[3]) const;
         ZP_Error solve();
-        static ZP_Error invert4x4(const float src[16], float dst[16]);
 };

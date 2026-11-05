@@ -23,7 +23,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
-    magCal(magDriver),
+    magCal(magDriver, mathUtilsDriver),
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
