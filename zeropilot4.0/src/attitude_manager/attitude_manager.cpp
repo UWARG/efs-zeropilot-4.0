@@ -221,6 +221,20 @@ void AttitudeManager::amUpdate() {
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
 
+    if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_LOG_EKF_RATE_HZ) == 0){
+        GyroBias_t bias = ekf.getGyroBias();
+
+        Logger::log("EKF t=%lu r=%.4f p=%.4f y=%.4f gb=%.5f,%.5f,%.5f ab=%.5f,%.5f,%.5f",
+            LogLevel_e::LOG_DEBUG,
+            systemUtilsDriver->getCurrentTimestampMs(),
+            attitude.roll, attitude.pitch, attitude.yaw,
+            bias.x, bias.y, bias.z,
+            ekf.meas.accelBiasAccumulated[0],
+            ekf.meas.accelBiasAccumulated[1],
+            ekf.meas.accelBiasAccumulated[2]
+        ); // logs the gyro reading, gyro bias, and accelerometer bias from gravity
+    }
+
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
     }
