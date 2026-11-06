@@ -17,6 +17,7 @@ extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern UART_HandleTypeDef huart6;
+extern UART_HandleTypeDef huart8;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
@@ -42,6 +43,7 @@ GPS *gps1Handle = nullptr;
 GPS *gps2Handle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
+RFD *virtualTelemPortHandle = nullptr;
 FusedIMU *imuHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
@@ -142,6 +144,7 @@ void initDrivers() {
     gps2Handle = new GPS(&huart3);
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart1);
+    virtualTelemPortHandle = new RFD(&huart8);
     IMU *imu0 = new IMU(&hspi1, GPIOC, GPIO_PIN_4, 0, IMU_ODR_1KHZ);
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
@@ -176,7 +179,11 @@ void initDrivers() {
     (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gps1Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::GPS2_INIT, gps2Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
-    (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
+    ZP_Error telemStatus = telemLinkHandle->init();
+    if (virtualTelemPortHandle != nullptr) {
+        telemStatus |= virtualTelemPortHandle->init();
+    }
+    (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemStatus);
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
     if (rangefinderHandle != nullptr) {
         (void)ZP_BIT::report(ZP_BIT_ID::RANGEFINDER_INIT,
