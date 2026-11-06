@@ -1,7 +1,23 @@
 from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 import os
 import glob
 import platform
+
+
+# Strip C++-only flags when compiling C sources (e.g. CMSIS-DSP)
+class BuildExt(build_ext):
+    def build_extensions(self):
+        original_compile = self.compiler._compile
+
+        def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
+            if src.endswith('.c'):
+                extra_postargs = [a for a in extra_postargs
+                                  if not (a.startswith('-std=c++') or a.startswith('/std:c++'))]
+            return original_compile(obj, src, ext, cc_args, extra_postargs, pp_opts)
+
+        self.compiler._compile = _compile
+        super().build_extensions()
 
 zeropilot_root = '../zeropilot4.0'
 
@@ -52,6 +68,8 @@ zeropilot = Extension(
         f'{zeropilot_root}/include/thread_msgs',
         f'{zeropilot_root}/include/driver_ifaces',
         f'{zeropilot_root}/include/zp_param',
+        f'{zeropilot_root}/include/zp_error',
+        f'{zeropilot_root}/include/zp_bit',
         '../external/c_library_v2',
         '../external/c_library_v2/common',
         '../external/CMSIS-DSP/Include',
@@ -65,4 +83,5 @@ setup(
     name='zeropilot',
     version='1.0',
     ext_modules=[zeropilot],
+    cmdclass={'build_ext': BuildExt},
 )

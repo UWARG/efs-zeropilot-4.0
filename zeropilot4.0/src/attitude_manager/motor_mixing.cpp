@@ -137,5 +137,21 @@ void MotorMixing::quadMotorMixer(const RCMotorControlMessage_t outputControlMsg,
         }
     }
 }
+
+void MotorMixing::quadGroundIdle(MotorGroupInstance_t *mainMotorGroup, float* motorPercent, float motSpinArm) {
+    for (uint8_t i = 0; i < mainMotorGroup->motorCount; i++) {
+        switch (mainMotorGroup->motors[i].function) {
+            case MotorFunction_e::MOTOR_1:
+            case MotorFunction_e::MOTOR_2:
+            case MotorFunction_e::MOTOR_3:
+            case MotorFunction_e::MOTOR_4:
+                motorPercent[i] = motSpinArm;
+                break;
+            default:
+                motorPercent[i] = 0.0f;
+                break;
+        }
+    }
+}
 #endif
 

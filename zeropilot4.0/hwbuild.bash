@@ -6,14 +6,16 @@ script_dir=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
 vehicle_type="plane"
 clean="false"
 board="h753iit"
+build_type="Debug"
 
 usage() {
-    echo "Usage: $0 [-c] [-v] <vehicle_type> [-b] <board>"
+    echo "Usage: $0 [-c] [-r] [-v] <vehicle_type> [-b] <board>"
+    echo "  -r  release build (optimized); default is a debug build (no optimization)"
     exit 1
 }
 
 # parse args
-while getopts "b:v:c" opt; do
+while getopts "b:v:cr" opt; do
     case "${opt}" in
         b)
             if [[ "$OPTARG" == "l552" || "$OPTARG" == "h753iit" ]]; then
@@ -28,22 +30,24 @@ while getopts "b:v:c" opt; do
         c)
             clean="true"
             ;;
+        r)
+            build_type="Release"
+            ;;
         *)
             usage
             ;;
     esac
 done
 
-# set build dir
-if [[ "$board" == "h753iit" && "$vehicle_type" == "plane" ]]; then
-    build_dir="${script_dir}/build/h753iit-plane"
-elif [[ "$board" == "h753iit" && "$vehicle_type" == "quad" ]]; then
-    build_dir="${script_dir}/build/h753iit-quad"
-elif [[  "$board" == "l552" && "$vehicle_type" == "plane" ]]; then
-    build_dir="${script_dir}/build/l552-plane"
-elif [[ "$board" == "l552"  && "$vehicle_type" == "quad" ]]; then
-    build_dir="${script_dir}/build/l552-quad"
+# lowercase build type for directory naming (keeps debug/release builds isolated)
+if [[ "$build_type" == "Release" ]]; then
+    build_suffix="release"
+else
+    build_suffix="debug"
 fi
+
+# set build dir
+build_dir="${script_dir}/build/${board}-${vehicle_type}-${build_suffix}"
 
 # clean if requested and setup
 if [[ -d "$build_dir" ]]; then
@@ -81,9 +85,9 @@ if [[ ! -f "CMakeCache.txt" ]]; then
     echo "generator: $generator"
     echo "toolchain: $tc_file"
     if [[ "$vehicle_type" == "plane" ]]; then
-        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DPLANE_BUILD=ON "$script_dir"
+        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$build_type" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DPLANE_BUILD=ON "$script_dir"
     elif [[ "$vehicle_type" == "quad" ]]; then
-        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="Debug" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DQUADCOPTER_BUILD=ON "$script_dir"
+        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$build_type" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DQUADCOPTER_BUILD=ON "$script_dir"
     fi
 fi
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "imu_iface.hpp"
 #include "sitl_driver_configs.hpp"
+#include "unit_conversions.hpp"
 #include <cmath>
 
 class SITL_IMU : public IIMU {
@@ -9,17 +10,18 @@ private:
 
     RawImu_t rawData = {};
     ScaledImu_t scaledData = {};
-    RawImuBatch_t rawBatch = {&rawData, 1}; // Only returning 1 data packet for sitl
-    ScaledImuBatch_t scaledBatch = {&scaledData, 1}; // Only returning 1 data packet for sitl
+    static constexpr uint16_t SITL_BATCH_PACKETS = 1;
+    RawImuBatch_t rawBatch = {&rawData, SITL_BATCH_PACKETS};
+    ScaledImuBatch_t scaledBatch = {&scaledData, SITL_BATCH_PACKETS};
 
     // Constants for internal conversions
     static constexpr float RAD_TO_DEG = 57.2957795f;
     static constexpr float DEG_TO_RAD = 0.0174532925f;
 
 public:
-    int init() override {
+    ZP_Error init() override {
         rawData.timestamp = 0; // Initialize timestamp
-        return 0; // Success
+        return ZP_ERROR_OK;
     }
     
     /**
@@ -35,9 +37,9 @@ public:
 
         // Accelerometer: Gravity projection (assuming 1g static)
         // LSB_PER_G = ACCEL_SCALE (e.g., 2048)
-        float ax = -Config::GRAVITY * sp;
-        float ay =  Config::GRAVITY * sr * cp;
-        float az =  Config::GRAVITY * cr * cp;
+        float ax = Config::GRAVITY * sp;
+        float ay = -Config::GRAVITY * sr * cp;
+        float az = -Config::GRAVITY * cr * cp;
         
         // Convert m/s^2 to LSB: (Value / 9.81) * Scale_Factor
         constexpr float ACCEL_TO_LSB = (float)Config::ACCEL_SCALE / Config::GRAVITY;
@@ -57,18 +59,30 @@ public:
         rawData.timestamp += SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ; // Increment timestamp for simulation
     }
     
-    RawImuBatch_t readRawData() override {
-        return rawBatch;
+    ZP_Error readRawData(RawImuBatch_t &rawDataBatch) override {
+        rawDataBatch = rawBatch;
+        return ZP_ERROR_OK;
     }
 
     float getODRHz() override {
         return (float)SITL_Driver_Configs::SITL_DRIVER_UPDATE_RATE_HZ;
     }
 
+    GyroBias_t getGyroStartupBias(uint8_t imuId) override {
+        return GyroBias_t{0.0f, 0.0f, 0.0f}; // No startup bias in simulation
+    }
+
     /**
      * Reverses the raw data back into meaningful SI units (m/s^2 and rad/s)
      */
-    ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override {
+    ZP_Error scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) override {
+        if (rawDataBatch.data == nullptr) {
+            return ZP_ERROR_NULLPTR;
+        }
+        if (rawDataBatch.count > SITL_BATCH_PACKETS) {
+            return ZP_ERROR_RANGE;
+        }
+
         for (int i = 0; i < rawDataBatch.count; i++) {
             const RawImu_t &raw = rawDataBatch.data[i];
 
@@ -77,13 +91,15 @@ public:
             scaledData.yacc = ((float)raw.yacc / Config::ACCEL_SCALE) * Config::GRAVITY;
             scaledData.zacc = ((float)raw.zacc / Config::ACCEL_SCALE) * Config::GRAVITY;
 
-            // Convert LSB back to deg/s (consistent with hardware IMU driver)
-            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE;
-            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE;
-            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE;
+            // Convert LSB back to rad/s (consistent with hardware IMU driver)
+            scaledData.xgyro = (float)raw.xgyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
+            scaledData.ygyro = (float)raw.ygyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
+            scaledData.zgyro = (float)raw.zgyro / Config::GYRO_SCALE * ZP_UNITS::DEG_TO_RAD;
 
             scaledData.timestamp = raw.timestamp;
         }
-        return scaledBatch; 
+
+        scaledDataBatch = scaledBatch;
+        return ZP_ERROR_OK;
     }
 };

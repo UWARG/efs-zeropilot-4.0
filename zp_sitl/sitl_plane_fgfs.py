@@ -12,6 +12,10 @@ import zeropilot # type: ignore
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 SITL_RATE_HZ = 1000
+PSF_TO_KPA = 0.0478803
+
+def rankine_to_celsius(temp_r):
+    return (temp_r - 491.67) * 5.0 / 9.0
 
 class ZP_PLANE_SITL_FGFS:
     def __init__(self, fg_host="127.0.0.1", fg_port=5550):
@@ -131,7 +135,8 @@ class ZP_PLANE_SITL_FGFS:
             self.fdm['velocities/r-rad_sec'], self.fdm['position/lat-geod-deg'],
             self.fdm['position/long-gc-deg'], self.fdm['position/h-sl-ft'] * 0.3048,
             self.fdm['velocities/vg-fps'] * 0.3048, self.fdm['attitude/psi-deg'],
-            self.fdm['propulsion/total-fuel-lbs'], self.fdm['propulsion/engine/propeller-rpm']
+            self.fdm['propulsion/total-fuel-lbs'], self.fdm['propulsion/engine/propeller-rpm'],
+            self.fdm['atmosphere/P-psf'] * PSF_TO_KPA, rankine_to_celsius(self.fdm['atmosphere/T-R'])
         )
         self.zp.set_rc(self.commands['roll'], self.commands['pitch'], self.commands['yaw'], 
                        self.commands['throttle'], 100 if self.armed else 0, self.flap_setpoints[self.flap_index], 
