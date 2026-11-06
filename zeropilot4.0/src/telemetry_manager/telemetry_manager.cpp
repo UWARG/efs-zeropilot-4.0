@@ -215,13 +215,13 @@ ZP_Error TelemetryManager::transmit() {
         }
         if (result == ZP_ERROR_OK && txBufIdx > 0) {
             result |= telemLinkDriver->transmit(txBuffer, txBufIdx);
+            if (telemLinkVirtualComDriver != nullptr) {
+                result |= telemLinkVirtualComDriver->transmit(txBuffer, txBufIdx);
+            }
         }
     }
 
-   telemLinkDriver->transmit(txBuffer, txBufIdx);
-   if (telemLinkVirtualComDriver != nullptr) {
-        telemLinkVirtualComDriver->transmit(txBuffer, txBufIdx);
-    }
+    return result;
 }
 
 ZP_Error TelemetryManager::receive() {
@@ -238,17 +238,19 @@ ZP_Error TelemetryManager::receive() {
         }
     }
 
-        // Also poll virtual COM link if present
-        if (telemLinkVirtualComDriver != nullptr) {
-            const uint16_t RECEIVED_BYTES_VCOM = telemLinkVirtualComDriver->receive(rxBuffer, sizeof(rxBuffer));
-            for (uint16_t i = 0; i < RECEIVED_BYTES_VCOM; ++i) {
-                if (mavlink_parse_char(0, rxBuffer[i], &msgToRX, &status)) {
-                    processRxMsg(msgToRX);
-                    msgToRX = {};
-                }
+    // Also poll virtual COM link if present
+    if (telemLinkVirtualComDriver != nullptr) {
+        uint16_t receivedBytesVcom = 0;
+        result |= telemLinkVirtualComDriver->receive(rxBuffer, sizeof(rxBuffer), receivedBytesVcom);
+        for (uint16_t i = 0; i < receivedBytesVcom; ++i) {
+            if (mavlink_parse_char(MAVLINK_COMM_1, rxBuffer[i], &msgToRX, &statusVcom)) {
+                result |= processRxMsg(msgToRX);
+                msgToRX = {};
             }
         }
-    
+    }
+
+    return result;
 }
 
 ZP_Error TelemetryManager::processRxMsg(const mavlink_message_t &msg) {

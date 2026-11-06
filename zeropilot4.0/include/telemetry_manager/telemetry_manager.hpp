@@ -32,7 +32,8 @@ class TelemetryManager {
     IMessageQueue<TMMessage_t> *tmTXQueueDriver;            // Driver that receives messages from other managers
     IMessageQueue<RCMotorControlMessage_t> *amQueueDriver;   // Driver that currently is only used to set arm/disarm
     IMessageQueue<mavlink_message_t> *packedMsgBuffer{};    // GPOS, Attitude and Heartbeat/Connection Messages
-    mavlink_status_t status;
+    mavlink_status_t status{};
+    mavlink_status_t statusVcom{};
     mavlink_message_t overflowBuf;
     bool overflowMsgPending;
 

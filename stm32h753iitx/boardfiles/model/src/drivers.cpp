@@ -17,6 +17,7 @@ extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart4;
 extern UART_HandleTypeDef huart6;
+extern UART_HandleTypeDef huart8;
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi4;
@@ -167,12 +168,6 @@ void initDrivers() {
         motorStatus |= motorHandles[i]->init();
     }
 
-    rcHandle->init();
-    gpsHandle->init();
-    imuHandle->init();
-    pmHandle->init();
-    telemLinkHandle->init();
-    if (virtualTelemPortHandle) virtualTelemPortHandle->init();
     MotorControl::enableServo(GPIOF, GPIO_PIN_1);
     motorStatus |= MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
     (void)ZP_BIT::report(ZP_BIT_ID::MOTOR_INIT, motorStatus);
@@ -184,7 +179,11 @@ void initDrivers() {
     (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gps1Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::GPS2_INIT, gps2Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
-    (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
+    ZP_Error telemStatus = telemLinkHandle->init();
+    if (virtualTelemPortHandle != nullptr) {
+        telemStatus |= virtualTelemPortHandle->init();
+    }
+    (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemStatus);
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
     if (rangefinderHandle != nullptr) {
         (void)ZP_BIT::report(ZP_BIT_ID::RANGEFINDER_INIT,
