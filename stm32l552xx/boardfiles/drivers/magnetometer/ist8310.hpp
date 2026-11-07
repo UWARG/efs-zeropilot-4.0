@@ -37,7 +37,7 @@ private:
   static constexpr float MICROTESLA_PER_LSB = 0.3F;
 
 
-  enum Register_e : uint8_t {
+  enum IST8310_Register_e : uint8_t {
     kWhoAmI = 0x00,
     kStatus1 = 0x02,
     kDataXLow = 0x03,
