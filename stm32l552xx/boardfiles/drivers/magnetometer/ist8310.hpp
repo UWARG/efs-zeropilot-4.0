@@ -1,5 +1,5 @@
 /**
- * @file ist8310_i2c.hpp
+ * @file ist8310.hpp
  * @brief I2C driver for the iSentek IST8310 three-axis magnetometer.
  */
 
