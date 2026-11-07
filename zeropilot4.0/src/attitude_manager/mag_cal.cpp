@@ -24,8 +24,9 @@ static constexpr MagCalConstants_t DEFAULT_CAL_CONSTANTS = {
     50.0f, // nominal Earth field, which ranges roughly 25-65 uT
 };
 
-MagCal::MagCal(IMagnetometer *magDriver)
+MagCal::MagCal(IMagnetometer *magDriver, IMathUtils *mathUtils)
     : magDriver(magDriver),
+      mathUtils(mathUtils),
       constants(DEFAULT_CAL_CONSTANTS),
       state(MAG_CAL_STATE_IDLE),
       error(MAG_CAL_ERR_NONE),
@@ -218,56 +219,6 @@ void MagCal::addSample(const float field[3], uint32_t nowMs) {
     state = (solve() == ZP_ERROR_OK) ? MAG_CAL_STATE_SUCCESS : MAG_CAL_STATE_FAILED;
 }
 
-ZP_Error MagCal::invert4x4(const float src[16], float dst[16]) {
-
-    double aug[4][8] = {};
-    for (uint8_t i = 0; i < 4; i++) {
-        for (uint8_t j = 0; j < 4; j++) {
-            aug[i][j] = src[i * 4 + j];
-        }
-        aug[i][4 + i] = 1.0;
-    }
-
-    for (uint8_t col = 0; col < 4; col++) {
-        uint8_t pivot = col;
-        for (uint8_t row = col + 1; row < 4; row++) {
-            if (std::fabs(aug[row][col]) > std::fabs(aug[pivot][col])) {
-                pivot = row;
-            }
-        }
-        if (std::fabs(aug[pivot][col]) < 1e-12) {
-            return ZP_ERROR_INVALID_DATA;
-        }
-        if (pivot != col) {
-            for (uint8_t j = 0; j < 8; j++) {
-                const double TMP = aug[col][j];
-                aug[col][j] = aug[pivot][j];
-                aug[pivot][j] = TMP;
-            }
-        }
-
-        const double DIAG = aug[col][col];
-        for (uint8_t j = 0; j < 8; j++) {
-            aug[col][j] /= DIAG;
-        }
-        for (uint8_t row = 0; row < 4; row++) {
-            if (row == col) continue;
-            const double FACTOR = aug[row][col];
-            if (FACTOR == 0.0) continue;
-            for (uint8_t j = 0; j < 8; j++) {
-                aug[row][j] -= FACTOR * aug[col][j];
-            }
-        }
-    }
-
-    for (uint8_t i = 0; i < 4; i++) {
-        for (uint8_t j = 0; j < 4; j++) {
-            dst[i * 4 + j] = static_cast<float>(aug[i][4 + j]);
-        }
-    }
-    return ZP_ERROR_OK;
-}
-
 ZP_Error MagCal::solve() {
     if (sampleCount < MIN_SAMPLES) {
         error = MAG_CAL_ERR_TOO_FEW_SAMPLES;
@@ -292,8 +243,15 @@ ZP_Error MagCal::solve() {
         return ZP_ERROR_INVALID_DATA;
     }
 
+    if (mathUtils == nullptr) {
+        error = MAG_CAL_ERR_SINGULAR;
+        return ZP_ERROR_NULLPTR;
+    }
+
+    // matrixInverse may overwrite its input. That is safe here because
+    // startCalibration() rebuilds the accumulators before the next fit.
     float inverse[16];
-    if (invert4x4(normalMatrix, inverse) != ZP_ERROR_OK) {
+    if (mathUtils->matrixInverse(normalMatrix, 4, inverse) != ZP_ERROR_OK) {
         error = MAG_CAL_ERR_SINGULAR;
         return ZP_ERROR_INVALID_DATA;
     }
