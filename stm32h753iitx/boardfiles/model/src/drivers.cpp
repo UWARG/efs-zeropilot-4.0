@@ -147,7 +147,15 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
-    magHandle = new Magnetometer(&hi2c2);
+    
+    float magAddress = 0.0f;
+    paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::MAG_I2C_ADDR, magAddress);
+    if (magAddress >= 0x08 && magAddress <= 0x77) {
+        magHandle = new Magnetometer(&hi2c2, nullptr, 0, static_cast<uint8_t>(magAddress));
+    } else {
+        paramStatus |= ZP_ERROR_RANGE;
+        magHandle = new Magnetometer(&hi2c2);
+    }
     float rngfndEnable = 0.0f;
     paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE, rngfndEnable);
     if (static_cast<int>(rngfndEnable) == 1) {
