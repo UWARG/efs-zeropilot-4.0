@@ -1,8 +1,8 @@
 /**
- * @file ist8310_i2c.cpp
+ * @file ist8310.cpp
  * @brief I2C driver for the iSentek IST8310 three-axis magnetometer.
  */
-#include "ist8310_i2c.hpp"
+#include "ist8310.hpp"
 #include "utils.h"
 
 #include <cmath>
