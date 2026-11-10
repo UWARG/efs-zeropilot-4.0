@@ -11,23 +11,15 @@
 
 #include <cstdint>
 
-// PR 216 inherits a class from PR 196
-class Ist8310 : public IMagnetometer
-{
+class Ist8310 : public IMagnetometer {
 public:
-  static constexpr uint8_t DEFAULT_ADDRESS = 0x0E;
-  static constexpr uint8_t WHO_AM_I_VALUE = 0x10;
-  static constexpr float MICROTESLA_PER_LSB = 0.3F;
-
-  explicit Ist8310(I2C_HandleTypeDef *i2c,
-                   uint8_t address = DEFAULT_ADDRESS);
+  explicit Ist8310(I2C_HandleTypeDef *i2c, uint8_t address = DEFAULT_ADDRESS);
 
   ZP_Error init() override;
   ZP_Error readData(MagData_t &data) override;
 
   // Heading in degrees, 0 to 360, from the X and Y field in microtesla
-  static ZP_Error calculateHeading(float x_microtesla, float y_microtesla,
-                                   float &out_heading);
+  static ZP_Error calculateHeading(float x_microtesla, float y_microtesla, float &out_heading);
 
   // Called from the I2C interrupt callbacks
   void masterTxCpltCallback();
@@ -39,8 +31,12 @@ public:
   ZP_Error isReady(bool *out_ready) const;
 
 private:
-  enum Register_e : uint8_t
-  {
+
+  static constexpr uint8_t DEFAULT_ADDRESS = 0x0E;
+  static constexpr uint8_t WHO_AM_I_VALUE = 0x10;
+  static constexpr float MICROTESLA_PER_LSB = 0.3F;
+
+  enum IST8310_Register_e : uint8_t {
     kWhoAmI = 0x00,
     kStatus1 = 0x02,
     kDataXLow = 0x03,
@@ -61,8 +57,7 @@ private:
   // Added to the heading, for how the chip is mounted on the board
   static constexpr float YAW_OFFSET_DEGREES = 90.0F;
 
-  enum ReadState_e
-  {
+  enum ReadState_e {
     kIdle,
     kStartTx,
     kWaitConversion,
