@@ -384,3 +384,11 @@ TEST(MagCalTest, NullMathUtilsFailsCalibration) {
     EXPECT_EQ(status.state, MAG_CAL_STATE_FAILED);
     EXPECT_EQ(status.error, MAG_CAL_ERR_SINGULAR);
 }
+
+TEST(MagParamTest, I2cAddressDefaultsToMlx90393) {
+    ASSERT_EQ(ZP_PARAM::init(), ZP_ERROR_OK);
+
+    float address = 0.0f;
+    ASSERT_EQ(ZP_PARAM::get(ZP_PARAM_ID::MAG_I2C_ADDR, address), ZP_ERROR_OK);
+    EXPECT_EQ(static_cast<uint8_t>(address), 0x18);
+}
