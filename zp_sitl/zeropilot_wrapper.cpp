@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "zp_params.hpp"
+#include "zp_bit.hpp"
 #include "system_manager.hpp"
 #include "telemetry_manager.hpp"
 #include "attitude_manager.hpp"
@@ -119,6 +120,9 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::init();
 
         self->sysUtils = new SITL_SystemUtils();
+
+        ZP_BIT::init(self->sysUtils);
+        
         self->mathUtils = new SITL_MathUtils();
         self->fft = new SITL_FFT();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();

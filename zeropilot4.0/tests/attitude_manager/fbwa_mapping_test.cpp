@@ -21,7 +21,8 @@ TEST_F(FBWAMappingTest, RollPIDControl) {
 
     DroneState_t state = DRONE_STATE_DEFAULT;
     
-    RCMotorControlMessage_t output = mapper.runControl(input, state);
+    RCMotorControlMessage_t output{};
+    EXPECT_EQ(mapper.runControl(output, input, state), ZP_ERROR_OK);
     
     EXPECT_GT(output.roll, 50.0f);
 }
@@ -42,7 +43,8 @@ TEST_F(FBWAMappingTest, PitchPIDControl) {
 
     DroneState_t state = DRONE_STATE_DEFAULT;
     
-    RCMotorControlMessage_t output = mapper.runControl(input, state);
+    RCMotorControlMessage_t output{};
+    EXPECT_EQ(mapper.runControl(output, input, state), ZP_ERROR_OK);
     
     EXPECT_GT(output.pitch, 50.0f);
 }
@@ -63,7 +65,8 @@ TEST_F(FBWAMappingTest, YawRudderMixing) {
 
     DroneState_t state = DRONE_STATE_DEFAULT;
     
-    RCMotorControlMessage_t output = mapper.runControl(input, state);
+    RCMotorControlMessage_t output{};
+    EXPECT_EQ(mapper.runControl(output, input, state), ZP_ERROR_OK);
     
     EXPECT_NE(output.yaw, 50.0f);
 }
@@ -84,7 +87,8 @@ TEST_F(FBWAMappingTest, YawClamping) {
     inputLower.throttle = 50.0f;
     inputLower.arm = true;
     inputLower.flapAngle = 0.0f;
-    RCMotorControlMessage_t outputLower = mapper.runControl(inputLower, state);
+    RCMotorControlMessage_t outputLower{};
+    EXPECT_EQ(mapper.runControl(outputLower, inputLower, state), ZP_ERROR_OK);
     EXPECT_GE(outputLower.yaw, 0.0f);
 
     // Resetting the state for the second case to avoid any influence from the first case's control loop state
@@ -98,6 +102,7 @@ TEST_F(FBWAMappingTest, YawClamping) {
     inputUpper.throttle = 50.0f;
     inputUpper.arm = true;
     inputUpper.flapAngle = 0.0f;
-    RCMotorControlMessage_t outputUpper = mapper.runControl(inputUpper, state);
+    RCMotorControlMessage_t outputUpper{};
+    EXPECT_EQ(mapper.runControl(outputUpper, inputUpper, state), ZP_ERROR_OK);
     EXPECT_LE(outputUpper.yaw, 100.0f);
 }
