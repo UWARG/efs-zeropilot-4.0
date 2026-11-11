@@ -9,9 +9,9 @@
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
+	IAirspeed *asDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
-    IAirspeed *asDriver,
     IFFT *fftDriver,
     IRangefinder *rangefinderDriver,
     IBarometer *barometerDriver,
@@ -21,9 +21,9 @@ AttitudeManager::AttitudeManager(
     MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
+	asDriver(asDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
-    asDriver(asDriver),
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),

@@ -4,7 +4,6 @@
 #include "rfd.hpp"
 #include "drivers.hpp"
 #include "utils.h"
-#include "airspeed.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -190,15 +189,16 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     rangefinderHandle->errorCallback();
   } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
     asHandle->errorCallback();
+  }
 }
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
-    FDCAN_ProtocolStatusTypeDef protocol_status;
-    HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
+  FDCAN_ProtocolStatusTypeDef protocol_status;
+  HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
 
-    if (protocol_status.BusOff != 0) {
-        CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
-    }
+  if (protocol_status.BusOff != 0) {
+	  CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
+  }
 }
 
 #ifdef __cplusplus

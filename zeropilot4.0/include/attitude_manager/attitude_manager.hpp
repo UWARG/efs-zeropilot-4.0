@@ -43,9 +43,9 @@ public:
     AttitudeManager(
         ISystemUtils *systemUtilsDriver,
         IMathUtils *mathUtilsDriver,
+		IAirspeed *asDriver,
         IGPS *gpsDriver,
         IIMU *imuDriver,
-        IAirspeed *asDriver,
         IFFT *fftDriver,
         IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
