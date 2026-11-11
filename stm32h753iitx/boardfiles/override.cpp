@@ -175,6 +175,8 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->rxCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+    asHandle->receiveCallback();
   }
 }
 
@@ -185,16 +187,18 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     barometerHandle->errorCallback();
   } else if (hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->errorCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+    asHandle->errorCallback();
   }
 }
 
 void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
-    FDCAN_ProtocolStatusTypeDef protocol_status;
-    HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
+  FDCAN_ProtocolStatusTypeDef protocol_status;
+  HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
 
-    if (protocol_status.BusOff != 0) {
-        CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
-    }
+  if (protocol_status.BusOff != 0) {
+	  CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
+  }
 }
 
 #ifdef __cplusplus

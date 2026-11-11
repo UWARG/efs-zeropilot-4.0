@@ -23,6 +23,7 @@ void initManagers()
         fftHandle,
         rangefinderHandle,
         barometerHandle,
+		asHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 

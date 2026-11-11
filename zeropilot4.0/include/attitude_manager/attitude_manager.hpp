@@ -6,6 +6,7 @@
 #include "fbwa_mapping.hpp"
 #include "motor_datatype.hpp"
 #include "gps_iface.hpp"
+#include "airspeed_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
 #include "ahrs_ekf.hpp"
@@ -42,6 +43,7 @@ public:
     AttitudeManager(
         ISystemUtils *systemUtilsDriver,
         IMathUtils *mathUtilsDriver,
+		IAirspeed *asDriver,
         IGPS *gpsDriver,
         IIMU *imuDriver,
         IFFT *fftDriver,
@@ -64,6 +66,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    IAirspeed *asDriver;
     IRangefinder *rangefinderDriver;
     RangefinderData_t lastNewRangefinderData = {};
     IBarometer *barometerDriver;
@@ -87,6 +90,7 @@ private:
     StabilizeMapping stabilizeCLAW; // Stabilize Control Law (Roll, Pitch and Yaw PID + Angle Limiting)
     #endif
     RCMotorControlMessage_t controlMsg;
+    AirspeedData_t airspeedData;
     FlightMode_e currentFlightMode;
     DroneState_t droneState;
 

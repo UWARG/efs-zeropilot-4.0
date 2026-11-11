@@ -9,6 +9,7 @@
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
+	IAirspeed *asDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IFFT *fftDriver,
@@ -20,6 +21,7 @@ AttitudeManager::AttitudeManager(
     MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
+	asDriver(asDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
     rangefinderDriver(rangefinderDriver),
@@ -96,6 +98,8 @@ void AttitudeManager::amUpdate() {
 
 
     systemUtilsDriver->profilerBegin(profilerId);
+
+    asDriver->getAirspeedData(&airspeedData);
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 

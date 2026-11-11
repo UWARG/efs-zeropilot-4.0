@@ -5,6 +5,7 @@
 #include "drivers.hpp"
 #include "utils.h"
 #include "imu.hpp"
+#include "airspeed.hpp"
 #include "user_diskio_spi.h"
 
 #ifdef __cplusplus
@@ -39,7 +40,6 @@ void HAL_Delay(uint32_t Delay) {
 }
 
 /* interrupt callback functions */
-
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
     if (huart == rcHandle->getHuart()) {
@@ -146,6 +146,8 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->rxCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+    asHandle->receiveCallback();
   }
 }
 
@@ -156,6 +158,8 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     barometerHandle->errorCallback();
   } else if (hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->errorCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+    asHandle->errorCallback();
   }
 }
 

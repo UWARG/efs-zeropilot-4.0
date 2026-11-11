@@ -40,6 +40,7 @@ IMU *imuHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
+Airspeed *asHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -135,6 +136,7 @@ void initDrivers()
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
+    asHandle = new Airspeed(&hi2c2);
 
     // 4. Queue allocation
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -155,6 +157,7 @@ void initDrivers()
     (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gpsHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, asHandle->init());
     if (rangefinderHandle != nullptr) {
         (void)ZP_BIT::report(ZP_BIT_ID::RANGEFINDER_INIT,
                              rangefinderHandle->init());
