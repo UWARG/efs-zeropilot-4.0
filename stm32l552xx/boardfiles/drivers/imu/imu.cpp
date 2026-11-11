@@ -1,335 +1,43 @@
 // IMU.cpp
-
 #include "imu.hpp"
+#include "systemutils.hpp"
+#include "unit_conversions.hpp"
 #include <string.h>
 
+#define REG_BANK_SEL                 0x76
+#define UB0_REG_WHO_AM_I             0x75
+#define UB0_REG_DEVICE_CONFIG        0x11
+#define UB0_REG_PWR_MGMT0            0x4E
+#define UB0_REG_FIFO_CONFIG          0x16
+#define UB0_REG_FIFO_CONFIG1         0x5F
+#define UB0_REG_INTF_CONFIG0         0x4C
+#define UB0_REG_GYRO_DATA_X1         0x25
+#define UB0_REG_FIFO_DATA            0x30
+#define UB0_REG_FIFO_COUNTH          0x2E
+#define UB0_REG_SIGNAL_PATH_RESET    0x4B
+#define UB0_REG_GYRO_ODR             0x4F
+#define UB0_REG_ACCEL_CONFIG0        0x50
+#define UB0_REG_GYRO_CONFIG1         0x51
+#define UB0_REG_ACCEL_CONFIG1        0x53
+#define UB0_REG_GYRO_ACCEL_CONFIG0   0x52
+#define UB1_REG_GYRO_CONFIG_STATIC2  0x0B
+#define UB1_REG_GYRO_CONFIG_STATIC3  0x0C
+#define UB1_REG_GYRO_CONFIG_STATIC4  0x0D
+#define UB1_REG_GYRO_CONFIG_STATIC5  0x0E
+#define UB2_REG_ACCEL_CONFIG_STATIC2 0x03
+#define UB2_REG_ACCEL_CONFIG_STATIC3 0x04
+#define UB2_REG_ACCEL_CONFIG_STATIC4 0x05
+
+#define FIFO_HEADER_MSG_BIT    0x80
+#define FIFO_HEADER_ACCEL_BIT  0x40
+#define FIFO_HEADER_GYRO_BIT   0x20
+
+#define GYRO_SAMPLE_COUNT         1000
+#define GYRO_CAL_RETRY_LIMIT      10
+#define GYRO_MOVING_THRESHOLD_LSB 33 // Corresponds to ~2 deg/s
+
+#define ICM42688P_IMU_WHOAMI  0x47
 
-#define REG_BANK_SEL          0x76
-#define UB0_REG_WHO_AM_I      0x75
-#define UB0_REG_DEVICE_CONFIG 0x11
-#define UB0_REG_PWR_MGMT0     0x4E
-#define UB0_REG_TEMP_DATA1    0x1D
-
-
-IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
-    : _spi(spiHandle), _csPort(csPort), _csPin(csPin),
-      _alpha(0.1f)
-{
-    _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
-
-    memset(imu_tx_buffer, 0, RX_BUFFER_SIZE);
-    memset(imu_rx_buffer, 0, RX_BUFFER_SIZE);
-
-    // only setting first bit, rest should be 0
-    imu_tx_buffer[0] = UB0_REG_TEMP_DATA1 | 0b10000000; // set 8-th bit to 1 for read, page 53
-}
-
-
-void IMU::csLow() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_RESET);
-}
-
-
-void IMU::csHigh() {
-    HAL_GPIO_WritePin(_csPort, _csPin, GPIO_PIN_SET);
-}
-
-
-HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
-    if (curr_register_bank == bank) {
-        return HAL_OK;
-    }
-    uint8_t tx_buf[2] = {REG_BANK_SEL, bank};
-    csLow();
-    HAL_StatusTypeDef status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
-    csHigh();
-
-    curr_register_bank = bank;
-    return status;
-}
-
-
-HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t register_addr, uint8_t* data) {
-    
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
-    }
-    
-    uint8_t tx[2] = {(uint8_t)(register_addr | 0b10000000), 0}; // set 8-th bit to 1 for read, page 53
-    uint8_t rx[2] = {0, 0};
-
-    csLow();
-    status = HAL_SPI_TransmitReceive(_spi, tx, rx, 2, HAL_MAX_DELAY);
-    csHigh();
-
-    *data = rx[1];
-
-    return status;
-}
-
-
-HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t register_addr, uint8_t data) {
-    
-    HAL_StatusTypeDef status = setBank(bank);
-    if (status != HAL_OK) {
-        return status;
-    }
-    uint8_t tx_buf[2] = {register_addr, data};
-    csLow();
-    status = HAL_SPI_Transmit(_spi, tx_buf, 2, HAL_MAX_DELAY);
-    csHigh();
-    return status;
-}
-
-
-RawImu_t IMU::readRawData() {
-    setBank(0);
-
-    if (spi_tx_rx_flag) {
-        spi_tx_rx_flag = 0;
-
-        processRawData();
-
-        csLow();
-        HAL_SPI_TransmitReceive_DMA(_spi, imu_tx_buffer, imu_rx_buffer, RX_BUFFER_SIZE);
-    }
-
-    return raw_imu_data;
-}
-
-
-void IMU::setLowNoiseMode() {
-    writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
-}
-
-
-void IMU::reset() {
-    setBank(0);
-    writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
-    HAL_Delay(1); // need one ms delay after reset, 
-}
-
-
-uint8_t IMU::whoAmI() {
-    uint8_t buffer;
-    readRegister(0, UB0_REG_WHO_AM_I, &buffer);
-    return buffer;
-}
-
-
-float IMU::lowPassFilter(float raw_value, int select) {
-    _filteredGyro[select] = _alpha * raw_value + (1 - _alpha) * _filteredGyro[select];
-    return _filteredGyro[select];
-}
-
-
-int IMU::init() {
-    csHigh();
-    reset();
-    uint8_t address = whoAmI();
-    setLowNoiseMode();
-    // TODO: enable and test below configurations
-    // setAccelFS(0b01101001);
-    // configureNotchFilter();
-	// setAntiAliasFilter(213, true, true);
-    // calibrateGyro();
-    return address;
-}
-
-void IMU::txRxCallback() {
-    csHigh();
-    spi_tx_rx_flag = 1;
-}
-
-void IMU::processRawData() {
-    int16_t raw[7];
-
-    for (int i = 0; i < 7; i++)
-        raw[i] = ((int16_t)imu_rx_buffer[i*2+1] << 8) | imu_rx_buffer[i*2+2];
-
-    // NED
-    raw_imu_data.xacc = raw[2];
-    raw_imu_data.yacc = raw[1];
-    raw_imu_data.zacc = raw[3];
-    raw_imu_data.xgyro = -raw[5];
-    raw_imu_data.ygyro = -raw[4];
-    raw_imu_data.zgyro = -raw[6];
-
-
-    // float acc_temp[3];
-    // float gyr_temp[3];
-
-    // acc_temp[0] = (float)raw[1] / 2048.0f * 9.81f;
-    // acc_temp[1] = (float)raw[2] / 2048.0f * 9.81f;
-    // acc_temp[2] = (float)raw[3] / 2048.0f * 9.81f;
-
-    // gyr_temp[0] = lowPassFilter((float)raw[4] / 16.4f, 0);
-    // gyr_temp[1] = lowPassFilter((float)raw[5] / 16.4f, 1);
-    // gyr_temp[2] = lowPassFilter((float)raw[6] / 16.4f, 2);
-
-    // // NED
-    // raw_imu_data.xacc = (float)acc_temp[1];
-    // raw_imu_data.yacc = (float)acc_temp[0];
-    // raw_imu_data.zacc = ((float)acc_temp[2]);
-    // raw_imu_data.xgyro = ((float)-gyr_temp[1]);
-    // raw_imu_data.ygyro = ((float)-gyr_temp[0]);
-    // raw_imu_data.zgyro = ((float)-gyr_temp[2]);
-}
-
-ScaledImu_t IMU::scaleIMUData(const RawImu_t &rawData) {
-    ScaledImu_t scaledData;
-
-    scaledData.xacc = (float)rawData.xacc / ACCEL_SEN_SCALE_FACTOR;
-    scaledData.yacc = (float)rawData.yacc / ACCEL_SEN_SCALE_FACTOR;
-    scaledData.zacc = (float)rawData.zacc / ACCEL_SEN_SCALE_FACTOR;
-    scaledData.xgyro = lowPassFilter((float)rawData.xgyro / GYRO_SEN_SCALE_FACTOR, 0);
-    scaledData.ygyro = lowPassFilter((float)rawData.ygyro / GYRO_SEN_SCALE_FACTOR, 1);
-    scaledData.zgyro = lowPassFilter((float)rawData.zgyro / GYRO_SEN_SCALE_FACTOR, 2);
-
-    return scaledData;
-}
-
-
-// TODO: verify correctness of below functions
-/*
-IMU::IMU(SPI_HandleTypeDef* spiHandle, GPIO_TypeDef* csPort, uint16_t csPin)
-    : _spi(spiHandle), _csPort(csPort), _csPin(csPin),
-      _gyroScale(0), _accelScale(0), _gyroFS(0), _accelFS(0),
-      _alpha(0.1f)
-{
-    _gyrB[0] = _gyrB[1] = _gyrB[2] = 0.0f;
-    _accB[0] = _accB[1] = _accB[2] = 0.0f;
-    _filteredGyro[0] = _filteredGyro[1] = _filteredGyro[2] = 0.0f;
-}
-
-
-void IMU::setGyroFS(uint8_t fssel) {
-    setBank(0);
-    uint8_t reg;
-    readRegisters(0x4F, 1, &reg);
-    reg = (fssel << 5) | (reg & 0x1F);
-    writeRegister(0x4F, reg);
-    _gyroScale = (2000.0f / (float)(1 << fssel)) / 32768.0f;
-    _gyroFS = fssel;
-}
-
-void IMU::setAccelFS(uint8_t fssel) {
-    setBank(0);
-    uint8_t reg;
-    readRegisters(0x50, 1, &reg);
-    reg = (fssel << 5) | (reg & 0x1F);
-    writeRegister(0x50, reg);
-    _accelScale = (float)(1 << (4 - fssel)) / 32768.0f;
-    _accelFS = fssel;
-}
-
-void IMU::calibrateGyro() {
-    const uint8_t current_fssel = _gyroFS;
-    setGyroFS(0x03);
-    float avg[3] = {0, 0, 0};
-    uint8_t buffer[14];
-    int16_t raw[7];
-
-    for (int i = 0; i < 1000; i++) {
-        readAGT(buffer);
-        for (int j = 0; j < 7; j++)
-            raw[j] = ((int16_t)buffer[j*2] << 8) | buffer[j*2+1];
-
-        for (int j = 0; j < 3; j++)
-            avg[j] += (float)raw[j+4] / 16.4f / 1000.0f;
-
-        HAL_Delay(1);
-    }
-
-    for (int i = 0; i < 3; i++) _gyrB[i] = avg[i];
-    setGyroFS(current_fssel);
-}
-
-void IMU::calibrateAccel() {
-    // Store current full-scale setting to restore later
-    uint8_t currentFS = _accelFS;
-
-    // Temporarily set to highest sensitivity for calibration
-    setAccelFS(0x03); // ±2g mode, for example
-
-    float accSum[3] = {0.0f, 0.0f, 0.0f};
-    const int samples = 1000;
-    uint8_t dataBuffer[14];
-    int16_t rawAccel[3];
-
-    // Collect multiple samples for averaging
-    for (int i = 0; i < samples; i++) {
-        readAGT(dataBuffer);
-        rawAccel[0] = ((int16_t)dataBuffer[0] << 8) | dataBuffer[1];
-        rawAccel[1] = ((int16_t)dataBuffer[2] << 8) | dataBuffer[3];
-        rawAccel[2] = ((int16_t)dataBuffer[4] << 8) | dataBuffer[5];
-
-        // Convert to 'g'
-        float ax = (float)rawAccel[0] * _accelScale;
-        float ay = (float)rawAccel[1] * _accelScale;
-        float az = (float)rawAccel[2] * _accelScale;
-
-        accSum[0] += ax;
-        accSum[1] += ay;
-        accSum[2] += az;
-
-        HAL_Delay(1);
-    }
-
-    // Compute average offsets (assuming stationary on flat surface)
-    float avgX = accSum[0] / samples;
-    float avgY = accSum[1] / samples;
-    float avgZ = accSum[2] / samples;
-
-    // Gravity compensation: when stationary, Z should read ~+1g
-    _accB[0] = avgX;
-    _accB[1] = avgY;
-    _accB[2] = avgZ - 1.0f;  // assuming +Z axis points upward
-
-    // Restore original full-scale setting
-    setAccelFS(currentFS);
-}
-
-void IMU::configureNotchFilter(){
-	uint8_t BW_SEL = 7;
-	uint32_t f_des = 1300;
-	double pi = 3.14159265;
-	double COSWZ = cos(2 * pi * f_des / 32);
-	int NF_COSWZ = 0;
-	bool NF_COSWZ_SEL = 0;
-	if(abs(COSWZ) <= 0.875){
-		NF_COSWZ_SEL = 0;
-		NF_COSWZ = round(COSWZ * 256);
-	}else{
-		NF_COSWZ_SEL = 1;
-		if(COSWZ > 0.875){
-			NF_COSWZ = round(8 * (1 - COSWZ) * 256);
-		}else{
-			NF_COSWZ = round(-8 * (1 + COSWZ) * 256);
-		}
-	}
-	setBank(1);
-	writeRegister(0x0F, (uint8_t)(NF_COSWZ & 0xFF));  // Lower byte for X-axis
-	writeRegister(0x10, (uint8_t)(NF_COSWZ & 0xFF));  // Lower byte for Y-axis
-	writeRegister(0x11, (uint8_t)(NF_COSWZ & 0xFF));  // Lower byte for Z-axis
-	writeRegister(0x12, (uint8_t)((NF_COSWZ >> 8) & 0x01));  // Upper bit for all axes
-
-	uint8_t reg_0x12;
-	readRegisters(0x12, 1, &reg_0x12);
-	// Modify only necessary bits (Bit 3 = X, Bit 4 = Y, Bit 5 = Z)
-	reg_0x12 &= ~(0b00111000);  // Clear bits 3, 4, 5
-	reg_0x12 |= (NF_COSWZ_SEL << 3) | (NF_COSWZ_SEL << 4) | (NF_COSWZ_SEL << 5);
-	writeRegister(0x12, reg_0x12);
-
-	// Set Notch Filter Bandwidth
-	writeRegister(0x13, BW_SEL << 4);
-
-
-	setBank(0);
-}
-
-// Anti-alias filter config structure
 typedef struct {
 	uint16_t bandwidth;
 	uint8_t delt;
@@ -361,66 +69,408 @@ static const AAF_Config aaf_table[] = {
     {3805,61, 3712,    3}, {3892,62, 3840,    3}, {3979,63, 3968,    3}
 };
 
-static const AAF_Config *getAAFConfig(uint16_t bandwidth) {
-    const AAF_Config *best = &aaf_table[0];
-    for (size_t i = 0; i < sizeof(aaf_table)/sizeof(aaf_table[0]); i++) {
-        if (aaf_table[i].bandwidth >= bandwidth) {
-            best = &aaf_table[i];
+IMU::IMU(SPI_HandleTypeDef *spiHandle, 
+        GPIO_TypeDef *csPort, 
+        uint16_t csPin, 
+        uint8_t imuId, 
+        ImuOdrConfig_t odrConfig,
+        float uiFiltCutoffHz, 
+        ImuUiFiltOrder_t uiFiltOrder
+) :
+    spi(spiHandle),
+    csPort(csPort),
+    csPin(csPin),
+    imuId(imuId),
+    imuOdr(odrConfig),
+    uiFiltCutoffHz(uiFiltCutoffHz),
+    uiFiltOrder(uiFiltOrder),
+    alpha(0.1f) {
+
+    filteredGyro[0] = filteredGyro[1] = filteredGyro[2] = 0.0f;
+    memset((void *)imuTxBuffer, 0, RX_BUFFER_SIZE);
+    memset((void *)imuRxBuffer, 0, RX_BUFFER_SIZE);
+
+    // First bit should be 1 for register read
+    imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
+}
+
+ZP_Error IMU::init() {
+    csHigh();
+    SystemUtils::dwtInit();
+    reset();
+    setAAF();
+    setUIFilt();
+    setODR();
+    setFIFO();
+    flushFIFO();
+    setLowNoiseMode();
+    HAL_Delay(60); // Wait after sensors are turned on
+    uint8_t address = whoAmI();
+
+    // Collect samples to calculate gyro bias
+    for (uint8_t calAttempt = 0; calAttempt < GYRO_CAL_RETRY_LIMIT; calAttempt++) {
+        uint8_t buf[6] = {};
+        int32_t gyroSum[3] = {0};
+        int16_t gyroMax[3] = {INT16_MIN, INT16_MIN, INT16_MIN};
+        int16_t gyroMin[3] = {INT16_MAX, INT16_MAX, INT16_MAX};
+        bool moving = false;
+
+        for (uint16_t sampleCount = 0; (sampleCount < GYRO_SAMPLE_COUNT) && (!moving); sampleCount++) {
+            readRegister(0, UB0_REG_GYRO_DATA_X1, buf, 6); // Read GYRO_DATA_X1, GYRO_DATA_X0, GYRO_DATA_Y1, GYRO_DATA_Y0, GYRO_DATA_Z1, GYRO_DATA_Z0
+            int16_t gyroVal[3] = {0};
+            gyroVal[0] = -(int16_t)((buf[0] << 8) | buf[1]);
+            gyroVal[1] = (int16_t)((buf[2] << 8) | buf[3]);
+            gyroVal[2] = -(int16_t)((buf[4] << 8) | buf[5]);
+            for (int i = 0; i < 3; i++) {
+                if (gyroVal[i] < gyroMin[i]) gyroMin[i] = gyroVal[i];
+                if (gyroVal[i] > gyroMax[i]) gyroMax[i] = gyroVal[i];
+                if (gyroMax[i] - gyroMin[i] > GYRO_MOVING_THRESHOLD_LSB) {
+                    moving = true;
+                } else {
+                    gyroSum[i] += gyroVal[i];
+                }
+            }
+            HAL_Delay(1);
+        }
+
+        if (moving) {
+            HAL_Delay(500);
+        } else {
+            // Find average and convert to rad/s
+            gyroBias.x = ((float)gyroSum[0] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.y = ((float)gyroSum[1] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+            gyroBias.z = ((float)gyroSum[2] / GYRO_SAMPLE_COUNT) / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
             break;
         }
     }
-    return best;
+    flushFIFO();
+
+    return (address == ICM42688P_IMU_WHOAMI) ? ZP_ERROR_OK : ZP_ERROR_CONFIG;
 }
 
-void IMU::setAntiAliasFilter(uint16_t bandwidth_hz, bool accel_enable, bool gyro_enable) {
-    const AAF_Config *cfg = getAAFConfig(bandwidth_hz);
-
-    // accel
-    setBank(2);
-
-    uint8_t reg03;
-    readRegisters(0x03, 1, &reg03);
-    reg03 &= ~0x7E;                         // Clear bits 6:1
-    reg03 |= (cfg->delt & 0x3F) << 1;       // ACCEL_AAF_DELT
-    if (!accel_enable)
-        reg03 |= 1 << 0;                    // ACCEL_AAF_DIS = 1
-    else
-        reg03 &= ~(1 << 0);                 // Enable AAF
-    writeRegister(0x03, reg03);
-
-    writeRegister(0x04, (uint8_t)(cfg->deltsqr & 0xFF));  // Lower 8 bits of DELTSQR
-    uint8_t reg05;
-    readRegisters(0x05, 1, &reg05);
-    reg05 &= 0x00;                          // Clear bits 7:0
-    reg05 |= ((cfg->deltsqr >> 8) & 0x0F);  // Upper 4 bits of DELTSQR
-    reg05 |= (cfg->bitshift << 4) & 0xF0;   // ACCEL_AAF_BITSHIFT
-    writeRegister(0x05, reg05);
-
-    // gyro
-    setBank(1);
-
-    uint8_t reg0C;
-    readRegisters(0x0C, 1, &reg0C);
-    reg0C &= ~0x3F;                        // Clear bits 5:0
-    reg0C |= (cfg->delt & 0x3F);           // GYRO_AAF_DELT
-    writeRegister(0x0C, reg0C);
-
-    writeRegister(0x0D, (uint8_t)(cfg->deltsqr & 0xFF));  // Lower 8 bits
-    uint8_t reg0E;
-    readRegisters(0x0E, 1, &reg0E);
-    reg0E &= 0x00;                         // Clear bits
-    reg0E |= ((cfg->deltsqr >> 8) & 0x0F); // Upper 4 bits
-    reg0E |= (cfg->bitshift << 4) & 0xF0;  // GYRO_AAF_BITSHIFT
-    writeRegister(0x0E, reg0E);
-
-    uint8_t reg0B;
-    readRegisters(0x0B, 1, &reg0B);
-    if (!gyro_enable)
-        reg0B |= (1 << 1);                 // Disable Gyro AAF
-    else
-        reg0B &= ~(1 << 1);                // Enable Gyro AAF
-    writeRegister(0x0B, reg0B);
-
+ZP_Error IMU::readRawData(RawImuBatch_t &rawDataBatch) {
+    // Dont start another dma transaction when in the middle of one transaction
+    if (!dmaDone) {
+        rawImuDataBatch.count = 0;
+        rawDataBatch = rawImuDataBatch;
+        return ZP_ERROR_OK;
+    }
     setBank(0);
+    rawDataBatch = getBatch();
+    beginRead();
+    return ZP_ERROR_OK;
 }
-*/
+
+ZP_Error IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) {
+    if (rawDataBatch.data == nullptr) {
+        return ZP_ERROR_NULLPTR;
+    }
+    if (rawDataBatch.count > MAX_PACKETS) {
+        return ZP_ERROR_RANGE;
+    }
+
+    for (int i = 0; i < rawDataBatch.count; i++) {
+        scaledData[i].xacc = (float)rawDataBatch.data[i].xacc / ACCEL_SEN_SCALE_FACTOR;
+        scaledData[i].yacc = (float)rawDataBatch.data[i].yacc / ACCEL_SEN_SCALE_FACTOR;
+        scaledData[i].zacc = (float)rawDataBatch.data[i].zacc / ACCEL_SEN_SCALE_FACTOR;
+        scaledData[i].xgyro = (float)rawDataBatch.data[i].xgyro / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].ygyro = (float)rawDataBatch.data[i].ygyro / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].zgyro = (float)rawDataBatch.data[i].zgyro / GYRO_SEN_SCALE_FACTOR * ZP_UNITS::DEG_TO_RAD;
+        scaledData[i].timestamp = rawDataBatch.data[i].timestamp;
+        scaledData[i].imuId = rawDataBatch.data[i].imuId;
+    }
+    scaledImuDataBatch.count = rawDataBatch.count;
+    scaledImuDataBatch.data = scaledData;
+    scaledImuDataBatch.readTime = rawImuDataBatch.readTime;
+
+    scaledDataBatch = scaledImuDataBatch;
+    return ZP_ERROR_OK;
+}
+
+void IMU::txRxCallback() {
+    csHigh();
+    switch (rxFlag) {
+    case COUNT:
+        // Keeps the bus owned
+        rxFlag = DATA;
+        dmaTransfer(); // Read actual data after getting num of packets
+        break;
+    case DATA:
+        // Free the bus as fifo read is completed
+        rxFlag = COUNT;
+        dmaDone = true;
+        break;
+    default:
+        break;
+    }
+}
+
+SPI_HandleTypeDef *IMU::getSPI() {
+    return spi;
+}
+
+bool IMU::getDmaFlag() {
+    return dmaDone;
+}
+
+void IMU::beginRead() {
+    // Dont start another dma transaction when in the middle of one transaction
+    if (!dmaDone) {
+        return;
+    }
+
+    // Start another batch transfer
+    setBank(0);
+    dmaDone = false;
+    rxFlag = COUNT;
+    dmaTransfer();
+}
+
+RawImuBatch_t IMU::getBatch() {
+    processRawData();
+    return rawImuDataBatch;
+}
+
+HAL_StatusTypeDef IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
+    HAL_StatusTypeDef status = setBank(bank);
+    if (status != HAL_OK) {
+        return status;
+    }
+    uint8_t txBuf[2] = {registerAddr, data};
+    csLow();
+    status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
+    csHigh();
+    return status;
+}
+
+HAL_StatusTypeDef IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, uint8_t length) {
+    HAL_StatusTypeDef status = setBank(bank);
+    if (status != HAL_OK) {
+        return status;
+    }
+
+    static constexpr uint8_t MAX_READ_LEN = 8;
+    if (length > MAX_READ_LEN) return HAL_ERROR;
+    uint8_t tx[MAX_READ_LEN + 1] = {0}; 
+    uint8_t rx[MAX_READ_LEN + 1] = {0};
+
+    tx[0] = (uint8_t)(registerAddr | 0b10000000); // Set 8-th bit to 1 for read, page 53
+
+    csLow();
+    status = HAL_SPI_TransmitReceive(spi, tx, rx, length + 1, HAL_MAX_DELAY); // +1 to length to send the dummy byte
+    csHigh();
+
+    memcpy(data, &rx[1], length);
+
+    return status;
+}
+
+HAL_StatusTypeDef IMU::setBank(uint8_t bank) {
+    if (currRegisterBank == bank) {
+        return HAL_OK;
+    }
+    uint8_t txBuf[2] = {REG_BANK_SEL, bank};
+    csLow();
+    HAL_StatusTypeDef status = HAL_SPI_Transmit(spi, txBuf, 2, HAL_MAX_DELAY);
+    csHigh();
+
+    currRegisterBank = bank;
+    return status;
+}
+
+void IMU::csLow() {
+    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_RESET);
+}
+
+void IMU::csHigh() {
+    HAL_GPIO_WritePin(csPort, csPin, GPIO_PIN_SET);
+}
+
+void IMU::reset() {
+    writeRegister(0, UB0_REG_DEVICE_CONFIG, 0x01);
+    HAL_Delay(1); // Need one ms delay after reset, 
+}
+
+uint8_t IMU::whoAmI() {
+    uint8_t buffer;
+    readRegister(0, UB0_REG_WHO_AM_I, &buffer, 1);
+    return buffer;
+}
+
+void IMU::flushFIFO() {
+    writeRegister(0, UB0_REG_SIGNAL_PATH_RESET, 0b00000010);
+}
+
+void IMU::dmaTransfer() {
+    csLow();
+    switch (rxFlag) {
+        case COUNT: {
+            imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
+            // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
+            if (HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, 3) != HAL_OK) {
+                csHigh();
+                dmaDone = true; // Allow next transfer to be attempted
+                rxFlag = COUNT; // Reset state to COUNT
+                fifoSize = 0;
+            }
+            break;
+        }
+
+        case DATA: {
+            fifoSize = ((uint16_t)imuRxBuffer[1] << 8) | imuRxBuffer[2]; // [0] is the dummy byte
+            if (fifoSize > MAX_PACKETS) { fifoSize = MAX_PACKETS; }
+            
+            imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
+
+            if (HAL_SPI_TransmitReceive_DMA(spi, (uint8_t*)imuTxBuffer, (uint8_t*)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != HAL_OK) {
+                csHigh();
+                dmaDone = true; // Allow next transfer to be attempted
+                rxFlag = COUNT; // Reset state to COUNT
+                fifoSize = 0;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+}
+
+void IMU::setLowNoiseMode() {
+    // Starts accelerometer and gyro in low noise mode
+    writeRegister(0, UB0_REG_PWR_MGMT0, 0x0F);
+}
+
+void IMU::setFIFO() {
+    writeRegister(0, UB0_REG_FIFO_CONFIG, 0b01000000);  // Stream to fifo mode
+    writeRegister(0, UB0_REG_FIFO_CONFIG1, 0b01100011); // Partial fifo read enabled, trigger watermark interrupt on every odr if count > watermark, no fsync, no temp data, yes gyro, yes accel
+    writeRegister(0, UB0_REG_INTF_CONFIG0, 0b11110000); // Invalid data not put into fifo, fifo count is in num of packets
+}
+
+void IMU::setODR() {
+    writeRegister(0, UB0_REG_GYRO_ODR, (uint8_t)imuOdr); // Configure gyro ODR to 4khz
+    writeRegister(0, UB0_REG_ACCEL_CONFIG0, (uint8_t)imuOdr); // Configure accelerometer ODR to 4khz
+}
+
+void IMU::setAAF() {
+    uint16_t desiredBandwidth = getODRHz() / 4; // Set AAF bandwidth to 1/4 of ODR
+    uint8_t bestIndex = 0;
+    uint16_t bestDistance = UINT16_MAX;
+    // Table is sorted ascending, so distance falls to a minimum then rises again.
+    // Stop as soon as it stops improving. Ties keep the lower bandwidth.
+    for (uint8_t i = 0; i < sizeof(aaf_table) / sizeof(aaf_table[0]); i++) {
+        uint16_t bandwidth = aaf_table[i].bandwidth;
+        uint16_t distance = (bandwidth > desiredBandwidth) ? (bandwidth - desiredBandwidth) : (desiredBandwidth - bandwidth);
+        if (distance >= bestDistance) {
+            break;
+        }
+        bestDistance = distance;
+        bestIndex = i;
+    }
+    uint8_t delt = (uint8_t)(aaf_table[bestIndex].delt & 0b00111111); // only 6 bits are used for delt
+    uint8_t deltsqrLower = (uint8_t)aaf_table[bestIndex].deltsqr;
+    uint8_t deltsqrUpper = (uint8_t)((aaf_table[bestIndex].deltsqr >> 8) & 0xF); // only 4 bits are used for upper deltsqr
+    uint8_t bitshift = (uint8_t)(aaf_table[bestIndex].bitshift & 0xF); // only 4 bits are used for bitshift
+    
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC2, (delt << 1)); // 6:1 for ACCEL_AAF_DELT, bit 0 is disable accel AAF, defualt enabled
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC3, deltsqrLower); // ACCEL_AAF_DELTSQR
+    writeRegister(2, UB2_REG_ACCEL_CONFIG_STATIC4, (bitshift << 4) | deltsqrUpper); // ACCEL_AAF_BITSHIFT
+
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC3, delt); // 5:0 for GYRO_AAF_DELT, 7:6 reserved
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC4, deltsqrLower); // GYRO_AAF_DELTSQR
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC5, (bitshift << 4) | deltsqrUpper); // GYRO_AAF_BITSHIFT
+    writeRegister(1, UB1_REG_GYRO_CONFIG_STATIC2, 0b00000001); // Enable gyro AAF and disables notch filter
+}
+
+float IMU::getUIFiltBWHz(uint8_t bandwidthSelect) {
+    // Bandwidth = max(400Hz, ODR) / divisor, except setting 0 which is ODR/2
+    // Values 8-13 are reserved and 14-15 are low latency modes, so only 0-7 are valid
+    static const uint8_t divisors[UIFILT_BW_SEL_COUNT] = {2, 4, 5, 8, 10, 16, 20, 40};
+    if (bandwidthSelect >= UIFILT_BW_SEL_COUNT) {
+        return 0.0f;
+    }
+    float odr = getODRHz();
+    float max = (bandwidthSelect == 0 || odr > 400.0f) ? odr : 400.0f;
+    return max / divisors[bandwidthSelect];
+}
+
+void IMU::setUIFilt() {
+    // 7:5 TEMP_FILT_BW = 0 (default), bit 4 reserved (reset value 1)
+    // 3:2 GYRO_UI_FILT_ORD, 1:0 GYRO_DEC2_M2_ORD = 0b10 (3rd order, only valid setting)
+    writeRegister(0, UB0_REG_GYRO_CONFIG1, (uint8_t)(0b00010000 | (uiFiltOrder << 2) | 0b10));
+    // 7:5 reserved (reset value 0), 4:3 ACCEL_UI_FILT_ORD
+    // 2:1 ACCEL_DEC2_M2_ORD = 0b10 (3rd order, only valid setting), bit 0 reserved (reset value 1)
+    writeRegister(0, UB0_REG_ACCEL_CONFIG1, (uint8_t)((uiFiltOrder << 3) | 0b101));
+
+    // Find the closest bandwidth to the requested cutoff frequency
+    uint8_t bestSel = 0; // Value for GYRO_UI_FILT_BW/ACCEL_UI_FILT_BW register (0-7)
+    float bestDistance = -1.0f;
+    for (uint8_t bwSel = 0; bwSel < UIFILT_BW_SEL_COUNT; bwSel++) {
+        float distance = getUIFiltBWHz(bwSel) - uiFiltCutoffHz;
+        if (distance < 0.0f) {
+            distance = -distance;
+        }
+        if (bestDistance < 0.0f || distance < bestDistance) {
+            bestDistance = distance;
+            bestSel = bwSel;
+        }
+    }
+
+    // 7:4 ACCEL_UI_FILT_BW, 3:0 GYRO_UI_FILT_BW
+    writeRegister(0, UB0_REG_GYRO_ACCEL_CONFIG0, (uint8_t)((bestSel << 4) | bestSel));
+}
+
+void IMU::processRawData() {
+    uint16_t validData = 0;
+    for (int k = 0; k < fifoSize; k++)
+    {
+        uint16_t base = 1 + k * PACKET_SIZE; // +1 to skip the dummy byte
+
+        uint8_t header = imuRxBuffer[base];
+        // Dont read data if the packet is empty or if doesnt include acceleration or gyro data
+        if ((header & FIFO_HEADER_MSG_BIT) || !(header & FIFO_HEADER_ACCEL_BIT) || !(header & FIFO_HEADER_GYRO_BIT)) {
+            break;
+        }
+        // FRD
+        rawData[k].xacc = -(int16_t)((imuRxBuffer[base + 1] << 8) | imuRxBuffer[base + 2]);
+        rawData[k].yacc = (int16_t)((imuRxBuffer[base + 3] << 8) | imuRxBuffer[base + 4]);
+        rawData[k].zacc = -(int16_t)((imuRxBuffer[base + 5] << 8) | imuRxBuffer[base + 6]);
+        rawData[k].xgyro = -(int16_t)((imuRxBuffer[base + 7] << 8) | imuRxBuffer[base + 8]);
+        rawData[k].ygyro = (int16_t)((imuRxBuffer[base + 9] << 8) | imuRxBuffer[base + 10]);
+        rawData[k].zgyro = -(int16_t)((imuRxBuffer[base + 11] << 8) | imuRxBuffer[base + 12]);
+        rawData[k].timestamp = (uint16_t)((imuRxBuffer[base + 14] << 8) | imuRxBuffer[base + 15]);
+        rawData[k].imuId = imuId;
+        validData++;
+    }
+
+    rawImuDataBatch.data = rawData;
+    rawImuDataBatch.count = validData;
+    rawImuDataBatch.readTime = SystemUtils::getDWTMicroSec();
+}
+
+float IMU::lowPassFilter(float rawValue, int select) {
+    filteredGyro[select] = alpha * rawValue + (1 - alpha) * filteredGyro[select];
+    return filteredGyro[select];
+}
+
+float IMU::getODRHz() {
+    switch (imuOdr) {
+        case IMU_ODR_32KHZ: return 32000.0f;
+        case IMU_ODR_16KHZ: return 16000.0f;
+        case IMU_ODR_8KHZ:  return 8000.0f;
+        case IMU_ODR_4KHZ:  return 4000.0f;
+        case IMU_ODR_2KHZ:  return 2000.0f;
+        case IMU_ODR_1KHZ:  return 1000.0f;
+        case IMU_ODR_500HZ: return 500.0f;
+        case IMU_ODR_200HZ: return 200.0f;
+        case IMU_ODR_100HZ: return 100.0f;
+        case IMU_ODR_50HZ:  return 50.0f;
+        case IMU_ODR_25HZ:  return 25.0f;
+        case IMU_ODR_12HZ5: return 12.5f;
+        default:            return 0.0f;
+    }
+}
+
+GyroBias_t IMU::getGyroStartupBias(uint8_t imuId) {
+    return (this->imuId == imuId) ? gyroBias : GyroBias_t{0.0f, 0.0f, 0.0f};
+}

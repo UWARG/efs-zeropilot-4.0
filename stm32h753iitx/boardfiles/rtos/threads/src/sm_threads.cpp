@@ -6,16 +6,18 @@ osThreadId_t smMainHandle;
 
 static const osThreadAttr_t smMainLoopAttr = {
     .name = "smMain",
-    .stack_size = 1024,
+    .stack_size = 2048,
     .priority = (osPriority_t) osPriorityNormal
 };
 
 void smMainLoopWrapper(void *arg)
 {
+  uint32_t nextWakeUp = osKernelGetTickCount();
   while(true)
   {
     smHandle->smUpdate();
-    osDelay(timeToTicks(SM_UPDATE_LOOP_DELAY_MS));
+    nextWakeUp += timeToTicks(SM_UPDATE_LOOP_DELAY_MS);
+    osDelayUntil(nextWakeUp);
   }
 }
 

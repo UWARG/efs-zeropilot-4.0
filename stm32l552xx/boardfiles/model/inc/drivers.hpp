@@ -1,6 +1,7 @@
 #pragma once
 
 #include "systemutils.hpp"
+#include "mathutils.hpp"
 #include "iwdg.hpp"
 #include "logger.hpp"
 #include "motor.hpp"
@@ -12,30 +13,33 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
+#include "can_controller.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
 #include "power_module.hpp"
+#include "dshot.hpp"
+#include "fft.hpp"
+#include "tf02pro.hpp"
+#include "icp_20100.hpp"
 #include "airspeed.hpp"
 
 extern SystemUtils *systemUtilsHandle;
+extern MathUtils *mathUtilsHandle;
+extern FFT *fftHandle;
 
 extern IndependentWatchdog *iwdgHandle;
 extern Logger *loggerHandle;
 
-extern MotorControl *leftAileronMotorHandle;
-extern MotorControl *rightAileronMotorHandle;
-extern MotorControl *elevatorMotorHandle;
-extern MotorControl *rudderMotorHandle;
-extern MotorControl *throttleMotorHandle;
-extern MotorControl *leftFlapMotorHandle;
-extern MotorControl *rightFlapMotorHandle;
-extern MotorControl *steeringMotorHandle;
+extern IMotorControl *motorHandles[8];
 
+extern CANController *canControllerHandle;
 extern CRSFReceiver *rcHandle;
 extern GPS *gpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;
+extern Rangefinder *rangefinderHandle;
+extern Barometer *barometerHandle;
 extern Airspeed *asHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
@@ -43,11 +47,7 @@ extern MessageQueue<char[100]> *smLoggerQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
-extern MotorGroupInstance_t rollMotors;
-extern MotorGroupInstance_t pitchMotors;
-extern MotorGroupInstance_t yawMotors;
-extern MotorGroupInstance_t throttleMotors;
-extern MotorGroupInstance_t flapMotors;
-extern MotorGroupInstance_t steeringMotors;
+extern MotorGroupInstance_t mainMotorGroup;
 
+void initSystemUtils();
 void initDrivers();

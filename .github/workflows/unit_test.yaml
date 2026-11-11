@@ -4,18 +4,15 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
-    type: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  unit_test:
+  unit_test_plane:
     runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:v1.0.0
 
     steps:
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgtest-dev libgmock-dev
-
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
@@ -23,7 +20,28 @@ jobs:
 
     - name: Build tests
       working-directory: ./zeropilot4.0/tests
-      run: bash ./testbuild.bash -c
+      run: bash ./testbuild.bash -c -v plane
+    
+    - name: Run tests
+      working-directory: ./zeropilot4.0/tests
+      run: |
+        chmod +x build/gtestzeropilot4.0
+        ./build/gtestzeropilot4.0
+
+  unit_test_quad:
+    runs-on: ubuntu-latest
+    container:
+      image: uwarg/efs-zeropilot-ci:v1.0.0
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Build tests
+      working-directory: ./zeropilot4.0/tests
+      run: bash ./testbuild.bash -c -v quad
     
     - name: Run tests
       working-directory: ./zeropilot4.0/tests

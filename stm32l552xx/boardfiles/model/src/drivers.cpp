@@ -1,6 +1,11 @@
 #include "drivers.hpp"
+#include "zp_bit.hpp"
 #include "museq.hpp"
 #include "stm32l5xx_hal.h"
+#include "zp_params.hpp"
+
+#define MOT_TYPE_PWM   0
+#define MOT_TYPE_DSHOT 5
 
 // External hardware handles
 extern IWDG_HandleTypeDef hiwdg;
@@ -13,56 +18,28 @@ extern UART_HandleTypeDef huart4;
 extern SPI_HandleTypeDef hspi2;
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
-
-// ----------------------------------------------------------------------------
-// Static storage for each driver (aligned for correct type)
-// ----------------------------------------------------------------------------
-alignas(SystemUtils) static uint8_t systemUtilsStorage[sizeof(SystemUtils)];
-alignas(IndependentWatchdog) static uint8_t iwdgStorage[sizeof(IndependentWatchdog)];
-alignas(Logger) static uint8_t loggerStorage[sizeof(Logger)];
-
-alignas(MotorControl) static uint8_t leftAileronMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t rightAileronMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t elevatorMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t rudderMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t throttleMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t leftFlapMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t rightFlapMotorStorage[sizeof(MotorControl)];
-alignas(MotorControl) static uint8_t steeringMotorStorage[sizeof(MotorControl)];
-
-alignas(GPS) static uint8_t gpsStorage[sizeof(GPS)];
-alignas(CRSFReceiver) static uint8_t crsfStorage[sizeof(CRSFReceiver)];
-alignas(RFD) static uint8_t telemLinkStorage[sizeof(RFD)];
-alignas(IMU) static uint8_t imuStorage[sizeof(IMU)];
-alignas(PowerModule) static uint8_t pmStorage[sizeof(PowerModule)];
-alignas(Airspeed) static uint8_t asStorage[sizeof(Airspeed)];
-
-alignas(MessageQueue<RCMotorControlMessage_t>) static uint8_t amRCQueueStorage[sizeof(MessageQueue<RCMotorControlMessage_t>)];
-alignas(MessageQueue<char[100]>) static uint8_t smLoggerQueueStorage[sizeof(MessageQueue<char[100]>)];
-alignas(MessageQueue<TMMessage_t>) static uint8_t tmQueueStorage[sizeof(MessageQueue<TMMessage_t>)];
-alignas(MessageQueue<mavlink_message_t>) static uint8_t messageBufferStorage[sizeof(MessageQueue<mavlink_message_t>)];
+extern I2C_HandleTypeDef hi2c3;
+extern FDCAN_HandleTypeDef hfdcan1;
 
 // ----------------------------------------------------------------------------
 // Global handles
 // ----------------------------------------------------------------------------
 SystemUtils *systemUtilsHandle = nullptr;
+MathUtils *mathUtilsHandle = nullptr;
+FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
 Logger *loggerHandle = nullptr;
 
-MotorControl *leftAileronMotorHandle = nullptr;
-MotorControl *rightAileronMotorHandle = nullptr;
-MotorControl *elevatorMotorHandle = nullptr;
-MotorControl *rudderMotorHandle = nullptr;
-MotorControl *throttleMotorHandle = nullptr;
-MotorControl *leftFlapMotorHandle = nullptr;
-MotorControl *rightFlapMotorHandle = nullptr;
-MotorControl *steeringMotorHandle = nullptr;
+IMotorControl *motorHandles[8] = {0};
 
+CANController *canControllerHandle = nullptr;
 GPS *gpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
+Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
+Rangefinder *rangefinderHandle = nullptr;
 Airspeed *asHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
@@ -71,98 +48,127 @@ MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
 
 // ----------------------------------------------------------------------------
-// Motor instances & groups
+// Motor instances & group
 // ----------------------------------------------------------------------------
-MotorInstance_t leftAileronMotorInstance;
-MotorInstance_t rightAileronMotorInstance;
-MotorInstance_t elevatorMotorInstance;
-MotorInstance_t rudderMotorInstance;
-MotorInstance_t throttleMotorInstance;
-MotorInstance_t leftFlapMotorInstance;
-MotorInstance_t rightFlapMotorInstance;
-MotorInstance_t steeringMotorInstance;
+MotorInstance_t motorInstances[8];
+MotorGroupInstance_t mainMotorGroup;
 
-MotorInstance_t aileronMotorInstances[2];
-MotorInstance_t flapMotorInstances[2];
+typedef struct {
+    TIM_HandleTypeDef *timer;
+    uint32_t channel;
+} motorChannel_t;
 
-MotorGroupInstance_t rollMotors;
-MotorGroupInstance_t pitchMotors;
-MotorGroupInstance_t yawMotors;
-MotorGroupInstance_t throttleMotors;
-MotorGroupInstance_t flapMotors;
-MotorGroupInstance_t steeringMotors;
+const motorChannel_t MOTOR_MAP[8] = {
+    {&htim3, TIM_CHANNEL_1}, {&htim3, TIM_CHANNEL_2}, {&htim3, TIM_CHANNEL_3}, {&htim3, TIM_CHANNEL_4},
+    {&htim4, TIM_CHANNEL_1}, {&htim1, TIM_CHANNEL_1}, {&htim1, TIM_CHANNEL_2}, {&htim1, TIM_CHANNEL_3},
+};
+
+const ZP_PARAM_ID SERVO_FUNC[8] = {
+    ZP_PARAM_ID::SERVO1_FUNCTION, ZP_PARAM_ID::SERVO2_FUNCTION,
+    ZP_PARAM_ID::SERVO3_FUNCTION, ZP_PARAM_ID::SERVO4_FUNCTION,
+    ZP_PARAM_ID::SERVO5_FUNCTION, ZP_PARAM_ID::SERVO6_FUNCTION,
+    ZP_PARAM_ID::SERVO7_FUNCTION, ZP_PARAM_ID::SERVO8_FUNCTION,
+};
 
 // ----------------------------------------------------------------------------
-// Initialization (no heap allocations)
+// Initialization
 // ----------------------------------------------------------------------------
+// Split out so initModel can start BIT off this clock before any driver reports into it
+void initSystemUtils()
+{
+    systemUtilsHandle = new SystemUtils();
+}
+
 void initDrivers()
 {
-    // Core utilities
-    systemUtilsHandle = new (&systemUtilsStorage) SystemUtils();
-    iwdgHandle = new (&iwdgStorage) IndependentWatchdog(&hiwdg);
-    loggerHandle = new (&loggerStorage) Logger(); // Initialized later in RTOS task
+    // 1. Core utilities
+    fftHandle = new FFT();
+    mathUtilsHandle = new MathUtils();
+    iwdgHandle = new IndependentWatchdog(&hiwdg);
+    loggerHandle = new Logger();
 
-    // Motors
-    leftAileronMotorHandle = new (&leftAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_1, 5, 10, 1);
-    rightAileronMotorHandle = new (&rightAileronMotorStorage) MotorControl(&htim3, TIM_CHANNEL_2, 5, 10, 5);
-    elevatorMotorHandle = new (&elevatorMotorStorage) MotorControl(&htim3, TIM_CHANNEL_3, 5, 10, 2);
-    rudderMotorHandle = new (&rudderMotorStorage) MotorControl(&htim3, TIM_CHANNEL_4, 5, 10, 4);
-    throttleMotorHandle = new (&throttleMotorStorage) MotorControl(&htim4, TIM_CHANNEL_1, 5, 10, 3);
-    leftFlapMotorHandle = new (&leftFlapMotorStorage) MotorControl(&htim1, TIM_CHANNEL_1, 5, 10, 6);
-    rightFlapMotorHandle = new (&rightFlapMotorStorage) MotorControl(&htim1, TIM_CHANNEL_2, 5, 10, 7);
-    steeringMotorHandle = new (&steeringMotorStorage) MotorControl(&htim1, TIM_CHANNEL_3, 5, 10, 8);
+    // 2. Motors (Fail-fast on parameter read)
+    float val = 0.0f;
+    ZP_Error paramStatus = ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE, val);
+    
+    uint32_t servoType = static_cast<uint32_t>(val);
+    
+    for (int i = 0; i < 8; i++) {
+        // Determine if it is brushless DC motor
+        float funcVal = 0.0f;
+        paramStatus |= ZP_PARAM::get(SERVO_FUNC[i], funcVal);
 
-    // Peripherals
-    gpsHandle = new (&gpsStorage) GPS(&huart2);
-    rcHandle = new (&crsfStorage) CRSFReceiver(&huart4);
-    telemLinkHandle = new (&telemLinkStorage) RFD(&huart3);
-    imuHandle = new (&imuStorage) IMU(&hspi2, GPIOD, GPIO_PIN_0);
-    pmHandle = new (&pmStorage) PowerModule(&hi2c1);
-    asHandle = new (&asStorage) Airspeed(&hi2c2);
+        MotorFunction_e func = static_cast<MotorFunction_e>(static_cast<int>(funcVal));
+        bool isBLDC = false;
+    #ifdef PLANE
+        isBLDC = (func == MotorFunction_e::THROTTLE);
+    #endif
+    #ifdef QUADCOPTER
+        isBLDC = (func == MotorFunction_e::MOTOR_1) || (func == MotorFunction_e::MOTOR_2)
+              || (func == MotorFunction_e::MOTOR_3) || (func == MotorFunction_e::MOTOR_4);
+    #endif
+        if (isBLDC) {
+            switch (servoType) {
+                case MOT_TYPE_DSHOT: // DShot
+                    motorHandles[i] = new DshotMotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, false);
+                    break;
+                case MOT_TYPE_PWM: // PWM
+                default:
+                    motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
+                    break;
+            }
+        } else {
+            motorHandles[i] = new MotorControl(MOTOR_MAP[i].timer, MOTOR_MAP[i].channel, 5, 10, i + 1);
+        }
+    }
 
-    // Queues
-    amRCQueueHandle = new (&amRCQueueStorage) MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new (&smLoggerQueueStorage) MessageQueue<char[100]>(&smLoggerQueueId);
-    tmQueueHandle = new (&tmQueueStorage) MessageQueue<TMMessage_t>(&tmQueueId);
-    messageBufferHandle = new (&messageBufferStorage) MessageQueue<mavlink_message_t>(&messageBufferId);
+    canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
-    // Initialize hardware components
-    leftAileronMotorHandle->init();
-    rightAileronMotorHandle->init();
-    elevatorMotorHandle->init();
-    rudderMotorHandle->init();
-    throttleMotorHandle->init();
-    leftFlapMotorHandle->init();
-    rightFlapMotorHandle->init();
-    steeringMotorHandle->init();
+    // 3. Peripheral allocation
+    gpsHandle = new GPS(&huart2);
+    rcHandle = new CRSFReceiver(&huart4);
+    telemLinkHandle = new RFD(&huart3);
+    imuHandle = new IMU(&hspi2, GPIOF, GPIO_PIN_12, 0, IMU_ODR_1KHZ);
+    pmHandle = new PowerModule(&hi2c1);
+    float rngfndEnable = 0.0f;
+    paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE, rngfndEnable);
+    if (static_cast<int>(rngfndEnable) == 1) {
+        rangefinderHandle = new Rangefinder(&hi2c3);
+    }
+    barometerHandle = new Barometer(&hi2c2);
+    asHandle = new Airspeed(&hi2c2);
 
-    rcHandle->init();
-    gpsHandle->init();
-    imuHandle->init();
-    pmHandle->init();
-    asHandle->init();
-    telemLinkHandle->init();
+    // 4. Queue allocation
+    amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
+    smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
+    tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
+    messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
 
-    // Motor instance bindings
-    leftAileronMotorInstance = {leftAileronMotorHandle, true, 0};
-    rightAileronMotorInstance = {rightAileronMotorHandle, true, 0};
-    elevatorMotorInstance = {elevatorMotorHandle, false, 0};
-    rudderMotorInstance = {rudderMotorHandle, false, 0};
-    throttleMotorInstance = {throttleMotorHandle, false, 0};
-    leftFlapMotorInstance = {leftFlapMotorHandle, false, 0};
-    rightFlapMotorInstance = {rightFlapMotorHandle, true, 0};
-    steeringMotorInstance = {steeringMotorHandle, true, 0};
+    // 5. Hardware Initialization (Fail-Fast)
+    // Accumulate so one motor failing is not erased by the next one succeeding
+    ZP_Error motorStatus = ZP_ERROR_OK;
+    for (int i = 0; i < 8; i++) {
+        motorStatus |= motorHandles[i]->init();
+    }
+    (void)ZP_BIT::report(ZP_BIT_ID::MOTOR_INIT, motorStatus);
 
-    aileronMotorInstances[0] = leftAileronMotorInstance;
-    aileronMotorInstances[1] = rightAileronMotorInstance;
+    (void)ZP_BIT::report(ZP_BIT_ID::RC_INIT, rcHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gpsHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, asHandle->init());
+    if (rangefinderHandle != nullptr) {
+        (void)ZP_BIT::report(ZP_BIT_ID::RANGEFINDER_INIT,
+                             rangefinderHandle->init());
+    }
+    (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
 
-    flapMotorInstances[0] = leftFlapMotorInstance;
-    flapMotorInstances[1] = rightFlapMotorInstance;
+    // 6. Finalize structure
+    for (int i = 0; i < 8; i++) {
+        motorInstances[i] = {motorHandles[i]};
+    }
+    mainMotorGroup = {motorInstances, 8};
 
-    rollMotors = {aileronMotorInstances, 2};
-    pitchMotors = {&elevatorMotorInstance, 1};
-    yawMotors = {&rudderMotorInstance, 1};
-    throttleMotors = {&throttleMotorInstance, 1};
-    flapMotors = {flapMotorInstances, 2};
-    steeringMotors = {&steeringMotorInstance, 1};
+    (void)ZP_BIT::report(ZP_BIT_ID::PARAM_TABLE_INIT, paramStatus);
 }

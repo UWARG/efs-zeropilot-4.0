@@ -1,15 +1,16 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 typedef struct PMData {
-
-    //instantaneous results
+    // Instantaneous results
     float busVoltage;
     float current;
     float power;
+    float temperature;
 
-    //accumulated results
+    // Accumulated results
     float charge;
     float energy;
 
@@ -21,6 +22,5 @@ protected:
 
 public:
     virtual ~IPowerModule() = default;
-
-    virtual bool readData(PMData_t *data) = 0;
+    virtual ZP_Error readData(PMData_t *data) = 0;
 };

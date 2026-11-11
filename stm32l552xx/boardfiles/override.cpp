@@ -15,10 +15,8 @@ extern "C" {
 /* overriding _write to redirect puts()/printf() to SWO */
 int _write(int file, char *ptr, int len)
 {
-  if( osMutexAcquire(itmMutex, osWaitForever) == osOK )
-  {
-    for (int DataIdx = 0; DataIdx < len; DataIdx++)
-    {
+  if (osMutexAcquire(itmMutex, osWaitForever) == osOK) {
+    for (int DataIdx = 0; DataIdx < len; DataIdx++) {
       ITM_SendChar(ptr[DataIdx]);
     }
     osMutexRelease(itmMutex);
@@ -41,72 +39,152 @@ void HAL_Delay(uint32_t Delay) {
   }
 }
 
-#ifdef __cplusplus
-}
-#endif
-
 /* interrupt callback functions */
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
-    if (huart == rcHandle->getHUART()){
-        rcHandle->parse();
-        rcHandle->startDMA();
-    } else if (huart == telemLinkHandle->getHUART()) {
-      telemLinkHandle->receiveCallback(Size);
+    if (huart == rcHandle->getHuart()) {
+        (void)rcHandle->parse();
+        (void)rcHandle->startDMA();
+    } else if (huart == telemLinkHandle->getHuart()) {
+      (void)telemLinkHandle->receiveCallback(Size);
     }
-    // GPS dma callback
-    else if (huart == gpsHandle->getHUART()) {
-      gpsHandle->processGPSData();
+    else if (huart == gpsHandle->getHuart()) {
+      gpsHandle->rxCallback(Size);
     }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if(huart == rcHandle->getHUART()){
+  if (huart == rcHandle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
     if (error & HAL_UART_ERROR_PE) {
       __HAL_UART_CLEAR_PEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_NE){
-      __HAL_UART_CLEAR_FEFLAG(huart);
-    }
-
-    if (error & HAL_UART_ERROR_FE){
+    if (error & HAL_UART_ERROR_NE) {
       __HAL_UART_CLEAR_NEFLAG(huart);
     }
 
-    if (error & HAL_UART_ERROR_ORE){
+    if (error & HAL_UART_ERROR_FE) {
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
-    rcHandle->startDMA();
+    (void)rcHandle->startDMA();
+  }
+  else if (huart == gpsHandle->getHuart()) {
+	  uint32_t error = HAL_UART_GetError(huart);
+
+	  if (error & HAL_UART_ERROR_PE) {
+		__HAL_UART_CLEAR_PEFLAG(huart);
+	  }
+
+	  if (error & HAL_UART_ERROR_NE) {
+		__HAL_UART_CLEAR_NEFLAG(huart);
+	  }
+
+	  if (error & HAL_UART_ERROR_FE) {
+		__HAL_UART_CLEAR_FEFLAG(huart);
+	  }
+
+	  if (error & HAL_UART_ERROR_ORE) {
+		__HAL_UART_CLEAR_OREFLAG(huart);
+	  }
+	  gpsHandle->rxCallback(0);
+  } else if (huart == telemLinkHandle->getHuart()) {
+    uint32_t error = HAL_UART_GetError(huart);
+
+    if (error & HAL_UART_ERROR_PE) {
+      __HAL_UART_CLEAR_PEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_NE) {
+      __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_FE) {
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE) {
+      __HAL_UART_CLEAR_OREFLAG(huart);
+    }
+
+    // Reception is aborted by the error, and nothing else would ever start it again
+    (void)telemLinkHandle->restartRx();
   }
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
-    #ifdef SPI_INTERFACE
-    if (hspi->Instance == SPI1) {
-        setSpiTxFlag(1);
-    }
-    #endif
-    if (hspi->Instance == SPI2) {
-      imuHandle->txRxCallback();
-    }
+#ifdef SPI_INTERFACE
+  if (hspi->Instance == SPI1) {
+      setSpiTxFlag(1);
+  }
+#endif
+  if (hspi->Instance == SPI2) {
+    imuHandle->txRxCallback();
+  }
 }
 
 void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-		pmHandle->I2C_MemRxCpltCallback();
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_MemRxCpltCallback();
+  } else if(hi2c == barometerHandle->getI2C()) {
+    barometerHandle->rxCallback();
+  }
+}
+
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->txCallback();
+  }
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+  if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->rxCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
     asHandle->receiveCallback();
   }
 }
 
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
-  if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+  if (hi2c == pmHandle->getI2C()) {
+    pmHandle->I2C_ErrorCallback();
+  } else if (hi2c == barometerHandle->getI2C()) {
+    barometerHandle->errorCallback();
+  } else if (hi2c == rangefinderHandle->getI2C()) {
+    rangefinderHandle->errorCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
     asHandle->errorCallback();
   }
 }
+
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {
+  if ((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET) {
+    FDCAN_RxHeaderTypeDef rxHeader;
+    uint8_t rxData[8];
+
+    uint32_t count = HAL_FDCAN_GetRxFifoFillLevel(hfdcan, FDCAN_RX_FIFO0);
+    while (count-- && HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rxHeader, rxData) == HAL_OK
+        && canControllerHandle) {
+      (void)canControllerHandle->enqueueRxFrame(rxHeader.Identifier, rxHeader.DataLength, rxData);
+    }
+  }
+}
+
+void HAL_FDCAN_ErrorStatusCallback(FDCAN_HandleTypeDef *hfdcan, uint32_t ErrorStatusITs) {
+    FDCAN_ProtocolStatusTypeDef protocol_status;
+    HAL_FDCAN_GetProtocolStatus(hfdcan, &protocol_status);
+
+    if (protocol_status.BusOff != 0) {
+        CLEAR_BIT(hfdcan->Instance->CCCR, FDCAN_CCCR_INIT); // Clear INIT bit to recover from Bus-Off
+    }
+}
+
+#ifdef __cplusplus
+}
+#endif

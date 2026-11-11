@@ -7,7 +7,12 @@ CheckOptions:
   - key: readability-identifier-naming.MemberCase
     value: camelBack
   - key: readability-identifier-naming.ConstantCase
-    value: UPPER_CASE 
+    value: UPPER_CASE
+  # Keep const function parameters in camelCase (don't treat them as constants)
+  - key: readability-identifier-naming.ConstantParameterCase
+    value: camelBack
+  - key: readability-identifier-naming.ConstantPointerParameterCase
+    value: camelBack
   - key: readability-identifier-naming.MacroDefinitionCase
     value: UPPER_CASE
   - key: readability-identifier-naming.ClassCase

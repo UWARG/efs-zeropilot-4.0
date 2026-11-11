@@ -16,19 +16,18 @@ void initManagers()
 {
     // AM initialization
     amHandle = new (&amHandleStorage) AttitudeManager(
-        systemUtilsHandle, 
-        gpsHandle,
+        systemUtilsHandle,
+        mathUtilsHandle,
+        gps1Handle,
         imuHandle,
+        fftHandle,
+        rangefinderHandle,
+        barometerHandle,
 		asHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 
-        &rollMotors, 
-        &pitchMotors, 
-        &yawMotors, 
-        &throttleMotors, 
-        &flapMotors, 
-        &steeringMotors
+        &mainMotorGroup
     );
 
     // SM initialization
@@ -36,6 +35,7 @@ void initManagers()
         systemUtilsHandle, 
         iwdgHandle,
         loggerHandle,
+        safetySwitchHandle,
         rcHandle,
         pmHandle,
         amRCQueueHandle,
