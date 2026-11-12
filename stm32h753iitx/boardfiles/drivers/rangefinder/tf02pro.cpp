@@ -24,10 +24,8 @@ static constexpr uint16_t DIST_WEAK_SIGNAL = 4500;
 
 static constexpr uint32_t TF02PRO_PROCESS_CMD_DELAY_MS = 100; // Wait time for TF02-Pro to process the command, as suggested in the datasheet
 
-static ZP_Error halToZpError(HAL_StatusTypeDef status);
 
-Rangefinder::Rangefinder(I2C_HandleTypeDef *hi2c) : hi2c(hi2c) {}
-
+Rangefinder::Rangefinder(I2C_HandleTypeDef *hi2c) : i2cCommon(hi2c, TF02PRO_I2C_ADDR) {}
 ZP_Error Rangefinder::init() {
     // Check firmware version to see if the rangefinder is present and alive
     ZP_Error status = sendCmdCheckResp(FIRMWARE_VERSION_CMD, sizeof(FIRMWARE_VERSION_CMD),
@@ -125,7 +123,7 @@ ZP_Error Rangefinder::restartTransfer() {
     }
 
     lastTransferTick = HAL_GetTick();
-    return halToZpError(HAL_I2C_Master_Transmit_IT(hi2c, TF02PRO_I2C_ADDR, (uint8_t*)I2C_READ_CMD, READ_CMD_LEN));
+    return i2cCommon.transmitInterrupt(I2C_READ_CMD, READ_CMD_LEN);
 }
 
 uint8_t Rangefinder::computeChecksum() {
@@ -137,14 +135,6 @@ uint8_t Rangefinder::computeChecksum() {
     return sum & 0xFF;
 }
 
-ZP_Error Rangefinder::writeDataBlocking(uint8_t* cmd, uint16_t size, uint32_t delay) {
-    return halToZpError(HAL_I2C_Master_Transmit(hi2c, TF02PRO_I2C_ADDR, cmd, size, delay));
-}
-
-ZP_Error Rangefinder::readDataBlocking(uint8_t* receiveBuffer, uint16_t size, uint32_t delay) {
-    return halToZpError(HAL_I2C_Master_Receive(hi2c, TF02PRO_I2C_ADDR, receiveBuffer, size, delay));
-}
-
 ZP_Error Rangefinder::sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize,
                                        const uint8_t *expectedResp, uint16_t expectedRespSize) {
     uint8_t receiveBuffer[MAX_CMD_RESPONSE_LENGTH] = {0};
@@ -153,14 +143,14 @@ ZP_Error Rangefinder::sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize,
         return ZP_ERROR_RANGE;
     }
 
-    ZP_Error status = writeDataBlocking((uint8_t*)cmd, cmdSize, HAL_MAX_DELAY);
+    ZP_Error status = i2cCommon.transmitPolling(cmd, cmdSize, HAL_MAX_DELAY);
     if (status != ZP_ERROR_OK) {
         return status;
     }
 
     HAL_Delay(TF02PRO_PROCESS_CMD_DELAY_MS);
 
-    status = readDataBlocking(receiveBuffer, expectedRespSize, HAL_MAX_DELAY);
+    status = i2cCommon.receivePolling(receiveBuffer, expectedRespSize, HAL_MAX_DELAY);
     if (status != ZP_ERROR_OK) {
         return status;
     }
@@ -171,15 +161,4 @@ ZP_Error Rangefinder::sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize,
         }
     }
     return ZP_ERROR_OK;
-}
-
-static ZP_Error halToZpError(HAL_StatusTypeDef status) {
-    if (status == HAL_OK) {
-        return ZP_ERROR_OK;
-    } else if (status == HAL_TIMEOUT) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
-    } else if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    }
-    return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
 }

@@ -3,6 +3,7 @@
 // I2C Common Functions
 #include "stm32h7xx_hal.h"
 #include <cstdint>
+#include "zp_error.h"
 
 
 class I2cCommon {
@@ -24,7 +25,7 @@ public:
        number of attempts and a timeout in ms. Returns true if the device
        responded, false if it did not (not connected, wrong address, bus fault,
        or timeout).*/
-    bool isDeviceReady(uint32_t trials = READY_TRIALS_DEFAULT, uint32_t timeout = READY_TIMEOUT_MS_DEFAULT);    
+    ZP_Error isDeviceReady(uint32_t trials = READY_TRIALS_DEFAULT, uint32_t timeout = READY_TIMEOUT_MS_DEFAULT);    
 
     //readRegisterPolling (formerly readRegisterBlocking)
     /* Reads data from the I2C device in polling mode. Returns true if the read 
@@ -33,10 +34,10 @@ public:
     /* Multi-byte read. Takes the register address to read from, a pointer to the
        destination buffer, the number of bytes to read, and a timeout in ms. 
        The buffer must hold at least `size` bytes.*/
-    bool readPolling(uint16_t memAddress, uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+    ZP_Error readPolling(uint16_t memAddress, uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
     /* Single-byte read. Takes the register address to read from, a reference to
        the variable that receives the byte, and a timeout in ms.*/
-    bool readPolling(uint16_t memAddress, uint8_t& out, uint32_t timeout = HAL_MAX_DELAY);
+    ZP_Error readPolling(uint16_t memAddress, uint8_t& out, uint32_t timeout = HAL_MAX_DELAY);
 
 
     //writeRegisterPolling (formerly writeRegisterBlocking)
@@ -46,10 +47,10 @@ public:
     /* Multi-byte write. Takes the register address to write to, a pointer to the
        source buffer, the number of bytes to write, and a timeout in ms.
        The buffer must hold at least `size` bytes.*/
-    bool writePolling(uint16_t memAddress, const uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+    ZP_Error writePolling(uint16_t memAddress, const uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
     /* Single-byte write. Takes the register address to write to, the byte value
        to write, and a timeout in ms.*/
-    bool writePolling(uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);    
+    ZP_Error writePolling(uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);    
     
 
     //readDMA (formerly readRegister)
@@ -57,7 +58,7 @@ public:
       the memory address to read from, a pointer to the data buffer, 
       and the size of the data to read. It returns true if the read 
       operation was successful, false otherwise.*/
-    bool readDMA(uint16_t memAddress, uint8_t * pData, uint16_t size);
+    ZP_Error readDMA(uint16_t memAddress, uint8_t * pData, uint16_t size);
 
 
     //writeDMA (formerly writeRegister)
@@ -65,7 +66,7 @@ public:
       the memory address to write to, a pointer to the data buffer, and 
       the size of the data to write. It returns true if the write operation 
       was successful, false otherwise.*/
-    bool writeDMA(uint16_t memAddress, uint8_t * pData, uint16_t size);
+    ZP_Error writeDMA(uint16_t memAddress, uint8_t * pData, uint16_t size);
 
 
     //readInterrupt (TBD)
@@ -81,10 +82,10 @@ public:
 
     /* Transmit. Takes a pointer to the source buffer, the number of bytes to
        send, and a timeout in ms. The buffer must hold at least `size` bytes.*/
-    bool transmitPolling(const uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+    ZP_Error transmitPolling(const uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
     /* Receive. Takes a pointer to the destination buffer, the number of bytes
        to read, and a timeout in ms. The buffer must hold at least `size` bytes.*/
-    bool receivePolling(uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
+    ZP_Error receivePolling(uint8_t* pData, uint16_t size, uint32_t timeout = HAL_MAX_DELAY);
 
 
     //transmitInterrupt / receiveInterrupt
@@ -95,11 +96,11 @@ public:
     /* Transmit. Takes a pointer to the source buffer and the number of bytes to
        send. The buffer must stay valid until the transfer completes, so pass
        a member or a static, never a local variable.*/
-    bool transmitInterrupt(const uint8_t* pData, uint16_t size);
+    ZP_Error transmitInterrupt(const uint8_t* pData, uint16_t size);
     /* Receive. Takes a pointer to the destination buffer and the number of
        bytes to read. The buffer must stay valid until the transfer completes
        and hold at least `size` bytes.*/
-    bool receiveInterrupt(uint8_t* pData, uint16_t size);
+    ZP_Error receiveInterrupt(uint8_t* pData, uint16_t size);
 
 private:    
     //default constants

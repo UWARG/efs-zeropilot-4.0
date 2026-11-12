@@ -59,10 +59,8 @@ class PowerModule : public IPowerModule {
 
     private:
         PMData_t processedData;
-        I2C_HandleTypeDef *hi2c;
-        ZP_Error writeRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        ZP_Error readRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        ZP_Error parse(I2C_HandleTypeDef *hi2c);
+        I2cCommon i2cCommon;
+        ZP_Error parse();
 
 
         uint8_t vbusData[3];

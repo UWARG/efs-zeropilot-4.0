@@ -29,7 +29,5 @@ private:
     uint8_t computeChecksum();
     uint32_t lastTransferTick = 0;
 
-    ZP_Error writeDataBlocking(uint8_t* cmd, uint16_t cmdSize, uint32_t delay);
-    ZP_Error readDataBlocking(uint8_t* receiveBuffer, uint16_t size, uint32_t delay);
     ZP_Error sendCmdCheckResp(const uint8_t *cmd, uint16_t cmdSize, const uint8_t *expectedResp, uint16_t expectedRespSize);
 };
