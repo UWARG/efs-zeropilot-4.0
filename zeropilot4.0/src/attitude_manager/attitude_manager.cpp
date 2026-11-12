@@ -25,6 +25,7 @@ AttitudeManager::AttitudeManager(
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     ekf(mathUtilsDriver),
+    startupLogged(false),
     amQueue(amQueue),
     tmQueue(tmQueue),
     #ifdef PLANE
@@ -135,6 +136,23 @@ void AttitudeManager::amUpdate() {
         sendServoOutputRawToTelemetryManager();
     }
 
+    // Log IMU startup data once
+
+    if (!startupLogged)
+    {
+        GyroBias_t startupGyroBias = imuDriver->getGyroStartupBias(0);
+        AccelStartup_t startupAccelMean = imuDriver->getAccelStartupMean(0);
+
+        Logger::log("IMU odr=%.1f gb=%.5f,%.5f,%.5f am=%.4f,%.4f,%.4f",
+            LogLevel_e::LOG_INFO,
+            imuDriver->getODRHz(),
+            startupGyroBias.x, startupGyroBias.y, startupGyroBias.z,
+            startupAccelMean.x, startupAccelMean.y, startupAccelMean.z);
+
+        startupLogged = true;
+
+    }
+
     // Read barometer data
     BaroData_t baroData;
     barometerDriver->readData(baroData);
@@ -147,10 +165,16 @@ void AttitudeManager::amUpdate() {
     // Send IMU raw data to telemetry manager
     RawImuBatch_t imuData = imuDriver->readRawData();
     ScaledImuBatch_t scaledImuData = imuDriver->scaleIMUData(imuData);
+    ScaledImu_t lastScaledImu = {};
+    bool haveImu = false;
+
     for (int i = 0; i < scaledImuData.count; i++) {
         if (scaledImuData.data[i].imuId == 0) { // Only feed one IMU's data for FFT sampling as we need a continuous time stream.
             harmonicNotchFilter.pushSample(scaledImuData.data[i].xgyro, scaledImuData.data[i].ygyro, scaledImuData.data[i].zgyro);
+            lastScaledImu = scaledImuData.data[i];
+            haveImu = true;
         }
+
 
         // Notch-filtered copy for the rate controllers only. The EKF propagates on the
         // un-notched gyro further below so the notch's group delay and per-window
@@ -214,26 +238,65 @@ void AttitudeManager::amUpdate() {
             }
             accelAccumCount = 0;
         }
+
+        // Reading Mahony Filter
+        mahonyFilter.updateIMU(gyro[0], gyro[1], gyro[2], 
+                                scaledImuData.data[i].xacc, 
+                                scaledImuData.data[i].yacc, 
+                                scaledImuData.data[i].zacc, 
+                                dt);
+
+                            
     }
 
     Attitude_t attitude = ekf.getAttitudeRadians();
+
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;
 
+    Attitude_t mahonyAttitude = mahonyFilter.getAttitudeRadians();
+
+    
+
+    // Logging EKF and Mahony Data
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_LOG_EKF_RATE_HZ) == 0){
         GyroBias_t bias = ekf.getGyroBias();
+        GyroBias_t mahonyBias = mahonyFilter.getIntegral();
+        uint32_t time_now = systemUtilsDriver->getCurrentTimestampMs();
 
         Logger::log("EKF t=%lu r=%.4f p=%.4f y=%.4f gb=%.5f,%.5f,%.5f ab=%.5f,%.5f,%.5f",
             LogLevel_e::LOG_DEBUG,
-            systemUtilsDriver->getCurrentTimestampMs(),
+            time_now,
             attitude.roll, attitude.pitch, attitude.yaw,
             bias.x, bias.y, bias.z,
             ekf.meas.accelBiasAccumulated[0],
             ekf.meas.accelBiasAccumulated[1],
             ekf.meas.accelBiasAccumulated[2]
         ); // logs the gyro reading, gyro bias, and accelerometer bias from gravity
+
+        Logger::log("Mahony t=%lu r=%.4f p=%.4f y=%.4f ib=%.5f,%.5f,%.5f",
+            LogLevel_e::LOG_DEBUG,
+            time_now,
+            mahonyAttitude.roll, mahonyAttitude.pitch, mahonyAttitude.yaw,
+            mahonyBias.x,
+            mahonyBias.y,
+            mahonyBias.z
+        );
+
+        // log IMU readings
+        if (haveImu){
+            Logger::log("IMU tn=%lu ts=%lu ax=%.4f ay=%.4f az=%.4f gx=%.5f gy=%.5f gz=%.5f",
+                LogLevel_e::LOG_DEBUG,
+                time_now,
+                lastScaledImu.timestamp,
+                lastScaledImu.xacc, lastScaledImu.yacc, lastScaledImu.zacc,
+                lastScaledImu.xgyro, lastScaledImu.ygyro, lastScaledImu.zgyro
+            );
+        }
     }
+
+
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
         if (imuData.count > 0) { sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 

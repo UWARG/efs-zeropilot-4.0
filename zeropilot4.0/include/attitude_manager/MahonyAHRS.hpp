@@ -44,6 +44,10 @@ public:
 	Attitude_t getAttitudeRadians() {
 		return {roll, pitch, yaw};
 	}
+
+	GyroBias_t getIntegral(){
+		return {integralFBx, integralFBy, integralFBz};
+	}
 };
 
 #endif
