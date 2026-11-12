@@ -37,7 +37,7 @@ bool FFTHarmonicNotch::init(const FFTHarmonicNotchConfig &notchConfig) {
     q = config.minFreqHz / config.bandwidthHz;
 
     // Initialize CMSIS-DSP FFT Instance
-    if (fftDriver == nullptr || !fftDriver->init(config.fftWindowSize)) {
+    if (fftDriver == nullptr || fftDriver->init(config.fftWindowSize) != ZP_ERROR_OK) {
         initialized = false;
         return false;
     }
