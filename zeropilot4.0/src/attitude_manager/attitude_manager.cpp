@@ -11,6 +11,7 @@ AttitudeManager::AttitudeManager(
     IMathUtils *mathUtilsDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
+    IMagnetometer *magDriver,
     IFFT *fftDriver,
     IRangefinder *rangefinderDriver,
     IBarometer *barometerDriver,
@@ -22,6 +23,7 @@ AttitudeManager::AttitudeManager(
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
+    magCal(magDriver, mathUtilsDriver),
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
@@ -103,6 +105,14 @@ void AttitudeManager::amUpdate() {
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ) == 0) {
         (void)sendServoOutputRawToTelemetryManager();
     }
+
+    // Runs every cycle so calibration keeps collecting. Unused until the EKF is enabled.
+    MagData_t magData = {};
+    ZP_Error magStatus = magCal.update(magData);
+    if (!magData.isNew) {
+        magStatus |= ZP_ERROR_INVALID_DATA;
+    }
+    (void)ZP_BIT::report(ZP_BIT_ID::MAG_DATA_VALID, magStatus);
 
     // Read barometer data
     BaroData_t baroData;

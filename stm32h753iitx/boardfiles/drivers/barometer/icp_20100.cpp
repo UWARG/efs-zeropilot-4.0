@@ -1,5 +1,5 @@
 #include "icp_20100.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 static constexpr uint32_t OTP_STATUS_POLL_TIMEOUT_MS = 1000U;
 static constexpr uint32_t OTP_STATUS_POLL_INTERVAL_MS = 1U;
@@ -122,7 +122,6 @@ static constexpr uint32_t ICP20100_POWER_ON_POLL_INTERVAL_MS = 5U;  // Poll inte
 static constexpr uint32_t ICP20100_MODE_SYNC_TIMEOUT_MS = 100U;     // Max wait for MODE_SELECT
 
 // Forward declarations of static helper functions
-static ZP_Error halToZpError(HAL_StatusTypeDef status);
 static ZP_Error unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock);
 static ZP_Error readRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t &out, uint32_t timeout = HAL_MAX_DELAY);
 static ZP_Error writeRegisterBlocking(I2C_HandleTypeDef *hi2c, uint16_t memAddress, uint8_t value, uint32_t timeout = HAL_MAX_DELAY);
@@ -443,17 +442,6 @@ I2C_HandleTypeDef* Barometer::getI2C() {
 // ============================================================================
 // Static helper function implementations
 // ============================================================================
-
-static inline ZP_Error halToZpError(HAL_StatusTypeDef status) {
-    if (status == HAL_OK) {
-        return ZP_ERROR_OK;
-    } else if (status == HAL_TIMEOUT) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
-    } else if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    }
-    return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-}
 
 static inline ZP_Error unlockOrLock(I2C_HandleTypeDef *hi2c, bool doLock) {
     return writeRegisterBlocking(hi2c, ICP20100_MASTER_LOCK, doLock ? LOCK_VALUE : UNLOCK_VALUE);

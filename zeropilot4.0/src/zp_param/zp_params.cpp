@@ -243,6 +243,8 @@ namespace ZP_PARAM {
         result |= initParam(ZP_PARAM_ID::RNGFND_ENABLE, "RNGFND_ENABLE", 1, MAV_PARAM_TYPE_UINT8);
         result |= initParam(ZP_PARAM_ID::RNGFND_MIN, "RNGFND_MIN", 0.1f, MAV_PARAM_TYPE_REAL32);
         result |= initParam(ZP_PARAM_ID::RNGFND_MAX, "RNGFND_MAX", 20.0f, MAV_PARAM_TYPE_REAL32);
+
+        result |= initParam(ZP_PARAM_ID::MAG_I2C_ADDR, "MAG_I2C_ADDR", 0x18, MAV_PARAM_TYPE_UINT8);
         return result;
     }
 
