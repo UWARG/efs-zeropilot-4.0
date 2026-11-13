@@ -65,3 +65,6 @@ set(ZP_INC
     ${TM_INC}
     ${ZP_PARAM_INC}
 )
+
+string(APPEND CMAKE_C_FLAGS_RELEASE   " -g3")
+string(APPEND CMAKE_CXX_FLAGS_RELEASE " -g3")

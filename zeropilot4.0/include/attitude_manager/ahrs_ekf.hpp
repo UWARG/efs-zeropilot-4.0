@@ -80,7 +80,7 @@ public:
     void correctionAccelerometer(const float* accelNew);
     void correctionMagnetometer(const float* magNew);
 
-    Attitude_t getAttitudeRadians() const;
+    Attitude_t getAttitudeRadians();
     GyroBias_t getGyroBias() const;
 
     Measurements meas;
@@ -97,6 +97,7 @@ private:
     float gyroBiasCovMat[9];
     float accelBiasCovMat[9];
 
+    Attitude_t att;
     uint16_t accelRejectCount = 0;
 
     // Kalman update for a measurement with jacobian H = [h0, 0, H2], where h0 is

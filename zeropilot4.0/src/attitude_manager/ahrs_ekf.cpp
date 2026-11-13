@@ -432,11 +432,10 @@ void AHRSEKF::applyUpdate(const float* y, const float* h0, bool observesAccelBia
     math->ensureSymmetric(p, 9);
 }
 
-Attitude_t AHRSEKF::getAttitudeRadians() const {
+Attitude_t AHRSEKF::getAttitudeRadians() {
     float eulerTmp[3];
     math->quatToEuler(nom.quaternionNew, eulerTmp);
 
-    Attitude_t att;
     att.roll  = eulerTmp[0];
     att.pitch = eulerTmp[1];
     att.yaw   = eulerTmp[2];
