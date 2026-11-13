@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "utils.hpp"
 
 uint32_t timeToTicks(uint32_t duration_ms)
 {

@@ -1,6 +1,6 @@
 #include "tm_threads.hpp"
 #include "managers.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 osThreadId_t tmMainHandle;
 

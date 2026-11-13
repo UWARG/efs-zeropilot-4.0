@@ -33,14 +33,14 @@ class Magnetometer : public IMagnetometer {
         static constexpr uint8_t MEASUREMENT_BYTES = 7;
 
         // Type of the state member, so it has to stay in the header
-        typedef enum {
+        enum class ReadState_e : uint8_t {
             IDLE,
             SM_TX,
             SM_RX,
             WAIT_CONV,
             RM_TX,
             RM_RX,
-        } ReadState_e;
+        };
 
         I2C_HandleTypeDef *hi2c;
         GPIO_TypeDef *csPort;

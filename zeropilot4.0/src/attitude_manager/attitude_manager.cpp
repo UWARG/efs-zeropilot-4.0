@@ -106,9 +106,7 @@ void AttitudeManager::amUpdate() {
         (void)sendServoOutputRawToTelemetryManager();
     }
 
-    // Drive the magnetometer through MagCal every cycle so a running
-    // calibration keeps collecting. The corrected field is not consumed yet;
-    // it lands here once the EKF above is enabled.
+    // Runs every cycle so calibration keeps collecting. Unused until the EKF is enabled.
     MagData_t magData = {};
     ZP_Error magStatus = magCal.update(magData);
     if (!magData.isNew) {
