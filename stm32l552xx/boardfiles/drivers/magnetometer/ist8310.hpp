@@ -11,7 +11,7 @@
 
 #include <cstdint>
 
-class Ist8310 : public IMagnetometer{
+class Ist8310 : public IMagnetometer {
 public:
   explicit Ist8310(I2C_HandleTypeDef *i2c, uint8_t address = DEFAULT_ADDRESS);
 
@@ -35,7 +35,6 @@ private:
   static constexpr uint8_t DEFAULT_ADDRESS = 0x0E;
   static constexpr uint8_t WHO_AM_I_VALUE = 0x10;
   static constexpr float MICROTESLA_PER_LSB = 0.3F;
-
 
   enum IST8310_Register_e : uint8_t {
     kWhoAmI = 0x00,
