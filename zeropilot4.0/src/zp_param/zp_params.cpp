@@ -245,6 +245,8 @@ namespace ZP_PARAM {
         result |= initParam(ZP_PARAM_ID::RNGFND_MAX, "RNGFND_MAX", 20.0f, MAV_PARAM_TYPE_REAL32);
 
         result |= initParam(ZP_PARAM_ID::MAG_I2C_ADDR, "MAG_I2C_ADDR", 0x18, MAV_PARAM_TYPE_UINT8);
+        
+        result |= initParam(ZP_PARAM_ID::MAG_YAW_OFFSET, "MAG_YAW_OFFSET", 90.0F, MAV_PARAM_TYPE_REAL32);
         return result;
     }
 
