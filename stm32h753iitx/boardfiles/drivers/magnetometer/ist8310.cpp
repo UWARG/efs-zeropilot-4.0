@@ -181,7 +181,7 @@ ZP_Error Ist8310::startMeasurement() {
   transfer_start_ms = HAL_GetTick();
   state = kStartTx;
 
-  const ZP_Error status = halStatusToError(HAL_I2C_Master_Transmit_IT(
+  const ZP_Error status = halToZpError(HAL_I2C_Master_Transmit_IT(
       i2c_handle, static_cast<uint16_t>(address) << 1U, tx_buffer, 2U));
   if (status != ZP_ERROR_OK) {
     state = kIdle;
@@ -195,7 +195,7 @@ ZP_Error Ist8310::readMeasurement() {
   transfer_start_ms = HAL_GetTick();
   state = kPointerTx;
 
-  const ZP_Error status = halStatusToError(HAL_I2C_Master_Transmit_IT(
+  const ZP_Error status = halToZpError(HAL_I2C_Master_Transmit_IT(
       i2c_handle, static_cast<uint16_t>(address) << 1U, tx_buffer, 1U));
   if (status != ZP_ERROR_OK) {
     state = kIdle;
@@ -204,8 +204,8 @@ ZP_Error Ist8310::readMeasurement() {
 }
 
 ZP_Error Ist8310::resetBus() {
-  ZP_Error error = halStatusToError(HAL_I2C_DeInit(i2c_handle));
-  error |= halStatusToError(HAL_I2C_Init(i2c_handle));
+  ZP_Error error = halToZpError(HAL_I2C_DeInit(i2c_handle));
+  error |= halToZpError(HAL_I2C_Init(i2c_handle));
   return error;
 }
 
@@ -273,7 +273,7 @@ I2C_HandleTypeDef *Ist8310::getI2C() {
 }
 
 ZP_Error Ist8310::writeRegister(uint8_t reg, uint8_t value) {
-  return halStatusToError(HAL_I2C_Mem_Write(
+  return halToZpError(HAL_I2C_Mem_Write(
       i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
       I2C_MEMADD_SIZE_8BIT, &value, 1U, kI2cTimeoutMilliseconds));
 }
@@ -289,7 +289,7 @@ ZP_Error Ist8310::readRegisters(uint8_t reg, uint8_t *data, uint16_t length) con
   if (length == 0U) {
     return ZP_ERROR_INVALID_ARG;
   }
-  return halStatusToError(HAL_I2C_Mem_Read(
+  return halToZpError(HAL_I2C_Mem_Read(
       i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
       I2C_MEMADD_SIZE_8BIT, data, length, kI2cTimeoutMilliseconds));
 }
