@@ -3,11 +3,7 @@
 #include <cmath>
 
 /*
- * Identity by default: MagCal is sensor agnostic, so it cannot assume the
- * distortion of any particular board. A fit measured on one airframe would
- * corrupt every other sensor, including the SITL model, which already reports
- * an undistorted field. Real constants come from startCalibration() or from
- * setConstants() once they are persisted in NVM / ZP params.
+ * Identity until calibrated, since MagCal can't assume any one board's distortion.
  *
  * For reference, the fit measured on the ZP4.0 MLX90393 bench unit was
  *   hardIron {-9.946797043, -25.11398367, 3.1675524} uT

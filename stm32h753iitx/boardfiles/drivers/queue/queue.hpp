@@ -2,7 +2,7 @@
 
 #include "queue_iface.hpp"
 #include "cmsis_os2.h"
-#include "utils.h"
+#include "utils.hpp"
 #include "zp_error.h"
 
 template <typename T>

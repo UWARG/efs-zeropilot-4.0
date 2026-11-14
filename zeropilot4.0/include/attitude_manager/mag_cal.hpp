@@ -29,9 +29,9 @@ typedef struct {
 
 // corrected = softIron * (measured - hardIron)
 typedef struct {
-    float hardIron[3];    // uT
-    float softIron[9];    // row major 3x3
-    float fieldStrength;  // uT
+    float hardIron[3]; // uT
+    float softIron[9]; // row major 3x3
+    float fieldStrength; // uT
 } MagCalConstants_t;
 
 /**

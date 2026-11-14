@@ -3,7 +3,7 @@
 #include "museq.hpp"
 #include "rfd.hpp"
 #include "drivers.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "imu.hpp"
 #include "user_diskio_spi.h"
 
@@ -164,12 +164,7 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
   } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->errorCallback();
   } else {
-    /*
-     * The magnetometer and barometer share I2C2, so a bus error cannot be
-     * attributed to one of them by handle alone. Both error callbacks only
-     * reset driver state and are no-ops when that driver has nothing in
-     * flight, so notify both.
-     */
+    // Multiple drivers can share a bus, so check each one
     if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
       magHandle->errorCallback();
     }

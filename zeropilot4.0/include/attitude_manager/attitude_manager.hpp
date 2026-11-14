@@ -58,8 +58,6 @@ public:
 
     void amUpdate();
 
-    MagCal &getMagCal() { return magCal; }
-
 private:
     static constexpr uint8_t NUM_MOTORS = 8;
 

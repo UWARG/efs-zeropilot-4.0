@@ -1,71 +1,85 @@
 #include "mlx90393.hpp"
 #include "utils.hpp"
 
-// Register fields go over the wire as raw bytes
-template <typename EnumT>
-static constexpr uint8_t toByte(EnumT value) {
-    return static_cast<uint8_t>(value);
+namespace MLX90393_AXIS {
+    static constexpr uint8_t T = 1 << 0;
+    static constexpr uint8_t X = 1 << 1;
+    static constexpr uint8_t Y = 1 << 2;
+    static constexpr uint8_t Z = 1 << 3;
 }
 
-enum class MLX90393_AXIS : uint8_t {
-    T = 0x01,
-    X = 0x02,
-    Y = 0x04,
-    Z = 0x08,
-};
+namespace MLX90393_REG {
+    static constexpr uint8_t CONF1 = 0x00;
+    static constexpr uint8_t CONF2 = 0x01;
+    static constexpr uint8_t CONF3 = 0x02;
+    static constexpr uint8_t CONF4 = 0x03;
+}
 
-enum class MLX90393_REG : uint8_t {
-    CONF1 = 0x00,
-    CONF2 = 0x01,
-    CONF3 = 0x02,
-    CONF4 = 0x03,
-};
+namespace MLX90393_CMD {
+    static constexpr uint8_t NOP               = 0x00;
+    static constexpr uint8_t EXIT              = 0x80;
+    static constexpr uint8_t START_BURST       = 0x10;
+    static constexpr uint8_t WAKE_ON_CHANGE    = 0x20;
+    static constexpr uint8_t START_MEASUREMENT = 0x30;
+    static constexpr uint8_t READ_MEASUREMENT  = 0x40;
+    static constexpr uint8_t READ_REGISTER     = 0x50;
+    static constexpr uint8_t WRITE_REGISTER    = 0x60;
+    static constexpr uint8_t MEMORY_RECALL     = 0xD0;
+    static constexpr uint8_t MEMORY_STORE      = 0xE0;
+    static constexpr uint8_t RESET             = 0xF0;
+}
 
-enum class MLX90393_CMD : uint8_t {
-    NOP               = 0x00,
-    EXIT              = 0x80,
-    START_BURST       = 0x10,
-    WAKE_ON_CHANGE    = 0x20,
-    START_MEASUREMENT = 0x30,
-    READ_MEASUREMENT  = 0x40,
-    READ_REGISTER     = 0x50,
-    WRITE_REGISTER    = 0x60,
-    MEMORY_RECALL     = 0xD0,
-    MEMORY_STORE      = 0xE0,
-    RESET             = 0xF0,
-};
+namespace MLX90393_STATUS {
+    static constexpr uint8_t BURST_MODE     = 1 << 7;
+    static constexpr uint8_t WAKE_ON_CHANGE = 1 << 6;
+    static constexpr uint8_t POLLING_MODE   = 1 << 5;
+    static constexpr uint8_t ERROR          = 1 << 4;
+    static constexpr uint8_t EEC            = 1 << 3;
+    static constexpr uint8_t RESET          = 1 << 2;
+}
 
-enum class MLX90393_STATUS : uint8_t {
-    BURST_MODE     = 0x80,
-    WAKE_ON_CHANGE = 0x40,
-    POLLING_MODE   = 0x20,
-    ERROR          = 0x10,
-    EEC            = 0x08,
-    RESET          = 0x04,
-};
+namespace MLX90393_GAIN {
+    static constexpr uint8_t X5    = 0x00;
+    static constexpr uint8_t X4    = 0x01;
+    static constexpr uint8_t X3    = 0x02;
+    static constexpr uint8_t X2_5  = 0x03;
+    static constexpr uint8_t X2    = 0x04;
+    static constexpr uint8_t X1_67 = 0x05;
+    static constexpr uint8_t X1_33 = 0x06;
+    static constexpr uint8_t X1    = 0x07;
+}
 
-enum class MLX90393_GAIN : uint8_t {
-    X5    = 0x00,
-    X4    = 0x01,
-    X3    = 0x02,
-    X2_5  = 0x03,
-    X2    = 0x04,
-    X1_67 = 0x05,
-    X1_33 = 0x06,
-    X1    = 0x07,
-};
+namespace MLX90393_RES {
+    static constexpr uint8_t BITS_15 = 0x00;
+    static constexpr uint8_t BITS_16 = 0x01;
+    static constexpr uint8_t BITS_17 = 0x02;
+    static constexpr uint8_t BITS_18 = 0x03;
+}
 
-enum class MLX90393_RES : uint8_t {
-    BITS_15 = 0x00,
-    BITS_16 = 0x01,
-    BITS_17 = 0x02,
-    BITS_18 = 0x03,
-};
+// CONF3 DIG_FILT field
+namespace MLX90393_FILTER {
+    static constexpr uint8_t FILTER_0 = 0x00;
+    static constexpr uint8_t FILTER_1 = 0x01;
+    static constexpr uint8_t FILTER_2 = 0x02;
+    static constexpr uint8_t FILTER_3 = 0x03;
+    static constexpr uint8_t FILTER_4 = 0x04;
+    static constexpr uint8_t FILTER_5 = 0x05;
+    static constexpr uint8_t FILTER_6 = 0x06;
+    static constexpr uint8_t FILTER_7 = 0x07;
+}
+
+// CONF3 OSR field
+namespace MLX90393_OSR {
+    static constexpr uint8_t OSR_0 = 0x00;
+    static constexpr uint8_t OSR_1 = 0x01;
+    static constexpr uint8_t OSR_2 = 0x02;
+    static constexpr uint8_t OSR_3 = 0x03;
+}
 
 // 7 bit; datasheet family is 0x0C..0x0F
 static constexpr uint8_t MLX90393_DEFAULT_ADDR = 0x18;
 
-static constexpr uint8_t ZYXT = toByte(MLX90393_AXIS::X) | toByte(MLX90393_AXIS::Y) | toByte(MLX90393_AXIS::Z);
+static constexpr uint8_t ZYXT = MLX90393_AXIS::X | MLX90393_AXIS::Y | MLX90393_AXIS::Z;
 static constexpr uint32_t CONVERSION_MARGIN_MS = 10;
 static constexpr uint32_t TRANSFER_TIMEOUT_MS = 100;
 static constexpr uint32_t INIT_TIMEOUT_MS = 100;
@@ -117,11 +131,11 @@ static constexpr float TCONV_MS[8][4] = {
      {25.65f, 50.61f, 100.53f, 200.37f},
 };
 
-static constexpr uint8_t CONFIG_FILTER = 0x05;
-static constexpr uint8_t CONFIG_OSR = 0x03;
-static constexpr uint8_t CONFIG_X_RES = toByte(MLX90393_RES::BITS_16);
-static constexpr uint8_t CONFIG_Y_RES = toByte(MLX90393_RES::BITS_16);
-static constexpr uint8_t CONFIG_Z_RES = toByte(MLX90393_RES::BITS_15);
+static constexpr uint8_t CONFIG_FILTER = MLX90393_FILTER::FILTER_5;
+static constexpr uint8_t CONFIG_OSR = MLX90393_OSR::OSR_3;
+static constexpr uint8_t CONFIG_X_RES = MLX90393_RES::BITS_16;
+static constexpr uint8_t CONFIG_Y_RES = MLX90393_RES::BITS_16;
+static constexpr uint8_t CONFIG_Z_RES = MLX90393_RES::BITS_15;
 
 Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16_t csPin)
     : Magnetometer(hi2c, csPort, csPin, MLX90393_DEFAULT_ADDR) {}
@@ -131,7 +145,7 @@ Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16
       csPort(csPort),
       csPin(csPin),
       halAddress(static_cast<uint16_t>(address) << 1),
-      gain(toByte(MLX90393_GAIN::X1)),
+      gain(MLX90393_GAIN::X1),
       xRes(CONFIG_X_RES),
       yRes(CONFIG_Y_RES),
       zRes(CONFIG_Z_RES),
@@ -142,7 +156,7 @@ Magnetometer::Magnetometer(I2C_HandleTypeDef *hi2c, GPIO_TypeDef *csPort, uint16
       status(0),
       regValue(0),
       initialized(false),
-      state(IDLE),
+      state(ReadState_e::IDLE),
       sampleReady(false),
       pendingError(0),
       conversionDoneMs(0),
@@ -164,10 +178,10 @@ ZP_Error Magnetometer::init() {
     }
 
     // Leaves any mode a previous boot left running. Fails harmlessly when idle.
-    (void)sendCommand(toByte(MLX90393_CMD::EXIT));
+    (void)sendCommand(MLX90393_CMD::EXIT);
     HAL_Delay(1);
 
-    ZP_Error result = sendCommand(toByte(MLX90393_CMD::RESET));
+    ZP_Error result = sendCommand(MLX90393_CMD::RESET);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -196,7 +210,7 @@ ZP_Error Magnetometer::init() {
         return result;
     }
 
-    state = IDLE;
+    state = ReadState_e::IDLE;
     sampleReady = false;
     pendingError = 0;
     magData = {};
@@ -226,7 +240,7 @@ ZP_Error Magnetometer::sendCommand(uint8_t command) {
 
 ZP_Error Magnetometer::writeRegister(uint8_t reg, uint16_t value) {
     uint8_t tx[4] = {
-        toByte(MLX90393_CMD::WRITE_REGISTER),
+        MLX90393_CMD::WRITE_REGISTER,
         static_cast<uint8_t>(value >> 8),
         static_cast<uint8_t>(value & 0xFF),
         static_cast<uint8_t>(reg << 2),
@@ -241,7 +255,7 @@ ZP_Error Magnetometer::writeRegister(uint8_t reg, uint16_t value) {
 }
 
 ZP_Error Magnetometer::readRegister(uint8_t reg) {
-    uint8_t tx[2] = {toByte(MLX90393_CMD::READ_REGISTER), static_cast<uint8_t>(reg << 2)};
+    uint8_t tx[2] = {MLX90393_CMD::READ_REGISTER, static_cast<uint8_t>(reg << 2)};
     uint8_t rx[3] = {0};
     ZP_Error result = transceive(tx, 2, rx, 3);
     if (result != ZP_ERROR_OK) {
@@ -253,7 +267,7 @@ ZP_Error Magnetometer::readRegister(uint8_t reg) {
 }
 
 ZP_Error Magnetometer::refreshConfigCache() {
-    ZP_Error result = readRegister(toByte(MLX90393_REG::CONF1));
+    ZP_Error result = readRegister(MLX90393_REG::CONF1);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -261,7 +275,7 @@ ZP_Error Magnetometer::refreshConfigCache() {
     hallconf = regValue & HALLCONF_MASK;
     tcmpEn = (regValue & TCMP_EN_MASK) >> TCMP_EN_SHIFT;
 
-    result = readRegister(toByte(MLX90393_REG::CONF3));
+    result = readRegister(MLX90393_REG::CONF3);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -275,12 +289,12 @@ ZP_Error Magnetometer::refreshConfigCache() {
 }
 
 ZP_Error Magnetometer::setGain(uint8_t newGain) {
-    ZP_Error result = readRegister(toByte(MLX90393_REG::CONF1));
+    ZP_Error result = readRegister(MLX90393_REG::CONF1);
     if (result != ZP_ERROR_OK) {
         return result;
     }
     const uint16_t VALUE = (regValue & ~GAIN_MASK) | (newGain << GAIN_SHIFT);
-    result = writeRegister(toByte(MLX90393_REG::CONF1), VALUE);
+    result = writeRegister(MLX90393_REG::CONF1, VALUE);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -291,11 +305,11 @@ ZP_Error Magnetometer::setGain(uint8_t newGain) {
 ZP_Error Magnetometer::setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t newZRes) {
 
     if (tcmpEn == 1 &&
-        (newXRes >= toByte(MLX90393_RES::BITS_17) || newYRes >= toByte(MLX90393_RES::BITS_17) || newZRes >= toByte(MLX90393_RES::BITS_17))) {
+        (newXRes >= MLX90393_RES::BITS_17 || newYRes >= MLX90393_RES::BITS_17 || newZRes >= MLX90393_RES::BITS_17)) {
         return ZP_ERROR_INVALID_ARG;
     }
 
-    ZP_Error result = readRegister(toByte(MLX90393_REG::CONF3));
+    ZP_Error result = readRegister(MLX90393_REG::CONF3);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -304,7 +318,7 @@ ZP_Error Magnetometer::setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t n
     value = (value & ~Y_RES_MASK) | (newYRes << Y_RES_SHIFT);
     value = (value & ~Z_RES_MASK) | (newZRes << Z_RES_SHIFT);
 
-    result = writeRegister(toByte(MLX90393_REG::CONF3), value);
+    result = writeRegister(MLX90393_REG::CONF3, value);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -317,20 +331,21 @@ ZP_Error Magnetometer::setResolution(uint8_t newXRes, uint8_t newYRes, uint8_t n
 ZP_Error Magnetometer::setFilter(uint8_t newFilter) {
 
     if (hallconf == HALLCONF_0XC) {
-        if (osr == 0x00 && (newFilter == 0 || newFilter == 1)) {
+        if (osr == MLX90393_OSR::OSR_0 &&
+            (newFilter == MLX90393_FILTER::FILTER_0 || newFilter == MLX90393_FILTER::FILTER_1)) {
             return ZP_ERROR_INVALID_ARG;
         }
-        if (osr == 0x01 && newFilter == 0) {
+        if (osr == MLX90393_OSR::OSR_1 && newFilter == MLX90393_FILTER::FILTER_0) {
             return ZP_ERROR_INVALID_ARG;
         }
     }
 
-    ZP_Error result = readRegister(toByte(MLX90393_REG::CONF3));
+    ZP_Error result = readRegister(MLX90393_REG::CONF3);
     if (result != ZP_ERROR_OK) {
         return result;
     }
     const uint16_t VALUE = (regValue & ~FILTER_MASK) | (newFilter << FILTER_SHIFT);
-    result = writeRegister(toByte(MLX90393_REG::CONF3), VALUE);
+    result = writeRegister(MLX90393_REG::CONF3, VALUE);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -341,20 +356,21 @@ ZP_Error Magnetometer::setFilter(uint8_t newFilter) {
 ZP_Error Magnetometer::setOversampling(uint8_t newOsr) {
 
     if (hallconf == HALLCONF_0XC) {
-        if (filter == 0x00 && (newOsr == 0 || newOsr == 1)) {
+        if (filter == MLX90393_FILTER::FILTER_0 &&
+            (newOsr == MLX90393_OSR::OSR_0 || newOsr == MLX90393_OSR::OSR_1)) {
             return ZP_ERROR_INVALID_ARG;
         }
-        if (filter == 0x01 && newOsr == 0) {
+        if (filter == MLX90393_FILTER::FILTER_1 && newOsr == MLX90393_OSR::OSR_0) {
             return ZP_ERROR_INVALID_ARG;
         }
     }
 
-    ZP_Error result = readRegister(toByte(MLX90393_REG::CONF3));
+    ZP_Error result = readRegister(MLX90393_REG::CONF3);
     if (result != ZP_ERROR_OK) {
         return result;
     }
     const uint16_t VALUE = (regValue & ~OSR_MASK) | (newOsr << OSR_SHIFT);
-    result = writeRegister(toByte(MLX90393_REG::CONF3), VALUE);
+    result = writeRegister(MLX90393_REG::CONF3, VALUE);
     if (result != ZP_ERROR_OK) {
         return result;
     }
@@ -382,10 +398,10 @@ ZP_Error Magnetometer::readData(MagData_t &data) {
     const uint32_t NOW = HAL_GetTick();
 
     switch (state) {
-        case IDLE:
+        case ReadState_e::IDLE:
             result |= startMeasurement();
             break;
-        case WAIT_CONV:
+        case ReadState_e::WAIT_CONV:
             if (static_cast<int32_t>(NOW - conversionDoneMs) >= 0) {
                 result |= readMeasurement();
             }
@@ -393,7 +409,7 @@ ZP_Error Magnetometer::readData(MagData_t &data) {
         default:
             if (NOW - transferStartMs > TRANSFER_TIMEOUT_MS &&
                 hi2c->State == HAL_I2C_STATE_READY) {
-                state = IDLE;
+                state = ReadState_e::IDLE;
                 result |= ZP_ERROR_TIMEOUT;
             }
             break;
@@ -404,43 +420,43 @@ ZP_Error Magnetometer::readData(MagData_t &data) {
 }
 
 ZP_Error Magnetometer::startMeasurement() {
-    txByte = toByte(MLX90393_CMD::START_MEASUREMENT) | ZYXT;
+    txByte = MLX90393_CMD::START_MEASUREMENT | ZYXT;
     transferStartMs = HAL_GetTick();
-    state = SM_TX;
+    state = ReadState_e::SM_TX;
 
     const ZP_Error STATUS = halToZpError(HAL_I2C_Master_Transmit_IT(hi2c, halAddress, &txByte, 1));
     if (STATUS != ZP_ERROR_OK) {
-        state = IDLE;
+        state = ReadState_e::IDLE;
     }
     return STATUS;
 }
 
 ZP_Error Magnetometer::readMeasurement() {
-    txByte = toByte(MLX90393_CMD::READ_MEASUREMENT) | ZYXT;
+    txByte = MLX90393_CMD::READ_MEASUREMENT | ZYXT;
     transferStartMs = HAL_GetTick();
-    state = RM_TX;
+    state = ReadState_e::RM_TX;
 
     const ZP_Error STATUS = halToZpError(HAL_I2C_Master_Transmit_IT(hi2c, halAddress, &txByte, 1));
     if (STATUS != ZP_ERROR_OK) {
-        state = IDLE;
+        state = ReadState_e::IDLE;
     }
     return STATUS;
 }
 
 void Magnetometer::masterTxCpltCallback() {
     switch (state) {
-        case SM_TX:
-            state = SM_RX;
+        case ReadState_e::SM_TX:
+            state = ReadState_e::SM_RX;
 
             if (HAL_I2C_Master_Receive_IT(hi2c, halAddress, &status, 1) != HAL_OK) {
-                state = IDLE;
+                state = ReadState_e::IDLE;
                 pendingError |= (ZP_ERROR_EXT_API | ZP_ERROR_FAIL).raw();
             }
             break;
-        case RM_TX:
-            state = RM_RX;
+        case ReadState_e::RM_TX:
+            state = ReadState_e::RM_RX;
             if (HAL_I2C_Master_Receive_IT(hi2c, halAddress, rxBuffer, MEASUREMENT_BYTES) != HAL_OK) {
-                state = IDLE;
+                state = ReadState_e::IDLE;
                 pendingError |= (ZP_ERROR_EXT_API | ZP_ERROR_FAIL).raw();
             }
             break;
@@ -451,21 +467,21 @@ void Magnetometer::masterTxCpltCallback() {
 
 void Magnetometer::masterRxCpltCallback() {
     switch (state) {
-        case SM_RX:
-            if (status & toByte(MLX90393_STATUS::ERROR)) {
-                state = IDLE;
+        case ReadState_e::SM_RX:
+            if (status & MLX90393_STATUS::ERROR) {
+                state = ReadState_e::IDLE;
                 pendingError |= ZP_ERROR_INVALID_DATA.raw();
                 break;
             }
             conversionDoneMs = HAL_GetTick() + conversionTimeMs();
-            state = WAIT_CONV;
+            state = ReadState_e::WAIT_CONV;
             break;
-        case RM_RX:
-            state = IDLE;
+        case ReadState_e::RM_RX:
+            state = ReadState_e::IDLE;
             sampleReady = true;
             break;
         default:
-            state = IDLE;
+            state = ReadState_e::IDLE;
             break;
     }
 }
@@ -473,7 +489,7 @@ void Magnetometer::masterRxCpltCallback() {
 void Magnetometer::errorCallback() {
     const bool NACKED = (HAL_I2C_GetError(hi2c) & HAL_I2C_ERROR_AF) != 0;
     pendingError |= (ZP_ERROR_EXT_API | (NACKED ? ZP_ERROR_NACK : ZP_ERROR_FAIL)).raw();
-    state = IDLE;
+    state = ReadState_e::IDLE;
 }
 
 uint32_t Magnetometer::conversionTimeMs() const {
@@ -484,7 +500,7 @@ uint32_t Magnetometer::conversionTimeMs() const {
 ZP_Error Magnetometer::decode() {
     const uint8_t SAMPLE_STATUS = rxBuffer[0];
 
-    if (SAMPLE_STATUS & toByte(MLX90393_STATUS::ERROR)) {
+    if (SAMPLE_STATUS & MLX90393_STATUS::ERROR) {
         magData.isNew = false;
         return ZP_ERROR_INVALID_DATA;
     }
@@ -493,7 +509,7 @@ ZP_Error Magnetometer::decode() {
 
     int16_t raw[3] = {0, 0, 0};
 
-    if (ZYXT & toByte(MLX90393_AXIS::T)) {
+    if (ZYXT & MLX90393_AXIS::T) {
         cursor += 2;
     }
     for (uint8_t i = 0; i < 3; i++) {
@@ -506,9 +522,9 @@ ZP_Error Magnetometer::decode() {
     if (tcmpEn == 0) {
         const uint8_t RES[3] = {xRes, yRes, zRes};
         for (uint8_t i = 0; i < 3; i++) {
-            if (RES[i] == toByte(MLX90393_RES::BITS_17)) {
+            if (RES[i] == MLX90393_RES::BITS_17) {
                 counts[i] = static_cast<int32_t>(static_cast<uint16_t>(raw[i])) - RES17_ZERO_OFFSET;
-            } else if (RES[i] == toByte(MLX90393_RES::BITS_18)) {
+            } else if (RES[i] == MLX90393_RES::BITS_18) {
                 counts[i] = static_cast<int32_t>(static_cast<uint16_t>(raw[i])) - RES18_ZERO_OFFSET;
             }
         }
