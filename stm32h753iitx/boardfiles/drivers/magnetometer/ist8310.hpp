@@ -54,9 +54,6 @@ private:
 
   static constexpr uint8_t DATA_BYTES = 6;
 
-  // Added to the heading, for how the chip is mounted on the board
-  static constexpr float YAW_OFFSET_DEGREES = 90.0F;
-
   enum ReadState_e {
     kIdle,
     kStartTx,
