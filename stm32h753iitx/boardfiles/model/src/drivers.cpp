@@ -3,7 +3,7 @@
 #include "museq.hpp"
 #include "stm32h7xx_hal.h"
 #include "zp_params.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 #define MOT_TYPE_PWM 0
 #define MOT_TYPE_DSHOT 5
