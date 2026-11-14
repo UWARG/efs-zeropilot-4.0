@@ -9,10 +9,10 @@ namespace {
     constexpr uint8_t CMD_WREN  = 0x06;
     constexpr uint8_t CMD_RDSR  = 0x05;
 
-    // Status register: bit 0 is "write in progress". VERIFY in the datasheet.
+    // Status register: bit 0 is "write in progress". 
     constexpr uint8_t STATUS_WIP_MASK = 0x01;
 
-    // 25LC128: 16384 bytes, 64 byte pages. VERIFY page size in the datasheet.
+    // 25LC128: 16384 bytes, 64 byte pages. 
     constexpr uint16_t PAGE_SIZE = 64;
     constexpr uint32_t MEMORY_SIZE = 16384;
 

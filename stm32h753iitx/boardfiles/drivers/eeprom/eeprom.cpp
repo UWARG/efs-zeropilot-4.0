@@ -1,6 +1,8 @@
 #include "eeprom.hpp"
+#include "eeprom_iface.hpp"
 
 #include <cstring>
+#include <cstdint>
 
 namespace {
     // Instruction bytes (datasheet Table 3-1)
