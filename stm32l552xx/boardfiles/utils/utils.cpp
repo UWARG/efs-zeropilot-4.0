@@ -12,7 +12,9 @@ ZP_Error halToZpError(HAL_StatusTypeDef status) {
 }
 
 #ifdef __cplusplus
-
+extern "C" {
+#endif // __cplusplus
+  
 uint32_t timeToTicks(uint32_t duration_ms)
 {
   uint32_t ticks = (osKernelGetTickFreq() * duration_ms) / 1000U;
@@ -26,4 +28,6 @@ uint32_t timeToTicks(uint32_t duration_ms)
   }
 }
 
+#ifdef __cplusplus
+}
 #endif // __cplusplus
