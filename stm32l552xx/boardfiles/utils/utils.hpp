@@ -16,4 +16,3 @@ uint32_t timeToTicks(uint32_t duration_ms);
 #endif // __cplusplus
 
 ZP_Error halToZpError(HAL_StatusTypeDef status);
-
