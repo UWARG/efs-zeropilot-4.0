@@ -245,6 +245,7 @@ void AttitudeManager::amUpdate() {
 
     // Get data from Queue and motor outputs
     ZP_Error controlRes = getControlInputs(&controlMsg);
+    (void)controlRes;
 
     BitState_e rcState = BitState_e::UNKNOWN;
     (void)ZP_BIT::getLatched(ZP_BIT_ID::RC_DATA_VALID, rcState);
