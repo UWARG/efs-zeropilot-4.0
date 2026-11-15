@@ -137,11 +137,6 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
   }
 }
 
-/*
- * The MLX90393 is command driven rather than register addressed, so its
- * transfers are plain master transmit/receive and land in these callbacks
- * instead of the Mem ones the power module uses.
- */
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
   if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
     magHandle->masterTxCpltCallback();
