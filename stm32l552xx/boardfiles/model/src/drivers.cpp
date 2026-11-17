@@ -40,6 +40,7 @@ IMU *imuHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
+CanOpflow *canOpflowHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -123,6 +124,8 @@ void initDrivers()
 
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
+    canOpflowHandle = new CanOpflow(systemUtilsHandle);
+
     // 3. Peripheral allocation
     gpsHandle = new GPS(&huart2);
     rcHandle = new CRSFReceiver(&huart4);
@@ -160,6 +163,8 @@ void initDrivers()
                              rangefinderHandle->init());
     }
     (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
+    opflowInitRaw = canOpflowHandle->init().raw(); // TEMP   subscribe result, 0 = OK.
+    //(void)ZP_BIT::report(ZP_BIT_ID::OPFLOW_INIT, canOpflowHandle->init());    // need BIT ID
 
     // 6. Finalize structure
     for (int i = 0; i < 8; i++) {

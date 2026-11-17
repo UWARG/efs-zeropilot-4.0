@@ -6,20 +6,18 @@
 #include "task.h"
 
 CanOpflow::CanOpflow(ISystemUtils *systemUtils) : systemUtils(systemUtils) {
-    // Needs to be constructed after canControllerHandle in initDrivers()
-    if (canControllerHandle == nullptr) {
+    if (canControllerHandle == nullptr) {   // stop if CANController doesnt exist yet
         subscribeStatus |= ZP_ERROR_NULLPTR;
         return;
     }
-
-    // The H-Flow broadcasts two messages, subscribe to both
+    // add bit flaga
     subscribeStatus |= canControllerHandle->subscribe(this, UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_ID, UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SIGNATURE);
     subscribeStatus |= canControllerHandle->subscribe(this, FLOW_MSG_ID, FLOW_MSG_SIGNATURE);
 }
 
 ZP_Error CanOpflow::init() {
-    // Nothing to configure on the H-Flow itself, CANController assigns its node ID.
-    // Report whether both subscriptions went through.
+    // CANController assigns its node ID
+    // report whether both subscriptions went through
     return subscribeStatus;
 }
 
@@ -28,7 +26,7 @@ ZP_Error CanOpflow::onTransfer(CanardRxTransfer *transfer) {
         return ZP_ERROR_NULLPTR;
     }
 
-    // The H-Flow only broadcasts, ignore requests/responses
+    // h-flow only broadcasts
     if (transfer->transfer_type != CanardTransferTypeBroadcast) {
         return ZP_ERROR_UNSUPPORTED;
     }
@@ -46,7 +44,7 @@ ZP_Error CanOpflow::onTransfer(CanardRxTransfer *transfer) {
 ZP_Error CanOpflow::decodeRange(CanardRxTransfer *transfer) {
     uavcan_equipment_range_sensor_Measurement msg = {};
 
-    // Generated decode functions return true when the payload is invalid
+    // returns true on bad payload
     if (uavcan_equipment_range_sensor_Measurement_decode(transfer, &msg)) {
         return ZP_ERROR_PARSE;
     }
@@ -55,13 +53,13 @@ ZP_Error CanOpflow::decodeRange(CanardRxTransfer *transfer) {
     newData.distance = msg.range;
     newData.signalStrength = 0; // Not sent by the H-Flow
     newData.temp = 0; // Not sent by the H-Flow
-    // Too close / too far readings still come through, but the distance isn't usable
+    // too close/far readings still come through, just not usable
     newData.isValid = (msg.reading_type == UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE);
     newData.isNew = true;
 
     uint32_t now = systemUtils->getCurrentTimestampMs();
 
-    // Written from the bus thread and read from another thread, so don't let a half written sample be read
+    // written from bus thread, read from others
     taskENTER_CRITICAL();
     rangeData = newData;
     lastRangeMs = now;
@@ -85,7 +83,7 @@ ZP_Error CanOpflow::decodeFlow(CanardRxTransfer *transfer) {
     canardDecodeScalar(transfer, 128, 32, true, &newData.flowY);
     canardDecodeScalar(transfer, 160, 8, false, &newData.quality);
 
-    // TODO: ask if we want a minimum quality here as well
+    // ask if they want a minimum quality here as well
     newData.isValid = (newData.integrationInterval > 0.0f);
     newData.isNew = true;
 
