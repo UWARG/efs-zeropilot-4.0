@@ -156,6 +156,7 @@ enum class ZP_PARAM_ID : uint16_t { // NOLINT
     RNGFND_ENABLE,
     RNGFND_MIN,
     RNGFND_MAX,
+    MAG_I2C_ADDR,
     PARAM_COUNT
 };
 
