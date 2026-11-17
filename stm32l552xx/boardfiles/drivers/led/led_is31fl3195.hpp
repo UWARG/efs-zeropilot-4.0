@@ -14,15 +14,14 @@
  * TODO: implement pattern mode?
  */
 
-#ifndef IS31FL3195_I2C_H_
-#define IS31FL3195_I2C_H_
+#pragma once
 
 #include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_i2c.h"
 #include "zp_error.h"
 
-// from datasheet
-enum IS31FL3195_Timing {
+// From datasheet
+enum IS31FL3195_Timing_e {
 	IS31FL3195_TIMING_30 = 0,
 	IS31FL3195_TIMING_130 = 1,
 	IS31FL3195_TIMING_260 = 2,
@@ -43,22 +42,20 @@ enum IS31FL3195_Timing {
 
 typedef uint8_t IS31FL3195_CurrentLevel;
 
-enum IS31FL3195_OperatingMode {
+enum IS31FL3195_OperatingMode_e {
 	IS31FL3195_MODE_CURRENT_LEVEL = 0,
 };
 
 typedef struct __attribute__((packed)) {
 	uint8_t _unused :4;
 
-	IS31FL3195_OperatingMode mode_1 :1;
-	IS31FL3195_OperatingMode mode_2 :1;
-	IS31FL3195_OperatingMode mode_3 :1;
-	IS31FL3195_OperatingMode mode_4 :1;
+	IS31FL3195_OperatingMode_e mode_1 :1;
+	IS31FL3195_OperatingMode_e mode_2 :1;
+	IS31FL3195_OperatingMode_e mode_3 :1;
+	IS31FL3195_OperatingMode_e mode_4 :1;
 } IS31FL3195_ConfReg;
 
 typedef struct __attribute__((packed)) {
-	// TODO: flesh out according to datasheet (custom enums, etc)
-
 	// SSD: 0 = shutdown, 1 = normal operation
 	uint8_t softwareShutdownEnable: 1;
 	uint8_t sleepModeEnable: 2;
@@ -76,22 +73,22 @@ typedef struct {
 	IS31FL3195_Register REG_CURRENT_LEVEL;
 } IS31FL3195_Channel;
 
-extern IS31FL3195_Channel IS31FL3195_ALL_CHANNELS[4];
+extern const IS31FL3195_Channel IS31FL3195_ALL_CHANNELS[4];
 
-#define IS31FL3195_CH1 IS31FL3195_ALL_CHANNELS[0]
-#define IS31FL3195_CH2 IS31FL3195_ALL_CHANNELS[1]
-#define IS31FL3195_CH3 IS31FL3195_ALL_CHANNELS[2]
-#define IS31FL3195_CH4 IS31FL3195_ALL_CHANNELS[3]
+#define IS31FL3195_CH1 (IS31FL3195_ALL_CHANNELS[0])
+#define IS31FL3195_CH2 (IS31FL3195_ALL_CHANNELS[1])
+#define IS31FL3195_CH3 (IS31FL3195_ALL_CHANNELS[2])
+#define IS31FL3195_CH4 (IS31FL3195_ALL_CHANNELS[3])
 
-// aliases to RGBW
-#define IS31FL3195_CH_RED   IS31FL3195_CH1
-#define IS31FL3195_CH_GREEN IS31FL3195_CH2
-#define IS31FL3195_CH_BLUE  IS31FL3195_CH3
-#define IS31FL3195_CH_WHITE IS31FL3195_CH4
+// Aliases to RGBW
+#define IS31FL3195_CH_RED   (IS31FL3195_CH1)
+#define IS31FL3195_CH_GREEN (IS31FL3195_CH2)
+#define IS31FL3195_CH_BLUE  (IS31FL3195_CH3)
+#define IS31FL3195_CH_WHITE (IS31FL3195_CH4)
 
 class IS31FL3195 {
 public:
-	// for the M10 GPS, the address is 0b10101000u.
+	// For the M10 GPS, the address is 0b10101000u.
 	IS31FL3195(I2C_HandleTypeDef *hi2c, uint8_t address);
 
 	ZP_Error begin();
@@ -101,7 +98,7 @@ public:
 	ZP_Error setConfigure(IS31FL3195_ConfReg conf);
 	ZP_Error setShutdownControl(IS31FL3195_ShutdownCtrl conf);
 
-	ZP_Error writeCurrentLevel(IS31FL3195_Channel &channel,
+	ZP_Error writeCurrentLevel(const IS31FL3195_Channel &channel,
 			IS31FL3195_CurrentLevel level);
 
 	ZP_Error flush();
@@ -111,10 +108,8 @@ public:
 	~IS31FL3195();
 
 private:
-	I2C_HandleTypeDef *hi2c;
-	uint8_t address;
+	I2C_HandleTypeDef *const hi2c;
+	const uint8_t address;
 
 	ZP_Error registerWrite(IS31FL3195_Register reg, uint8_t val);
 };
-
-#endif /* IS31FL3195_I2C_H_ */
