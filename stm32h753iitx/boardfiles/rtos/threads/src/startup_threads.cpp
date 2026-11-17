@@ -1,6 +1,6 @@
 #include "startup_threads.hpp"
 #include "managers.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "logger.hpp"
 
 osThreadId_t startUpMainHandle;

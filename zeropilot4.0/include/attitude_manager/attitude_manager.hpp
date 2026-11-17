@@ -9,6 +9,8 @@
 #include "airspeed_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
+#include "magnetometer_iface.hpp"
+#include "mag_cal.hpp"
 #include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
@@ -46,6 +48,7 @@ public:
 		IAirspeed *asDriver,
         IGPS *gpsDriver,
         IIMU *imuDriver,
+        IMagnetometer *magDriver,
         IFFT *fftDriver,
         IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
@@ -67,6 +70,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    MagCal magCal;
     IRangefinder *rangefinderDriver;
     RangefinderData_t lastNewRangefinderData = {};
     IBarometer *barometerDriver;
