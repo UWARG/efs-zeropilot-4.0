@@ -62,11 +62,11 @@ private:
 
     ISystemUtils *systemUtilsDriver;
 
+    IAirspeed *asDriver;
     IGPS *gpsDriver;
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
-    IAirspeed *asDriver;
     IRangefinder *rangefinderDriver;
     RangefinderData_t lastNewRangefinderData = {};
     IBarometer *barometerDriver;
