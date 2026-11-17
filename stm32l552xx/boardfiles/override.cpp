@@ -3,7 +3,7 @@
 #include "museq.hpp"
 #include "rfd.hpp"
 #include "drivers.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "imu.hpp"
 #include "user_diskio_spi.h"
 
@@ -138,13 +138,17 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == rangefinderHandle->getI2C()) {
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterTxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->txCallback();
   }
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == rangefinderHandle->getI2C()) {
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterRxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->rxCallback();
   }
 }
@@ -152,10 +156,16 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c == pmHandle->getI2C()) {
     pmHandle->I2C_ErrorCallback();
-  } else if (hi2c == barometerHandle->getI2C()) {
-    barometerHandle->errorCallback();
-  } else if (hi2c == rangefinderHandle->getI2C()) {
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->errorCallback();
+  } else {
+    // Multiple drivers can share a bus, so check each one
+    if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+      magHandle->errorCallback();
+    }
+    if (hi2c == barometerHandle->getI2C()) {
+      barometerHandle->errorCallback();
+    }
   }
 }
 
