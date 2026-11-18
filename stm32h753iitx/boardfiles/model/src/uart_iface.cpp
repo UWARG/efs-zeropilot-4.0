@@ -1,4 +1,6 @@
-#include "uart.hpp"
+#pragma once
+
+#include "uart_iface_stm32h7.hpp"
 
 UARTInterface::UARTInterface(UART_HandleTypeDef *huart) {
     this->huart = huart;

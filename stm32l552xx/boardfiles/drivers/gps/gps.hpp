@@ -2,7 +2,7 @@
 
 #include "stm32l5xx_hal.h"
 #include "gps_iface.hpp"
-#include "uart_iface.hpp"
+#include "uart_iface_stm32l5.hpp"
 #include <cmath>
 
 static constexpr uint8_t MAX_NMEA_DATA_LENGTH_PER_LINE = 82;
