@@ -1,71 +1,51 @@
 #include "power_module.hpp"
 
 
-PowerModule::PowerModule(I2C_HandleTypeDef* hi2c) : hi2c(hi2c) {}
+PowerModule::PowerModule(I2C_HandleTypeDef* hi2c) : i2cCommon(hi2c, INA228_ADDR) {}
+
+I2C_HandleTypeDef* PowerModule::getI2C() {
+    return i2cCommon.getI2C();
+}
 
 ZP_Error PowerModule::init() {
     callbackCount = 0;
-    if (HAL_I2C_IsDeviceReady(hi2c, INA228_ADDR << 1, 1, 100) != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_NACK;
-    }
 
-    bool success = true;
+    ZP_Error result = i2cCommon.isDeviceReady();
+    if (result != ZP_ERROR_OK) {
+        return result;
+    }
 
     uint8_t pData[2]; // tmp buffer for writing to registers
 
     // Perform a soft reset of the INA228 by writing to the configuration register
-    pData[0] = (CONFIG_RESET >> 8) & 0xFF;  
-    pData[1] = CONFIG_RESET & 0xFF;         
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_CONFIG.byte_size, 100) == HAL_OK);
+    pData[0] = (CONFIG_RESET >> 8) & 0xFF;
+    pData[1] = CONFIG_RESET & 0xFF;
+    result |= i2cCommon.writePolling(REG_CONFIG.address, pData, REG_CONFIG.byte_size, 100);
 
     HAL_Delay(5); // Give the chip a few milliseconds to process the reset
 
     // Set the actual operating configuration
-    pData[0] = (CONFIG_VALUE >> 8) & 0xFF;  
-    pData[1] = CONFIG_VALUE & 0xFF;         
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_CONFIG.byte_size, 100) == HAL_OK);
+    pData[0] = (CONFIG_VALUE >> 8) & 0xFF;
+    pData[1] = CONFIG_VALUE & 0xFF;
+    result |= i2cCommon.writePolling(REG_CONFIG.address, pData, REG_CONFIG.byte_size, 100);
 
     // Write the ADC configuration for continuous reading and 16 samples averaged
-    pData[0] = (ADC_CONFIG_VALUE >> 8) & 0xFF;  
-    pData[1] = ADC_CONFIG_VALUE & 0xFF;         
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_ADC_CONFIG.address, I2C_MEMADD_SIZE_8BIT, pData, REG_ADC_CONFIG.byte_size, 100) == HAL_OK);
+    pData[0] = (ADC_CONFIG_VALUE >> 8) & 0xFF;
+    pData[1] = ADC_CONFIG_VALUE & 0xFF;
+    result |= i2cCommon.writePolling(REG_ADC_CONFIG.address, pData, REG_ADC_CONFIG.byte_size, 100);
 
     // Write the shunt calibration value to the appropriate register
-    pData[0] = (SHUNT_CAL_VALUE >> 8) & 0x7F;  
-    pData[1] = SHUNT_CAL_VALUE & 0xFF;     
-    success &= (HAL_I2C_Mem_Write(hi2c, INA228_ADDR << 1, REG_SHUNT_CAL.address, I2C_MEMADD_SIZE_8BIT, pData, REG_SHUNT_CAL.byte_size, 100) == HAL_OK);
+    pData[0] = (SHUNT_CAL_VALUE >> 8) & 0x7F;
+    pData[1] = SHUNT_CAL_VALUE & 0xFF;
+    result |= i2cCommon.writePolling(REG_SHUNT_CAL.address, pData, REG_SHUNT_CAL.byte_size, 100);
 
-    // Start the DMA loop
-    if (success) {
-        dataFilled = 0;
-        return parse(hi2c);
+    if (result != ZP_ERROR_OK) {
+        return result;   // propagate the real error from I2cCommon
     }
 
-    return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-}
-
-ZP_Error PowerModule::writeRegister(
-                                uint16_t memAddress,
-                                uint8_t * pData,
-                                uint16_t size,
-                                I2C_HandleTypeDef *hi2c) {
-
-    return HAL_I2C_Mem_Write_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK
-               ? ZP_ERROR_OK
-               : (ZP_ERROR_EXT_API | ZP_ERROR_FAIL);
-
-}
-
-ZP_Error PowerModule::readRegister(
-                                uint16_t memAddress,
-                                uint8_t * pData,
-                                uint16_t size,
-                                I2C_HandleTypeDef *hi2c) {
-
-    return HAL_I2C_Mem_Read_DMA(hi2c, INA228_ADDR << 1, memAddress, I2C_MEMADD_SIZE_8BIT, pData, size) == HAL_OK
-               ? ZP_ERROR_OK
-               : (ZP_ERROR_EXT_API | ZP_ERROR_FAIL);
-
+    // Start the DMA loop
+    dataFilled = 0;
+    return parse();
 }
 
 void PowerModule::I2C_MemRxCpltCallback() {
@@ -74,19 +54,19 @@ void PowerModule::I2C_MemRxCpltCallback() {
 
     switch(callbackCount) {
         case 1: // read current
-            result |= readRegister(REG_CURRENT.address, currentData, REG_CURRENT.byte_size, hi2c);
+            result |= i2cCommon.readDMA(REG_CURRENT.address, currentData, REG_CURRENT.byte_size);
             break;
         case 2: // read power
-            result |= readRegister(REG_POWER.address, powerData, REG_POWER.byte_size, hi2c);
+            result |= i2cCommon.readDMA(REG_POWER.address, powerData, REG_POWER.byte_size);
             break;
         case 3: // read charge
-            result |= readRegister(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size, hi2c);
+            result |= i2cCommon.readDMA(REG_CHARGE.address, chargeData, REG_CHARGE.byte_size);
             break;
         case 4: // read energy
-            result |= readRegister(REG_ENERGY.address, energyData, REG_ENERGY.byte_size, hi2c);
+            result |= i2cCommon.readDMA(REG_ENERGY.address, energyData, REG_ENERGY.byte_size);
             break;
         case 5: // read die temperature
-            result |= readRegister(REG_DIETEMP.address, dietempData, REG_DIETEMP.byte_size, hi2c);
+            result |= i2cCommon.readDMA(REG_DIETEMP.address, dietempData, REG_DIETEMP.byte_size);
             break;
         case 6:
             callbackCount = 0;
@@ -100,8 +80,6 @@ void PowerModule::I2C_MemRxCpltCallback() {
     if (result != ZP_ERROR_OK) {
         callbackCount = 0;
     }
-
-    return;
 }
 
 void PowerModule::I2C_ErrorCallback() {
@@ -110,12 +88,12 @@ void PowerModule::I2C_ErrorCallback() {
     callbackCount = 0;
 }
 
-ZP_Error PowerModule::parse(I2C_HandleTypeDef *hi2c) {
+ZP_Error PowerModule::parse() {
     if (dataFilled) return ZP_ERROR_OK;
 
     // Start the cycle
     callbackCount = 0;
-    return readRegister(REG_VBUS.address, vbusData, REG_VBUS.byte_size, hi2c);
+    return i2cCommon.readDMA(REG_VBUS.address, vbusData, REG_VBUS.byte_size);
 }
 
 ZP_Error PowerModule::readData(PMData_t *data) {
@@ -125,7 +103,7 @@ ZP_Error PowerModule::readData(PMData_t *data) {
 
     // No fresh sample set yet, kick off the cycle or restarting it if it stalled, and report no fresh data
     if (!dataFilled) {
-        return parse(hi2c) | ZP_ERROR_NOT_READY;
+        return parse() | ZP_ERROR_NOT_READY;      // was parse(hi2c)
     }
 
     // Parse VBUS from the raw data, which is a 24-bit unsigned value.
@@ -166,13 +144,9 @@ ZP_Error PowerModule::readData(PMData_t *data) {
     int16_t raw_dietemp = (dietempData[0] << 8) | dietempData[1];
     processedData.temperature = raw_dietemp * DIETEMP_LSB;
 
-    *data = processedData; // Copy the processed data to the output parameter
+    *data = processedData;
 
     // Reset dataFilled flag and restart the parsing cycle
     dataFilled = 0;
-    return parse(hi2c);
-}
-
-I2C_HandleTypeDef* PowerModule::getI2C() {
-    return hi2c;
+    return parse();                                // was parse(hi2c)
 }
