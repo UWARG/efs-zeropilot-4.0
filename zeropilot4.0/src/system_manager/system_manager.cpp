@@ -33,6 +33,7 @@ SystemManager::SystemManager(
         safetySwitchHoldCounterMs(0),
         safetySwitchTriggered(false),
         statusLedState(StatusLedState_e::NONE),
+        statusLedLit(false),
         rcConnected(false),
         bitFailsafe(BitFailsafe_e::NONE),
         bitFailReportCntrMs(0),
@@ -99,8 +100,8 @@ void SystemManager::smUpdate() {
     ZP_BIT_ID emergencyBit = ZP_BIT_ID::NUM_BIT_IDS;
     const bool BIT_BLOCKING = (prearmCheck(emergencyBit) != ZP_ERROR_OK);
 
-    // Update status LED based on safety switch and arm state, arm uses the same condition as the Attitude Manager
-    (void)updateStatusLed(armed && !BIT_BLOCKING && (bitFailsafe != BitFailsafe_e::DISARM));
+    // Update status LED, arm uses the same condition as the Attitude Manager
+    (void)updateStatusLed(armed && !BIT_BLOCKING && (bitFailsafe != BitFailsafe_e::DISARM), BIT_BLOCKING);
 
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (BIT_BLOCKING && armed) {
@@ -175,37 +176,48 @@ void SystemManager::smUpdate() {
     systemUtilsDriver->profilerEnd(profilerId);
 }
 
-ZP_Error SystemManager::updateStatusLed(bool armed) {
+ZP_Error SystemManager::updateStatusLed(bool armed, bool prearmFailing) {
     if (statusLedDriver == nullptr) {
         return ZP_ERROR_OK;
     }
 
-    // Determine status LED state
+    // Determine status LED state, the safety switch counts as a pre-arm failure
     StatusLedState_e newState = StatusLedState_e::DISARMED;
-    if (isSafetySwitchEngaged) {
-        newState = StatusLedState_e::SAFE;
-    } else if (armed) {
+    if (armed) {
         newState = StatusLedState_e::ARMED;
+    } else if (prearmFailing) {
+        newState = StatusLedState_e::PREARM_FAIL;
+    }
+
+    // Disarmed and pre-arm failing flash, armed stays solid
+    bool lit = true;
+    if (newState == StatusLedState_e::DISARMED || newState == StatusLedState_e::PREARM_FAIL) {
+        lit = ((smSchedulingCounter / (SM_SCHEDULING_RATE_HZ / SM_STATUS_LED_BLINK_RATE_HZ)) % 2) == 0;
     }
 
     // Skip the write if the LED already shows this state
-    if (newState == statusLedState) {
+    if (newState == statusLedState && lit == statusLedLit) {
         return ZP_ERROR_OK;
     }
 
-    // Set LED color: red for safe, blue for disarmed, green for armed
-    ZP_Error status = ZP_ERROR_OK;
-    if (newState == StatusLedState_e::SAFE) {
-        status = statusLedDriver->setColor(SM_STATUS_LED_LEVEL, 0, 0);
-    } else if (newState == StatusLedState_e::DISARMED) {
-        status = statusLedDriver->setColor(0, 0, SM_STATUS_LED_LEVEL);
-    } else {
-        status = statusLedDriver->setColor(0, SM_STATUS_LED_LEVEL, 0);
+    // Set LED color: yellow for pre-arm failing, blue for disarmed and armed, off for the dark half of a flash
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+    if (lit) {
+        if (newState == StatusLedState_e::PREARM_FAIL) {
+            red = SM_STATUS_LED_LEVEL;
+            green = SM_STATUS_LED_LEVEL;
+        } else {
+            blue = SM_STATUS_LED_LEVEL;
+        }
     }
+    ZP_Error status = statusLedDriver->setColor(red, green, blue);
 
     // Only remember the state if the write succeeded, otherwise it is retried on the next loop
     if (status == ZP_ERROR_OK) {
         statusLedState = newState;
+        statusLedLit = lit;
     }
     return status;
 }
