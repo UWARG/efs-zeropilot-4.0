@@ -332,13 +332,25 @@ void AttitudeManager::amUpdate() {
 
     }
 
-    // Output to motors
-    outputToMotors(motorOutputs, groundIdle);
+
+    MotorTestMessage_t msg{}; 
+
+    if (motorTestQueue->count() > 0) 
+    {
+        motorTestQueue->get(&msg); 
+        motorTest(&msg); 
+    }
+    else
+    {
+        // Output to motors
+        outputToMotors(motorOutputs, groundIdle);
+    }
 
     setArmFlag = false;
-    
     systemUtilsDriver->profilerEnd(profilerId);
 }
+
+
 
 bool AttitudeManager::getControlInputs(RCMotorControlMessage_t *pControlMsg) {
     if (amQueue->count() == 0) {
@@ -430,6 +442,12 @@ void AttitudeManager::outputToMotors(const RCMotorControlMessage_t outputControl
     }
 }
 
+
+void AttitudeManager::motorTest(MotorTestMessage_t* msg) {
+
+    
+
+}
 
 void AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData) {
     if (!gpsData.isNew) return;

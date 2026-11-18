@@ -253,7 +253,7 @@ void TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
                         mavlink_msg_command_long_get_param6(&msg)
                     };
 
-                   
+                    motorTestQueue->push(&request); 
                     enqueueCommandAckTx(command, MAV_RESULT_ACCEPTED);
                     break;
                 }
@@ -298,7 +298,7 @@ void TelemetryManager::enqueueCommandAckTx(uint16_t command_id, uint8_t result){
         &ackMsg, 
         command_id, 
         result, 
-        0, 0, 1, 1, 
+        0, 0, 1, 1
     );
 
     packedMsgBuffer->push(&ackMsg); 

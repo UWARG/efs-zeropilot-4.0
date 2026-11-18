@@ -48,7 +48,7 @@ public:
         IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
-        IMessageQueue<MotorTestMessage_t> *motorTestQueue,
+        IMessageQueue<MotorTestMessage_t> *motorTestQueue, // Queue for handling motor test messages
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
         MotorGroupInstance_t *mainMotorGroup
@@ -119,6 +119,9 @@ private:
     bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
     void outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
+
+    void motorTest(MotorTestMessage_t *msg); 
+
 
     void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
     void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
