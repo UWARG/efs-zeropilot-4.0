@@ -115,6 +115,3 @@ ZP_Error IS31FL3195::setColor(uint8_t red, uint8_t green, uint8_t blue) {
 	return this->setSolidColor(rgbw);
 }
 
-IS31FL3195::~IS31FL3195() {
-}
-

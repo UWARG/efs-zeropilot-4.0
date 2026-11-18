@@ -110,6 +110,3 @@ ZP_Error IS31FL3195::setSolidColor(IS31FL3195_CurrentLevel rgbw[4]) {
 	return ZP_ERROR_OK;
 }
 
-IS31FL3195::~IS31FL3195() {
-}
-

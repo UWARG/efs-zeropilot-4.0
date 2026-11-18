@@ -3,7 +3,6 @@
  * used on the M10 GPS Status LED
  *
  * Made with love (and sleep deprivation)
- * with research and emotional support from Fei Wang
  *
  *  Created on: Oct 27, 2026
  *     Authors: Colin Cai & Fei Wang, graduating 2031
@@ -104,8 +103,6 @@ public:
 	ZP_Error flush();
 
 	ZP_Error setSolidColor(IS31FL3195_CurrentLevel rgbw[4]);
-
-	~IS31FL3195();
 
 private:
 	I2C_HandleTypeDef *const hi2c;
