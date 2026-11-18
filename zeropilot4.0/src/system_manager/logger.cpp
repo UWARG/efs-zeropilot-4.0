@@ -22,7 +22,7 @@ namespace Logger {
         if (!fileSystem->available()) return;
         loggerEnable = true;
         
-        fileSystem->mkdir("logs");
+        fileSystem->mkdir("logs"); 
         logFile = {};
         
         // Find first available log file (0-255), default to 0 if all taken
@@ -76,12 +76,12 @@ namespace Logger {
         
         // fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
         if (level == LogLevel_e::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
-            fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
+            fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 1, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount = 0;
             lastSyncTime = systemUtils->getCurrentTimestampMs();
             newWrite = false;
         } else {
-            fileSystem->write(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
+            fileSystem->write(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 1, nullptr, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount++;
             newWrite = true;
         }
