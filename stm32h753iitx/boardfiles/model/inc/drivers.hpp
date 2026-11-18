@@ -42,6 +42,7 @@ extern GPS *gps2Handle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
+extern Ist8310 *magHandle;
 extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
 
