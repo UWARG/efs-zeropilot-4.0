@@ -1,5 +1,9 @@
 #pragma once
 
+// ---- SELFTEST BEGIN (temporary, delete before committing) ----
+#define EEPROM_SELFTEST
+// ---- SELFTEST END ----
+
 #include "eeprom_iface.hpp"
 #include "stm32h7xx_hal.h"
 
@@ -59,4 +63,27 @@ class EEPROM : public IEEPROM {
          * @retval EEPROMResult: 0 when ready, EEPROM_ERR_TIMEOUT if it never finished
          */
         int waitUntilReady(uint32_t timeoutMs);
+
+// ---- SELFTEST BEGIN (temporary, delete before committing) ----
+#ifdef EEPROM_SELFTEST
+    public:
+        /**
+         * @brief runs every public function against the real chip
+         * @retval 0 if all tests passed, otherwise the number of the first failing test
+         */
+        int selfTest();
+
+        /**
+         * @brief runs the private helpers against the real chip
+         * @retval 0 if all checks passed, otherwise 101 or higher
+         */
+        int selfTestInternals();
+
+        /**
+         * @brief increments a counter stored in the chip, to prove data survives power cycles
+         * @retval the new count, or a negative number on failure
+         */
+        int bootCounter();
+#endif
+// ---- SELFTEST END ----
 };
