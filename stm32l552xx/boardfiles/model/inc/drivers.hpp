@@ -13,6 +13,7 @@
 #include "mavlink.h"
 #include "queue.hpp"
 #include "gps.hpp"
+#include "dronecan_gps.hpp"
 #include "can_controller.hpp"
 #include "rfd.hpp"
 #include "imu.hpp"
@@ -33,7 +34,8 @@ extern IMotorControl *motorHandles[8];
 
 extern CANController *canControllerHandle;
 extern CRSFReceiver *rcHandle;
-extern GPS *gpsHandle;
+extern IGPS *gpsHandle;
+extern GPS *uartGpsHandle;
 extern RFD *telemLinkHandle;
 extern IMU *imuHandle;
 extern PowerModule *pmHandle;

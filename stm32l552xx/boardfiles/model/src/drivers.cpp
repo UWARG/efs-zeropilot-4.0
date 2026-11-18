@@ -33,7 +33,9 @@ Logger *loggerHandle = nullptr;
 IMotorControl *motorHandles[8] = {0};
 
 CANController *canControllerHandle = nullptr;
-GPS *gpsHandle = nullptr;
+IGPS *gpsHandle = nullptr;
+GPS *uartGpsHandle = nullptr;
+static DroneCanGPS *droneCanGpsHandle = nullptr;
 CRSFReceiver *rcHandle = nullptr;
 RFD *telemLinkHandle = nullptr;
 IMU *imuHandle = nullptr;
@@ -124,7 +126,8 @@ void initDrivers()
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
 
     // 3. Peripheral allocation
-    gpsHandle = new GPS(&huart2);
+    droneCanGpsHandle = new DroneCanGPS(canControllerHandle);
+    gpsHandle = droneCanGpsHandle;
     rcHandle = new CRSFReceiver(&huart4);
     telemLinkHandle = new RFD(&huart3);
     imuHandle = new IMU(&hspi2, GPIOF, GPIO_PIN_12, 0, IMU_ODR_1KHZ);
@@ -152,7 +155,7 @@ void initDrivers()
 
     (void)ZP_BIT::report(ZP_BIT_ID::RC_INIT, rcHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
-    (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gpsHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, droneCanGpsHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
     if (rangefinderHandle != nullptr) {
