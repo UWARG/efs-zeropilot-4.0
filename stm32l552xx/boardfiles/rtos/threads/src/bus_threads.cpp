@@ -1,5 +1,5 @@
 #include "bus_threads.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "drivers.hpp"
 #include "FreeRTOS.h"
 #include "main.h"
