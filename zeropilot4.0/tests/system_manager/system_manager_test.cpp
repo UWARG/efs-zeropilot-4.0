@@ -10,10 +10,13 @@
 #include "mock_rc.hpp"
 #include "mock_power_module.hpp"
 #include "mock_queue.hpp"
+#include "mock_status_led.hpp"
+#include "mock_safety_switch.hpp"
 
 using ::testing::_;
 using ::testing::Return;
 using ::testing::Invoke;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 using ::testing::DoAll;
 using ::testing::SetArgReferee;
@@ -338,4 +341,121 @@ TEST_F(SystemManagerTest, CriticalReportBitSendsTextWithoutDisarmFailsafe) {
     EXPECT_EQ(failSeverity, MAV_SEVERITY_CRITICAL) << "a CRITICAL BIT reports at critical severity";
     EXPECT_EQ(disarmTexts, 0) << "a REPORT failsafe must not trigger the disarm action";
     EXPECT_FALSE(lastArm) << "a CRITICAL BIT still blocks arming through the pre-arm check";
+}
+
+TEST_F(SystemManagerTest, StatusLedDisarmedFlashesBlue) {
+    NiceMock<MockStatusLed> mockStatusLed;
+    {
+        // Half a second lit, half a second dark, at 20 Hz
+        InSequence seq;
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, SM_STATUS_LED_LEVEL)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, SM_STATUS_LED_LEVEL)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).WillOnce(Return(ZP_ERROR_OK));
+    }
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockStatusLed);
+
+    for (int i = 0; i < 2 * SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+    }
+}
+
+TEST_F(SystemManagerTest, StatusLedArmedIsSolidBlue) {
+    RCControl armedRCData;
+    armedRCData.isDataNew = true;
+    armedRCData.roll = 50.0f;
+    armedRCData.pitch = 50.0f;
+    armedRCData.yaw = 50.0f;
+    armedRCData.throttle = 50.0f;
+    armedRCData.arm = 100.0f;
+
+    EXPECT_CALL(mockRC, getRCData(_))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(armedRCData), Return(ZP_ERROR_OK)));
+
+    NiceMock<MockStatusLed> mockStatusLed;
+    EXPECT_CALL(mockStatusLed, setColor(0, 0, SM_STATUS_LED_LEVEL)).Times(1).WillOnce(Return(ZP_ERROR_OK));
+    EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).Times(0);
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockStatusLed);
+
+    for (int i = 0; i < SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+    }
+}
+
+TEST_F(SystemManagerTest, StatusLedFlashesYellowWhenSafetySwitchEngaged) {
+    NiceMock<MockSafetySwitch> mockSafetySwitch;
+    NiceMock<MockStatusLed> mockStatusLed;
+    EXPECT_CALL(mockStatusLed, setColor(0, 0, SM_STATUS_LED_LEVEL)).Times(0);
+    {
+        InSequence seq;
+        EXPECT_CALL(mockStatusLed, setColor(SM_STATUS_LED_LEVEL, SM_STATUS_LED_LEVEL, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(SM_STATUS_LED_LEVEL, SM_STATUS_LED_LEVEL, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).WillOnce(Return(ZP_ERROR_OK));
+    }
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, &mockSafetySwitch,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockStatusLed);
+
+    for (int i = 0; i < 2 * SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+    }
+}
+
+TEST_F(SystemManagerTest, StatusLedRetriesWhenTheWriteFails) {
+    NiceMock<MockStatusLed> mockStatusLed;
+    EXPECT_CALL(mockStatusLed, setColor(0, 0, SM_STATUS_LED_LEVEL))
+        .WillOnce(Return(ZP_ERROR_FAIL))
+        .WillOnce(Return(ZP_ERROR_OK));
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockStatusLed);
+
+    sm.smUpdate();
+    sm.smUpdate();
+    sm.smUpdate();
+}
+
+TEST_F(SystemManagerTest, StatusLedFlashesYellowWhenPreArmCheckBlocks) {
+    // BIT debounce needs a clock that moves
+    uint32_t nowMs = 0;
+    ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Invoke([&nowMs]() { return nowMs; }));
+
+    // Keep the battery healthy so IMU_DATA_VALID is the only failing BIT
+    ON_CALL(mockPM, readData(_)).WillByDefault(Invoke([](PMData_t* data) {
+        data->busVoltage = paramValue(ZP_PARAM_ID::BATT_LOW_VOLT) + 5.0f;
+        return ZP_ERROR_OK;
+    }));
+
+    RCControl rc;
+    rc.arm = 100.0f;
+    rc.isDataNew = true;
+    ON_CALL(mockRC, getRCData(_)).WillByDefault(DoAll(SetArgReferee<0>(rc), Return(ZP_ERROR_OK)));
+
+    NiceMock<MockStatusLed> mockStatusLed;
+    EXPECT_CALL(mockStatusLed, setColor(0, 0, SM_STATUS_LED_LEVEL)).Times(0);
+    {
+        InSequence seq;
+        EXPECT_CALL(mockStatusLed, setColor(SM_STATUS_LED_LEVEL, SM_STATUS_LED_LEVEL, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(SM_STATUS_LED_LEVEL, SM_STATUS_LED_LEVEL, 0)).WillOnce(Return(ZP_ERROR_OK));
+        EXPECT_CALL(mockStatusLed, setColor(0, 0, 0)).WillOnce(Return(ZP_ERROR_OK));
+    }
+
+    SystemManager sm(&mockSystemUtils, &mockWatchdog, &mockLogger, mockSafetySwitchPtr,
+                     &mockRC, &mockPM, &mockAMQueue, &mockTMQueue, &mockLogQueue, &mockStatusLed);
+
+    // IMU_DATA_VALID is CRITICAL, so it blocks arming even though the arm switch is on
+    (void)ZP_BIT::report(ZP_BIT_ID::IMU_DATA_VALID, ZP_ERROR_FAIL);
+    nowMs += BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::IMU_DATA_VALID)].failMs;
+    (void)ZP_BIT::report(ZP_BIT_ID::IMU_DATA_VALID, ZP_ERROR_FAIL);
+
+    for (int i = 0; i < 2 * SM_SCHEDULING_RATE_HZ; i++) {
+        sm.smUpdate();
+        nowMs += SM_UPDATE_LOOP_DELAY_MS;
+    }
 }

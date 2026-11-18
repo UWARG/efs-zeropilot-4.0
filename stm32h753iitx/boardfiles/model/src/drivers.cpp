@@ -49,6 +49,7 @@ PowerModule *pmHandle = nullptr;
 Ist8310 *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
+IS31FL3195 *statusLedHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -156,6 +157,7 @@ void initDrivers() {
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
+    statusLedHandle = new IS31FL3195(&hi2c4, 0b10101000u);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -188,6 +190,7 @@ void initDrivers() {
                              rangefinderHandle->init());
     }
     (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
+    (void)statusLedHandle->begin();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {
