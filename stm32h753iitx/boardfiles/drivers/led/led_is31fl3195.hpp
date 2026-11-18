@@ -19,6 +19,7 @@
 #include "stm32h7xx_hal.h"
 #include "stm32h7xx_hal_i2c.h"
 #include "zp_error.h"
+#include "status_led_iface.hpp"
 
 // From datasheet
 enum IS31FL3195_Timing_e {
@@ -86,7 +87,7 @@ extern const IS31FL3195_Channel IS31FL3195_ALL_CHANNELS[4];
 #define IS31FL3195_CH_BLUE  (IS31FL3195_CH3)
 #define IS31FL3195_CH_WHITE (IS31FL3195_CH4)
 
-class IS31FL3195 {
+class IS31FL3195 : public IStatusLed {
 public:
 	// For the M10 GPS, the address is 0b10101000u.
 	IS31FL3195(I2C_HandleTypeDef *hi2c, uint8_t address);
@@ -104,6 +105,8 @@ public:
 	ZP_Error flush();
 
 	ZP_Error setSolidColor(IS31FL3195_CurrentLevel rgbw[4]);
+
+	ZP_Error setColor(uint8_t red, uint8_t green, uint8_t blue) override;
 
 	~IS31FL3195();
 

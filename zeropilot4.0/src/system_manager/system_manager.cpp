@@ -15,7 +15,8 @@ SystemManager::SystemManager(
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<char[100]> *smLoggerQueue,
+    IStatusLed *statusLedDriver) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
         loggerDriver(loggerDriver),
@@ -25,11 +26,13 @@ SystemManager::SystemManager(
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
         smLoggerQueue(smLoggerQueue),
+        statusLedDriver(statusLedDriver),
         smSchedulingCounter(0),
         flightModes{},
         isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
         safetySwitchHoldCounterMs(0),
         safetySwitchTriggered(false),
+        statusLedState(StatusLedState_e::NONE),
         rcConnected(false),
         bitFailsafe(BitFailsafe_e::NONE),
         bitFailReportCntrMs(0),
@@ -95,6 +98,9 @@ void SystemManager::smUpdate() {
     // Determine system status based on RC connection and arm state
     ZP_BIT_ID emergencyBit = ZP_BIT_ID::NUM_BIT_IDS;
     const bool BIT_BLOCKING = (prearmCheck(emergencyBit) != ZP_ERROR_OK);
+
+    // Update status LED based on safety switch and arm state, arm uses the same condition as the Attitude Manager
+    (void)updateStatusLed(armed && !BIT_BLOCKING && (bitFailsafe != BitFailsafe_e::DISARM));
 
     MAV_STATE systemStatus = MAV_STATE_ACTIVE;
     if (BIT_BLOCKING && armed) {
@@ -167,6 +173,41 @@ void SystemManager::smUpdate() {
     smSchedulingCounter = (smSchedulingCounter + 1) % SM_SCHEDULING_RATE_HZ;
 
     systemUtilsDriver->profilerEnd(profilerId);
+}
+
+ZP_Error SystemManager::updateStatusLed(bool armed) {
+    if (statusLedDriver == nullptr) {
+        return ZP_ERROR_OK;
+    }
+
+    // Determine status LED state
+    StatusLedState_e newState = StatusLedState_e::DISARMED;
+    if (isSafetySwitchEngaged) {
+        newState = StatusLedState_e::SAFE;
+    } else if (armed) {
+        newState = StatusLedState_e::ARMED;
+    }
+
+    // Skip the write if the LED already shows this state
+    if (newState == statusLedState) {
+        return ZP_ERROR_OK;
+    }
+
+    // Set LED color: red for safe, blue for disarmed, green for armed
+    ZP_Error status = ZP_ERROR_OK;
+    if (newState == StatusLedState_e::SAFE) {
+        status = statusLedDriver->setColor(SM_STATUS_LED_LEVEL, 0, 0);
+    } else if (newState == StatusLedState_e::DISARMED) {
+        status = statusLedDriver->setColor(0, 0, SM_STATUS_LED_LEVEL);
+    } else {
+        status = statusLedDriver->setColor(0, SM_STATUS_LED_LEVEL, 0);
+    }
+
+    // Only remember the state if the write succeeded, otherwise it is retried on the next loop
+    if (status == ZP_ERROR_OK) {
+        statusLedState = newState;
+    }
+    return status;
 }
 
 ZP_Error SystemManager::safetySwitchUpdate() {
