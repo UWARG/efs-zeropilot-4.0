@@ -15,7 +15,7 @@ class DshotMotorControl : public IMotorControl{
          * @brief sets dshot throttle output
          * @param percent throttle percentage(0-100), 0 sends disarm command
          */
-        ZP_Error set(uint32_t percent) override;
+        ZP_Error set(uint32_t percent, bool safetyEngaged = false) override;
 
         /**
          * @brief starts arming sequence for ESC
@@ -23,6 +23,8 @@ class DshotMotorControl : public IMotorControl{
         ZP_Error init() override;
 
     private: 
+        bool currentSafetyState = false;
+
         TIM_HandleTypeDef * const timer;
         const uint32_t timerChannel;
         const uint8_t telReq;
