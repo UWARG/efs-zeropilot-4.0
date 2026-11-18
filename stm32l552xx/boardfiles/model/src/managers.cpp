@@ -16,19 +16,19 @@ void initManagers()
 {
     // AM initialization
     amHandle = new (&amHandleStorage) AttitudeManager(
-        systemUtilsHandle, 
+        systemUtilsHandle,
+        mathUtilsHandle,
         gpsHandle,
         imuHandle,
+        magHandle,
+        fftHandle,
+        rangefinderHandle,
+        barometerHandle,
 		asHandle,
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 
-        &rollMotors, 
-        &pitchMotors, 
-        &yawMotors, 
-        &throttleMotors, 
-        &flapMotors, 
-        &steeringMotors
+        &mainMotorGroup
     );
 
     // SM initialization
@@ -36,8 +36,9 @@ void initManagers()
         systemUtilsHandle, 
         iwdgHandle,
         loggerHandle,
+        nullptr, // safetySwitchHandle: No safety switch on L5, pass nullptr
         rcHandle,
-		pmHandle,
+        pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
         smLoggerQueueHandle

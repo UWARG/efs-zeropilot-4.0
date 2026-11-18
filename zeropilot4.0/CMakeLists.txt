@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 project(zeropilot4.0)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(${CMAKE_SOURCE_DIR}/common.cmake)
 
 set(RELATIVE_ZP_SRC)
@@ -24,3 +27,10 @@ endforeach()
 add_library(${PROJECT_NAME} STATIC ${RELATIVE_ZP_SRC})
 target_include_directories(${PROJECT_NAME} PRIVATE ${RELATIVE_ZP_INC})
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RELATIVE_EXTERNAL_INC})
+
+if(PLANE_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE PLANE)
+endif()
+if(QUADCOPTER_BUILD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE QUADCOPTER)
+endif()

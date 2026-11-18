@@ -1,0 +1,38 @@
+#pragma once 
+
+#include "stm32h7xx.h"
+#include "barometer_iface.hpp"
+#include "zp_error.h"
+#include <cmath>
+#include <cstdint>
+
+static constexpr uint8_t ICP20100_POWER_MODE = (1U << 2);
+static constexpr uint8_t ICP20100_FORCED_MES_TRIGGER = (1U << 4);
+static constexpr uint8_t ICP20100_TRIGGER_COMMAND_MEAS = (ICP20100_POWER_MODE | ICP20100_FORCED_MES_TRIGGER);
+
+class Barometer : public IBarometer {
+    enum State_e {
+        NOT_STARTED,
+        FIFO_STARTED,
+        DATA_READ
+    };
+
+    public:
+        Barometer(I2C_HandleTypeDef *hi2c);
+        ZP_Error readData(BaroData_t &data) override;
+        ZP_Error init();
+        void rxCallback();
+        void errorCallback();
+        ZP_Error firWarmupPoll();
+        I2C_HandleTypeDef* getI2C();
+
+    private:
+        I2C_HandleTypeDef *hi2c;
+        volatile bool dataFilled = 0;
+        volatile State_e callbackState = NOT_STARTED;
+        uint8_t pressTempData[6];
+        uint8_t fifoRegister;
+        float latestTemperatureC = 0.0f;
+        float latestPressureKpa = 0.0f;
+        ZP_Error readRegister(uint16_t memAddress, uint8_t * pData, uint16_t size);
+};

@@ -3,21 +3,25 @@
 
 class SITL_Motor : public IMotorControl {
 public:
-    SITL_Motor(uint8_t servoIdx) : servoIdx(servoIdx) {}
+    SITL_Motor() = default;
 
-    void set(uint32_t percent) override {
+    ZP_Error set(uint32_t percent) override {
         currentPercent = percent;
+        return ZP_ERROR_OK;
     }
 
-    uint8_t getServoIdx() const override {
-        return servoIdx;
+    ZP_Error init() override {
+        return ZP_ERROR_OK;
     }
-    
+
     uint32_t get() {
         return currentPercent;
     }
 
+    void setArm(bool arm) override { 
+        armFlag = arm;
+    }
+
 private:
     uint32_t currentPercent = 0;
-    uint8_t servoIdx;
 };

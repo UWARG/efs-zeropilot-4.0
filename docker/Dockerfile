@@ -1,10 +1,22 @@
 FROM xanderhendriks/stm32cubeide:16.0
 
-RUN apt-get update && apt-get install -y cmake ninja-build git && rm -rf /var/lib/apt/lists/*
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install common build tools, ARM toolchain, and testing dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cmake \
+    ninja-build \
+    git \
+    make \
+    gcc-arm-none-eabi \
+    libnewlib-arm-none-eabi \
+    libstdc++-arm-none-eabi-newlib \
+    g++ \
+    build-essential \
+    libgtest-dev \
+    libgmock-dev \
+    clang-tidy \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
-COPY . .
-
-RUN git submodule update --init --recursive || true
-
-RUN chmod +x zeropilot4.0/hwbuild.bash

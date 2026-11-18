@@ -6,12 +6,21 @@
 .vscode/
 /.project
 /.idea
+.metadata/
+.plugins/
 
 # build and debug artifacts
 build/
 Debug/
 Release/
 *.launch
+Debug-plane/
+Debug-quad/
+Release-plane/
+Release-quad/
 
 # remove build host
 *build-host*
+
+# python virtual environment
+venv/
