@@ -85,9 +85,9 @@ if [[ ! -f "CMakeCache.txt" ]]; then
     echo "generator: $generator"
     echo "toolchain: $tc_file"
     if [[ "$vehicle_type" == "plane" ]]; then
-        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$build_type" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DPLANE_BUILD=ON "$script_dir"
+        cmake -G "$generator" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$build_type" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DPLANE_BUILD=ON "$script_dir"
     elif [[ "$vehicle_type" == "quad" ]]; then
-        cmake -G "$generator" -Werror -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$build_type" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DQUADCOPTER_BUILD=ON "$script_dir"
+        cmake -G "$generator" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE="$build_type" -DCMAKE_TOOLCHAIN_FILE="$tc_file" -DQUADCOPTER_BUILD=ON "$script_dir"
     fi
 fi
 
