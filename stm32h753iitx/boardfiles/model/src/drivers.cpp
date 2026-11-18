@@ -149,7 +149,6 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
-    magHandle = new Ist8310(&hi2c4);
     float rngfndEnable = 0.0f;
     paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::RNGFND_ENABLE, rngfndEnable);
     if (static_cast<int>(rngfndEnable) == 1) {
