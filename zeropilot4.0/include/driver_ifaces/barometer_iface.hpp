@@ -1,6 +1,5 @@
 #pragma once 
 
-#include <cstdint>
 #include "zp_error.h"
 
 // Pressure and Temperature data

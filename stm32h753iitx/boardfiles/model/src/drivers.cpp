@@ -47,6 +47,7 @@ PowerModule *pmHandle = nullptr;
 Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
+Airspeed *asHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -162,6 +163,7 @@ void initDrivers() {
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
+    asHandle = new Airspeed(&hi2c2);
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
@@ -186,6 +188,7 @@ void initDrivers() {
     (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gps1Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::GPS2_INIT, gps2Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
+    (void)ZP_BIT::report(ZP_BIT_ID::AS_INIT, asHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::MAG_INIT, magHandle->init());

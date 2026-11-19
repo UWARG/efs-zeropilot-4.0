@@ -179,6 +179,8 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
     magHandle->masterRxCpltCallback();
   } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->rxCallback();
+  } else if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+    asHandle->receiveCallback();
   }
 }
 
@@ -194,6 +196,9 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     }
     if (hi2c == barometerHandle->getI2C()) {
       barometerHandle->errorCallback();
+    }
+    if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
+      asHandle->errorCallback();
     }
   }
 }

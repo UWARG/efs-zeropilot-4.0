@@ -41,6 +41,7 @@ Barometer *barometerHandle = nullptr;
 PowerModule *pmHandle = nullptr;
 Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
+Airspeed *asHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -145,6 +146,7 @@ void initDrivers()
         rangefinderHandle = new Rangefinder(&hi2c3);
     }
     barometerHandle = new Barometer(&hi2c2);
+    asHandle = new Airspeed(&hi2c2);
 
     // 4. Queue allocation
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
