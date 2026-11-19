@@ -21,18 +21,7 @@ ZP_Error CRSFReceiver::init() {
 }
 
 ZP_Error CRSFReceiver::startDMA() {
-    if (uart == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-
-    // start circular DMA
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(uart, crsfRxBuffer, CRSF_PACKET_SIZE);
-    if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    } else if (status != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-    }
-    return ZP_ERROR_OK;
+    return uart.restartDMA(crsfRxBuffer, CRSF_PACKET_SIZE);
 }
 
 // Polynomial used in CRSF: 0xD5
@@ -102,5 +91,5 @@ ZP_Error CRSFReceiver::parse() {
 }
 
 UART_HandleTypeDef * CRSFReceiver::getHuart() {
-	return uart;
+	return uart.getHuart();
 }

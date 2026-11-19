@@ -4,6 +4,7 @@
 #include "rfd_defines.hpp"
 #include "zp_error.h"
 #include "stm32l5xx_hal.h"
+#include "uart_iface_stm32l5.hpp"
 
 class RFD : public ITelemLink {
 
@@ -17,8 +18,7 @@ public:
     ZP_Error receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_size) override;
 
     // Getters
-    UART_HandleTypeDef* getHuart() const;
-
+    UART_HandleTypeDef* getHuart();
     // DMA callback
     ZP_Error receiveCallback(uint16_t dmaWritePos);
 
@@ -29,7 +29,7 @@ public:
 
 private:
     ZP_Error getRXTransferSize(uint16_t idx, uint16_t& output);
-    UART_HandleTypeDef* huart;
+    UARTInterface uart;
     uint8_t rxBuffer[BUFFER_SIZE];
     uint8_t txBuffer[TX_BUFFER_SIZE]; // Owned by the driver so a caller cannot overwrite a transfer in flight
 

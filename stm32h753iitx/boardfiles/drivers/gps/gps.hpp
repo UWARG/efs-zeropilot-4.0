@@ -2,6 +2,7 @@
 
 #include "stm32h7xx_hal.h"
 #include "gps_iface.hpp"
+#include "uart_iface_stm32h7.hpp"
 #include <cmath>
 
 static constexpr uint8_t MAX_NMEA_DATA_LENGTH_PER_LINE = 82;
@@ -14,7 +15,6 @@ static constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
 class GPS : public IGPS {
     public:
         GPS(UART_HandleTypeDef *huart);
-
         UART_HandleTypeDef* getHuart();
 
         GpsProtocol_t getProtocol();
@@ -34,7 +34,7 @@ class GPS : public IGPS {
         volatile uint8_t *processBufferEnd = (uint8_t*)processBuffer;
         volatile bool parsingData = false;
         volatile bool dataReady = false;
-        UART_HandleTypeDef *huart;
+        UARTInterface uart;
 
         ZP_Error configureUBX();
         ZP_Error setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate);

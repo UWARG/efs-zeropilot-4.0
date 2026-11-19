@@ -77,11 +77,10 @@ static int32_t readInt32LE(const uint8_t *buf, uint16_t idx);
 // Convert ASCII hex to numeric value
 static int8_t hexValue(uint8_t c);
 
-GPS::GPS(UART_HandleTypeDef* huart) :
-    huart(huart) {}
+GPS::GPS(UART_HandleTypeDef* huart) : uart(huart) {}
 
 ZP_Error GPS::init() {
-    SET_BIT(huart->Instance->CR3, USART_CR3_OVRDIS);
+    uart.setBit(uart.getHuart()->Instance->CR3, USART_CR3_OVRDIS);
 
     // Configure before starting the DMA receive, waitForAck() is polling
     protocol = (configureUBX() == ZP_ERROR_OK) ? UBX : NMEA;
@@ -207,7 +206,7 @@ void GPS::calcChecksum(uint8_t *msg, uint16_t len) {
 
 ZP_Error GPS::sendUBX(uint8_t *msg, uint16_t len) {
     calcChecksum(msg, len);
-    return (HAL_UART_Transmit(huart, msg, len, HAL_MAX_DELAY) == HAL_OK) ? ZP_ERROR_OK : (ZP_ERROR_EXT_API | ZP_ERROR_FAIL);
+    return uart.transmit(msg, len);
 }
 
 /*
@@ -244,16 +243,7 @@ ZP_Error GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
 }
 
 ZP_Error GPS::receiveByte(uint8_t &byte, uint32_t deadline) {
-    int32_t remainingTick = (int32_t)(deadline - HAL_GetTick());
-    if (remainingTick <= 0) return ZP_ERROR_TIMEOUT;
-
-    HAL_StatusTypeDef status = HAL_UART_Receive(huart, &byte, 1, (uint32_t)remainingTick);
-    if (status == HAL_TIMEOUT) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT;
-    } else if (status != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-    }
-    return ZP_ERROR_OK;
+    return uart.receive(&byte, 1, deadline);
 }
 
 ZP_Error GPS::readData(GpsData_t &data) {
@@ -301,17 +291,11 @@ void GPS::rxCallback(uint16_t size) {
 }
 
 ZP_Error GPS::restartDMA() {
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(
-        huart,
-        (uint8_t*)rxBuffer,
-        MAX_NMEA_DATA_LENGTH
-    );
-    __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);
-    return status == HAL_OK ? ZP_ERROR_OK : ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
+    return uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
 }
 
 UART_HandleTypeDef* GPS::getHuart() {
-    return huart;
+    return uart.getHuart();
 }
 
 GpsProtocol_t GPS::getProtocol() {

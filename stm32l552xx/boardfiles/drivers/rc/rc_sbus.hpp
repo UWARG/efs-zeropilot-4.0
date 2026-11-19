@@ -4,6 +4,7 @@
 #include "rc_iface.hpp"
 #include "stm32l5xx_hal.h"
 #include "zp_error.h"
+#include "uart_iface_stm32l5.hpp"
 
 typedef struct {
     int dataOffset;
@@ -18,7 +19,7 @@ class SBUSReceiver : public IRCReceiver {
         ZP_Error getRCData(RCControl &data) override;
 
         UART_HandleTypeDef* getHuart();
-
+        
         /**
          * @brief starts DMA receive
          */
@@ -34,7 +35,7 @@ class SBUSReceiver : public IRCReceiver {
         ZP_Error parse();
        
     private:
-        UART_HandleTypeDef *uart;
+        UARTInterface uart;
         RCControl rcData;
         uint8_t volatile rawSbus[SBUS_PACKET_SIZE];
 

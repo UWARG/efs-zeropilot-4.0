@@ -4,7 +4,7 @@
 
 RFD* RFD::instance = nullptr;
 
-RFD::RFD(UART_HandleTypeDef* huart) : huart(huart), readIndex(0), writeIndex(0) {
+RFD::RFD(UART_HandleTypeDef* huart) : uart(huart), readIndex(0), writeIndex(0) {
     instance = this;
 }
 
@@ -13,7 +13,7 @@ RFD::~RFD() {
 }
 
 ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
-    if (huart == nullptr || data == nullptr) {
+    if (uart.getHuart() == nullptr || data == nullptr) {
         return ZP_ERROR_NULLPTR;
     }
 
@@ -21,39 +21,25 @@ ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
         return ZP_ERROR_RANGE;
     }
 
-    if (huart->gState != HAL_UART_STATE_READY) {
+    if (uart.getTXState() != HAL_UART_STATE_READY) {
         return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
     }
 
     memcpy(txBuffer, data, size);
 
-    HAL_StatusTypeDef status = HAL_UART_Transmit_DMA(huart, txBuffer, size);
-    if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    } else if (status != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-    }
-    return ZP_ERROR_OK;
+    return uart.transmitDMA(txBuffer, size);
 }
 
 ZP_Error RFD::restartRx() {
-    if (huart == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, rxBuffer, BUFFER_SIZE);
-    if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    } else if (status != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-    }
+    ZP_Error status = uart.restartDMA(rxBuffer, BUFFER_SIZE);
+    if (status != ZP_ERROR_OK) return status;
 
     readIndex = 0;
     writeIndex = 0;
     currentSize = 0;
     lastIdx = 0;
 
-    return ZP_ERROR_OK;
+    return status;
 }
 
 ZP_Error RFD::getRXTransferSize(uint16_t idx, uint16_t& output) {
@@ -94,7 +80,7 @@ ZP_Error RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_s
     received_size = 0;
 
     // The DMA is not running, so reception was aborted by an error and has to be restarted
-    if (huart->RxState == HAL_UART_STATE_READY) {
+    if (uart.getRXState() == HAL_UART_STATE_READY) {
         return restartRx();
     }
 
@@ -122,6 +108,6 @@ ZP_Error RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_s
     return result;
 }
 
-UART_HandleTypeDef* RFD::getHuart() const {
-    return huart;
+UART_HandleTypeDef* RFD::getHuart() {
+    return uart.getHuart();
 }
