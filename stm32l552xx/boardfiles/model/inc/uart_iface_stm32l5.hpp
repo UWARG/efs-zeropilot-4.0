@@ -1,6 +1,7 @@
 #pragma once
 
 #include "uart_iface.hpp"
+#include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_uart.h"
 
 class UARTInterface : public IUARTInterface  {
