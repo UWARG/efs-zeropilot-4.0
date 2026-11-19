@@ -58,6 +58,7 @@ SBUSReceiver::SBUSReceiver(UART_HandleTypeDef* uart) : uart(uart) {
     memset((void*)rawSbus, 0, SBUS_PACKET_SIZE);
 }
 
+
 UART_HandleTypeDef* SBUSReceiver::getHuart() {
     return uart.getHuart();
 }

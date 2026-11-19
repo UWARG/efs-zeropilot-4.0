@@ -97,7 +97,3 @@ ZP_Error CRSFReceiver::parse() {
 UART_HandleTypeDef * CRSFReceiver::getHuart() {
 	return uart.getHuart();
 }
-
-UART_HandleTypeDef * CRSFReceiver::getHuart() {
-	return uart.getHuart;
-}
