@@ -35,11 +35,11 @@ void UARTInterface::setBit(volatile uint32_t &reg, uint32_t bit){
     SET_BIT(reg, bit);
 }
 
-UART_HandleTypeDef UARTInterface::getTXState(){
+HAL_UART_StateTypeDef UARTInterface::getTXState(){
     return huart->gState;
 }
 
-UART_HandleTypeDef UARTInterface::getRXState(){
+HAL_UART_StateTypeDef UARTInterface::getRXState(){
     return huart->RxState;
 }
 

@@ -19,8 +19,8 @@ class UARTInterface : public IUARTInterface  {
         // huart Getter, Setters
         UART_HandleTypeDef* getHuart();
         void setBit(volatile uint32_t &reg, uint32_t bit);
-        UART_HandleTypeDef getTXState();
-        UART_HandleTypeDef getRXState();
+        HAL_UART_StateTypeDef getTXState();
+        HAL_UART_StateTypeDef getRXState();
 
         // huart Register Operations
         ZP_Error transmit(uint8_t* pData, uint16_t size);

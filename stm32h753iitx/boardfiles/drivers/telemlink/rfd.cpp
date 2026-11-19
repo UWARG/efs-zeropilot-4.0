@@ -21,7 +21,7 @@ ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
         return ZP_ERROR_RANGE;
     }
 
-    if (uart.getGState() != HAL_UART_STATE_READY) {
+    if (uart.getTXState() != HAL_UART_STATE_READY) {
         return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
     }
 
