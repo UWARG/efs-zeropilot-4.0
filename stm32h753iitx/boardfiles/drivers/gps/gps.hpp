@@ -1,7 +1,6 @@
 #pragma once
 
 #include "stm32h7xx_hal.h"
-#include "gps_iface.hpp"
 #include "uart_iface_stm32h7.hpp"
 #include <cmath>
 
@@ -23,6 +22,7 @@ class GPS : public IGPS {
 
         ZP_Error init();
         void rxCallback(uint16_t size);
+        ZP_Error restartDMA();
 
     private:
         GpsProtocol_t protocol = NMEA;
