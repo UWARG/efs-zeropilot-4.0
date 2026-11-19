@@ -35,11 +35,12 @@ void UARTInterface::setBit(volatile uint32_t &reg, uint32_t bit){
     SET_BIT(reg, bit);
 }
 
-ZP_Error UARTInterface::getState(){
-    if (huart->gState != HAL_UART_STATE_READY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    }
-    return ZP_ERROR_OK;
+UART_HandleTypeDef UARTInterface::getTXState(){
+    return huart->gState;
+}
+
+UART_HandleTypeDef UARTInterface::getRXState(){
+    return huart->RxState;
 }
 
 ZP_Error UARTInterface::transmit(uint8_t* pData, uint16_t size){

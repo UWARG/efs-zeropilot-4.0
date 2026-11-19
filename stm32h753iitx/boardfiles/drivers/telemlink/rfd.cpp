@@ -13,7 +13,7 @@ RFD::~RFD() {
 }
 
 ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
-    if (uart == nullptr || data == nullptr) {
+    if (uart.getHuart() == nullptr || data == nullptr) {
         return ZP_ERROR_NULLPTR;
     }
 
@@ -27,11 +27,11 @@ ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
 
     memcpy(txBuffer, data, size);
 
-    uart.transmitDMA(uart, txBuffer, size);
+    return uart.transmitDMA(txBuffer, size);
 }
 
 ZP_Error RFD::restartRx() {
-    HAL_StatusTypeDef status = uart.restartDMA(rxBuffer, BUFFER_SIZE)
+    ZP_Error status = uart.restartDMA(rxBuffer, BUFFER_SIZE)
     if (status != ZP_ERROR_OK) return status;
 
     readIndex = 0;

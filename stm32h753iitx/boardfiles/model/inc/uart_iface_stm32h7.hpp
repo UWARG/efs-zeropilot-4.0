@@ -9,9 +9,7 @@ class UARTInterface : public IUARTInterface  {
         UART_HandleTypeDef *huart;
 
     protected:
-        // huart State, Error to ZPError Mapping        
-        ZP_Error getGState();
-        ZP_Error getRXState();
+        // huart Error to ZPError Mapping     
         ZP_Error uartErrorToZpError(); 
         ZP_Error uartStatusToZpError(HAL_StatusTypeDef status);
 
@@ -21,6 +19,8 @@ class UARTInterface : public IUARTInterface  {
         // huart Getter, Setters
         UART_HandleTypeDef* getHuart();
         void setBit(volatile uint32_t &reg, uint32_t bit);
+        UART_HandleTypeDef getTXState();
+        UART_HandleTypeDef getRXState();
 
         // huart Register Operations
         ZP_Error transmit(uint8_t* pData, uint16_t size);
