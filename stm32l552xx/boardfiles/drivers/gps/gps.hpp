@@ -15,7 +15,6 @@ static constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
 class GPS : public IGPS {
     public:
         GPS(UART_HandleTypeDef *huart);
-
         UART_HandleTypeDef* getHuart();
 
         GpsProtocol_t getProtocol();
@@ -24,7 +23,6 @@ class GPS : public IGPS {
 
         ZP_Error init();
         void rxCallback(uint16_t size);
-        
     private:
         GpsProtocol_t protocol = NMEA;
         GpsData_t tempData{};
@@ -42,9 +40,9 @@ class GPS : public IGPS {
         ZP_Error configValset(uint32_t key, uint32_t value);
         ZP_Error waitForAck(uint8_t msgClass, uint8_t msgId);
         ZP_Error sendUBX(uint8_t *msg, uint16_t len);
+        ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
         void calcChecksum(uint8_t *msg, uint16_t len);
 
-        ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
         uint16_t processBufferLen();
         ZP_Error incrementProcessBufferIndex(uint16_t &idx, uint16_t increment);
 

@@ -41,10 +41,10 @@ class GPS : public IGPS {
         ZP_Error setRate(uint16_t measRateMs, uint16_t navRate);
         ZP_Error configValset(uint32_t key, uint32_t value);
         ZP_Error waitForAck(uint8_t msgClass, uint8_t msgId);
+        ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
         ZP_Error sendUBX(uint8_t *msg, uint16_t len);
         void calcChecksum(uint8_t *msg, uint16_t len);
 
-        ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
         uint16_t processBufferLen();
         ZP_Error incrementProcessBufferIndex(uint16_t &idx, uint16_t increment);
 

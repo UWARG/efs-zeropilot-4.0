@@ -108,6 +108,6 @@ ZP_Error RFD::receive(uint8_t* buffer, uint16_t bufferSize, uint16_t &received_s
     return result;
 }
 
-UART_HandleTypeDef* RFD::getHuart() const {
+UART_HandleTypeDef* RFD::getHuart() {
     return uart.getHuart();
 }
