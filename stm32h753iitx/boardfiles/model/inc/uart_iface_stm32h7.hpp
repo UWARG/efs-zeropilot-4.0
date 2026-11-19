@@ -9,8 +9,9 @@ class UARTInterface : public IUARTInterface  {
         UART_HandleTypeDef *huart;
 
     protected:
-        // huart State, Error to ZPError Mapping
-        ZP_Error getState();
+        // huart State, Error to ZPError Mapping        
+        ZP_Error getGState();
+        ZP_Error getRXState();
         ZP_Error uartErrorToZpError(); 
         ZP_Error uartStatusToZpError(HAL_StatusTypeDef status);
 

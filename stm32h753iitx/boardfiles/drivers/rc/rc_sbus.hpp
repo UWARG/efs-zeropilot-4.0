@@ -33,7 +33,7 @@ class SBUSReceiver : public IRCReceiver {
         ZP_Error parse();
        
     private:
-        UARTInterface *uart;
+        UARTInterface uart;
         RCControl rcData;
         uint8_t volatile rawSbus[SBUS_PACKET_SIZE];
 
