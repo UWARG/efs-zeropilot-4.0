@@ -70,7 +70,7 @@ ZP_Error SBUSReceiver::init() {
 }
 
 ZP_Error SBUSReceiver::startDMA() {
-    return uart->restartDMA((uint8_t*)rawSbus, SBUS_PACKET_SIZE);
+    return uart.restartDMA((uint8_t*)rawSbus, SBUS_PACKET_SIZE);
 }
 
 ZP_Error SBUSReceiver::parse() {
