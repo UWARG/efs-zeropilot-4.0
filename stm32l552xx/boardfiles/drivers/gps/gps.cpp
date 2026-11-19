@@ -279,6 +279,10 @@ ZP_Error GPS::readData(GpsData_t &data) {
     return success ? ZP_ERROR_OK : ZP_ERROR_PARSE;
 }
 
+UART_HandleTypeDef* GPS::getHuart() {
+    return uart.getHuart();
+}
+
 void GPS::rxCallback(uint16_t size) {
     // Refresh the parse buffer only when readData() is not mid-parse
     if (!parsingData && size > 0) {

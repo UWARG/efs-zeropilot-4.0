@@ -15,6 +15,8 @@ static constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
 class GPS : public IGPS {
     public:
         GPS(UART_HandleTypeDef *huart);
+        
+        UART_HandleTypeDef* getHuart();
 
         GpsProtocol_t getProtocol();
 

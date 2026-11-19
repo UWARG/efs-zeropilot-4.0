@@ -32,6 +32,7 @@ class CRSFReceiver : public IRCReceiver {
         ZP_Error startDMA();
 
         ZP_Error parse();
+        UART_HandleTypeDef * getHuart();
 
     private:
         UARTInterface uart;

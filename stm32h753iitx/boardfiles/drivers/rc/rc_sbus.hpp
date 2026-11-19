@@ -18,6 +18,8 @@ class SBUSReceiver : public IRCReceiver {
 
         ZP_Error getRCData(RCControl &data) override;
         
+        UART_HandleTypeDef* getHuart();
+        
         /**
          * @brief starts DMA receive
          */
