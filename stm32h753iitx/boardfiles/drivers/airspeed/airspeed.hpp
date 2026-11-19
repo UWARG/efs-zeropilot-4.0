@@ -32,7 +32,7 @@ private:
     volatile uint32_t lastSampleTick_ = 0;
     volatile uint32_t errorCount_ = 0;
 
-    Status status_ = Status::Fault;
+    AsStatus_e status_ = AsStatus_e::FAULT;
 
     bool startReceive();
     bool decodeFrame(const uint8_t* frame, AirspeedData_t* data);

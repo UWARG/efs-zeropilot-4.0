@@ -54,16 +54,16 @@ bool Airspeed::startReceive() {
 }
 
 bool Airspeed::decodeFrame(const uint8_t* frame, AirspeedData_t* data) {
-    status_ = static_cast<Status>((frame[0] >> 6) & 0x03);
-    if (status_ != Status::Normal) return false;
+    status_ = static_cast<AsStatus_e>((frame[0] >> 6) & 0x03);
+    if (status_ != AsStatus_e::NORMAL) return false;
 
-    data->raw_press_ = ((frame[0] & 0x3F) << 8) | frame[1];
-    data->raw_temp_ = (frame[2] << 3) | (frame[3] >> 5);
-    data->processed_temp_ = (data->raw_temp_ * 200.0 / 2047.0) - 50.0;
+    data->rawPress = ((frame[0] & 0x3F) << 8) | frame[1];
+    data->rawTemp = (frame[2] << 3) | (frame[3] >> 5);
+    data->processedTemp = (data->rawTemp * 200.0 / 2047.0) - 50.0;
 
     // TE 4525DO-DS5AI001DP: type A output, bidirectional +/-1 psi.
-    data->processed_press_ =
-        (((data->raw_press_ - 1638.3) / 6553.2) - 1.0) * 6894.757;
+    data->processedPress =
+        (((data->rawPress - 1638.3) / 6553.2) - 1.0) * 6894.757;
     return true;
 }
 
@@ -73,7 +73,7 @@ void Airspeed::receiveCallback() {
     AirspeedData_t sample{};
     if (decodeFrame(processRXBuffer, &sample)) {
         if (!calibrated_) {
-            calibrationPressureSum += sample.processed_press_;
+            calibrationPressureSum += sample.processedPress;
             calibrationSampleCount++;
 
             if (calibrationSampleCount >= calibrationSamples) {
@@ -81,7 +81,7 @@ void Airspeed::receiveCallback() {
                 calibrated_ = true;
             }
         } else {
-            const double correctedPressure = sample.processed_press_ - pressZero;
+            const double correctedPressure = sample.processedPress - pressZero;
 
             if (!filterInitialized_) {
                 filteredPressure = correctedPressure;
@@ -94,8 +94,8 @@ void Airspeed::receiveCallback() {
                 ? filteredPressure - pressureDeadbandPa
                 : 0.0;
 
-            sample.processed_press_ = filteredPressure;
-            sample.airspeed_ = std::sqrt((2.0 * dynamicPressure) / airDensityKgM3);
+            sample.processedPress = filteredPressure;
+            sample.airspeed = std::sqrt((2.0 * dynamicPressure) / airDensityKgM3);
 
             latestData_ = sample;
             lastSampleTick_ = HAL_GetTick();
