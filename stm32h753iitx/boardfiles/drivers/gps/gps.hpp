@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stm32h7xx_hal.h"
+#include "gps_iface.hpp"
 #include "uart_iface_stm32h7.hpp"
 #include <cmath>
 
