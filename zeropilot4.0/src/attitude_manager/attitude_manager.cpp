@@ -101,7 +101,9 @@ void AttitudeManager::amUpdate() {
 
     systemUtilsDriver->profilerBegin(profilerId);
 
-    asDriver->getAirspeedData(&airspeedData);
+    // Read airspeed data
+    AirspeedData_t asData{};
+    (void)ZP_BIT::report(ZP_BIT_ID::AS_DATA_VALID, asDriver->getAirspeedData(&airspeedData));
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 

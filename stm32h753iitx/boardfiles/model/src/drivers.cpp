@@ -188,7 +188,7 @@ void initDrivers() {
     (void)ZP_BIT::report(ZP_BIT_ID::GPS1_INIT, gps1Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::GPS2_INIT, gps2Handle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::IMU_INIT, imuHandle->init());
-    asHandle->init(); // TODO: convert to ZP_Error
+    (void)ZP_BIT::report(ZP_BIT_ID::AS_INIT, asHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::TELEM_INIT, telemLinkHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::PM_INIT, pmHandle->init());
     (void)ZP_BIT::report(ZP_BIT_ID::MAG_INIT, magHandle->init());
