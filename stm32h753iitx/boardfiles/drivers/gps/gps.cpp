@@ -217,14 +217,14 @@ ZP_Error GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
     const uint32_t deadline = HAL_GetTick() + UBX_ACK_TIMEOUT_MS;
 
     uint8_t byte = 0;
-    while (uart.receiveByte(byte, 1, deadline) == ZP_ERROR_OK) {
+    while (uart.receive(byte, 1, deadline) == ZP_ERROR_OK) {
         if (byte != UBX_SYNC_1) continue;
-        if (uart.receiveByte(byte, 1, deadline) != ZP_ERROR_OK || byte != UBX_SYNC_2) continue;
+        if (uart.receive(byte, 1, deadline) != ZP_ERROR_OK || byte != UBX_SYNC_2) continue;
 
         uint8_t body[UBX_ACK_FRAME_LEN] = {0};
         bool success = true;
         for (uint8_t i = 0; i < UBX_ACK_FRAME_LEN && success; i++) {
-            success = (uart.receiveByte(body[i], 1, deadline) == ZP_ERROR_OK);
+            success = (uart.receive(body[i], 1, deadline) == ZP_ERROR_OK);
         }
         if (!success) break;
 
