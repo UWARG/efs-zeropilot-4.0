@@ -4,6 +4,7 @@
 #include "rc_iface.hpp"
 #include "zp_error.h"
 #include "stm32l5xx_hal.h"
+#include "uart_iface_stm32l5.hpp"
 
 /**
  * @class CRSFReceiver
@@ -34,7 +35,7 @@ class CRSFReceiver : public IRCReceiver {
         UART_HandleTypeDef * getHuart();
 
     private:
-        UART_HandleTypeDef *uart;
+        UARTInterface uart;
         RCControl rcData;
         uint8_t crsfRxBuffer[CRSF_PACKET_SIZE];
 };
