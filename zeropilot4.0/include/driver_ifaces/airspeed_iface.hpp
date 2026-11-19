@@ -21,5 +21,5 @@ protected:
 public:
     virtual ~IAirspeed() = default;
     
-    virtual bool getAirspeedData(AirspeedData_t* data) = 0;
+    virtual ZP_Error getAirspeedData(AirspeedData_t* data) = 0;
 };
