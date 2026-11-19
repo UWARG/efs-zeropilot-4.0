@@ -42,6 +42,7 @@ class GPS : public IGPS {
         ZP_Error sendUBX(uint8_t *msg, uint16_t len);
         void calcChecksum(uint8_t *msg, uint16_t len);
 
+        ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
         uint16_t processBufferLen();
         ZP_Error incrementProcessBufferIndex(uint16_t &idx, uint16_t increment);
 
