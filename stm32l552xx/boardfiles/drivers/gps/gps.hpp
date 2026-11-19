@@ -2,7 +2,7 @@
 
 #include "stm32l5xx_hal.h"
 #include "gps_iface.hpp"
-#include "uart_iface_stm32l5.hpp"
+#include "uart_iface.hpp"
 #include <cmath>
 
 static constexpr uint8_t MAX_NMEA_DATA_LENGTH_PER_LINE = 82;
@@ -15,7 +15,6 @@ static constexpr uint16_t RX_BUFFER_SIZE = 2 * MAX_NMEA_DATA_LENGTH;
 class GPS : public IGPS {
     public:
         GPS(UART_HandleTypeDef *huart);
-        
         UART_HandleTypeDef* getHuart();
 
         GpsProtocol_t getProtocol();
@@ -24,7 +23,7 @@ class GPS : public IGPS {
 
         ZP_Error init();
         void rxCallback(uint16_t size);
-        
+        ZP_Error restartDMA();
     private:
         GpsProtocol_t protocol = NMEA;
         GpsData_t tempData{};
@@ -41,8 +40,8 @@ class GPS : public IGPS {
         ZP_Error setRate(uint16_t measRateMs, uint16_t navRate);
         ZP_Error configValset(uint32_t key, uint32_t value);
         ZP_Error waitForAck(uint8_t msgClass, uint8_t msgId);
-        ZP_Error sendUBX(uint8_t *msg, uint16_t len);
         ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
+        ZP_Error sendUBX(uint8_t *msg, uint16_t len);
         void calcChecksum(uint8_t *msg, uint16_t len);
 
         uint16_t processBufferLen();

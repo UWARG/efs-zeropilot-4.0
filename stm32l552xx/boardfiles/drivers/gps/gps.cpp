@@ -85,7 +85,7 @@ ZP_Error GPS::init() {
     // Configure before starting the DMA receive, waitForAck() is polling
     protocol = (configureUBX() == ZP_ERROR_OK) ? UBX : NMEA;
 
-    return uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
+    return restartDMA();
 }
 
 /*
@@ -287,7 +287,11 @@ void GPS::rxCallback(uint16_t size) {
         dataReady = true;
     }
 
-    (void)uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
+    (void)restartDMA();
+}
+
+ZP_Error GPS::restartDMA() {
+    return uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
 }
 
 UART_HandleTypeDef* GPS::getHuart() {
