@@ -85,7 +85,7 @@ ZP_Error GPS::init() {
     // Configure before starting the DMA receive, waitForAck() is polling
     protocol = (configureUBX() == ZP_ERROR_OK) ? UBX : NMEA;
 
-    return restartDMA();
+    return uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
 }
 
 /*
@@ -217,14 +217,14 @@ ZP_Error GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
     const uint32_t deadline = HAL_GetTick() + UBX_ACK_TIMEOUT_MS;
 
     uint8_t byte = 0;
-    while (receiveByte(byte, deadline) == ZP_ERROR_OK) {
+    while (uart.receiveByte(byte, deadline) == ZP_ERROR_OK) {
         if (byte != UBX_SYNC_1) continue;
-        if (receiveByte(byte, deadline) != ZP_ERROR_OK || byte != UBX_SYNC_2) continue;
+        if (uart.receiveByte(byte, deadline) != ZP_ERROR_OK || byte != UBX_SYNC_2) continue;
 
         uint8_t body[UBX_ACK_FRAME_LEN] = {0};
         bool success = true;
         for (uint8_t i = 0; i < UBX_ACK_FRAME_LEN && success; i++) {
-            success = (receiveByte(body[i], deadline) == ZP_ERROR_OK);
+            success = (uart.receiveByte(body[i], deadline) == ZP_ERROR_OK);
         }
         if (!success) break;
 
@@ -240,10 +240,6 @@ ZP_Error GPS::waitForAck(uint8_t msgClass, uint8_t msgId) {
     }
 
     return ZP_ERROR_TIMEOUT;
-}
-
-ZP_Error GPS::receiveByte(uint8_t &byte, uint32_t deadline) {
-    return uart.receive(&byte, 1, deadline);
 }
 
 ZP_Error GPS::readData(GpsData_t &data) {
@@ -287,15 +283,7 @@ void GPS::rxCallback(uint16_t size) {
         dataReady = true;
     }
 
-    (void)restartDMA();
-}
-
-ZP_Error GPS::restartDMA() {
-    return uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
-}
-
-UART_HandleTypeDef* GPS::getHuart() {
-    return uart.getHuart();
+    (void)uart.restartDMA((uint8_t*)rxBuffer, MAX_NMEA_DATA_LENGTH);
 }
 
 GpsProtocol_t GPS::getProtocol() {

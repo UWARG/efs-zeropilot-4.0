@@ -21,10 +21,6 @@ ZP_Error CRSFReceiver::init() {
 }
 
 ZP_Error CRSFReceiver::startDMA() {
-    if (uart.getHuart() == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-
     return uart.restartDMA(crsfRxBuffer, CRSF_PACKET_SIZE);
 }
 
@@ -92,8 +88,4 @@ ZP_Error CRSFReceiver::parse() {
 
     rcData.isDataNew = true;
     return result;
-}
-
-UART_HandleTypeDef * CRSFReceiver::getHuart() {
-	return uart.getHuart();
 }

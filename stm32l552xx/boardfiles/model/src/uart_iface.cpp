@@ -2,9 +2,7 @@
 
 #include "uart_iface_stm32l5.hpp"
 
-UARTInterface::UARTInterface(UART_HandleTypeDef *huart) {
-    this->huart = huart;
-}
+UARTInterface::UARTInterface(UART_HandleTypeDef* huart) : huart(huart) {}
 
 ZP_Error UARTInterface::uartErrorToZpError() {
     switch (HAL_UART_GetError(this->huart)) {
@@ -63,6 +61,7 @@ ZP_Error UARTInterface::receive(uint8_t *pData, uint16_t size, uint32_t deadline
 }
 
 ZP_Error UARTInterface::restartDMA(uint8_t *pData, uint16_t size){
+    if (this->huart == nullptr) return ZP_ERROR_NULLPTR;
     HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(huart, pData, size);
     // line below only runs for GPS, confirm if we care about this for rc drivers...
     __HAL_DMA_DISABLE_IT(huart->hdmarx, DMA_IT_HT);

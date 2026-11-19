@@ -58,11 +58,6 @@ SBUSReceiver::SBUSReceiver(UART_HandleTypeDef* uart) : uart(uart) {
     memset((void*)rawSbus, 0, SBUS_PACKET_SIZE);
 }
 
-
-UART_HandleTypeDef* SBUSReceiver::getHuart() {
-    return uart;
-}
-
 ZP_Error SBUSReceiver::getRCData(RCControl &data) {
     data = rcData;
     rcData.isDataNew = false;
@@ -75,17 +70,7 @@ ZP_Error SBUSReceiver::init() {
 }
 
 ZP_Error SBUSReceiver::startDMA() {
-    if (uart == nullptr) {
-        return ZP_ERROR_NULLPTR;
-    }
-
-    HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(uart, (uint8_t*)rawSbus, SBUS_PACKET_SIZE);
-    if (status == HAL_BUSY) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_BUSY;
-    } else if (status != HAL_OK) {
-        return ZP_ERROR_EXT_API | ZP_ERROR_FAIL;
-    }
-    return ZP_ERROR_OK;
+    return uart->restartDMA((uint8_t*)rawSbus, SBUS_PACKET_SIZE);
 }
 
 ZP_Error SBUSReceiver::parse() {
