@@ -31,7 +31,7 @@ ZP_Error RFD::transmit(const uint8_t* data, uint16_t size) {
 }
 
 ZP_Error RFD::restartRx() {
-    ZP_Error status = uart.restartDMA(rxBuffer, BUFFER_SIZE)
+    ZP_Error status = uart.restartDMA(rxBuffer, BUFFER_SIZE);
     if (status != ZP_ERROR_OK) return status;
 
     readIndex = 0;
