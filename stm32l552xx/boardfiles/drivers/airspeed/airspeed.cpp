@@ -1,8 +1,9 @@
 #include "airspeed.hpp"
+#include "zp_error.h"
 #include <cstring>
 
-bool Airspeed::init() {
-    if (hi2c == nullptr) return false;
+ZP_Error Airspeed::init() {
+    if (hi2c == nullptr) return ZP_ERROR_NULLPTR;
 
     calibrated_ = false;
     dataValid_ = false;
@@ -15,20 +16,15 @@ bool Airspeed::init() {
 
     if (HAL_I2C_IsDeviceReady(hi2c, devAddress, 3, 100) != HAL_OK) {
         initSuccess_ = false;
-        return false;
+        return ZP_ERROR_FAIL | ZP_ERROR_EXT_API;
     }
 
     initSuccess_ = startReceive();
-    return initSuccess_;
+    return initSuccess_ ? ZP_ERROR_OK : (ZP_ERROR_EXT_API | ZP_ERROR_FAIL);
 }
 
-bool Airspeed::getAirspeedData(AirspeedData_t* data) {
-    if (data == nullptr) return false;
-
-    // if a read had previously failed, reinit it so reading doesn't continuously return false
-    if (!initSuccess_) {
-        initSuccess_ = startReceive();
-    }
+ZP_Error Airspeed::getAirspeedData(AirspeedData_t* data) {
+    if (data == nullptr) return ZP_ERROR_NULLPTR;
 
     // The DMA callback runs in interrupt context and writes 64-bit fields.
     // Briefly mask interrupts so the task receives one coherent snapshot.
@@ -41,7 +37,7 @@ bool Airspeed::getAirspeedData(AirspeedData_t* data) {
     if (valid) *data = latestData_;
 
     if (primask == 0U) __enable_irq();
-    return valid;
+    return valid ? ZP_ERROR_OK : ZP_ERROR_FAIL;
 }
 
 bool Airspeed::calculateAirspeed(AirspeedData_t* airspeedData_) {

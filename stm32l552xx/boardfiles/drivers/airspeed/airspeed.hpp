@@ -41,7 +41,7 @@ public:
     Airspeed(I2C_HandleTypeDef* i2c, uint8_t addr = 0x28) : hi2c(i2c), devAddress(addr << 1) {}
     ~Airspeed() = default;
 
-    bool init();
+    ZP_Error init();
 
     // Copies the latest calibrated sample into the caller's buffer.
     bool calculateAirspeed(AirspeedData_t* airspeedData_);
@@ -49,7 +49,7 @@ public:
     void errorCallback();
 
     // public getters
-    bool getAirspeedData(AirspeedData_t* data) override;
+    ZP_Error getAirspeedData(AirspeedData_t* data) override;
     
     I2C_HandleTypeDef* getHI2C() { return hi2c; }
     uint8_t* getDMARXBuffer() { return dmaRXBuffer; }
