@@ -95,6 +95,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../../external/CMSIS-DSP/Include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
@@ -271,6 +272,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-quad-debug/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
@@ -454,6 +456,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../../zeropilot4.0/build/l552-plane-release/include"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/iwdg"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/safety_switch"/>
@@ -636,6 +639,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/fft"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
