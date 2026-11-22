@@ -24,6 +24,7 @@
 #include "tf02pro.hpp"
 #include "icp_20100.hpp"
 #include "safety_switch.hpp"
+#include "can_airspeed.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -45,6 +46,7 @@ extern PowerModule *pmHandle;
 extern Magnetometer *magHandle;
 extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
+extern CanAirspeed *canAirspeedHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;
@@ -55,3 +57,4 @@ extern MotorGroupInstance_t mainMotorGroup;
 
 void initSystemUtils();
 void initDrivers();
+

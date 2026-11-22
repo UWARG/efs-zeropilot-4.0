@@ -124,6 +124,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_airspeed"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 								</option>
@@ -300,6 +301,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_airspeed"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 								</option>
@@ -469,6 +471,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_airspeed"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 								</option>
@@ -638,6 +641,7 @@
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/rangefinder"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/mathutils"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_controller"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/can_airspeed"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/generated/include"/>
 									<listOptionValue builtIn="false" value="../../external/dronecan/libcanard"/>
 								</option>
@@ -750,3 +754,5 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>
+
+

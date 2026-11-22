@@ -34,6 +34,7 @@ enum class ZP_BIT_ID : uint16_t { // NOLINT
     MOTOR_INIT,
     CAN_INIT,
     MAG_INIT,
+    AIRSPEED_INIT,
 
     // CONTINUOUS
     RC_DATA_VALID,
@@ -128,6 +129,7 @@ inline constexpr BitConfig_t BIT_CONFIG[static_cast<uint16_t>(ZP_BIT_ID::NUM_BIT
     {"MOTOR_INIT",       BitPhase_e::POWER_ON, BitLevel_e::CRITICAL, 0, 0}, 
     {"CAN_INIT",         BitPhase_e::POWER_ON, BitLevel_e::WARNING,  0, 0},
     {"MAG_INIT",         BitPhase_e::POWER_ON, BitLevel_e::WARNING,  0, 0},
+    {"CAN_AIRSPEED_INIT",BitPhase_e::POWER_ON, BitLevel_e::WARNING,  0, 0},
 
     {"RC_DATA_VALID",     BitPhase_e::CONTINUOUS, BitLevel_e::CRITICAL, 500,  150},
     {"IMU_DATA_VALID",    BitPhase_e::CONTINUOUS, BitLevel_e::CRITICAL, 50,   50},

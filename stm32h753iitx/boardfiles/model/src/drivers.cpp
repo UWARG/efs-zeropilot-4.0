@@ -47,6 +47,7 @@ PowerModule *pmHandle = nullptr;
 Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
+CanAirspeed *canAirspeedHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
@@ -179,7 +180,10 @@ void initDrivers() {
     motorStatus |= MotorControl::enableServoSwitch(GPIOE, GPIO_PIN_3, &hspi4);
     (void)ZP_BIT::report(ZP_BIT_ID::MOTOR_INIT, motorStatus);
 
+    // CAN Controller Instances
     canControllerHandle = new CANController(&hfdcan1, systemUtilsHandle);
+    canAirspeedHandle = new CanAirspeed(systemUtilsHandle);
+    (void)ZP_BIT::report(ZP_BIT_ID::AIRSPEED_INIT, canAirspeedHandle->init());
 
     (void)ZP_BIT::report(ZP_BIT_ID::RC_INIT, rcHandle->init());
 

@@ -152,6 +152,7 @@ inline const SystemManager::BitHandler_t SystemManager::BIT_HANDLERS[static_cast
     {ZP_BIT_ID::RANGEFINDER_INIT,       MAV_SYS_STATUS_SENSOR_LASER_POSITION,    "Rangefinder init failed",         BitFailsafe_e::REPORT},
     {ZP_BIT_ID::MOTOR_INIT,             MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS,     "PreArm: Motor init failed",       BitFailsafe_e::REPORT},
     {ZP_BIT_ID::CAN_INIT,               0,                                       "CAN init failed",                 BitFailsafe_e::REPORT},
+    {ZP_BIT_ID::CAN_AIRSPEED_INIT,      0,                                       "CAN airspeed init failed",        BitFailsafe_e::REPORT},
     {ZP_BIT_ID::MAG_INIT,               MAV_SYS_STATUS_SENSOR_3D_MAG,            "Mag init failed",                 BitFailsafe_e::REPORT},
     {ZP_BIT_ID::RC_DATA_VALID,          MAV_SYS_STATUS_SENSOR_RC_RECEIVER,       "PreArm: RC disconnected",         BitFailsafe_e::DISARM},
     {ZP_BIT_ID::IMU_DATA_VALID,         MAV_SYS_STATUS_SENSOR_3D_GYRO,           "PreArm: IMU data invalid",        BitFailsafe_e::REPORT},
