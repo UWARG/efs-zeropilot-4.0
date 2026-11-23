@@ -1,6 +1,6 @@
 #include "sd_threads.hpp"
 #include "managers.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "museq.hpp"
 #include "cmsis_os.h"
 

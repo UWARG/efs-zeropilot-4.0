@@ -7,11 +7,11 @@ class FusedIMU : public IIMU {
     public:
         FusedIMU(SPI_HandleTypeDef* spiHandle, IMU *imu0, IMU *imu1);
 
-        int init() override;
+        ZP_Error init() override;
         
-        RawImuBatch_t readRawData() override;
+        ZP_Error readRawData(RawImuBatch_t &rawDataBatch) override;
 
-        ScaledImuBatch_t scaleIMUData(const RawImuBatch_t &rawDataBatch) override;
+        ZP_Error scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &scaledDataBatch) override;
         
         void txRxCallback(); // Called in HAL_SPI_TxRxCpltCallback
 

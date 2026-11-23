@@ -5,7 +5,7 @@
 
 class MockMotorControl : public IMotorControl {
 public:
-    MOCK_METHOD(void, set, (uint32_t percent), (override));
+    MOCK_METHOD(ZP_Error, set, (uint32_t percent), (override));
+    MOCK_METHOD(ZP_Error, init, (), (override));
     MOCK_METHOD(void, setArm, (bool arm), (override));
-    void init() override {}
 };

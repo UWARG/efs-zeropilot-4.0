@@ -20,7 +20,9 @@ void SDManager::sdUpdate(SdReqMsg reqMsg) {
 
     bool firstMsgRead = false;
 
-    int count = requestQueue->count() + 1; // +1 for the reqMsg passed in
+    int count;
+    requestQueue->count(count);
+    count++; // +1 for the reqMsg passed in
 
     while (count-- > 0) {
         if (firstMsgRead) requestQueue->get(&reqMsg);
@@ -44,7 +46,9 @@ void SDManager::sdUpdate(SdReqMsg reqMsg) {
                 SdReqBuf writeBuffMsg;
                 int totalSize = reqMsg.totalSize;
                 while (totalSize > 0) {
-                    if (bufferQueue->count() == 0) {
+                	int bufferQueueCount;
+                	bufferQueue->count(bufferQueueCount);
+                    if (bufferQueueCount == 0) {
                         respMsg.status = FILE_STATUS_ERROR; // No buffer available for write operation
                         break;
                     }

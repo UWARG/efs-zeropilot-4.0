@@ -1,7 +1,7 @@
 #include "fft.hpp"
 
-bool FFT::init(uint16_t fftLen) {
-    return arm_rfft_fast_init_f32(&fftInstance, fftLen) == ARM_MATH_SUCCESS ? true : false;
+ZP_Error FFT::init(uint16_t fftLen) {
+    return arm_rfft_fast_init_f32(&fftInstance, fftLen) == ARM_MATH_SUCCESS ? ZP_ERROR_OK : (ZP_ERROR_EXT_API | ZP_ERROR_INVALID_ARG);
 }
 
 void FFT::runFFT(float *input_buffer, float *output_buffer, uint8_t direction) {

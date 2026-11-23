@@ -8,10 +8,13 @@
 #include "gps_iface.hpp"
 #include "tm_queue.hpp"
 #include "imu_iface.hpp"
+#include "magnetometer_iface.hpp"
+#include "mag_cal.hpp"
 #include "ahrs_ekf.hpp"
 #include "queue_iface.hpp"
 #include "drone_state.hpp"
 #include "am_param_setup.hpp"
+#include "zp_error.h"
 #include "acro_mapping.hpp"
 #include "stabilize_mapping.hpp"
 #include "motor_mixing.hpp"
@@ -43,6 +46,7 @@ public:
         IMathUtils *mathUtilsDriver,
         IGPS *gpsDriver,
         IIMU *imuDriver,
+        IMagnetometer *magDriver,
         IFFT *fftDriver,
         IRangefinder *rangefinderDriver,
         IBarometer *barometerDriver,
@@ -61,6 +65,7 @@ private:
     GpsData_t lastValidGps = {};
     bool gpsUnsent = false;
     IIMU *imuDriver;
+    MagCal magCal;
     IRangefinder *rangefinderDriver;
     RangefinderData_t lastNewRangefinderData = {};
     IBarometer *barometerDriver;
@@ -95,7 +100,6 @@ private:
 
     uint16_t amSchedulingCounter;
 
-    int noDataCount;
     bool failsafeTriggered;
 
     float motSpinMin;
@@ -110,16 +114,16 @@ private:
     uint32_t lastTimestamp;
     bool haveLastImuTimestamp;
 
-    bool getControlInputs(RCMotorControlMessage_t *pControlMsg);
+    ZP_Error getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
-    void outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
+    ZP_Error outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
 
-    void sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-    void sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
-    void sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
-    void sendPressureDataToTelemetryManager(const BaroData_t &baroData);
-    void sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData);
-    void sendServoOutputRawToTelemetryManager();
+    ZP_Error sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
+    ZP_Error sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
+    ZP_Error sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
+    ZP_Error sendPressureDataToTelemetryManager(const BaroData_t &baroData);
+    ZP_Error sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData);
+    ZP_Error sendServoOutputRawToTelemetryManager();
 
     uint8_t profilerId;
 

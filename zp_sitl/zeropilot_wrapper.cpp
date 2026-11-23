@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "zp_params.hpp"
+#include "zp_bit.hpp"
 #include "system_manager.hpp"
 #include "telemetry_manager.hpp"
 #include "attitude_manager.hpp"
@@ -13,6 +14,7 @@
 #include "sitl_drivers/sitl_telemlink.hpp"
 #include "sitl_drivers/sitl_imu.hpp"
 #include "sitl_drivers/sitl_gps.hpp"
+#include "sitl_drivers/sitl_magnetometer.hpp"
 #include "sitl_drivers/sitl_queue.hpp"
 #include "sitl_drivers/sitl_motor.hpp"
 #include "sitl_drivers/sitl_fft.hpp"
@@ -23,6 +25,7 @@
 #include <mutex>
 
 static constexpr int SITL_NUM_MOTORS = 6;
+static constexpr double DEG_TO_RAD = 0.017453292519943295;
 
 std::queue<std::string> telemTxMessages;
 std::queue<std::string> telemRxMessages;
@@ -65,6 +68,7 @@ typedef struct {
     SITL_TELEM* telem;
     SITL_IMU* imu;
     SITL_GPS* gps;
+    SITL_Magnetometer* mag;
     SITL_Rangefinder *rangefinder;
     SITL_Barometer* barometer;
     SITL_Motor* sitlMotors[SITL_NUM_MOTORS];
@@ -95,6 +99,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->telem;
     delete self->imu;
     delete self->gps;
+    delete self->mag;
     delete self->rangefinder;
     for (int i = 0; i < SITL_NUM_MOTORS; i++) delete self->sitlMotors[i];
     Py_TYPE(self)->tp_free((PyObject*)self);
@@ -135,42 +140,42 @@ void testFileSystemRead(SITL_FileSystem* fs) {
 void testFileSystemSeekTell(IFileSystem* fs) {
     const char* testDir = "test_fs_2";
     const char* testFile = "test_fs_2/test.txt";
-    
+
     fs->mkdir(testDir);
-    
+
     File testFp = {};
     fs->open(&testFp, testFile, "w");
     fs->write(&testFp, "Hello World\n", 12, nullptr);
     fs->close(&testFp);
-    
+
     fs->open(&testFp, testFile, "r+");
     uint64_t pos = 0;
     fs->tell(&testFp, &pos);
     printf("[TEST_SEEK_TELL] Initial position: %llu\n", pos);
-    
+
     fs->lseek(&testFp, 6);
     fs->tell(&testFp, &pos);
     printf("[TEST_SEEK_TELL] Position after lseek(6): %llu\n", pos);
-    
+
     fs->rewind(&testFp);
     fs->tell(&testFp, &pos);
     printf("[TEST_SEEK_TELL] Position after rewind: %llu\n", pos);
-    
+
     fs->close(&testFp);
 }
 void testFileSystemStringIO(IFileSystem* fs) {
     const char* testDir = "test_fs_3";
     const char* testFile = "test_fs_3/test.txt";
-    
+
     fs->mkdir(testDir);
-    
+
     File testFp = {};
     fs->open(&testFp, testFile, "w");
     fs->putc('A', &testFp);
     fs->puts(" test string\n", &testFp);
     fs->printf(&testFp, "Printf test: %d\n", 42);
     fs->close(&testFp);
-    
+
     fs->open(&testFp, testFile, "r");
     char lineBuf[256] = {};
     fs->gets(lineBuf, 256, &testFp);
@@ -183,46 +188,46 @@ void testFileSystemRenameTruncate(IFileSystem* fs) {
     const char* testDir = "test_fs_4";
     const char* testFile = "test_fs_4/test.txt";
     const char* testFileRenamed = "test_fs_4/test_renamed.txt";
-    
+
     fs->mkdir(testDir);
-    
+
     File testFp = {};
     fs->open(&testFp, testFile, "w");
     fs->write(&testFp, "Hello World Test Data\n", 22, nullptr);
     fs->close(&testFp);
-    
+
     FileInfo_t info = {};
     fs->stat(testFile, &info);
     printf("[TEST_RENAME_TRUNC] Original file size: %llu\n", info.size);
-    
+
     fs->rename(testFile, testFileRenamed);
-    
+
     fs->open(&testFp, testFileRenamed, "r+");
     fs->lseek(&testFp, 5);
     fs->truncate(&testFp);
     fs->close(&testFp);
-    
+
     fs->stat(testFileRenamed, &info);
     printf("[TEST_RENAME_TRUNC] After truncate at 5: %llu\n", info.size);
 }
 void testFileSystemUnlink(IFileSystem* fs) {
     const char* testDir = "test_fs_5";
     const char* testFile = "test_fs_5/test.txt";
-    
+
     fs->mkdir(testDir);
-    
+
     File testFp = {};
     fs->open(&testFp, testFile, "w");
     fs->write(&testFp, "Data to delete\n", 15, nullptr);
     fs->close(&testFp);
-    
+
     FileInfo_t info = {};
     fs->stat(testFile, &info);
     printf("[TEST_UNLINK] Created file with size: %llu\n", info.size);
-    
+
     fs->unlink(testFile);
     printf("[TEST_UNLINK] File deleted\n");
-    
+
     fs->unlink(testDir);
     printf("[TEST_UNLINK] Directory deleted\n");
 }
@@ -245,6 +250,9 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_PARAM::init();
 
         self->sysUtils = new SITL_SystemUtils();
+
+        ZP_BIT::init(self->sysUtils);
+
         self->mathUtils = new SITL_MathUtils();
         self->fft = new SITL_FFT();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
@@ -260,6 +268,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         self->telem = new SITL_TELEM(ip, port, telemLogCallback);
         self->imu = new SITL_IMU();
         self->gps = new SITL_GPS();
+        self->mag = new SITL_Magnetometer();
         self->rangefinder = new SITL_Rangefinder();
         for (int i = 0; i < SITL_NUM_MOTORS; i++) {
             self->sitlMotors[i] = new SITL_Motor();
@@ -352,9 +361,8 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->mathUtils, self->gps, self->imu, self->fft, self->rangefinder, self->barometer,
-            self->amQueue, self->tmQueue,
-            &self->motorGroup
+            self->sysUtils, self->mathUtils, self->gps, self->imu, self->mag, self->fft, self->rangefinder, self->barometer,
+            self->amQueue, self->tmQueue, &self->motorGroup
         );
         
         self->sitlRateHz = sitlRateHz;
@@ -392,6 +400,8 @@ static PyObject* ZP_updateFromPlant(ZPObject* self, PyObject* args) {
 
     self->imu->update_from_plant(roll_rad, pitch_rad, p_rad_s, q_rad_s, r_rad_s);
     self->gps->update_from_plant(lat_deg, lon_deg, alt_m, ground_speed_mps, course_deg);
+    // course_deg is the plant's heading (attitude/psi-deg), so it doubles as yaw here
+    self->mag->update_from_plant(roll_rad, pitch_rad, course_deg * DEG_TO_RAD);
     self->pm->update_from_plant(fuel_lbs, rpm);
     self->rangefinder->update_from_plant(rangefinder_alt);
     self->barometer->update_from_plant(baro_pressure_kpa, baro_temp_c);

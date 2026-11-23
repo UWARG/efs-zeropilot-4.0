@@ -47,9 +47,9 @@ static constexpr uint8_t REGISTERS_TO_READ = 6;
 
 class PowerModule : public IPowerModule {
     public:
-        bool readData(PMData_t *data) override;
+        ZP_Error readData(PMData_t *data) override;
         PowerModule(I2C_HandleTypeDef *hi2c);
-        bool init();
+        ZP_Error init();
         volatile uint8_t callbackCount;
         void I2C_MemRxCpltCallback();
         void I2C_ErrorCallback();
@@ -59,9 +59,9 @@ class PowerModule : public IPowerModule {
     private:
         PMData_t processedData;
         I2C_HandleTypeDef *hi2c;
-        bool writeRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        bool readRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
-        void parse(I2C_HandleTypeDef *hi2c);
+        ZP_Error writeRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
+        ZP_Error readRegister(uint16_t MemAddress, uint8_t * pData, uint16_t Size, I2C_HandleTypeDef *hi2c);
+        ZP_Error parse(I2C_HandleTypeDef *hi2c);
 
 
         uint8_t vbusData[3];

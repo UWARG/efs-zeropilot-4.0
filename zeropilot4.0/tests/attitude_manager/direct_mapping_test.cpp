@@ -19,7 +19,8 @@ TEST(DirectMappingTest, PassthroughControl) {
     state.altitude = 100.0f;
     state.airspeed = 15.0f;
     
-    RCMotorControlMessage_t output = mapper.runControl(input, state);
+    RCMotorControlMessage_t output{};
+    EXPECT_EQ(mapper.runControl(output, input, state), ZP_ERROR_OK);
     
     EXPECT_FLOAT_EQ(output.roll, 25.0f);
     EXPECT_FLOAT_EQ(output.pitch, 75.0f);

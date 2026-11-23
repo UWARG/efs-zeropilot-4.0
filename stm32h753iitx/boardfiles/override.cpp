@@ -3,7 +3,7 @@
 #include "museq.hpp"
 #include "rfd.hpp"
 #include "drivers.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,11 +40,11 @@ void HAL_Delay(uint32_t Delay) {
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) {
   if (huart == rcHandle->getHuart()){
-      rcHandle->parse();
-      rcHandle->startDMA();
+      (void)rcHandle->parse();
+      (void)rcHandle->startDMA();
   } 
   else if (huart == telemLinkHandle->getHuart()) {
-    telemLinkHandle->receiveCallback(Size);
+    (void)telemLinkHandle->receiveCallback(Size);
   }
   else if (huart == gps1Handle->getHuart()) {
     gps1Handle->rxCallback(Size);
@@ -74,7 +74,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
-    rcHandle->startDMA();
+    (void)rcHandle->startDMA();
   } else if (huart == gps1Handle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
@@ -94,7 +94,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
-    gps1Handle->restartDMA();
+    (void)gps1Handle->restartDMA();
   } else if (huart == gps2Handle->getHuart()) {
     uint32_t error = HAL_UART_GetError(huart);
 
@@ -114,8 +114,29 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
       __HAL_UART_CLEAR_OREFLAG(huart);
     }
 
-    gps2Handle->restartDMA();
-  } 
+    (void)gps2Handle->restartDMA();
+  } else if (huart == telemLinkHandle->getHuart()) {
+    uint32_t error = HAL_UART_GetError(huart);
+
+    if (error & HAL_UART_ERROR_PE) {
+      __HAL_UART_CLEAR_PEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_NE) {
+      __HAL_UART_CLEAR_NEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_FE) {
+      __HAL_UART_CLEAR_FEFLAG(huart);
+    }
+
+    if (error & HAL_UART_ERROR_ORE) {
+      __HAL_UART_CLEAR_OREFLAG(huart);
+    }
+
+    // Reception is aborted by the error, and nothing else would ever start it again
+    (void)telemLinkHandle->restartRx();
+  }
 }
 
 void HAL_SPI_TxRxCpltCallback(SPI_HandleTypeDef *hspi) {
@@ -146,13 +167,17 @@ void HAL_I2C_MemRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 }
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == rangefinderHandle->getI2C()) {
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterTxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->txCallback();
   }
 }
 
 void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
-  if (hi2c == rangefinderHandle->getI2C()) {
+  if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+    magHandle->masterRxCpltCallback();
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->rxCallback();
   }
 }
@@ -160,10 +185,16 @@ void HAL_I2C_MasterRxCpltCallback(I2C_HandleTypeDef *hi2c) {
 void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
   if (hi2c == pmHandle->getI2C()) {
     pmHandle->I2C_ErrorCallback();
-  } else if (hi2c == barometerHandle->getI2C()) {
-    barometerHandle->errorCallback();
-  } else if (hi2c == rangefinderHandle->getI2C()) {
+  } else if (rangefinderHandle != nullptr && hi2c == rangefinderHandle->getI2C()) {
     rangefinderHandle->errorCallback();
+  } else {
+    // Multiple drivers can share a bus, so check each one
+    if (magHandle != nullptr && hi2c == magHandle->getI2C()) {
+      magHandle->errorCallback();
+    }
+    if (hi2c == barometerHandle->getI2C()) {
+      barometerHandle->errorCallback();
+    }
   }
 }
 

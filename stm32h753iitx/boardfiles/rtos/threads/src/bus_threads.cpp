@@ -1,5 +1,5 @@
 #include "bus_threads.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "drivers.hpp"
 
 osThreadId_t busMainHandle;
@@ -16,7 +16,7 @@ void busMainLoopWrapper(void *arg)
   while(true)
   {
     if (canControllerHandle) {
-      canControllerHandle->routineTasks();
+      (void)canControllerHandle->routineTasks();
     }
 
     nextWakeUp += timeToTicks(BUS_UPDATE_LOOP_DELAY_MS);

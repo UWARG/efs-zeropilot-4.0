@@ -117,7 +117,7 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
             writeBuffMsg.size = chunkSize;
             (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-            if (bufferQueue->push(&writeBuffMsg) != osOK) {
+            if (bufferQueue->push(&writeBuffMsg) != ZP_ERROR_OK) {
                 return FILE_STATUS_ERROR; // Failed to send data
             }
         
@@ -125,7 +125,7 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
             bytesToWrite -= chunkSize; // Decrease remaining byte count
         }
 
-        if (requestQueue->push(&req) != osOK) {
+        if (requestQueue->push(&req) != ZP_ERROR_OK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         
@@ -158,7 +158,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
         writeBuffMsg.size = chunkSize;
         (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-        if (bufferQueue->push(&writeBuffMsg) != osOK) {
+        if (bufferQueue->push(&writeBuffMsg) != ZP_ERROR_OK) {
             return FILE_STATUS_ERROR; // Failed to send data
         }
         
@@ -166,7 +166,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
         bytesToWrite -= chunkSize; // Decrease remaining byte count
     }
 
-    if (requestQueue->push(&req) != osOK) {
+    if (requestQueue->push(&req) != ZP_ERROR_OK) {
         return FILE_STATUS_ERROR; // Failed to send request
     }
     
@@ -186,7 +186,7 @@ FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) 
         req.fp = fp;
         req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
         
-        if (requestQueue->push(&req) != osOK) {
+        if (requestQueue->push(&req) != ZP_ERROR_OK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
@@ -242,7 +242,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
         writeBuffMsg.size = chunkSize;
         (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
-        if (bufferQueue->push(&writeBuffMsg) != osOK) {
+        if (bufferQueue->push(&writeBuffMsg) != ZP_ERROR_OK) {
             return FILE_STATUS_ERROR; // Failed to send data
         }
         
@@ -250,7 +250,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
         bytesToWrite -= chunkSize; // Decrease remaining byte count
     }
 
-    if (requestQueue->push(&req) != osOK) {
+    if (requestQueue->push(&req) != ZP_ERROR_OK) {
         return FILE_STATUS_ERROR; // Failed to send request
     }
     
@@ -286,7 +286,7 @@ FileStatus_e SDFileSystem::lseek(ManagerId_e id, File* fp, uint64_t ofs, ReqOpti
         req.fp = fp;
         req.offset = ofs;
 
-        if (requestQueue->push(&req) != osOK) {
+        if (requestQueue->push(&req) != ZP_ERROR_OK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
@@ -314,7 +314,7 @@ FileStatus_e SDFileSystem::tell(ManagerId_e id, File* fp, uint64_t* position, Re
         req.type = ReqType_e::TELL;
         req.fp = fp;
 
-        if (requestQueue->push(&req) != osOK) {
+        if (requestQueue->push(&req) != ZP_ERROR_OK) {
             return FILE_STATUS_ERROR; // Failed to send request
         }
         return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
@@ -357,7 +357,7 @@ PollResult SDFileSystem::poll(ManagerId_e id, ReqType_e reqType) {
     result.type = reqType;
     result.status = FILE_STATUS_NOT_DONE; // Default to not done
 
-    if (responseQueues[static_cast<size_t>(id)]->get(&result) == osOK) {
+    if (responseQueues[static_cast<size_t>(id)]->get(&result) == ZP_ERROR_OK) {
         return result;
     } else {
         result.status = FILE_STATUS_ERROR;

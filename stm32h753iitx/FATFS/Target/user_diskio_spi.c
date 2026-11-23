@@ -1,6 +1,6 @@
 #include "stm32h7xx_hal.h"
 #include "user_diskio_spi.h"
-#include "utils.h"
+#include "utils.hpp"
 
 #ifdef SPI_INTERFACE
 

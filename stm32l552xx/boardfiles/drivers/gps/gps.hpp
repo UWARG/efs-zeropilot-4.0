@@ -19,11 +19,11 @@ class GPS : public IGPS {
 
         GpsProtocol_t getProtocol();
 
-        GpsData_t readData() override;
+        ZP_Error readData(GpsData_t &data) override;
 
-        bool init();
+        ZP_Error init();
         void rxCallback(uint16_t size);
-        HAL_StatusTypeDef restartDMA();
+        ZP_Error restartDMA();
 
     private:
         GpsProtocol_t protocol = NMEA;
@@ -36,48 +36,48 @@ class GPS : public IGPS {
         volatile bool dataReady = false;
         UART_HandleTypeDef *huart;
 
-        bool configureUBX();
-        bool setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate);
-        bool setRate(uint16_t measRateMs, uint16_t navRate);
-        bool configValset(uint32_t key, uint32_t value);
-        bool waitForAck(uint8_t msgClass, uint8_t msgId);
-        bool receiveByte(uint8_t &byte, uint32_t deadline);
-        bool sendUBX(uint8_t *msg, uint16_t len);
+        ZP_Error configureUBX();
+        ZP_Error setMessageRate(uint8_t msgClass, uint8_t msgId, uint8_t rate);
+        ZP_Error setRate(uint16_t measRateMs, uint16_t navRate);
+        ZP_Error configValset(uint32_t key, uint32_t value);
+        ZP_Error waitForAck(uint8_t msgClass, uint8_t msgId);
+        ZP_Error receiveByte(uint8_t &byte, uint32_t deadline);
+        ZP_Error sendUBX(uint8_t *msg, uint16_t len);
         void calcChecksum(uint8_t *msg, uint16_t len);
 
         uint16_t processBufferLen();
-        bool incrementProcessBufferIndex(uint16_t &idx, uint16_t increment);
+        ZP_Error incrementProcessBufferIndex(uint16_t &idx, uint16_t increment);
 
         // Both advance idx past the frame they consumed, so readData() always makes progress even when the frame is corrupted 
-        bool consumeUBX(uint16_t &idx);
-        bool consumeNMEA(uint16_t &idx);
+        ZP_Error consumeUBX(uint16_t &idx);
+        ZP_Error consumeNMEA(uint16_t &idx);
 
         bool verifyChecksumUBX(uint16_t start, uint16_t frameLen);
         bool verifyChecksumNMEA(uint16_t start, uint16_t end);
         bool matchesSentenceType(uint16_t idx, const char *sentenceType);
 
-        bool parseRMC(uint16_t &idx);
-        bool parseGGA(uint16_t &idx);
-        bool parseVELECEF(uint16_t &idx);
-        bool parsePVT(uint16_t &idx);
+        ZP_Error parseRMC(uint16_t &idx);
+        ZP_Error parseGGA(uint16_t &idx);
+        ZP_Error parseVELECEF(uint16_t &idx);
+        ZP_Error parsePVT(uint16_t &idx);
 
         // UBX helper functions
         uint16_t getLenUBX(uint16_t &idx);
 
         // RMC helper functions
-        bool getTimeRMC(uint16_t &idx);
-        bool getLatitudeRMC(uint16_t &idx);
-        bool getLongitudeRMC(uint16_t &idx);
-        bool getSpeedRMC(uint16_t &idx);
-        bool getTrackAngleRMC(uint16_t &idx);
-        bool getDateRMC(uint16_t &idx);
+        ZP_Error getTimeRMC(uint16_t &idx);
+        ZP_Error getLatitudeRMC(uint16_t &idx);
+        ZP_Error getLongitudeRMC(uint16_t &idx);
+        ZP_Error getSpeedRMC(uint16_t &idx);
+        ZP_Error getTrackAngleRMC(uint16_t &idx);
+        ZP_Error getDateRMC(uint16_t &idx);
 
         // GGA helper functions
-        bool getNumSatellitesGGA(uint16_t &idx);
-        bool getAltitudeGGA(uint16_t &idx);
+        ZP_Error getNumSatellitesGGA(uint16_t &idx);
+        ZP_Error getAltitudeGGA(uint16_t &idx);
 
         // VELECEF helper functions
-        bool getVxVELECEF(uint16_t &idx);
-        bool getVyVELECEF(uint16_t &idx);
-        bool getVzVELECEF(uint16_t &idx);
+        ZP_Error getVxVELECEF(uint16_t &idx);
+        ZP_Error getVyVELECEF(uint16_t &idx);
+        ZP_Error getVzVELECEF(uint16_t &idx);
 };

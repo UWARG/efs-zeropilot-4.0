@@ -78,6 +78,12 @@ bool CANController::CanardShouldAcceptTransfer(
         }
 
         default: {
+            for (uint8_t i = 0; i < subscriptionCount; i++) {
+                if (subscriptions[i].dataTypeId == dataTypeId) {
+                    *outDataTypeSignature = subscriptions[i].signature;
+                    return true;
+                }
+            }
             return false;
         }
     }
@@ -98,17 +104,36 @@ void CANController::CanardOnTransferReception(CanardInstance* ins, CanardRxTrans
         }
 
         default: {
+            for (uint8_t i = 0; i < subscriptionCount; i++) {
+                if (subscriptions[i].dataTypeId == transfer->data_type_id) {
+                    (void)subscriptions[i].listener->onTransfer(transfer);
+                }
+            }
             break;
         }
     }
 }
 
-bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data) {
+ZP_Error CANController::subscribe(ICanListener *listener, uint16_t dataTypeId, uint64_t signature) {
+	if (listener == nullptr) {
+		return ZP_ERROR_NULLPTR;
+	}
+
+	if (subscriptionCount >= MAX_SUBSCRIPTIONS) {
+		return ZP_ERROR_MEMORY_OVERFLOW;
+	}
+
+	subscriptions[subscriptionCount] = {listener, dataTypeId, signature};
+	subscriptionCount++;
+	return ZP_ERROR_OK;
+}
+
+ZP_Error CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *data) {
 	const uint32_t head = canRxHead;
 	const uint32_t nextHead = (head + 1U) % CAN_RX_RING_SLOTS;
 
 	if (nextHead == canRxTail) {
-		return false;
+		return ZP_ERROR_MEMORY_OVERFLOW;
 	}
 
 	RawCanFrame &slot = canRxRing[head];
@@ -118,21 +143,21 @@ bool CANController::enqueueRxFrame(uint32_t id, uint32_t dlc, const uint8_t *dat
 	memcpy(slot.data, data, 8);
 	__DMB();
 	canRxHead = nextHead;
-	return true;
+	return ZP_ERROR_OK;
 }
 
-bool CANController::dequeueRxFrame(RawCanFrame *frame) {
+ZP_Error CANController::dequeueRxFrame(RawCanFrame *frame) {
 	const uint32_t tail = canRxTail;
 	
 	if (tail == canRxHead) {
 		// Drop the frame
-		return false;
+		return ZP_ERROR_RESOURCE_UNAVAILABLE;
 	}
 
 	if (frame) *frame = canRxRing[tail];
 	__DMB();
 	canRxTail = (tail + 1U) % CAN_RX_RING_SLOTS;
-	return true;
+	return ZP_ERROR_OK;
 }
 
 void CANController::handleRxFrame(const RawCanFrame &rxFrame) {
@@ -365,10 +390,10 @@ void CANController::sendCanTx() {
 	}
 }
 
-bool CANController::routineTasks() {
+ZP_Error CANController::routineTasks() {
 	systemutilsDriver->profilerBegin(profilerId);
 	RawCanFrame frame;
-	while (dequeueRxFrame(&frame)) {
+	while (dequeueRxFrame(&frame) == ZP_ERROR_OK) {
 		handleRxFrame(frame);
 	}
 
@@ -383,7 +408,7 @@ bool CANController::routineTasks() {
 
 	systemutilsDriver->profilerEnd(profilerId);
 
-	return true;
+	return ZP_ERROR_OK;
 }
 
 void CANController::sendNodeStatus() {

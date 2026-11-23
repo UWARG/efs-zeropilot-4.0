@@ -6,6 +6,7 @@ set(AM_SRC
     "src/attitude_manager/direct_mapping.cpp"
     "src/attitude_manager/fbwa_mapping.cpp"
     "src/attitude_manager/fft_harmonic_notch.cpp"
+    "src/attitude_manager/mag_cal.cpp"
     "src/attitude_manager/pid.cpp"
     "src/attitude_manager/MahonyAHRS.cpp"
     "src/attitude_manager/motor_mixing.cpp"
@@ -45,6 +46,17 @@ set(ZP_PARAM_INC
     "include/zp_param/"
 )
 
+set(ZP_ERROR_INC
+    "include/zp_error/"
+)
+
+set(ZP_BIT_SRC
+    "src/zp_bit/zp_bit.cpp"
+)
+set(ZP_BIT_INC
+    "include/zp_bit/"
+)
+
 # External library files (does not apply compiler warnings)
 set(EXTERNAL_INC
     "../external/c_library_v2/all/"
@@ -56,6 +68,7 @@ set(ZP_SRC
     ${SM_SRC}
     ${TM_SRC}
     ${ZP_PARAM_SRC}
+    ${ZP_BIT_SRC}
 )
 set(ZP_INC
     "include/driver_ifaces/"
@@ -64,4 +77,6 @@ set(ZP_INC
     ${SM_INC}
     ${TM_INC}
     ${ZP_PARAM_INC}
+    ${ZP_ERROR_INC}
+    ${ZP_BIT_INC}
 )

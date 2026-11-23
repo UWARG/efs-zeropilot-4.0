@@ -11,17 +11,17 @@ class MockMathUtils : public IMathUtils {
 
         // --- Vector Math ---
         MOCK_METHOD(float, vectorNorm, (const float* src, uint16_t dim), (override));
-        MOCK_METHOD(bool, vectorNormalize, (const float* src, float* dst, uint16_t dim), (override));
+        MOCK_METHOD(ZP_Error, vectorNormalize, (const float* src, float* dst, uint16_t dim), (override));
 
         // --- Matrix Operations ---
-        MOCK_METHOD(bool, matrixAdd, (const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols), (override));
-        MOCK_METHOD(bool, matrixSub, (const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols), (override));
-        MOCK_METHOD(bool, matrixMult, (const float* srcA, uint16_t rowsA, uint16_t colsA, const float* srcB, uint16_t colsB, float* dst), (override));
-        MOCK_METHOD(bool, matrixTranspose, (const float* src, uint16_t rows, uint16_t cols, float* dst), (override));
-        MOCK_METHOD(bool, matrixScale, (const float* src, float scale, float* dst, uint16_t rows, uint16_t cols), (override));
-        MOCK_METHOD(bool, matrixInverse, (const float* src, uint16_t dim, float* dst), (override));
+        MOCK_METHOD(ZP_Error, matrixAdd, (const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols), (override));
+        MOCK_METHOD(ZP_Error, matrixSub, (const float* srcA, const float* srcB, float* dst, uint16_t rows, uint16_t cols), (override));
+        MOCK_METHOD(ZP_Error, matrixMult, (const float* srcA, uint16_t rowsA, uint16_t colsA, const float* srcB, uint16_t colsB, float* dst), (override));
+        MOCK_METHOD(ZP_Error, matrixTranspose, (const float* src, uint16_t rows, uint16_t cols, float* dst), (override));
+        MOCK_METHOD(ZP_Error, matrixScale, (const float* src, float scale, float* dst, uint16_t rows, uint16_t cols), (override));
+        MOCK_METHOD(ZP_Error, matrixInverse, (const float* src, uint16_t dim, float* dst), (override));
         MOCK_METHOD(void, skewSymmetric, (const float* v3, float* dst3x3), (override));
-        MOCK_METHOD(bool, ensureSymmetric, (float* M, uint16_t dim), (override));
+        MOCK_METHOD(ZP_Error, ensureSymmetric, (float* M, uint16_t dim), (override));
 
         // --- Quaternion Operations (q = [w, x, y, z]) ---
         MOCK_METHOD(void, quatMultiply, (const float* q1, const float* q2, float* qOut), (override));

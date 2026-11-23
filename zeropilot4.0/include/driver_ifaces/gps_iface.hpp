@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 static constexpr float INVALID_TRACK_ANGLE = -1.0f;
 static constexpr float INVALID_ALTITUDE = -1.0f;
@@ -46,5 +47,5 @@ class IGPS {
     public:
         virtual ~IGPS() = default;
 
-        virtual GpsData_t readData() = 0;
+        virtual ZP_Error readData(GpsData_t &data) = 0;
 };

@@ -21,6 +21,7 @@
 #include "dshot.hpp"
 #include "fused_imu.hpp"
 #include "fft.hpp"
+#include "mlx90393.hpp"
 #include "tf02pro.hpp"
 #include "icp_20100.hpp"
 #include "safety_switch.hpp"
@@ -41,6 +42,7 @@ extern GPS *gps2Handle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
 extern PowerModule *pmHandle;
+extern Magnetometer *magHandle;
 extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
 
@@ -57,4 +59,5 @@ extern IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(Man
 
 extern MotorGroupInstance_t mainMotorGroup;
 
+void initSystemUtils();
 void initDrivers();

@@ -5,6 +5,7 @@
 #include "mock_systemutils.hpp"
 #include "mock_gps.hpp"
 #include "mock_imu.hpp"
+#include "mock_magnetometer.hpp"
 #include "mock_queue.hpp"
 #include "mock_motor.hpp"
 #include "mock_filesystem.hpp"
@@ -15,6 +16,10 @@
 #include "mock_barometer.hpp"
 
 using ::testing::_;
+using ::testing::Return;
+using ::testing::SetArgReferee;
+using ::testing::DoAll;
+using ::testing::SetArgPointee;
 using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::Invoke;
@@ -32,6 +37,7 @@ protected:
     NiceMock<MockMathUtils> mockMathUtils;
     NiceMock<MockGPS> mockGPS;
     NiceMock<MockIMU> mockIMU;
+    NiceMock<MockMagnetometer> mockMag;
     NiceMock<MockRangefinder> mockRangefinder;
     NiceMock<MockBarometer> mockBarometer;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
@@ -98,17 +104,20 @@ protected:
         ZP_PARAM::setParamById("SERVO6_REVERSED", 0);
         ZP_PARAM::setParamById("SERVO6_FUNCTION", static_cast<float>(MotorFunction_e::GROUND_STEERING));
 
+        float rcFsTimeout = 0.0f;
+        (void)ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT, rcFsTimeout);
         AM_RC_FAILSAFE_ITERATIONS =
-            static_cast<int>(((ZP_PARAM::get(ZP_PARAM_ID::RC_FS_TIMEOUT)) * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;
+            static_cast<int>((rcFsTimeout * 1000) / AM_UPDATE_LOOP_DELAY_MS) + 5;
 
         ON_CALL(mockSystemUtils, getCurrentTimestampMs()).WillByDefault(Return(1000));
-        ON_CALL(mockIMU, readRawData()).WillByDefault(Return(RawImuBatch_t{}));      // empty batch, count 0
-        ON_CALL(mockIMU, scaleIMUData(_)).WillByDefault(Return(ScaledImuBatch_t{})); // empty batch, count 0
-        ON_CALL(mockGPS, readData()).WillByDefault(Return(GpsData_t{}));
-        ON_CALL(mockBarometer, readData(_)).WillByDefault(Return(true));
-        ON_CALL(mockAMQueue, count()).WillByDefault(Return(0));
-        ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(0));
-
+        ON_CALL(mockIMU, readRawData(_)).WillByDefault(DoAll(SetArgReferee<0>(RawImuBatch_t{}), Return(ZP_ERROR_OK)));      // empty batch, count 0
+        ON_CALL(mockIMU, scaleIMUData(_, _)).WillByDefault(DoAll(SetArgReferee<1>(ScaledImuBatch_t{}), Return(ZP_ERROR_OK))); // empty batch, count 0
+        ON_CALL(mockGPS, readData(_)).WillByDefault(DoAll(SetArgReferee<0>(GpsData_t{}), Return(ZP_ERROR_OK)));
+        ON_CALL(mockMag, readData(_)).WillByDefault(DoAll(SetArgReferee<0>(MagData_t{}), Return(ZP_ERROR_OK))); // isNew false
+        ON_CALL(mockBarometer, readData(_)).WillByDefault(Return(ZP_ERROR_OK));
+        ON_CALL(mockAMQueue, count(_)).WillByDefault(DoAll(SetArgReferee<0>(0), Return(ZP_ERROR_OK)));
+        ON_CALL(mockTMQueue, push(_)).WillByDefault(Return(ZP_ERROR_OK));
+        
         Logger::init(&mockFileSystem, &mockSystemUtils);
 
         ON_CALL(mockFileSystem, write(_, _, _, _, _, _))
@@ -116,8 +125,8 @@ protected:
         ON_CALL(mockFileSystem, writeAndSync(_, _, _, _, _))
             .WillByDefault([this](ManagerId_e, File*, const void*, uint32_t, ReqOptions_e) { logWrites++; return FILE_STATUS_OK; });
         
-        ON_CALL(mockFFT, init(_)).WillByDefault(Return(true));
-        ON_CALL(mockRangefinder, init()).WillByDefault(Return(0));
+        ON_CALL(mockFFT, init(_)).WillByDefault(Return(ZP_ERROR_OK));
+        ON_CALL(mockRangefinder, init()).WillByDefault(Return(ZP_ERROR_OK));
     }
 };
 
@@ -131,9 +140,9 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
     rcMsg.flapAngle = 30.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
 
-    EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
-    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
-
+    EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
+    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
+    
     EXPECT_CALL(mockRollMotor, set(_)).Times(AtLeast(1));
     EXPECT_CALL(mockPitchMotor, set(_)).Times(AtLeast(1));
     EXPECT_CALL(mockYawMotor, set(_)).Times(AtLeast(1));
@@ -141,7 +150,7 @@ TEST_F(AttitudeManagerTest, MotorOutputTest) {
     EXPECT_CALL(mockFlapMotor, set(_)).Times(AtLeast(1));
     EXPECT_CALL(mockSteeringMotor, set(_)).Times(AtLeast(1));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     am.amUpdate();
 }
@@ -156,19 +165,19 @@ TEST_F(AttitudeManagerTest, DisarmThrottleZero) {
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
 
-    EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
-    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
-
+    EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
+    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
+    
     EXPECT_CALL(mockThrottleMotor, set(0));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     am.amUpdate();
 }
 
 TEST_F(AttitudeManagerTest, FailsafeTriggered) {
-    EXPECT_CALL(mockAMQueue, count()).WillRepeatedly(Return(0));
-
+    EXPECT_CALL(mockAMQueue, count(_)).WillRepeatedly(DoAll(SetArgReferee<0>(0), Return(ZP_ERROR_OK)));
+    
     EXPECT_CALL(mockRollMotor, set(50)).Times(AtLeast(1));
     EXPECT_CALL(mockPitchMotor, set(50)).Times(AtLeast(1));
     EXPECT_CALL(mockYawMotor, set(50)).Times(AtLeast(1));
@@ -176,7 +185,7 @@ TEST_F(AttitudeManagerTest, FailsafeTriggered) {
     EXPECT_CALL(mockFlapMotor, set(0)).Times(AtLeast(1));
     EXPECT_CALL(mockSteeringMotor, set(50)).Times(AtLeast(1));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -196,20 +205,18 @@ TEST_F(AttitudeManagerTest, FailsafeRecovery) {
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
     testing::Sequence seq;
-    EXPECT_CALL(mockAMQueue, count())
+    EXPECT_CALL(mockAMQueue, count(_))
         .Times(AM_RC_FAILSAFE_ITERATIONS)
         .InSequence(seq)
-        .WillRepeatedly(Return(0));
-    EXPECT_CALL(mockAMQueue, count())
+        .WillRepeatedly(DoAll(SetArgReferee<0>(0), Return(ZP_ERROR_OK)));
+    EXPECT_CALL(mockAMQueue, count(_))
         .InSequence(seq)
-        .WillOnce(Return(1));
+        .WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
     EXPECT_CALL(mockAMQueue, get(_))
         .InSequence(seq)
-        .WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
-    
-    EXPECT_CALL(mockLogQueue, push(_)).Times(2);
-    
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+        .WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
+
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     for (int i = 0; i < AM_RC_FAILSAFE_ITERATIONS; i++) {
         am.amUpdate();
@@ -232,13 +239,13 @@ TEST_F(AttitudeManagerTest, MotorTrimApplied) {
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
-    EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
-    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
-
-    uint8_t rollValue = 0;
-    EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint8_t val) { rollValue = val; }));
+    EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
+    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    uint8_t rollValue = 0;
+    EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint32_t val) { rollValue = val; return ZP_ERROR_OK; }));
+    
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     am.amUpdate();
 
@@ -257,13 +264,13 @@ TEST_F(AttitudeManagerTest, MotorInverted) {
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
-    EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
-    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
-
-    uint8_t rollValue = 0;
-    EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint8_t val) { rollValue = val; }));
+    EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
+    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    uint8_t rollValue = 0;
+    EXPECT_CALL(mockRollMotor, set(_)).WillOnce(Invoke([&rollValue](uint32_t val) { rollValue = val; return ZP_ERROR_OK; }));
+    
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     am.amUpdate();
 
@@ -280,12 +287,12 @@ TEST_F(AttitudeManagerTest, MotorClampingUpper) {
     rcMsg.flapAngle = 0.0f;
     rcMsg.flightMode = FlightMode_e::MANUAL;
     
-    EXPECT_CALL(mockAMQueue, count()).WillOnce(Return(1));
-    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(0)));
-
+    EXPECT_CALL(mockAMQueue, count(_)).WillOnce(DoAll(SetArgReferee<0>(1), Return(ZP_ERROR_OK)));
+    EXPECT_CALL(mockAMQueue, get(_)).WillOnce(DoAll(SetArgPointee<0>(rcMsg), Return(ZP_ERROR_OK)));
+    
     EXPECT_CALL(mockRollMotor, set(100));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     am.amUpdate();
 }
@@ -300,18 +307,18 @@ TEST_F(AttitudeManagerTest, RawIMUTelemetrySent) {
     rawImu.zgyro = 25;
 
     RawImuBatch_t rawImuBatch{&rawImu, 1};
-    EXPECT_CALL(mockIMU, readRawData()).WillRepeatedly(Return(rawImuBatch));
-
+    EXPECT_CALL(mockIMU, readRawData(_)).WillRepeatedly(DoAll(SetArgReferee<0>(rawImuBatch), Return(ZP_ERROR_OK)));
+    
     int rawImuCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
         .WillRepeatedly(Invoke([&rawImuCount](TMMessage_t *msg) {
             if (msg->dataType == TMMessage_t::RAW_IMU_DATA) {
                 rawImuCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -330,18 +337,18 @@ TEST_F(AttitudeManagerTest, AttitudeTelemetrySent) {
     scaledImu.zgyro = 0.025f;
 
     ScaledImuBatch_t scaledImuBatch{&scaledImu, 1};
-    EXPECT_CALL(mockIMU, scaleIMUData(_)).WillRepeatedly(Return(scaledImuBatch));
-
+    EXPECT_CALL(mockIMU, scaleIMUData(_, _)).WillRepeatedly(DoAll(SetArgReferee<1>(scaledImuBatch), Return(ZP_ERROR_OK)));
+    
     int attitudeCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
         .WillRepeatedly(Invoke([&attitudeCount](TMMessage_t *msg) {
             if (msg->dataType == TMMessage_t::ATTITUDE_DATA) {
                 attitudeCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -363,19 +370,19 @@ TEST_F(AttitudeManagerTest, RawGPSTelemetrySent) {
     gpsData.vx = 0.0f;
     gpsData.vy = 5.0f;
     gpsData.vz = 0.0f;
-
-    EXPECT_CALL(mockGPS, readData()).WillRepeatedly(Return(gpsData));
-
+    
+    EXPECT_CALL(mockGPS, readData(_)).WillRepeatedly(DoAll(SetArgReferee<0>(gpsData), Return(ZP_ERROR_OK)));
+    
     int gpsCount = 0;
     EXPECT_CALL(mockTMQueue, push(_))
         .WillRepeatedly(Invoke([&gpsCount](TMMessage_t *msg){
             if (msg->dataType == TMMessage_t::GPS_RAW_DATA) {
                 gpsCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();
@@ -391,10 +398,10 @@ TEST_F(AttitudeManagerTest, ServoOutputRawTelemetrySent) {
             if (msg->dataType == TMMessage_t::SERVO_OUTPUT_RAW) {
                 servoOutputCount++;
             }
-            return 0;
+            return ZP_ERROR_OK;
         }));
     
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     
     for (int i = 0; i < AM_SCHEDULING_RATE_HZ; i++) {
         am.amUpdate();

@@ -22,6 +22,7 @@ void initManagers()
         mathUtilsHandle,
         gpsHandle,
         imuHandle,
+        magHandle,
         fftHandle,
         rangefinderHandle,
         barometerHandle,

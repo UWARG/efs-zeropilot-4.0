@@ -1,6 +1,6 @@
 #include "stm32h7xx_hal.h"
 #include "user_diskio_sdmmc.h"
-#include "utils.h"
+#include "utils.hpp"
 
 #ifdef SDMMC_INTERFACE
 
