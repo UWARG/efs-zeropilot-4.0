@@ -60,15 +60,15 @@ int NVMFlash::mount() {
 			continue;
 		}
 
-		// Basic sanity check on length
-		if (hdr.length == 0u || hdr.length > FTL_MAX_PAYLOAD) {
+		// Basic sanity check on length, length of data should not be greater than the record size
+		if (hdr.length == 0u || hdr.length > NVM_QUEUE_PAYLOAD_SIZE) {
 			// Length is nonsense; ignore this header.
 			continue;
 		}
 
 		// (Optional future step: CRC check of payload bytes.
 		//  We'll add that once append/write is in place.)
-		uint8_t buffer[FTL_MAX_PAYLOAD];
+		uint8_t buffer[FTL_BUFFER_SIZE];
 		readData(payload_addr, buffer, hdr.length);
 
 		if (hdr.crc != crc32(buffer, hdr.length)) {
@@ -127,11 +127,17 @@ int NVMFlash::enqueue(ManagerId_e caller, NvmOpType_e op, AbstractMessage *msg) 
 		return -2;
 	}
 
+
 	NvmTxMsg txMsg;
 	txMsg.caller = caller;
 	txMsg.opType = op;
 	txMsg.recordId = msg->id;
 	txMsg.len = msg->packed_size();
+
+	if(txMsg.len > NVM_QUEUE_PAYLOAD_SIZE){
+			return -5;
+	}
+
 	int packRes = msg->pack(txMsg.payload, txMsg.len);
 	if (packRes != 0) {
 		return -3;
@@ -454,6 +460,11 @@ int NVMFlash::readRaw(uint32_t id, uint8_t *out, uint16_t *len) {
 	}
 
 	uint32_t addr_base = indexToBaseAddr(idx);
+
+	if (header.length > NVM_QUEUE_PAYLOAD_SIZE){
+		return -3;
+	}
+
 	// TODO: Add success/error check to readData
 	readData(addr_base + FTL_PAYLOAD_OFFSET, out, header.length);
 
@@ -461,6 +472,7 @@ int NVMFlash::readRaw(uint32_t id, uint8_t *out, uint16_t *len) {
 
 	return 0;
 }
+
 int NVMFlash::eraseRaw(uint32_t id) {
 	HAL_StatusTypeDef wait_result = waitReady(MAX_TIMEOUT);
 
@@ -531,7 +543,7 @@ int NVMFlash::updateRaw(uint32_t id, const uint8_t *data, uint16_t len) {
 		return -3;   // invalid length
 	}
 
-	uint8_t buf[FTL_MAX_PAYLOAD];
+	uint8_t buf[FTL_BUFFER_SIZE];
 	uint16_t readLen = 0;
 	int res = readRaw(id, buf, &readLen);
 	if (res == -2) {
@@ -623,3 +635,7 @@ inline uint32_t NVMFlash::indexToBaseAddr(uint32_t unit_index) {
 // 	BatteryLog recv(0, 0, 0, 0);
 // 	int read_res = read(&recv);
 // }
+
+void NVMFlash::test_message(){
+
+}

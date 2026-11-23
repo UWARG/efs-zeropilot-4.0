@@ -43,6 +43,7 @@ private:
 	static constexpr uint32_t FTL_HEADER_PAGE_SIZE = FLASH_PAGE_SIZE_256;		// First page (256 B) of each unit is the header page
 	static constexpr uint32_t FTL_PAYLOAD_OFFSET = FTL_HEADER_PAGE_SIZE;	// Payload starts at the beginning of the second page
 	static constexpr uint32_t FTL_MAX_PAYLOAD = FTL_UNIT_SIZE - FTL_HEADER_PAGE_SIZE;	// Max payload per unit: everything after the first 256 B page
+	static constexpr uint32_t FTL_BUFFER_SIZE = 512; //SM stack_size/4
 	static constexpr uint32_t FTL_NUM_UNITS = FLASH_TOTAL_SIZE_BYTES / FTL_UNIT_SIZE;	 // Number of usable 4 KB units in the flash
 
 	static constexpr uint32_t FTL_INVALID_PAGE = 0xFFFFFFFFu;
