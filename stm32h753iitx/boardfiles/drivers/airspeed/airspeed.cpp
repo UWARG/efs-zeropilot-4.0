@@ -40,7 +40,7 @@ ZP_Error Airspeed::getAirspeedData(AirspeedData_t* data) {
     return valid ? ZP_ERROR_OK : ZP_ERROR_FAIL;
 }
 
-bool Airspeed::calculateAirspeed(AirspeedData_t* airspeedData_) {
+ZP_Error Airspeed::calculateAirspeed(AirspeedData_t* airspeedData_) {
     return getAirspeedData(airspeedData_);
 }
 

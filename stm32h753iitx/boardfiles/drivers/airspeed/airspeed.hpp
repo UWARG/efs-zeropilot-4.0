@@ -44,7 +44,7 @@ public:
     ZP_Error init();
 
     // Copies the latest calibrated sample into the caller's buffer.
-    bool calculateAirspeed(AirspeedData_t* airspeedData_);
+    ZP_Error calculateAirspeed(AirspeedData_t* airspeedData_);
     void receiveCallback();
     void errorCallback();
 

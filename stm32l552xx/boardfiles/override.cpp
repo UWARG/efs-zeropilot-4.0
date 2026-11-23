@@ -171,6 +171,7 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c) {
     if (asHandle != nullptr && hi2c == asHandle->getHI2C()) {
       asHandle->errorCallback();
     }
+  }
 }
 
 void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs) {

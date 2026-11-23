@@ -272,6 +272,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32H7xx/Include"/>
@@ -441,6 +442,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32H7xx/Include"/>
@@ -610,6 +612,7 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/magnetometer"/>
 									<listOptionValue builtIn="false" value="../boardfiles/drivers/barometer"/>
+									<listOptionValue builtIn="false" value="../boardfiles/drivers/airspeed"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy"/>
 									<listOptionValue builtIn="false" value="../Drivers/CMSIS/Device/ST/STM32H7xx/Include"/>
