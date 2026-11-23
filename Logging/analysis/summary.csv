@@ -1,0 +1,27 @@
+metric,system19.log,system20.log,system21.log,system22.log
+duration_s,20.9,67.3,4.0,18.0
+log_rate_hz,20.0,20.0,20.0,20.0
+ekf_lines,419,1346,80,360
+mahony_lines,419,1345,80,359
+imu_lines,414,1333,80,357
+missing_ekf_vs_max,0,0,0,0
+missing_imu_vs_max,5,13,0,3
+time_gaps_over_60ms,0,0,0,0
+largest_gap_ms,50,50,50,50
+other_lines,"0s [INFO] IMU odr=1000.0 gb=0.00000,0.00000,0.00000 am=0.0000,0.0000,0.0000 | 0s [WARN] Failsafe triggered","0s [INFO] IMU odr=1000.0 gb=0.00000,0.00000,0.00000 am=0.0000,0.0000,0.0000 | 0s [WARN] Failsafe triggered","0s [INFO] IMU odr=1000.0 gb=0.00000,0.00000,0.00000 am=0.0000,0.0000,0.0000 | 0s [WARN] Failsafe triggered","0s [INFO] IMU odr=1000.0 gb=0.00000,0.00000,0.00000 am=0.0000,0.0000,0.0000 | 0s [WARN] Failsafe triggered"
+accel_norm_mean_ms2,9.887,9.887,9.904,9.922
+gyro_mean_x_rad_s,0.00706,0.00695,0.00676,0.01197
+gyro_mean_y_rad_s,0.00103,0.00105,0.00117,-0.0009
+gyro_mean_z_rad_s,-0.01055,-0.01047,-0.0103,0.031
+ekf_roll_final_deg,-3.62,-3.62,-3.56,-2.78
+mahony_roll_final_deg,-3.45,-3.61,-2.61,-2.52
+accel_roll_mean_deg,-3.61,-3.62,-3.49,-3.75
+ekf_roll_rmse_vs_accel_deg,0.09,0.06,0.12,6.89
+mahony_roll_rmse_vs_accel_deg,0.92,0.52,1.92,4.66
+ekf_pitch_rmse_vs_accel_deg,0.09,0.07,0.14,3.96
+mahony_pitch_rmse_vs_accel_deg,0.11,0.08,0.18,3.69
+ekf_yaw_start_deg,-0.3,-0.6,0.9,4.0
+ekf_yaw_end_deg,5.4,149.1,-1.6,-55.3
+mahony_yaw_end_deg,-12.7,-40.6,-2.4,31.3
+ekf_gyro_bias_z_end,-0.01461,-0.04911,-0.0007,0.0777
+ekf_accel_bias_max_abs,0.0,0.0,0.0,0.0
