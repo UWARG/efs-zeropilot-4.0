@@ -43,6 +43,8 @@ Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 CanOpflow *canOpflowHandle = nullptr;
 
+volatile uint32_t opflowInitRaw = 0; // TEMP: remove with the line 177 debug code
+
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
