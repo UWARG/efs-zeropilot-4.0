@@ -6,6 +6,7 @@
 #include "attitude_manager.hpp"
 #include "sitl_drivers/sitl_systemutils.hpp"
 #include "sitl_drivers/sitl_mathutils.hpp"
+#include "sitl_drivers/sitl_airspeed.hpp"
 #include "sitl_drivers/sitl_iwdg.hpp"
 #include "sitl_drivers/sitl_logger.hpp"
 #include "sitl_drivers/sitl_rc.hpp"
@@ -56,6 +57,7 @@ typedef struct {
     
     SITL_SystemUtils* sysUtils;
     SITL_MathUtils* mathUtils;
+    SITL_Airspeed* airspeed;
     SITL_FFT *fft;
     SITL_Queue<RCMotorControlMessage_t>* amQueue;
     SITL_Queue<TMMessage_t>* tmQueue;
@@ -90,6 +92,7 @@ static void ZP_dealloc(ZPObject* self) {
     delete self->am;
     delete self->sysUtils;
     delete self->mathUtils;
+    delete self->airspeed;
     delete self->amQueue;
     delete self->tmQueue;
     delete self->logQueue;
@@ -128,6 +131,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         ZP_BIT::init(self->sysUtils);
         
         self->mathUtils = new SITL_MathUtils();
+        self->airspeed = new SITL_Airspeed();
         self->fft = new SITL_FFT();
         self->amQueue = new SITL_Queue<RCMotorControlMessage_t>();
         self->tmQueue = new SITL_Queue<TMMessage_t>();
@@ -236,7 +240,7 @@ static PyObject* ZP_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
         );
         
         self->am = new AttitudeManager(
-            self->sysUtils, self->mathUtils, self->gps, self->imu, self->mag, self->fft, self->rangefinder, self->barometer,
+            self->sysUtils, self->mathUtils, self->airspeed, self->gps, self->imu, self->mag, self->fft, self->rangefinder, self->barometer,
             self->amQueue, self->tmQueue, self->logQueue,
             &self->motorGroup
         );

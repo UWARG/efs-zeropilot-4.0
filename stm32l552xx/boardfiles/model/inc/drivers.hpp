@@ -22,6 +22,7 @@
 #include "mlx90393.hpp"
 #include "tf02pro.hpp"
 #include "icp_20100.hpp"
+#include "airspeed.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -41,6 +42,7 @@ extern PowerModule *pmHandle;
 extern Magnetometer *magHandle;
 extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
+extern Airspeed *asHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

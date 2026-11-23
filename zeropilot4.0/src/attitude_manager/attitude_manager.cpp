@@ -9,6 +9,7 @@
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
+	IAirspeed *asDriver,
     IGPS *gpsDriver,
     IIMU *imuDriver,
     IMagnetometer *magDriver,
@@ -21,6 +22,7 @@ AttitudeManager::AttitudeManager(
     MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
+	asDriver(asDriver),
     gpsDriver(gpsDriver),
     imuDriver(imuDriver),
     magCal(magDriver, mathUtilsDriver),
@@ -98,6 +100,10 @@ void AttitudeManager::amUpdate() {
 
 
     systemUtilsDriver->profilerBegin(profilerId);
+
+    // Read airspeed data
+    AirspeedData_t asData{};
+    (void)ZP_BIT::report(ZP_BIT_ID::AS_DATA_VALID, asDriver->getAirspeedData(&airspeedData));
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
 
