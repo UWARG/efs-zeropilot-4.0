@@ -18,7 +18,8 @@ AttitudeManager::AttitudeManager(
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
     IMessageQueue<char[100]> *smLoggerQueue,
-    MotorGroupInstance_t *mainMotorGroup
+    MotorGroupInstance_t *mainMotorGroup,
+    IAirspeed *airspeedDriver 
 ) :
     systemUtilsDriver(systemUtilsDriver),
     gpsDriver(gpsDriver),
@@ -26,6 +27,7 @@ AttitudeManager::AttitudeManager(
     magCal(magDriver, mathUtilsDriver),
     rangefinderDriver(rangefinderDriver),
     barometerDriver(barometerDriver),
+    airspeedDriver(airspeedDriver),
     harmonicNotchFilter(mathUtilsDriver, fftDriver),
     // ekf(mathUtilsDriver),
     amQueue(amQueue),
@@ -207,6 +209,13 @@ void AttitudeManager::amUpdate() {
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
         (void)sendAttitudeDataToTelemetryManager(attitude);
     }
+
+
+    //get airspeed data
+    if (airspeedDriver != nullptr && amSchedulingCounter % (AM_SCHEDULING_RATE_HZ/AM_AIRSSPEED_READ_RATE_HZ)==0){
+        airspeedReadStatus = airspeedDriver->readAirspeedData(latestAirspeed); 
+    }   
+
 
     // Get GPS data
     GpsData_t gpsData = {};

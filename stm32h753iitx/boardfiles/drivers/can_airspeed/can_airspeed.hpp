@@ -6,21 +6,14 @@
 #include "rangefinder_iface.hpp"
 #include "systemutils_iface.hpp"   // getCurrentTimestampMs()
 #include "zp_error.h"   
+#include "airspeed_iface.hpp"
 
 static constexpr uint16_t AIRSPEED_TIMEOUT = 500;
 static constexpr uint16_t AIRSPEED_MSG_SIZE = 4; // 2 bytes for indicated_airspeed, 2 bytes for indicated_airspeed_variance
 // CAN FRAME for fun:
 // airspeed byte 0, airspeed byte 1, airspeed var byte 0, airspeed var byte 1, tail byte
 
-// 1. Create airspeed data struct
-
-typedef struct {
-    float speed; // The detected speed
-    float variance; // The detected variance
-
-    bool isValid; 
-    bool isNew; 
-} AirspeedData_t;
+// 1. Create airspeed data struct (now struct is included via hpp file)
 
 // TODO:
 /**
@@ -40,14 +33,14 @@ typedef struct {
   * 2. How will CanController work and how will it subscribe to the outputs from the CAN thing? Since i imagine its like, it receives the data from the can transceiver by reading stuff and then once it gets the message and accepts it, it then calls the correct driver right?
   * 3. So now its like integration + building the thing, which I don't really know about either
   */
-class CanAirspeed : public ICanListener {
+class CanAirspeed : public ICanListener, public IAirspeed {
     public: 
         CanAirspeed(ISystemUtils *systemUtils);
 
         // ICanListener
         ZP_Error init();
         ZP_Error onTransfer(CanardRxTransfer *transfer) override; 
-        ZP_Error readAirspeedData(AirspeedData_t &data);
+        ZP_Error readAirspeedData(AirspeedData_t &data) override;
     private:
         ISystemUtils *systemUtils;
         ZP_Error subscribeStatus = ZP_ERROR_OK; 

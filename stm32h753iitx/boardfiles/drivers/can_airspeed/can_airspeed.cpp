@@ -10,12 +10,12 @@ CanAirspeed::CanAirspeed(ISystemUtils *systemUtils) : systemUtils(systemUtils) {
         return; 
     }
 
-    // Subscribe to the controller
+    // Subscribe to the controller (when a message of the following type arrives, call me)
     subscribeStatus |= canControllerHandle->subscribe(this, UAVCAN_EQUIPMENT_AIR_DATA_INDICATEDAIRSPEED_ID, UAVCAN_EQUIPMENT_AIR_DATA_INDICATEDAIRSPEED_SIGNATURE);
 }
 
 ZP_Error CanAirspeed::init() {
-    return subscribeStatus; 
+    return subscribeStatus; //reports how the registration went
 }
 
 ZP_Error CanAirspeed::onTransfer(CanardRxTransfer *transfer) {
@@ -39,9 +39,10 @@ ZP_Error CanAirspeed::decodeAirspeed(CanardRxTransfer *transfer) {
 
     // 1. Extract airspeed data from transfer
     if(uavcan_equipment_air_data_IndicatedAirspeed_decode(transfer, &msg)){
-        return ZP_ERROR_PARSE; 
+        return ZP_ERROR_PARSE; //when true is returned, that actually indicates an error
     }
 
+    //whenever the airspeed is decoded successfully, it proceeds as follows
     // 2. Fetch time to determine if data is new
     uint32_t time = systemUtils->getCurrentTimestampMs();
 

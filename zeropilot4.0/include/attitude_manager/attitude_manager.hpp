@@ -21,6 +21,7 @@
 #include "fft_harmonic_notch.hpp"
 #include "rangefinder_iface.hpp"
 #include "barometer_iface.hpp"
+#include "airspeed_iface.hpp"
 #include "MahonyAHRS.hpp"
 
 #define AM_SCHEDULING_RATE_HZ 1000
@@ -30,6 +31,7 @@
 #define AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ 20
 #define AM_TELEMETRY_SERVO_OUTPUT_RAW_RATE_HZ 2
 #define AM_TELEMETRY_DISTANCE_SENSOR_DATA_RATE_HZ 2
+#define AM_AIRSSPEED_READ_RATE_HZ 20
 
 #define AM_UPDATE_LOOP_DELAY_MS (1000 / AM_SCHEDULING_RATE_HZ)
 #define AM_CONTROL_LOOP_PERIOD_S (static_cast<float>(AM_UPDATE_LOOP_DELAY_MS) / 1000.0f)
@@ -53,7 +55,8 @@ public:
         IMessageQueue<RCMotorControlMessage_t> *amQueue,
         IMessageQueue<TMMessage_t> *tmQueue,
         IMessageQueue<char[100]> *smLoggerQueue,
-        MotorGroupInstance_t *mainMotorGroup
+        MotorGroupInstance_t *mainMotorGroup,
+        IAirspeed *airspeedDriver = nullptr //AM can still create AM without supplying airspeed driver 
     );
 
     void amUpdate();
@@ -71,6 +74,9 @@ private:
     IRangefinder *rangefinderDriver;
     RangefinderData_t lastNewRangefinderData = {};
     IBarometer *barometerDriver;
+    IAirspeed *airspeedDriver; 
+    AirspeedData_t latestAirspeed = {};
+    ZP_Error airspeedReadStatus = ZP_ERROR_NOT_READY;
 
     FFTHarmonicNotch harmonicNotchFilter;
     FFTHarmonicNotchConfig harmonicNotchConfig;

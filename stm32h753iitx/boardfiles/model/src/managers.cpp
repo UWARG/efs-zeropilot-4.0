@@ -27,7 +27,8 @@ void initManagers()
         amRCQueueHandle, 
         tmQueueHandle, 
         smLoggerQueueHandle, 
-        &mainMotorGroup
+        &mainMotorGroup,
+        canAirspeedHandle
     );
 
     // SM initialization
