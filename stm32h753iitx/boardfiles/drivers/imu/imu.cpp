@@ -80,7 +80,7 @@ IMU::IMU(SPI_HandleTypeDef *spiHandle,
     spi(spiHandle),
     csPort(csPort),
     csPin(csPin),
-    iSpiDevice{csPort, csPin, spiHandle},
+    spiBus{csPort, csPin, spiHandle},
     imuId(imuId),
     imuOdr(odrConfig),
     uiFiltCutoffHz(uiFiltCutoffHz),
@@ -96,7 +96,7 @@ IMU::IMU(SPI_HandleTypeDef *spiHandle,
 }
 
 ZP_Error IMU::init() {
-    iSpiDevice.csHigh();
+    spiBus.csHigh();
     SystemUtils::dwtInit();
     reset();
     setAAF();
@@ -146,7 +146,7 @@ ZP_Error IMU::init() {
     }
     flushFIFO();
 
-    return (address == ICM42688P_IMU_WHOAMI) ? ZP_ERROR_OK : (ZP_ERROR_EXT_API | ZP_ERROR_CONFIG);
+    return (address == ICM42688P_IMU_WHOAMI) ? ZP_ERROR_OK : ZP_ERROR_EXT_API | ZP_ERROR_CONFIG;
 }
 
 ZP_Error IMU::readRawData(RawImuBatch_t &rawDataBatch) {
@@ -189,7 +189,7 @@ ZP_Error IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &
 }
 
 void IMU::txRxCallback() {
-    iSpiDevice.csHigh();
+    spiBus.csHigh();
     switch (rxFlag) {
     case COUNT:
         // Keeps the bus owned
@@ -237,7 +237,7 @@ ZP_Error IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
     if (status != ZP_ERROR_OK) { return status; }
 
     uint8_t txBuf[2] = {registerAddr, data};
-    ZP_Error errStatus = iSpiDevice.transmit(txBuf, 2, HAL_MAX_DELAY);
+    ZP_Error errStatus = spiBus.transmit(txBuf, 2, HAL_MAX_DELAY);
     return errStatus;
 }
 
@@ -251,7 +251,7 @@ ZP_Error IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, ui
     uint8_t rx[MAX_READ_LEN + 1] = {0};
 
     tx[0] = (uint8_t)(registerAddr | 0b10000000); // Set 8-th bit to 1 for read, page 53
-    ZP_Error errStatus = iSpiDevice.transceive(tx, rx, length + 1, HAL_MAX_DELAY);
+    ZP_Error errStatus = spiBus.transceive(tx, rx, length + 1, HAL_MAX_DELAY);
     memcpy(data, &rx[1], length);
     return errStatus;
 }
@@ -259,7 +259,7 @@ ZP_Error IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, ui
 ZP_Error IMU::setBank(uint8_t bank) {
     if (currRegisterBank == bank) { return ZP_ERROR_OK; }
     uint8_t txBuf[2] = {REG_BANK_SEL, bank};
-    ZP_Error errStatus = iSpiDevice.transmit(txBuf, 2, HAL_MAX_DELAY);
+    ZP_Error errStatus = spiBus.transmit(txBuf, 2, HAL_MAX_DELAY);
     if (errStatus == ZP_ERROR_OK) { currRegisterBank = bank; }
     return errStatus;
 }
@@ -284,7 +284,7 @@ void IMU::dmaTransfer() {
         case COUNT: {
             imuTxBuffer[0] = UB0_REG_FIFO_COUNTH | 0b10000000;
             // 3 bytes to read both COUNTH and COUNTL registers, byte 0 is dummy
-            if (iSpiDevice.transceiveDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3) != (ZP_ERROR_EXT_API | ZP_ERROR_OK)) {
+            if (spiBus.transceiveDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, 3) != (ZP_ERROR_EXT_API | ZP_ERROR_OK)) {
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
                 fifoSize = 0;
@@ -298,7 +298,7 @@ void IMU::dmaTransfer() {
 
             imuTxBuffer[0] = UB0_REG_FIFO_DATA | 0b10000000;
 
-            if (iSpiDevice.transceiveDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != (ZP_ERROR_EXT_API | ZP_ERROR_OK)) {
+            if (spiBus.transceiveDMA((uint8_t *)imuTxBuffer, (uint8_t *)imuRxBuffer, fifoSize * PACKET_SIZE + 1) != (ZP_ERROR_EXT_API | ZP_ERROR_OK)) {
                 dmaDone = true; // Allow next transfer to be attempted
                 rxFlag = COUNT; // Reset state to COUNT
                 fifoSize = 0;

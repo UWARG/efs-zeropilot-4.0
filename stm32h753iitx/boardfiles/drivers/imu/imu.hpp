@@ -59,7 +59,7 @@ class IMU : public IIMU {
 		SPI_HandleTypeDef *spi;
 		GPIO_TypeDef *csPort;
 		uint16_t csPin;
-		ISpi iSpiDevice;
+		ISpi spiBus;
 		const uint8_t imuId;
 		const ImuOdrConfig_t imuOdr;
 		const float uiFiltCutoffHz;
