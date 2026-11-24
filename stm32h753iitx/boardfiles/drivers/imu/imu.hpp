@@ -57,8 +57,6 @@ class IMU : public IIMU {
 		
 	private:
 		SPI_HandleTypeDef *spi;
-		GPIO_TypeDef *csPort;
-		uint16_t csPin;
 		ISpi spiBus;
 		const uint8_t imuId;
 		const ImuOdrConfig_t imuOdr;

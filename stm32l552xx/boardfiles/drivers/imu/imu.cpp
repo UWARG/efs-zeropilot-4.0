@@ -69,17 +69,15 @@ static const AAF_Config aaf_table[] = {
     {3805,61, 3712,    3}, {3892,62, 3840,    3}, {3979,63, 3968,    3}
 };
 
-IMU::IMU(SPI_HandleTypeDef *spiHandle, 
+IMU::IMU(SPI_HandleTypeDef *spiHandle,
         GPIO_TypeDef *csPort, 
-        uint16_t csPin, 
+        uint16_t csPin,
         uint8_t imuId, 
         ImuOdrConfig_t odrConfig,
         float uiFiltCutoffHz, 
         ImuUiFiltOrder_t uiFiltOrder
 ) :
     spi(spiHandle),
-    csPort(csPort),
-    csPin(csPin),
     spiBus{csPort, csPin, spiHandle},
     imuId(imuId),
     imuOdr(odrConfig),
@@ -96,7 +94,8 @@ IMU::IMU(SPI_HandleTypeDef *spiHandle,
 }
 
 ZP_Error IMU::init() {
-    spiBus.csHigh();
+    ZP_Error csErr = spiBus.csHigh();
+    if (csErr != ZP_ERROR_OK) return csErr;
     SystemUtils::dwtInit();
     reset();
     setAAF();
@@ -189,7 +188,11 @@ ZP_Error IMU::scaleIMUData(const RawImuBatch_t &rawDataBatch, ScaledImuBatch_t &
 }
 
 void IMU::txRxCallback() {
-    spiBus.csHigh();
+    if (spiBus.csHigh() != ZP_ERROR_OK) {
+        dmaDone = true; 
+        rxFlag = COUNT; 
+        return;
+    }
     switch (rxFlag) {
     case COUNT:
         // Keeps the bus owned
@@ -234,7 +237,7 @@ RawImuBatch_t IMU::getBatch() {
 
 ZP_Error IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
     ZP_Error status = setBank(bank);
-    if (status != ZP_ERROR_OK) { return status; }
+    if (status != ZP_ERROR_OK) return status;
 
     uint8_t txBuf[2] = {registerAddr, data};
     ZP_Error errStatus = spiBus.transmit(txBuf, 2, HAL_MAX_DELAY);
@@ -243,10 +246,10 @@ ZP_Error IMU::writeRegister(uint8_t bank, uint8_t registerAddr, uint8_t data) {
 
 ZP_Error IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, uint8_t length) {
     ZP_Error status = setBank(bank);
-    if (status != ZP_ERROR_OK) { return status; }
+    if (status != ZP_ERROR_OK) return status;
 
     static constexpr uint8_t MAX_READ_LEN = 8;
-    if (length > MAX_READ_LEN) return ZP_ERROR_EXT_API | ZP_ERROR_INVALID_ARG;
+    if (length > MAX_READ_LEN) return ZP_ERROR_INVALID_ARG;
     uint8_t tx[MAX_READ_LEN + 1] = {0}; 
     uint8_t rx[MAX_READ_LEN + 1] = {0};
 
@@ -257,10 +260,10 @@ ZP_Error IMU::readRegister(uint8_t bank, uint8_t registerAddr, uint8_t* data, ui
 }
 
 ZP_Error IMU::setBank(uint8_t bank) {
-    if (currRegisterBank == bank) { return ZP_ERROR_OK; }
+    if (currRegisterBank == bank) return ZP_ERROR_OK;
     uint8_t txBuf[2] = {REG_BANK_SEL, bank};
     ZP_Error errStatus = spiBus.transmit(txBuf, 2, HAL_MAX_DELAY);
-    if (errStatus == ZP_ERROR_OK) { currRegisterBank = bank; }
+    if (errStatus == ZP_ERROR_OK) currRegisterBank = bank;
     return errStatus;
 }
 
