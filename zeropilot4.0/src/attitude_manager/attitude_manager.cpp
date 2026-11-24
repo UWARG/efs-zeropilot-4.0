@@ -6,6 +6,10 @@
 #include "unit_conversions.hpp"
 #include <limits>
 
+#include <cmath>
+volatile bool magCalRequested = false;
+volatile float magMagnitude = 0.0f;
+
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
@@ -106,12 +110,20 @@ void AttitudeManager::amUpdate() {
         (void)sendServoOutputRawToTelemetryManager();
     }
 
+    if (magCalRequested) {
+        magCalRequested = false;
+        (void)magCal.startCalibration();
+    }
+
     // Runs every cycle so calibration keeps collecting. Unused until the EKF is enabled.
     MagData_t magData = {};
     ZP_Error magStatus = magCal.update(magData);
     if (!magData.isNew) {
         magStatus |= ZP_ERROR_INVALID_DATA;
     }
+    
+    magMagnitude = std::sqrt(magData.x * magData.x + magData.y * magData.y + magData.z * magData.z);
+
     (void)ZP_BIT::report(ZP_BIT_ID::MAG_DATA_VALID, magStatus);
 
     // Read barometer data
