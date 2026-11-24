@@ -9,10 +9,16 @@ inline ZP_Error halToZpError(HAL_StatusTypeDef status, uint32_t errorCode) {
         ZP_Error zpError;
     } errorMap;
 
-    static constexpr errorMap halErrorMapTable[] = {
-        {HAL_SPI_ERROR_FLAG, ZP_ERROR_EXT_API | ZP_ERROR_TIMEOUT},
-        {HAL_SPI_ERROR_DMA, ZP_ERROR_EXT_API | ZP_ERROR_BUSY}
+    static constexpr errorMap SPI_ERROR_MAP[] = {
+        {HAL_SPI_ERROR_MODF,  ZP_ERROR_SPI_MODF},   // "use the same/similar names
+        {HAL_SPI_ERROR_CRC,   ZP_ERROR_SPI_CRC},    //  as the HAL ones"
+        {HAL_SPI_ERROR_OVR,   ZP_ERROR_SPI_OVR},
+        {HAL_SPI_ERROR_FRE,   ZP_ERROR_SPI_FRE},
+        {HAL_SPI_ERROR_DMA,   ZP_ERROR_SPI_DMA},
+        {HAL_SPI_ERROR_FLAG,  ZP_ERROR_SPI_FLAG},
+        {HAL_SPI_ERROR_ABORT, ZP_ERROR_SPI_ABORT}
     };
+    
 
     static constexpr ZP_Error statusMap[] = {
         ZP_ERROR_OK, 
@@ -34,8 +40,8 @@ class ISpi {
     public:
         ISpi(GPIO_TypeDef *csGPIOPort, uint16_t csGPIOPin, SPI_HandleTypeDef *hspi);
         
-        void csLow();
-        void csHigh();
+        ZP_Error csLow();
+        ZP_Error csHigh();
 
         ZP_Error transmit(uint8_t* txBuf, uint16_t size, uint32_t timeout);
         ZP_Error transceive(uint8_t* txBuf, uint8_t* rxBuf, uint16_t size, uint32_t timeout);

@@ -5,11 +5,23 @@ ISpi::ISpi(GPIO_TypeDef *csGPIOPort, uint16_t csGPIOPin, SPI_HandleTypeDef *hspi
 	csGPIOPin(csGPIOPin), 
 	hspi(hspi) {}
 
-void ISpi::csLow() {
+ZP_Error ISpi::csLow() {
+	if (csGPIOPort == nullptr) {
+		return ZP_ERROR_NULLPTR;
+	}
+	if (csGPIOPin == 0) {
+		return ZP_ERROR_INVALID_ARG;
+	}
 	HAL_GPIO_WritePin(csGPIOPort, csGPIOPin, GPIO_PIN_RESET);
 }
 
-void ISpi::csHigh() {
+ZP_Error ISpi::csHigh() {
+	if (csGPIOPort == nullptr) {
+		return ZP_ERROR_NULLPTR;
+	}
+	if (csGPIOPin == 0) {
+		return ZP_ERROR_INVALID_ARG;
+	}
 	HAL_GPIO_WritePin(csGPIOPort, csGPIOPin, GPIO_PIN_SET);
 }
 
