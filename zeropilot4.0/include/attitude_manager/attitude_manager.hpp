@@ -122,7 +122,7 @@ private:
     ZP_Error outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
 
     ZP_Error sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-    ZP_Error sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
+    ZP_Error sendRawIMUDataToTelemetryManager(const RawImu_t &imuData, const MagData_t &magData);
     ZP_Error sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     ZP_Error sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     ZP_Error sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData);

@@ -121,7 +121,13 @@ void AttitudeManager::amUpdate() {
     if (!magData.isNew) {
         magStatus |= ZP_ERROR_INVALID_DATA;
     }
-    
+
+    MagCalStatus_t magCalStatus = {};
+    magCal.getStatus(magCalStatus);
+    if (magCalStatus.state == MAG_CAL_STATE_SUCCESS || magCalStatus.state == MAG_CAL_STATE_IDLE) {
+        magCal.applyCorrection(magData);
+    }
+
     magMagnitude = std::sqrt(magData.x * magData.x + magData.y * magData.y + magData.z * magData.z);
 
     (void)ZP_BIT::report(ZP_BIT_ID::MAG_DATA_VALID, magStatus);
@@ -213,7 +219,7 @@ void AttitudeManager::amUpdate() {
     droneState.yaw = attitude.yaw;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        if (imuData.count > 0) { (void)sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
+        if (imuData.count > 0) { (void)sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1], magData); } // Send the last packed of IMU data 
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
@@ -512,7 +518,7 @@ ZP_Error AttitudeManager::sendGPSDataToTelemetryManager(const GpsData_t &gpsData
     return result;
 }
 
-ZP_Error AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData) {
+ZP_Error AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuData, const MagData_t &magData) {
     ZP_Error result = ZP_ERROR_OK;
 
     TMMessage_t imuDataMsg;
@@ -524,7 +530,10 @@ ZP_Error AttitudeManager::sendRawIMUDataToTelemetryManager(const RawImu_t &imuDa
         imuData.zacc,
         imuData.xgyro,
         imuData.ygyro,
-        imuData.zgyro
+        imuData.zgyro,
+        magData.x,
+        magData.y,
+        magData.z
     );
 
     if (result == ZP_ERROR_OK) {

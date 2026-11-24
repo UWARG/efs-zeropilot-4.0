@@ -282,15 +282,18 @@ inline ZP_Error batteryDataPack(TMMessage_t &data, uint32_t time_boot_ms, uint8_
     return result;
 }
 
-inline ZP_Error rawImuDataPack(TMMessage_t &data, uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro) {
-    int16_t xmag = 0;
-    int16_t ymag = 0;
-    int16_t zmag = 0;
+inline ZP_Error rawImuDataPack(TMMessage_t &data, uint32_t time_boot_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, float xmag, float ymag, float zmag) {
     uint8_t id = 0;
     int16_t temperature = 0;
+
+    // convert float uT magnetometer readings to int16_t by scaling to mG
+    int16_t xmag_mG = static_cast<int16_t>(xmag * 10.0f); // uT -> mG
+    int16_t ymag_mG = static_cast<int16_t>(ymag * 10.0f); // uT -> mG
+    int16_t zmag_mG = static_cast<int16_t>(zmag * 10.0f); // uT -> mG
+
     const TMMessageData_t DATA = {
         .rawImuData = {
-            xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag, ymag, zmag, id, temperature
+            xacc, yacc, zacc, xgyro, ygyro, zgyro, xmag_mG, ymag_mG, zmag_mG, id, temperature
         }
     };
     data = TMMessage_t{TMMessage_t::RAW_IMU_DATA, DATA, time_boot_ms};
