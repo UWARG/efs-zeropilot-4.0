@@ -120,7 +120,6 @@ protected:
     NiceMock<MockBarometer> mockBarometer;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
-    NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
 
     NiceMock<MockMotorControl> mockMotor1;
     NiceMock<MockMotorControl> mockMotor2;

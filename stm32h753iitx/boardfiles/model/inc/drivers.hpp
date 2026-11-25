@@ -49,7 +49,6 @@ extern Barometer *barometerHandle;
 extern SDFileSystem *sdFileSystemHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
-extern MessageQueue<char[100]> *smLoggerQueueHandle;
 extern MessageQueue<TMMessage_t> *tmQueueHandle;
 extern MessageQueue<mavlink_message_t> *messageBufferHandle;
 
