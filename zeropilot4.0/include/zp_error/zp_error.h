@@ -47,3 +47,11 @@ constexpr ZP_Error ZP_ERROR_MEMORY_OVERFLOW      {1u << 13}; // Buffer or FIFO q
 constexpr ZP_Error ZP_ERROR_TIMEOUT              {1u << 14}; // Operation timed out
 constexpr ZP_Error ZP_ERROR_NACK                 {1u << 15}; // Peripheral did not acknowledge
 constexpr ZP_Error ZP_ERROR_EXT_API              {1u << 16}; // OR'd with a code above: failure came from HAL/RTOS/FatFs
+
+constexpr ZP_Error ZP_ERROR_SPI_MODF             {1u << 17}; // SPI mode fault
+constexpr ZP_Error ZP_ERROR_SPI_CRC              {1u << 18}; // SPI CRC check failed
+constexpr ZP_Error ZP_ERROR_SPI_OVR              {1u << 19}; // SPI overrun
+constexpr ZP_Error ZP_ERROR_SPI_FRE              {1u << 20}; // SPI frame format error
+constexpr ZP_Error ZP_ERROR_SPI_DMA              {1u << 21}; // SPI DMA transfer error
+constexpr ZP_Error ZP_ERROR_SPI_FLAG             {1u << 22}; // SPI status flag error
+constexpr ZP_Error ZP_ERROR_SPI_ABORT            {1u << 23}; // SPI abort procedure failed
