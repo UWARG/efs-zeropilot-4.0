@@ -10,6 +10,11 @@
 volatile bool magCalRequested = false;
 volatile float magMagnitude = 0.0f;
 
+// Wrap an angle in radians to -pi..pi
+static float wrapAngleRad(float angleRad) {
+    return std::atan2(std::sin(angleRad), std::cos(angleRad));
+}
+
 AttitudeManager::AttitudeManager(
     ISystemUtils *systemUtilsDriver,
     IMathUtils *mathUtilsDriver,
@@ -208,6 +213,46 @@ void AttitudeManager::amUpdate() {
 
     Attitude_t attitude = {};
     (void)mahonyFilter.getAttitudeRadians(attitude);
+
+    // Compass heading, tilt-compensated with the Mahony roll and pitch
+    if (magData.isNew) {
+        float mountOffsetDeg = 0.0f;
+        (void)ZP_PARAM::get(ZP_PARAM_ID::MAG_YAW_OFFSET, mountOffsetDeg);
+        const float MOUNT_OFFSET_RAD = mountOffsetDeg * ZP_UNITS::DEG_TO_RAD;
+
+        // Rotate the field from the magnetometer's mounting into the body frame.
+        // The magnetometer's y axis is mirrored relative to the body, so it is negated.
+        const float MAG_X = magData.x * std::cos(MOUNT_OFFSET_RAD) + magData.y * std::sin(MOUNT_OFFSET_RAD);
+        const float MAG_Y = magData.x * std::sin(MOUNT_OFFSET_RAD) - magData.y * std::cos(MOUNT_OFFSET_RAD);
+        const float MAG_Z = magData.z;
+
+        // Project the field onto the horizontal plane
+        const float SIN_ROLL = std::sin(attitude.roll);
+        const float COS_ROLL = std::cos(attitude.roll);
+        const float SIN_PITCH = std::sin(attitude.pitch);
+        const float COS_PITCH = std::cos(attitude.pitch);
+        const float HORIZONTAL_X = MAG_X * COS_PITCH + MAG_Y * SIN_ROLL * SIN_PITCH + MAG_Z * COS_ROLL * SIN_PITCH;
+        const float HORIZONTAL_Y = MAG_Y * COS_ROLL - MAG_Z * SIN_ROLL;
+        const float MAG_HEADING_RAD = std::atan2(-HORIZONTAL_Y, HORIZONTAL_X);
+
+        if (!haveFusedYaw) {
+            // Start from the compass so yaw points at magnetic north right away
+            fusedYawRad = MAG_HEADING_RAD;
+            lastMahonyYawRad = attitude.yaw;
+            haveFusedYaw = true;
+        } else {
+            // Nudge the yaw toward the compass to remove gyro drift
+            fusedYawRad = wrapAngleRad(fusedYawRad + MAG_YAW_CORRECTION_GAIN * wrapAngleRad(MAG_HEADING_RAD - fusedYawRad));
+        }
+    }
+
+    if (haveFusedYaw) {
+        // Follow the gyro's yaw change since the last loop
+        fusedYawRad = wrapAngleRad(fusedYawRad + wrapAngleRad(attitude.yaw - lastMahonyYawRad));
+        lastMahonyYawRad = attitude.yaw;
+        attitude.yaw = fusedYawRad;
+    }
+
     droneState.roll = attitude.roll;
     droneState.pitch = attitude.pitch;
     droneState.yaw = attitude.yaw;

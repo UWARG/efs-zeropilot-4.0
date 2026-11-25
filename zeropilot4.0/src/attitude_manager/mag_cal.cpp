@@ -80,8 +80,11 @@ ZP_Error MagCal::calculateHeading(float x_microtesla, float y_microtesla, float 
         return status;
     }
 
-    float heading = ZP_UNITS::rad2deg(std::atan2(-y_microtesla, x_microtesla));
-    heading = std::fmod(heading + yaw_offset_degrees, 360.0f);
+    // The magnetometer's axes are mirrored relative to the body, so the field
+    // angle is taken as is and the mounting offset is subtracted. Using
+    // atan2(-y, x) + offset gives a heading that turns the wrong way.
+    float heading = ZP_UNITS::rad2deg(std::atan2(y_microtesla, x_microtesla));
+    heading = std::fmod(heading - yaw_offset_degrees, 360.0f);
     if (heading < 0.0f) {
         heading += 360.0f;
     }
