@@ -72,7 +72,7 @@ ZP_Error MagCal::update(MagData_t &data) {
     return ZP_ERROR_OK;
 }
 
-static ZP_Error calculateHeading(float x_microtesla, float y_microtesla, float &out_heading) {
+ZP_Error MagCal::calculateHeading(float x_microtesla, float y_microtesla, float &out_heading) {
     float yaw_offset_degrees = 0.0f;
     ZP_Error status = ZP_PARAM::get(ZP_PARAM_ID::MAG_YAW_OFFSET, yaw_offset_degrees);
     if (status != ZP_ERROR_OK) {
