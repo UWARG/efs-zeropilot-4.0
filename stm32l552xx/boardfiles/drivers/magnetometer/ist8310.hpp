@@ -18,9 +18,6 @@ public:
   ZP_Error init() override;
   ZP_Error readData(MagData_t &data) override;
 
-  // Heading in degrees, 0 to 360, from the X and Y field in microtesla
-  static ZP_Error calculateHeading(float x_microtesla, float y_microtesla, float &out_heading);
-
   // Called from the I2C interrupt callbacks
   void masterTxCpltCallback();
   void masterRxCpltCallback();

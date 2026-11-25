@@ -1,4 +1,6 @@
 #include "mag_cal.hpp"
+#include "zp_params.hpp"
+#include "unit_conversions.hpp"
 
 #include <cmath>
 
@@ -18,6 +20,7 @@ static constexpr MagCalConstants_t DEFAULT_CAL_CONSTANTS = {
      0.0f, 0.0f, 1.0f},
 
     50.0f, // nominal Earth field, which ranges roughly 25-65 uT
+    // need to have default calibrations in ZPParams measured from outdoors
 };
 
 MagCal::MagCal(IMagnetometer *magDriver, IMathUtils *mathUtils)
@@ -60,6 +63,31 @@ ZP_Error MagCal::update(MagData_t &data) {
     data.x = field[0];
     data.y = field[1];
     data.z = field[2];
+    
+    ZP_Error headingStatus = calculateHeading(data.x, data.y, data.heading);
+    if (headingStatus != ZP_ERROR_OK) {
+        status |= headingStatus;
+    }
+
+    return ZP_ERROR_OK;
+}
+
+static ZP_Error calculateHeading(float x_microtesla, float y_microtesla, float &out_heading) {
+    float yaw_offset_degrees = 0.0f;
+    ZP_Error status = ZP_PARAM::get(ZP_PARAM_ID::MAG_YAW_OFFSET, yaw_offset_degrees);
+    if (status != ZP_ERROR_OK) {
+        return status;
+    }
+
+    float heading = ZP_UNITS::rad2deg(std::atan2(-y_microtesla, x_microtesla));
+    heading = std::fmod(heading + yaw_offset_degrees, 360.0f);
+    if (heading < 0.0f) {
+        heading += 360.0f;
+    }
+    if (heading >= 360.0f) {
+        heading -= 360.0f;
+    }
+    out_heading = heading;
     return ZP_ERROR_OK;
 }
 

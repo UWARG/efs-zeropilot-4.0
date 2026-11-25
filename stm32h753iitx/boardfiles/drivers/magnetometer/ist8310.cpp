@@ -4,9 +4,6 @@
  */
 #include "ist8310.hpp"
 #include "utils.hpp"
-#include "zp_params.hpp"
-
-#include <cmath>
 
 namespace
 {
@@ -15,7 +12,6 @@ constexpr uint32_t kResetDelayMilliseconds = 50U;
 // Datasheet minimum is 6 ms with 16x averaging, with margin on top of that
 constexpr uint32_t kConversionTimeMilliseconds = 10U;
 constexpr uint32_t kTransferTimeoutMilliseconds = 100U;
-constexpr float kRadiansToDegrees = 57.29577951308232F;
 }  // namespace
 
 Ist8310::Ist8310(I2C_HandleTypeDef *i2c, uint8_t address)
@@ -292,25 +288,4 @@ ZP_Error Ist8310::readRegisters(uint8_t reg, uint8_t *data, uint16_t length) con
   return halToZpError(HAL_I2C_Mem_Read(
       i2c_handle, static_cast<uint16_t>(address) << 1U, reg,
       I2C_MEMADD_SIZE_8BIT, data, length, kI2cTimeoutMilliseconds));
-}
-
-ZP_Error Ist8310::calculateHeading(float x_microtesla, float y_microtesla, float &out_heading) {
-  float yaw_offset_degrees = 0.0F;
-  ZP_Error error = ZP_PARAM::get(ZP_PARAM_ID::MAG_YAW_OFFSET, yaw_offset_degrees);
-  if (error != ZP_ERROR_OK) {
-    return error;
-  }
-
-  // Preserve the board-frame convention used by the original firmware.
-  float heading = std::atan2(-y_microtesla, x_microtesla) * kRadiansToDegrees;
-  heading = std::fmod(heading + yaw_offset_degrees, 360.0F);
-  if (heading < 0.0F) {
-    heading += 360.0F;
-  }
-  if (heading >= 360.0F) {
-    heading -= 360.0F;
-  }
-
-  out_heading = heading;
-  return ZP_ERROR_OK;
 }
