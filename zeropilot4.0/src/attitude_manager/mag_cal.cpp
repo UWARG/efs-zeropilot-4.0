@@ -39,35 +39,36 @@ MagCal::MagCal(IMagnetometer *magDriver, IMathUtils *mathUtils)
       axisMax{0} {}
 
 ZP_Error MagCal::update(MagData_t &data) {
+    data.isNew = false;
     if (magDriver == nullptr) {
-        data.isNew = false;
         return ZP_ERROR_NULLPTR;
     }
 
-    ZP_Error status = magDriver->readData(data);
+    MagData_t sample = {};
+    ZP_Error status = magDriver->readData(sample);
 
-    if (status != ZP_ERROR_OK || !data.isNew) {
+    if (status != ZP_ERROR_OK || !sample.isNew) {
         return status;
     }
 
-    float field[3] = {data.x, data.y, data.z};
+    float field[3] = {sample.x, sample.y, sample.z};
 
-    // The fit models the distortion of the uncorrected field, so accumulate
-    // before applying the correction.
     if (state == MAG_CAL_STATE_COLLECTING) {
-        addSample(field, data.timestamp);
+        addSample(field, sample.timestamp);
     }
 
     applyCorrection(field);
 
-    data.x = field[0];
-    data.y = field[1];
-    data.z = field[2];
-    
-    ZP_Error headingStatus = calculateHeading(data.x, data.y, data.heading);
+    sample.x = field[0];
+    sample.y = field[1];
+    sample.z = field[2];
+
+    ZP_Error headingStatus = calculateHeading(sample.x, sample.y, sample.heading);
     if (headingStatus != ZP_ERROR_OK) {
-        status |= headingStatus;
+        return headingStatus;
     }
+    
+    data = sample;
 
     return ZP_ERROR_OK;
 }
