@@ -57,9 +57,12 @@ class MagCal {
          * Reads the driver and returns the sample with the current correction
          * applied. Non blocking; isNew is false until a sample completes.
          * While collecting, the uncorrected field is fed to the fit.
-         * @retval the driver's status, passed through unchanged
+         * @retval the driver's status or a heading calculation error
          */
         ZP_Error update(MagData_t &data);
+
+        // Heading in degrees [0, 360) from the corrected X and Y field.
+        static ZP_Error calculateHeading(float x_microtesla, float y_microtesla, float &out_heading);
 
         // ZP_ERROR_BUSY if a calibration is already collecting
         ZP_Error startCalibration();

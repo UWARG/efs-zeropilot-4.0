@@ -1,4 +1,6 @@
 #include "mag_cal.hpp"
+#include "zp_params.hpp"
+#include "unit_conversions.hpp"
 
 #include <cmath>
 
@@ -18,6 +20,7 @@ static constexpr MagCalConstants_t DEFAULT_CAL_CONSTANTS = {
      0.0f, 0.0f, 1.0f},
 
     50.0f, // nominal Earth field, which ranges roughly 25-65 uT
+    // need to have default calibrations in ZPParams measured from outdoors
 };
 
 MagCal::MagCal(IMagnetometer *magDriver, IMathUtils *mathUtils)
@@ -36,30 +39,59 @@ MagCal::MagCal(IMagnetometer *magDriver, IMathUtils *mathUtils)
       axisMax{0} {}
 
 ZP_Error MagCal::update(MagData_t &data) {
+    data.isNew = false;
     if (magDriver == nullptr) {
-        data.isNew = false;
         return ZP_ERROR_NULLPTR;
     }
 
-    ZP_Error status = magDriver->readData(data);
+    MagData_t sample = {};
+    ZP_Error status = magDriver->readData(sample);
 
-    if (status != ZP_ERROR_OK || !data.isNew) {
+    if (status != ZP_ERROR_OK || !sample.isNew) {
         return status;
     }
 
-    float field[3] = {data.x, data.y, data.z};
+    float field[3] = {sample.x, sample.y, sample.z};
 
-    // The fit models the distortion of the uncorrected field, so accumulate
-    // before applying the correction.
     if (state == MAG_CAL_STATE_COLLECTING) {
-        addSample(field, data.timestamp);
+        addSample(field, sample.timestamp);
     }
 
     applyCorrection(field);
 
-    data.x = field[0];
-    data.y = field[1];
-    data.z = field[2];
+    sample.x = field[0];
+    sample.y = field[1];
+    sample.z = field[2];
+
+    ZP_Error headingStatus = calculateHeading(sample.x, sample.y, sample.heading);
+    if (headingStatus != ZP_ERROR_OK) {
+        return headingStatus;
+    }
+    
+    data = sample;
+
+    return ZP_ERROR_OK;
+}
+
+ZP_Error MagCal::calculateHeading(float x_microtesla, float y_microtesla, float &out_heading) {
+    float yaw_offset_degrees = 0.0f;
+    ZP_Error status = ZP_PARAM::get(ZP_PARAM_ID::MAG_YAW_OFFSET, yaw_offset_degrees);
+    if (status != ZP_ERROR_OK) {
+        return status;
+    }
+
+    // The magnetometer's axes are mirrored relative to the body, so the field
+    // angle is taken as is and the mounting offset is subtracted. Using
+    // atan2(-y, x) + offset gives a heading that turns the wrong way.
+    float heading = ZP_UNITS::rad2deg(std::atan2(y_microtesla, x_microtesla));
+    heading = std::fmod(heading - yaw_offset_degrees, 360.0f);
+    if (heading < 0.0f) {
+        heading += 360.0f;
+    }
+    if (heading >= 360.0f) {
+        heading -= 360.0f;
+    }
+    out_heading = heading;
     return ZP_ERROR_OK;
 }
 

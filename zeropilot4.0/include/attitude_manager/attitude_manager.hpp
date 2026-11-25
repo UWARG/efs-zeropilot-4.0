@@ -117,12 +117,18 @@ private:
     uint32_t lastTimestamp;
     bool haveLastImuTimestamp;
 
+    // Yaw from the gyro, corrected toward the compass heading
+    static constexpr float MAG_YAW_CORRECTION_GAIN = 0.02f; // Fraction of the compass error removed per mag sample
+    float fusedYawRad = 0.0f;
+    float lastMahonyYawRad = 0.0f;
+    bool haveFusedYaw = false;
+
     ZP_Error getControlInputs(RCMotorControlMessage_t *pControlMsg);
 
     ZP_Error outputToMotors(RCMotorControlMessage_t outputControlMsg, bool groundIdle);
 
     ZP_Error sendGPSDataToTelemetryManager(const GpsData_t &gpsData);
-    ZP_Error sendRawIMUDataToTelemetryManager(const RawImu_t &imuData);
+    ZP_Error sendRawIMUDataToTelemetryManager(const RawImu_t &imuData, const MagData_t &magData);
     ZP_Error sendAttitudeDataToTelemetryManager(const Attitude_t &attitude);
     ZP_Error sendPressureDataToTelemetryManager(const BaroData_t &baroData);
     ZP_Error sendRangefinderDataToTelemetryManager(const RangefinderData_t &rangefinderData);

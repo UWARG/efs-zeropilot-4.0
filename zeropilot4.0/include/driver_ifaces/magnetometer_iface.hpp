@@ -12,6 +12,7 @@ typedef struct {
     int16_t rawZ;        // LSB
     uint32_t timestamp;  // ms
     bool isNew;
+    float heading;       // degrees [0, 360)
 } MagData_t;
 
 /**
