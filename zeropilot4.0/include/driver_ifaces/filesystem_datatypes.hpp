@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "zp_error.h"
 
 #define MAX_RW_BUFFER_SIZE 256 // Maximum buffer size for read/write operations, can be adjusted as needed
 #define MAX_FILE_NAME_LENGTH 255 // FAT long-filename limit
@@ -10,15 +11,6 @@ enum class ManagerId_e : uint8_t {
     ATTITUDE,
     TELEMRETRY,
     NUM_MANAGERS
-};
-
-enum FileStatus_e {
-    FILE_STATUS_OK,
-    FILE_STATUS_ERROR,
-    FILE_STATUS_REQUEST_MADE, // For async operations where the request has been made but not completed yet
-    FILE_STATUS_REQUEST_FAILED, // For async operations where the request was made but failed to start
-    FILE_STATUS_NOT_DONE, // For poll function if async operation is not completed yet
-    FILE_STATUS_UNKNOWN // For unrecognized operations or errors
 };
 
 enum class ReqType_e : uint8_t {
@@ -46,7 +38,7 @@ typedef struct {
 
 struct PollResult {
     ReqType_e type;
-    FileStatus_e status;
+    ZP_Error status;
     union {
         uint64_t position; // For tell operation
         uint32_t bytesTransferred;  // For write operations

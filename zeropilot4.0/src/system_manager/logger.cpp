@@ -22,7 +22,7 @@ namespace Logger {
         if (!fileSystem->available()) return;
         loggerEnable = true;
         
-        fileSystem->mkdir("logs");
+        (void)fileSystem->mkdir("logs");
         logFile = {};
         
         // Find first available log file (0-255), default to 0 if all taken
@@ -31,14 +31,14 @@ namespace Logger {
         uint32_t fileNum = 0;
         for (uint32_t i = 0; i < 255; i++) {
             snprintf(filename, sizeof(filename), "logs/system%lu.log", i);
-            if (fileSystem->stat(filename, &fno) != FILE_STATUS_OK) {
+            if (fileSystem->stat(filename, &fno) != ZP_ERROR_OK) {
                 fileNum = i;
                 break;
             }
         }
         
         snprintf(filename, sizeof(filename), "logs/system%lu.log", fileNum);
-        fileSystem->open(&logFile, filename, "a");
+        (void)fileSystem->open(&logFile, filename, "a");
     }
 
     
@@ -75,12 +75,12 @@ namespace Logger {
         buffer[totalLen + 1] = '\0';
         
         if (level == LogLevel_e::LOG_CRITICAL || lastSyncCount >= 10 ) { // Sync every sync period, every 10 writes, or immediately for critical logs
-            fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
+            (void)fileSystem->writeAndSync(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount = 0;
             lastSyncTime = systemUtils->getCurrentTimestampMs();
             newWrite = false;
         } else {
-            fileSystem->write(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
+            (void)fileSystem->write(ManagerId_e::SYSTEM, &logFile, buffer, totalLen + 2, nullptr, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncCount++;
             newWrite = true;
         }
@@ -89,7 +89,7 @@ namespace Logger {
     void sync() {
         if (!loggerEnable) return;
         if (fileSystem && newWrite && systemUtils->getCurrentTimestampMs() - lastSyncTime >= SYNC_PERIOD) {
-            fileSystem->sync(ManagerId_e::SYSTEM, &logFile, ReqOptions_e::ASYNC_NO_RESP);
+            (void)fileSystem->sync(ManagerId_e::SYSTEM, &logFile, ReqOptions_e::ASYNC_NO_RESP);
             lastSyncTime = systemUtils->getCurrentTimestampMs();
             newWrite = false;
         }
@@ -98,7 +98,7 @@ namespace Logger {
     /* TODO: Verify in later PR
     void shutdown() {
         if (fileSystem) {
-            fileSystem->close(&logFile);
+            (void)fileSystem->close(&logFile);
         }
         fileSystem = nullptr;
         systemUtils = nullptr;

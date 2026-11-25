@@ -180,7 +180,7 @@ void initDrivers()
                              rangefinderHandle->init());
     }
     (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
-    sdFileSystemHandle->init();
+    (void)sdFileSystemHandle->init();
 
     // 6. Finalize structure
     for (int i = 0; i < 8; i++) {

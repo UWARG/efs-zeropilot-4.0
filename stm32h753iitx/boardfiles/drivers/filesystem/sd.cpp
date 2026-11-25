@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <cstdarg>
 #include "stm32h7xx_hal.h"
-#include "zp_error.h"
 
 #ifdef SWO_LOGGING
 extern "C" int _write(int file, char *ptr, int len);
@@ -24,8 +23,40 @@ SDFileSystem::~SDFileSystem() {
     }
 }
 
-FileStatus_e SDFileSystem::fresultToStatus(FRESULT res) {
-    return (res == FR_OK) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::fresultToZpError(FRESULT res) {
+    switch (res) {
+    case FR_OK: return ZP_ERROR_OK;
+    case FR_DISK_ERR:
+    case FR_INT_ERR:
+    case FR_MKFS_ABORTED:
+    	return ZP_ERROR_FAIL | ZP_ERROR_EXT_API;
+    case FR_NOT_READY:
+    	return ZP_ERROR_NOT_READY | ZP_ERROR_EXT_API;
+    case FR_NO_FILE:
+    case FR_NO_PATH:
+    	return ZP_ERROR_FAIL | ZP_ERROR_EXT_API;
+    case FR_INVALID_NAME:
+    case FR_INVALID_OBJECT:
+    case FR_INVALID_DRIVE:
+    case FR_INVALID_PARAMETER:
+    	return ZP_ERROR_INVALID_ARG | ZP_ERROR_EXT_API;
+    case FR_DENIED:
+    case FR_EXIST:
+    case FR_WRITE_PROTECTED:
+    case FR_LOCKED:
+    	return ZP_ERROR_FAIL | ZP_ERROR_EXT_API;
+    case FR_NOT_ENABLED:
+    case FR_NO_FILESYSTEM:
+    	return ZP_ERROR_CONFIG | ZP_ERROR_EXT_API;
+    case FR_TIMEOUT:
+    	return ZP_ERROR_TIMEOUT | ZP_ERROR_EXT_API;
+    case FR_NOT_ENOUGH_CORE:
+    	return ZP_ERROR_MEMORY_OVERFLOW | ZP_ERROR_EXT_API;
+    case FR_TOO_MANY_OPEN_FILES:
+    	return ZP_ERROR_BUSY | ZP_ERROR_EXT_API;
+    default:
+    	return ZP_ERROR_FAIL | ZP_ERROR_EXT_API;
+    }
 }
 
 uint8_t SDFileSystem::modeStringToFatfsFlags(const char* mode) {
@@ -55,10 +86,10 @@ uint8_t SDFileSystem::modeStringToFatfsFlags(const char* mode) {
     return FA_READ;  // Default fallback for unknown modes
 }
 
-FileStatus_e SDFileSystem::init() {
+ZP_Error SDFileSystem::init() {
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_15) == GPIO_PIN_SET) {
         mounted = false;
-        return FILE_STATUS_ERROR;
+        return ZP_ERROR_RESOURCE_UNAVAILABLE;
     }
     // TODO: Ari's version had a HAL_DELAY for 1 second here, that might be needed?
     HAL_Delay(1000); // Wait for SD card to be ready after power up
@@ -71,26 +102,29 @@ FileStatus_e SDFileSystem::init() {
         retryCount--;
     }
     mounted = (res == FR_OK);
-    return fresultToStatus(res);
+    return fresultToZpError(res);
 }
 
-FileStatus_e SDFileSystem::open(File* fp, const char* path, const char* mode) {
-    if (!mounted || !fp) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::open(File* fp, const char* path, const char* mode) {
+    if (!fp) return ZP_ERROR_NULLPTR;
+    if (!mounted) return ZP_ERROR_NOT_READY;
     
     FIL* fil = new (&fp->storage[0]) FIL; // Placement new to construct FIL in File's storage
     uint8_t fatfsMode = modeStringToFatfsFlags(mode);
     FRESULT res = f_open(fil, path, fatfsMode);
-    return fresultToStatus(res);
+    return fresultToZpError(res);
 }
 
-FileStatus_e SDFileSystem::mkdir(const char* path) {
-    if (!mounted || !path) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::mkdir(const char* path) {
+    if (!path) return ZP_ERROR_NULLPTR;
+    if (!mounted) return ZP_ERROR_NOT_READY;
     FRESULT res = f_mkdir(path);
-    return fresultToStatus(res);
+    return fresultToZpError(res);
 }
 
-FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint32_t* bytesWritten, ReqOptions_e options) {
-    if (!mounted || !fp || !buff) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint32_t* bytesWritten, ReqOptions_e options) {
+    if (!fp || !buff) return ZP_ERROR_NULLPTR;
+    if (!mounted) return ZP_ERROR_NOT_READY;
     
 #ifdef SWO_LOGGING
     swoWrite((const char*)buff, bytesToWrite);
@@ -103,7 +137,7 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
         }
         FRESULT res = f_write(reinterpret_cast<FIL*>(&fp->storage[0]), buff, bytesToWrite, reinterpret_cast<UINT*>(bytesWritten));
         res = (res == FR_OK) ? f_sync(reinterpret_cast<FIL*>(&fp->storage[0])) : res; // Sync only if write was successful
-        return fresultToStatus(res);
+        return fresultToZpError(res);
     } else {
         SdReqMsg req;
         req.id = id;
@@ -122,7 +156,7 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
             (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
             if (bufferQueue->push(&writeBuffMsg) != ZP_ERROR_OK) {
-                return FILE_STATUS_ERROR; // Failed to send data
+                return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send data
             }
         
             buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
@@ -130,15 +164,17 @@ FileStatus_e SDFileSystem::write(ManagerId_e id, File* fp, const void* buff, uin
         }
 
         if (requestQueue->push(&req) != ZP_ERROR_OK) {
-            return FILE_STATUS_ERROR; // Failed to send request
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send request
         }
         
-        return FILE_STATUS_REQUEST_MADE; // Request sent
+        return ZP_ERROR_OK; // Request sent
     }
 }
 
-FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, ReqOptions_e options) {
-    if (!mounted || !fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, ReqOptions_e options) {
+    if (!fp || !buff) return ZP_ERROR_NULLPTR;
+	if (options == ReqOptions_e::SYNC) return ZP_ERROR_INVALID_ARG;
+	if (!mounted) return ZP_ERROR_NOT_READY;
 
 #ifdef SWO_LOGGING
     swoWrite((const char*)buff, bytesToWrite);
@@ -161,7 +197,7 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
         (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
         if (bufferQueue->push(&writeBuffMsg) != ZP_ERROR_OK) {
-            return FILE_STATUS_ERROR; // Failed to send data
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send data
         }
         
         buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
@@ -169,18 +205,19 @@ FileStatus_e SDFileSystem::writeAndSync(ManagerId_e id, File* fp, const void* bu
     }
 
     if (requestQueue->push(&req) != ZP_ERROR_OK) {
-        return FILE_STATUS_ERROR; // Failed to send request
+        return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send request
     }
     
-    return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
+    return ZP_ERROR_OK; // Request sent, waiting for response
 }
 
-FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) {
-    if (!mounted || !fp) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) {
+    if (!fp) return ZP_ERROR_NULLPTR;
+	if (!mounted) return ZP_ERROR_NOT_READY;
     
     if (options == ReqOptions_e::SYNC) {
         FRESULT res = f_sync(reinterpret_cast<FIL*>(&fp->storage[0]));
-        return fresultToStatus(res);
+        return fresultToZpError(res);
     } else {
         SdReqMsg req;
         req.id = id;
@@ -189,14 +226,15 @@ FileStatus_e SDFileSystem::sync(ManagerId_e id, File* fp, ReqOptions_e options) 
         req.sendResp = (options != ReqOptions_e::ASYNC_NO_RESP);
         
         if (requestQueue->push(&req) != ZP_ERROR_OK) {
-            return FILE_STATUS_ERROR; // Failed to send request
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send request
         }
-        return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
+        return ZP_ERROR_OK; // Request sent, waiting for response
     }
 }
 
-FileStatus_e SDFileSystem::stat(const char* path, FileInfo_t* fno) {
-    if (!mounted || !fno) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::stat(const char* path, FileInfo_t* fno) {
+    if (!fno) return ZP_ERROR_NULLPTR;
+	if (!mounted) return ZP_ERROR_NOT_READY;
     
     FILINFO fatfs_fno;
     FRESULT res = f_stat(path, &fatfs_fno);
@@ -210,7 +248,7 @@ FileStatus_e SDFileSystem::stat(const char* path, FileInfo_t* fno) {
         fno->name[255] = '\0';
     }
     
-    return fresultToStatus(res);
+    return fresultToZpError(res);
 }
 
 bool SDFileSystem::available() {
@@ -218,14 +256,15 @@ bool SDFileSystem::available() {
 }
 
 /* TODO: Verify in later PR
-FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint64_t ofs, ReqOptions_e options) {
-    if (!fp || !buff || options == ReqOptions_e::SYNC) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* buff, uint32_t bytesToWrite, uint64_t ofs, ReqOptions_e options) {
+	if (options == ReqOptions_e::SYNC) return ZP_ERROR_INVALID_ARG;
+    if (!fp || !buff) return ZP_ERROR_NULLPTR;
 
     #ifdef SWO_LOGGING
         swoWrite((const char*)buff, bytesToWrite);
     #endif
 
-    if (!mounted) return FILE_STATUS_ERROR;
+    if (!mounted) return ZP_ERROR_NOT_READY;
 
     SdReqMsg req;
     req.id = id;
@@ -245,7 +284,7 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
         (chunkSize < MAX_RW_BUFFER_SIZE) ? writeBuffMsg.buff[chunkSize] = '\0' : writeBuffMsg.buff[MAX_RW_BUFFER_SIZE - 1] = '\0'; // Null terminate for safety
 
         if (bufferQueue->push(&writeBuffMsg) != ZP_ERROR_OK) {
-            return FILE_STATUS_ERROR; // Failed to send data
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send data
         }
         
         buff = static_cast<const char*>(buff) + chunkSize; // Move buffer pointer forward
@@ -253,34 +292,34 @@ FileStatus_e SDFileSystem::seek_and_write(ManagerId_e id, File* fp, const void* 
     }
 
     if (requestQueue->push(&req) != ZP_ERROR_OK) {
-        return FILE_STATUS_ERROR; // Failed to send request
+        return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send request
     }
     
-    return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
+    return ZP_ERROR_OK; // Request sent, waiting for response
 }
 
 
-FileStatus_e SDFileSystem::close(File* fp) {
-    if (!fp) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::close(File* fp) {
+    if (!fp) return ZP_ERROR_NULLPTR;
     
     FIL* fil = reinterpret_cast<FIL*>(&fp->storage[0]);
     FRESULT res = f_close(fil);
-    return fresultToStatus(res);
+    return fresultToZpError(res);
 }
 
-FileStatus_e SDFileSystem::read(File* fp, void* buff, uint32_t btr, uint32_t* br) {
-    if (!fp || !buff) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::read(File* fp, void* buff, uint32_t btr, uint32_t* br) {
+    if (!fp || !buff) return ZP_ERROR_NULLPTR;
     
     FRESULT res = f_read(reinterpret_cast<FIL*>(&fp->storage[0]), buff, btr, reinterpret_cast<UINT*>(br));
-    return fresultToStatus(res);
+    return fresultToZpError(res);
 }
 
-FileStatus_e SDFileSystem::lseek(ManagerId_e id, File* fp, uint64_t ofs, ReqOptions_e options) {
-    if (!fp) return FILE_STATUS_ERROR;
+ZP_Error SDFileSystem::lseek(ManagerId_e id, File* fp, uint64_t ofs, ReqOptions_e options) {
+    if (!fp) return ZP_ERROR_NULLPTR;
     
     if (options == ReqOptions_e::SYNC) {
         FRESULT res = f_lseek(reinterpret_cast<FIL*>(&fp->storage[0]), static_cast<FSIZE_t>(ofs));
-        return fresultToStatus(res);
+        return fresultToZpError(res);
     } else {
         SdReqMsg req;
         req.id = id;
@@ -289,27 +328,27 @@ FileStatus_e SDFileSystem::lseek(ManagerId_e id, File* fp, uint64_t ofs, ReqOpti
         req.offset = ofs;
 
         if (requestQueue->push(&req) != ZP_ERROR_OK) {
-            return FILE_STATUS_ERROR; // Failed to send request
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send request
         }
-        return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
+        return ZP_ERROR_OK; // Request sent, waiting for response
     }
 }
 
-FileStatus_e SDFileSystem::tell(ManagerId_e id, File* fp, uint64_t* position, ReqOptions_e options) {
-    if (!fp) return FILE_STATUS_ERROR; // we dont need position because this operation is async for SD
+ZP_Error SDFileSystem::tell(ManagerId_e id, File* fp, uint64_t* position, ReqOptions_e options) {
+    if (!fp) return ZP_ERROR_NULLPTR; // we dont need position because this operation is async for SD
     
     if (options == ReqOptions_e::SYNC) {
         DWORD pos = f_tell(reinterpret_cast<FIL*>(&fp->storage[0]));
         if (pos == 0xFFFFFFFF) { // f_tell returns 0xFFFFFFFF on error
-            return FILE_STATUS_ERROR;
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API;
         }
         if (position) {
             *position = static_cast<uint64_t>(pos);
         }
-        return FILE_STATUS_OK;
+        return ZP_ERROR_OK;
     } else {
         if (options == ReqOptions_e::ASYNC_NO_RESP) {
-            return FILE_STATUS_ERROR; // TELL operation requires a response to return the position, so ASYNC_NO_RESP is not valid here
+            return ZP_ERROR_INVALID_ARG; // TELL operation requires a response to return the position, so ASYNC_NO_RESP is not valid here
         }
         SdReqMsg req;
         req.id = id;
@@ -317,9 +356,9 @@ FileStatus_e SDFileSystem::tell(ManagerId_e id, File* fp, uint64_t* position, Re
         req.fp = fp;
 
         if (requestQueue->push(&req) != ZP_ERROR_OK) {
-            return FILE_STATUS_ERROR; // Failed to send request
+            return ZP_ERROR_FAIL | ZP_ERROR_EXT_API; // Failed to send request
         }
-        return FILE_STATUS_REQUEST_MADE; // Request sent, waiting for response
+        return ZP_ERROR_OK; // Request sent, waiting for response
     }
 }
 
@@ -350,19 +389,19 @@ int SDFileSystem::printf(ManagerId_e id, File* fp, ReqOptions_e options, const c
         uint32_t bytesToWrite = (len < MAX_RW_BUFFER_SIZE) ? static_cast<uint32_t>(len) : (MAX_RW_BUFFER_SIZE - 1);
         printBuff[bytesToWrite] = '\0'; // Ensure null termination
 
-        return write(id, fp, printBuff, bytesToWrite, nullptr, options) == FILE_STATUS_REQUEST_MADE ? bytesToWrite : EOF;
+        return write(id, fp, printBuff, bytesToWrite, nullptr, options) == ZP_ERROR_OK ? bytesToWrite : EOF;
     }
 }
 
 PollResult SDFileSystem::poll(ManagerId_e id, ReqType_e reqType) {
     PollResult result;
     result.type = reqType;
-    result.status = FILE_STATUS_NOT_DONE; // Default to not done
+    result.status |= ZP_ERROR_NOT_READY; // Default to not ready
 
     if (responseQueues[static_cast<size_t>(id)]->get(&result) == ZP_ERROR_OK) {
         return result;
     } else {
-        result.status = FILE_STATUS_ERROR;
+        result.status |= ZP_ERROR_BUSY;
         return result;
     }
 }

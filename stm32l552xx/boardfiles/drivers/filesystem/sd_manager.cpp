@@ -31,7 +31,7 @@ void SDManager::sdUpdate(SdReqMsg reqMsg) {
         respMsg.type = reqMsg.type;
 
         if (reqMsg.fp == nullptr) {
-            respMsg.status = FILE_STATUS_ERROR;
+            respMsg.status |= ZP_ERROR_NULLPTR;
             if (reqMsg.sendResp) {
                 responseQueues[static_cast<size_t>(reqMsg.id)]->push(&respMsg);
             }
@@ -49,62 +49,69 @@ void SDManager::sdUpdate(SdReqMsg reqMsg) {
                 	int bufferQueueCount;
                 	bufferQueue->count(bufferQueueCount);
                     if (bufferQueueCount == 0) {
-                        respMsg.status = FILE_STATUS_ERROR; // No buffer available for write operation
+                        respMsg.status |= ZP_ERROR_RESOURCE_UNAVAILABLE; // No buffer available for write operation
                         break;
                     }
                     bufferQueue->get(&writeBuffMsg);
                     uint32_t bytesWritten = 0;
-                    respMsg.status = SDFileSystem::fresultToStatus(f_write(fil, writeBuffMsg.buff, writeBuffMsg.size, reinterpret_cast<UINT*>(&bytesWritten)));
-                    if (respMsg.status != FILE_STATUS_OK) {
+                    respMsg.status |= SDFileSystem::fresultToZpError(f_write(fil, writeBuffMsg.buff, writeBuffMsg.size, reinterpret_cast<UINT*>(&bytesWritten)));
+                    if (respMsg.status != ZP_ERROR_OK) {
                         break;
                     }
                     totalSize -= bytesWritten;
                 }
-                respMsg.status = (respMsg.status == FILE_STATUS_OK && totalSize <= 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
+                if (totalSize > 0) {
+                	respMsg.status |= ZP_ERROR_FAIL;
+                }
                 respMsg.data.bytesTransferred = reqMsg.totalSize - totalSize;
-                if (respMsg.status == FILE_STATUS_OK && reqMsg.type == ReqType_e::WRITE_SYNC) {
-                    respMsg.status = SDFileSystem::fresultToStatus(f_sync(fil));
+                if (respMsg.status == ZP_ERROR_OK && reqMsg.type == ReqType_e::WRITE_SYNC) {
+                    respMsg.status |= SDFileSystem::fresultToZpError(f_sync(fil));
                 }
                 break;
             }
             case ReqType_e::SYNC: {
-                respMsg.status = SDFileSystem::fresultToStatus(f_sync(fil));
+                respMsg.status |= SDFileSystem::fresultToZpError(f_sync(fil));
                 break;
             }
             /* TODO: Verify in later PR
             case ReqType_e::LSEEK: {
-                respMsg.status = SDFileSystem::fresultToStatus(f_lseek(fil, static_cast<FSIZE_t>(reqMsg.offset)));
+                respMsg.status |= SDFileSystem::fresultToZpError(f_lseek(fil, static_cast<FSIZE_t>(reqMsg.offset)));
                 break;
             }
             case ReqType_e::TELL: {
                 respMsg.data.position = f_tell(fil);
-                respMsg.status = FILE_STATUS_OK; // f_tell doesn't return a result code
                 break;
             }
             case ReqType_e::WRITE_SEEK: {
-                respMsg.status = SDFileSystem::fresultToStatus(f_lseek(fil, static_cast<FSIZE_t>(reqMsg.offset)));
+                respMsg.status |= SDFileSystem::fresultToZpError(f_lseek(fil, static_cast<FSIZE_t>(reqMsg.offset)));
                 int totalSize = reqMsg.totalSize;
-                if (respMsg.status == FILE_STATUS_OK) {
+                if (respMsg.status == ZP_ERROR_OK) {
                     SdReqBuf writeBuffMsg;
+                	int bufferQueueCount;
                     while (totalSize > 0) {
-                        if (bufferQueue->count() == 0) {
-                            respMsg.status = FILE_STATUS_ERROR; // No buffer available for write operation
+                    	bufferQueue->count(bufferQueueCount);
+                        if (bufferQueueCount == 0) {
+                            respMsg.status |= ZP_ERROR_RESOURCE_UNAVAILABLE; // No buffer available for write operation
                             break;
                         }
                         bufferQueue->get(&writeBuffMsg);
                         uint32_t bytesWritten = 0;
-                        respMsg.status = SDFileSystem::fresultToStatus(
+                        respMsg.status |= SDFileSystem::fresultToZpError(
                             f_write(fil, writeBuffMsg.buff, writeBuffMsg.size, reinterpret_cast<UINT*>(&bytesWritten)));
-                        if (respMsg.status != FILE_STATUS_OK) {
+                        if (respMsg.status != ZP_ERROR_OK) {
                             break;
                         }
                         totalSize -= bytesWritten;
                     }
-                    respMsg.status = (respMsg.status == FILE_STATUS_OK && totalSize <= 0) ? FILE_STATUS_OK : FILE_STATUS_ERROR;
+                    if (totalSize > 0) {
+                    	respMsg.status |= ZP_ERROR_FAIL;
+                    }
                     respMsg.data.bytesTransferred = reqMsg.totalSize - totalSize;
                 } else {
+                	int bufferQueueCount;
                     while (totalSize > 0) {
-                        if (bufferQueue->count() == 0) {
+                    	bufferQueue->count(bufferQueueCount);
+                        if (bufferQueueCount == 0) {
                             break;
                         }
                         SdReqBuf dummyBuff;
@@ -116,7 +123,7 @@ void SDManager::sdUpdate(SdReqMsg reqMsg) {
             }
             */
             default: {
-                respMsg.status = FILE_STATUS_UNKNOWN; // Unknown request type
+                respMsg.status |= ZP_ERROR_UNSUPPORTED; // Unknown request type
                 break;
             }
         }
