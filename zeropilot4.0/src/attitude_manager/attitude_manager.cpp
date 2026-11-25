@@ -122,12 +122,6 @@ void AttitudeManager::amUpdate() {
         magStatus |= ZP_ERROR_INVALID_DATA;
     }
 
-    MagCalStatus_t magCalStatus = {};
-    magCal.getStatus(magCalStatus);
-    if (magCalStatus.state == MAG_CAL_STATE_SUCCESS || magCalStatus.state == MAG_CAL_STATE_IDLE) {
-        magCal.applyCorrection(magData);
-    }
-
     magMagnitude = std::sqrt(magData.x * magData.x + magData.y * magData.y + magData.z * magData.z);
 
     (void)ZP_BIT::report(ZP_BIT_ID::MAG_DATA_VALID, magStatus);
