@@ -37,6 +37,19 @@ namespace SITL_Driver_Configs {
         static constexpr float TEMP_THERMAL_LAG_COEFF = 0.05f; // First-order filter coefficient (0.0 to 1.0) for thermal mass inertia
     };
 
+    struct SITL_Magnetometer_Config {
+        // uT/LSB for the MLX90393's configured gain (1X) and resolution (RES_16),
+        // datasheet 16.2.4. Must match SENS_LOOKUP_0XC[7][0] in mlx90393.cpp.
+        static constexpr float SENS_XY_UT_PER_LSB = 0.150f;
+        static constexpr float SENS_Z_UT_PER_LSB = 0.242f;
+
+        // WMM reference field at the default SITL start location (37.4N, 122.1W).
+        // Update these alongside the initial conditions if the sim is moved.
+        static constexpr float FIELD_STRENGTH_UT = 48.5f;
+        static constexpr float DECLINATION_RAD = 0.2304f; // +13.2 deg (east)
+        static constexpr float INCLINATION_RAD = 1.0559f; // +60.5 deg (down)
+    };
+
     struct SITL_Barometer_Config {
         static constexpr float KELVIN_OFFSET = 273.15f;
         static constexpr float TEMP_LAPSE_RATE = 0.0065f; // K/m

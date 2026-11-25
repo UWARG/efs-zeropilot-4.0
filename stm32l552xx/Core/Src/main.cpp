@@ -26,7 +26,7 @@
 #include "museq.hpp"
 #include "model.hpp"
 #include "unified_threads.hpp"
-#include "utils.h"
+#include "utils.hpp"
 #include "drivers.hpp"
 /* USER CODE END Includes */
 
