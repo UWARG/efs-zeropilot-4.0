@@ -391,7 +391,6 @@ int SDFileSystem::printf(ManagerId_e id, File* fp, ReqOptions_e options, const c
 PollResult SDFileSystem::poll(ManagerId_e id, ReqType_e reqType) {
     PollResult result;
     result.type = reqType;
-    result.status |= ZP_ERROR_NOT_READY; // Default to not ready
 
     if (responseQueues[static_cast<size_t>(id)]->get(&result) == ZP_ERROR_OK) {
         return result;
