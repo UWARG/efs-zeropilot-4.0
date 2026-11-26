@@ -87,7 +87,6 @@ void SDManager::sdUpdate(SdReqMsg reqMsg) {
                 int totalSize = reqMsg.totalSize;
                 if (respMsg.status == ZP_ERROR_OK) {
                     SdReqBuf writeBuffMsg;
-                    while (totalSize > 0) {
                 	int bufferQueueCount;
                     while (totalSize > 0) {
                 		bufferQueue->count(bufferQueueCount);
