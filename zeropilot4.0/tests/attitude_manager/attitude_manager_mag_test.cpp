@@ -120,7 +120,6 @@ protected:
     NiceMock<MockBarometer> mockBarometer;
     NiceMock<MockMessageQueue<RCMotorControlMessage_t>> mockAMQueue;
     NiceMock<MockMessageQueue<TMMessage_t>> mockTMQueue;
-    NiceMock<MockMessageQueue<char[100]>> mockLogQueue;
 
     NiceMock<MockMotorControl> mockMotor1;
     NiceMock<MockMotorControl> mockMotor2;
@@ -164,14 +163,14 @@ protected:
 TEST_F(AttitudeManagerMagTest, MagBitPassesOnNewSample) {
     ON_CALL(mockMag, readData(_)).WillByDefault(DoAll(SetArgReferee<0>(newSample(20.0f, 0.0f, 40.0f)), Return(ZP_ERROR_OK)));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     am.amUpdate();
 
     EXPECT_EQ(magBitState(), BitState_e::SUCCESS);
 }
 
 TEST_F(AttitudeManagerMagTest, MagBitFailsWhenSamplesStopArriving) {
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
 
     am.amUpdate();
     EXPECT_NE(magBitState(), BitState_e::FAILURE); // a single stale cycle is within the persistence window
@@ -189,7 +188,7 @@ TEST_F(AttitudeManagerMagTest, MagBitFailsWhenSamplesStopArriving) {
 TEST_F(AttitudeManagerMagTest, MagBitFailsOnDriverError) {
     ON_CALL(mockMag, readData(_)).WillByDefault(DoAll(SetArgReferee<0>(MagData_t{}), Return(ZP_ERROR_EXT_API | ZP_ERROR_NACK)));
 
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     am.amUpdate();
     nowMs += MAG_FAIL_MS + 1;
     am.amUpdate();
@@ -202,7 +201,7 @@ TEST_F(AttitudeManagerMagTest, MagBitFailsOnDriverError) {
 }
 
 TEST_F(AttitudeManagerMagTest, MagBitRecoversWhenSamplesResume) {
-    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &mockLogQueue, &motorGroup);
+    AttitudeManager am(&mockSystemUtils, &mockMathUtils, &mockGPS, &mockIMU, &mockMag, &mockFFT, &mockRangefinder, &mockBarometer, &mockAMQueue, &mockTMQueue, &motorGroup);
     am.amUpdate();
     nowMs += MAG_FAIL_MS + 1;
     am.amUpdate();

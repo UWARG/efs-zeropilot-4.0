@@ -7,6 +7,10 @@ import sys
 import zeropilot
 import math
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+file_system_path = os.path.join(BASE_DIR, 'file_system')
+os.makedirs(file_system_path, exist_ok=True)
+os.chdir(file_system_path)
 
 # SITL Scheduling Rate Hz
 SITL_RATE_HZ = 1000

@@ -32,7 +32,7 @@ SystemUtils *systemUtilsHandle = nullptr;
 MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
+SDFileSystem *sdFileSystemHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -49,9 +49,12 @@ Rangefinder *rangefinderHandle = nullptr;
 Barometer *barometerHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
-MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
+
+MessageQueue<SdReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<SdReqBuf> *sdBufferQueueHandle = nullptr;
+IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & group
@@ -100,7 +103,6 @@ void initDrivers() {
     mathUtilsHandle = new MathUtils();
     fftHandle = new FFT();
     iwdgHandle = new IndependentWatchdog(&hiwdg1);
-    loggerHandle = new Logger(); // Initialized later in RTOS task
 
     // Motors (servo index matches SERVOx param)
     float val = 0.0f;
@@ -147,7 +149,7 @@ void initDrivers() {
     IMU *imu1 = new IMU(&hspi1, GPIOC, GPIO_PIN_5, 1, IMU_ODR_1KHZ);
     imuHandle = new FusedIMU(&hspi1, imu0, imu1);
     pmHandle = new PowerModule(&hi2c1);
-    
+
     float magAddress = 0.0f;
     paramStatus |= ZP_PARAM::get(ZP_PARAM_ID::MAG_I2C_ADDR, magAddress);
     if (magAddress >= 0x08 && magAddress <= 0x77) {
@@ -165,9 +167,16 @@ void initDrivers() {
 
     // Queues
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
+    sdRequestQueueHandle = new MessageQueue<SdReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new MessageQueue<SdReqBuf>(&sdBufferQueueId);
+    for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
+        sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
+    }
+
+    // File system
+    sdFileSystemHandle = new SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // Initialize hardware components
     ZP_Error motorStatus = ZP_ERROR_OK;
@@ -194,6 +203,7 @@ void initDrivers() {
                              rangefinderHandle->init());
     }
     (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
+    (void)sdFileSystemHandle->init();
 
     // Motor instances — fields loaded from ZP_PARAM by AttitudeManager::loadServoParams()
     for (int i = 0; i < 8; i++) {

@@ -9,22 +9,20 @@
 SystemManager::SystemManager(
     ISystemUtils *systemUtilsDriver,
     IIndependentWatchdog *iwdgDriver,
-    ILogger *loggerDriver,
+    IFileSystem *fileSystemDriver,
     ISafetySwitch *safetySwitchDriver,
     IRCReceiver *rcDriver,
     IPowerModule *pmDriver,
     IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
-    IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue) :
+    IMessageQueue<TMMessage_t> *tmQueue) :
         systemUtilsDriver(systemUtilsDriver),
         iwdgDriver(iwdgDriver),
-        loggerDriver(loggerDriver),
+        fileSystemDriver(fileSystemDriver),
         safetySwitchDriver(safetySwitchDriver),
         rcDriver(rcDriver),
         pmDriver(pmDriver),
         amRCQueue(amRCQueue),
         tmQueue(tmQueue),
-        smLoggerQueue(smLoggerQueue),
         smSchedulingCounter(0),
         flightModes{},
         isSafetySwitchEngaged(safetySwitchDriver == nullptr ? false : true),
@@ -41,11 +39,14 @@ SystemManager::SystemManager(
 {
     (void)paramSetup.loadAllParams();
     (void)paramSetup.bindAllParamCallbacks();
+    Logger::init(fileSystemDriver, systemUtilsDriver);
     systemUtilsDriver->profilerRegister("SM", &profilerId);
     (void)initBitHandlers();
 }
 
 void SystemManager::smUpdate() {
+    Logger::sync();
+
     systemUtilsDriver->profilerBegin(profilerId);
 
     // Kick the watchdog
@@ -70,7 +71,14 @@ void SystemManager::smUpdate() {
 
     BitState_e rcBitState = BitState_e::UNKNOWN;
     (void)ZP_BIT::getLive(ZP_BIT_ID::RC_DATA_VALID, rcBitState);
+
+    bool wasConnected = rcConnected;
+
     rcConnected = (rcBitState == BitState_e::SUCCESS);
+
+    if (rcConnected != wasConnected) {
+        Logger::log(rcConnected ? "RC Connected" : "RC Disconnected", LogLevel_e::LOG_INFO);
+    }
 
     (void)applyBitFailsafes();
 
@@ -127,14 +135,6 @@ void SystemManager::smUpdate() {
             (void)sendBatteryDataToTelemetryManager(batteryData, 0);
         }
     }
-
-    // Log if new messages
-    int counter = 0;
-    ZP_Error loggerStatus = smLoggerQueue->count(counter);
-    if (counter > 0 && loggerStatus == ZP_ERROR_OK) {
-        loggerStatus |= sendMessagesToLogger();
-    }
-    (void)ZP_BIT::report(ZP_BIT_ID::LOGGER_VALID, loggerStatus);
 
     // Send profiler stats at 1Hz
     if (smSchedulingCounter % (SM_SCHEDULING_RATE_HZ / SM_TELEMETRY_HEARTBEAT_RATE_HZ) == 0) {
@@ -201,19 +201,19 @@ ZP_Error SystemManager::safetySwitchUpdate() {
 
 ZP_Error SystemManager::updateBatteryFSM() {
     ZP_Error result = ZP_ERROR_OK;
-    batteryData.isValid = false;         
+    batteryData.isValid = false;
 
     ZP_Error pmStatus = pmDriver->readData(&batteryData.pmData);
     result |= pmStatus;
     (void)ZP_BIT::report(ZP_BIT_ID::PM_DATA_VALID, pmStatus);
 
     if (result == ZP_ERROR_OK) {
-        batteryData.isValid = true;         
+        batteryData.isValid = true;
 
         float lowVolt = 0.0f;
         float critVolt = 0.0f;
         float lowTimer = 0.0f;
-        
+
         // Accumulate errors from parameter lookups
         result |= ZP_PARAM::get(ZP_PARAM_ID::BATT_LOW_VOLT, lowVolt);
         result |= ZP_PARAM::get(ZP_PARAM_ID::BATT_CRT_VOLT, critVolt);
@@ -253,6 +253,12 @@ ZP_Error SystemManager::updateBatteryFSM() {
 
     return result;
 }
+
+/* TODO: Verify in later PR
+SystemManager::~SystemManager() {
+    Logger::shutdown();
+}
+*/
 
 ZP_Error SystemManager::initBitHandlers() {
     ZP_Error result = ZP_ERROR_OK;
@@ -331,7 +337,7 @@ ZP_Error SystemManager::sendRCDataToTelemetryManager(const RCControl &rcData) {
     TMMessage_t rcDataMsg;
     uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
     result |= rcDataPack(rcDataMsg, currentTime, rcData.controlSignals, INPUT_CHANNELS);
-    
+
     if (result == ZP_ERROR_OK) {
         result |= tmQueue->push(&rcDataMsg);
     }
@@ -343,7 +349,7 @@ ZP_Error SystemManager::sendHeartbeatDataToTelemetryManager(uint8_t baseMode, ui
     TMMessage_t hbDataMsg;
     uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
     result |= heartbeatPack(hbDataMsg, currentTime, baseMode, customMode, systemStatus);
-    
+
     if (result == ZP_ERROR_OK) {
         result |= tmQueue->push(&hbDataMsg);
     }
@@ -487,7 +493,7 @@ ZP_Error SystemManager::sendStatusTextToTelemetryManager(MAV_SEVERITY severity, 
     TMMessage_t statusTextMsg;
     uint32_t currentTime = systemUtilsDriver->getCurrentTimestampMs();
     result |= statusTextPack(statusTextMsg, currentTime, severity, text, id, chunk_seq);
-    
+
     if (result == ZP_ERROR_OK) {
         result |= tmQueue->push(&statusTextMsg);
     }
@@ -503,22 +509,4 @@ ZP_Error SystemManager::decodeRawFlightMode(float flightModeRawValue, FlightMode
     else outMode = flightModes[5];
 
     return ZP_ERROR_OK;
-}
-
-ZP_Error SystemManager::sendMessagesToLogger() {
-    ZP_Error result = ZP_ERROR_OK;
-    static char messages[16][100];
-    int msgCount = 0;
-    int queueCount = 0;
-
-    result |= smLoggerQueue->count(queueCount);
-
-    if (result == ZP_ERROR_OK) {
-        while (queueCount-- > 0) {
-            result |= smLoggerQueue->get(&messages[msgCount]);
-            if (result != ZP_ERROR_OK) break;
-            msgCount++;
-        }
-    }
-    return result;
 }

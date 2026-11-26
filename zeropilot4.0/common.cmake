@@ -20,6 +20,7 @@ set(AM_INC
 # System manager files
 set(SM_SRC
     "src/system_manager/system_manager.cpp"
+    "src/system_manager/logger.cpp"
     "src/system_manager/sm_param_setup.cpp"
     "src/system_manager/soc_estimation.cpp"
 )
@@ -37,7 +38,7 @@ set(TM_INC
     "include/thread_msgs/"
 )
 
-# ZP Param files
+# zp param files
 set(ZP_PARAM_SRC
     "src/zp_param/zp_params.cpp"
 )

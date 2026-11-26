@@ -3,6 +3,7 @@
 #include "rc_motor_control.hpp"
 #include "zp_params.hpp"
 #include "motor_functions.hpp"
+#include "logger.hpp"
 #include "unit_conversions.hpp"
 #include <limits>
 
@@ -17,7 +18,6 @@ AttitudeManager::AttitudeManager(
     IBarometer *barometerDriver,
     IMessageQueue<RCMotorControlMessage_t> *amQueue,
     IMessageQueue<TMMessage_t> *tmQueue,
-    IMessageQueue<char[100]> *smLoggerQueue,
     MotorGroupInstance_t *mainMotorGroup
 ) :
     systemUtilsDriver(systemUtilsDriver),
@@ -30,7 +30,6 @@ AttitudeManager::AttitudeManager(
     // ekf(mathUtilsDriver),
     amQueue(amQueue),
     tmQueue(tmQueue),
-    smLoggerQueue(smLoggerQueue),
     #ifdef PLANE
     activeCLAW(&manualCLAW),
     manualCLAW(),
@@ -95,8 +94,6 @@ AttitudeManager::AttitudeManager(
 }
 
 void AttitudeManager::amUpdate() {
-
-
     systemUtilsDriver->profilerBegin(profilerId);
 
     amSchedulingCounter = (amSchedulingCounter + 1) % AM_SCHEDULING_RATE_HZ;
@@ -201,7 +198,7 @@ void AttitudeManager::amUpdate() {
     droneState.yaw = attitude.yaw;
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_RAW_IMU_DATA_RATE_HZ) == 0) {
-        if (imuData.count > 0) { (void)sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data 
+        if (imuData.count > 0) { (void)sendRawIMUDataToTelemetryManager(imuData.data[imuData.count - 1]); } // Send the last packed of IMU data
     }
 
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_ATTITUDE_DATA_RATE_HZ) == 0) {
@@ -217,7 +214,7 @@ void AttitudeManager::amUpdate() {
         gpsStatus |= ZP_ERROR_INVALID_DATA;
     }
     (void)ZP_BIT::report(ZP_BIT_ID::GPS_DATA_VALID, gpsStatus);
-    
+
     // Send GPS data to telemetry manager
     if (amSchedulingCounter % (AM_SCHEDULING_RATE_HZ / AM_TELEMETRY_GPS_DATA_RATE_HZ) == 0) {
         if (lastValidGps.isNew) {
@@ -269,12 +266,11 @@ void AttitudeManager::amUpdate() {
         #endif
 
         if (!failsafeTriggered) {
-            char errorMsg[100] = "Failsafe triggered";
-            (void)smLoggerQueue->push(&errorMsg);
+            Logger::log("Failsafe triggered", LogLevel_e::LOG_WARN);
             failsafeTriggered = true;
         }
 
-        (void)outputToMotors(motorOutputs, false);
+        (void) outputToMotors(motorOutputs, false);
 
         setArmFlag = false;
 
@@ -283,8 +279,7 @@ void AttitudeManager::amUpdate() {
     }
 
     if (failsafeTriggered) {
-        char errorMsg[100] = "Motor control restored";
-        (void)smLoggerQueue->push(&errorMsg);
+        Logger::log("Motor control restored", LogLevel_e::LOG_INFO);
         failsafeTriggered = false;
     }
 

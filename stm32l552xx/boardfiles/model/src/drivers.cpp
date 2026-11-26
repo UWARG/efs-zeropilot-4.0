@@ -28,7 +28,7 @@ SystemUtils *systemUtilsHandle = nullptr;
 MathUtils *mathUtilsHandle = nullptr;
 FFT *fftHandle = nullptr;
 IndependentWatchdog *iwdgHandle = nullptr;
-Logger *loggerHandle = nullptr;
+SDFileSystem *sdFileSystemHandle = nullptr;
 
 IMotorControl *motorHandles[8] = {0};
 
@@ -43,9 +43,12 @@ Magnetometer *magHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
-MessageQueue<char[100]> *smLoggerQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
+
+MessageQueue<SdReqMsg> *sdRequestQueueHandle = nullptr;
+MessageQueue<SdReqBuf> *sdBufferQueueHandle = nullptr;
+IMessageQueue<PollResult> *sdResponseQueuesHandle[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)] = {nullptr};
 
 // ----------------------------------------------------------------------------
 // Motor instances & group
@@ -85,14 +88,13 @@ void initDrivers()
     fftHandle = new FFT();
     mathUtilsHandle = new MathUtils();
     iwdgHandle = new IndependentWatchdog(&hiwdg);
-    loggerHandle = new Logger();
 
     // 2. Motors (Fail-fast on parameter read)
     float val = 0.0f;
     ZP_Error paramStatus = ZP_PARAM::get(ZP_PARAM_ID::MOT_PWM_TYPE, val);
-    
+
     uint32_t servoType = static_cast<uint32_t>(val);
-    
+
     for (int i = 0; i < 8; i++) {
         // Determine if it is brushless DC motor
         float funcVal = 0.0f;
@@ -148,9 +150,16 @@ void initDrivers()
 
     // 4. Queue allocation
     amRCQueueHandle = new MessageQueue<RCMotorControlMessage_t>(&amQueueId);
-    smLoggerQueueHandle = new MessageQueue<char[100]>(&smLoggerQueueId);
     tmQueueHandle = new MessageQueue<TMMessage_t>(&tmQueueId);
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
+    sdRequestQueueHandle = new MessageQueue<SdReqMsg>(&sdRequestQueueId);
+    sdBufferQueueHandle = new MessageQueue<SdReqBuf>(&sdBufferQueueId);
+    for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
+        sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
+    }
+
+    // File system
+    sdFileSystemHandle = new SDFileSystem(sdRequestQueueHandle, sdBufferQueueHandle, sdResponseQueuesHandle);
 
     // 5. Hardware Initialization (Fail-Fast)
     // Accumulate so one motor failing is not erased by the next one succeeding
@@ -171,6 +180,7 @@ void initDrivers()
                              rangefinderHandle->init());
     }
     (void)ZP_BIT::report(ZP_BIT_ID::BARO_INIT, barometerHandle->init());
+    (void)sdFileSystemHandle->init();
 
     // 6. Finalize structure
     for (int i = 0; i < 8; i++) {

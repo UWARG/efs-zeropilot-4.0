@@ -2,9 +2,9 @@
 
 void initThreads()
 {
-  startUpInitThreads();
   amInitThreads();
   smInitThreads();
   tmInitThreads();
+  sdInitThreads();
   busInitThreads();
 }

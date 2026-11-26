@@ -31,7 +31,7 @@ TelemetryManager::~TelemetryManager() = default;
 
 void TelemetryManager::tmUpdate() {
     systemUtilsDriver->profilerBegin(profilerId);
-    
+
     ZP_Error linkReceiveStatus = receive();
     (void)processParamTx();
     (void)processTXMsgQueue();
@@ -58,13 +58,13 @@ ZP_Error TelemetryManager::processTXMsgQueue() {
     if (result == ZP_ERROR_OK) {
         TMMessage rcMsg = {};
         bool rc = false;
-        
+
         while (count-- > 0) {
             mavlink_message_t mavlinkMessage = {0};
             TMMessage_t tmqMessage = {};
 
             result |= tmTXQueueDriver->get(&tmqMessage);
-            
+
             if (result == ZP_ERROR_OK) {
                 switch (tmqMessage.dataType) {
                     case TMMessage_t::HEARTBEAT_DATA: {
@@ -89,7 +89,7 @@ ZP_Error TelemetryManager::processTXMsgQueue() {
                     case TMMessage_t::GPS_RAW_DATA: {
                         auto& g = tmqMessage.tmMessageData.gpsRawData;
                         mavlink_msg_gps_raw_int_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, (uint64_t)tmqMessage.timeBootMs * 1000,
-                            g.fixType, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellitesVisible, g.altEllipsoid, 
+                            g.fixType, g.lat, g.lon, g.alt, g.eph, g.epv, g.vel, g.cog, g.satellitesVisible, g.altEllipsoid,
                             g.hAcc, g.vAcc, g.velAcc, g.hdgAcc, g.yaw);
                         break;
                     }
@@ -112,7 +112,7 @@ ZP_Error TelemetryManager::processTXMsgQueue() {
                         auto batteryData = tmqMessage.tmMessageData.batteryData;
                         uint32_t faultBitmask =  (batteryData.chargeState == MAV_BATTERY_CHARGE_STATE_CRITICAL) ? MAV_BATTERY_FAULT_DEEP_DISCHARGE : 0;
                         mavlink_msg_battery_status_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, batteryData.batteryId, MAV_BATTERY_FUNCTION_ALL, MAV_BATTERY_TYPE_LIPO,
-                            batteryData.temperature, batteryData.voltages, batteryData.currentBattery, batteryData.currentConsumed, batteryData.energyConsumed, 
+                            batteryData.temperature, batteryData.voltages, batteryData.currentBattery, batteryData.currentConsumed, batteryData.energyConsumed,
                             batteryData.batteryRemaining, batteryData.timeRemaining, batteryData.chargeState, {}, 0, faultBitmask);
                         break;
                     }
@@ -154,7 +154,7 @@ ZP_Error TelemetryManager::processTXMsgQueue() {
                         continue;
                     }
                 }
-                
+
                 if (mavlinkMessage.len > 0) {
                     result |= packedMsgBuffer->push(&mavlinkMessage);
                 }
@@ -165,12 +165,12 @@ ZP_Error TelemetryManager::processTXMsgQueue() {
             auto& rcData = rcMsg.tmMessageData.rcData;
             mavlink_message_t mavlinkMessage = {0};
             mavlink_msg_rc_channels_pack(SYSTEM_ID, COMPONENT_ID, &mavlinkMessage, rcMsg.timeBootMs, rcData.channelCount,
-                rcData.channels[0], rcData.channels[1], rcData.channels[2], rcData.channels[3], 
-                rcData.channels[4], rcData.channels[5], rcData.channels[6], rcData.channels[7], 
-                rcData.channels[8], rcData.channels[9], rcData.channels[10], rcData.channels[11], 
-                rcData.channels[12], rcData.channels[13], rcData.channels[14], rcData.channels[15], 
+                rcData.channels[0], rcData.channels[1], rcData.channels[2], rcData.channels[3],
+                rcData.channels[4], rcData.channels[5], rcData.channels[6], rcData.channels[7],
+                rcData.channels[8], rcData.channels[9], rcData.channels[10], rcData.channels[11],
+                rcData.channels[12], rcData.channels[13], rcData.channels[14], rcData.channels[15],
                 rcData.channels[16], rcData.channels[17], UINT8_MAX);
-            
+
             if (mavlinkMessage.len == 0) {
                 result |= ZP_ERROR_FAIL;
             } else {
@@ -232,13 +232,13 @@ ZP_Error TelemetryManager::receive() {
             msgToRX = {};
         }
     }
-    
+
     return result;
 }
 
 ZP_Error TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
     ZP_Error result = ZP_ERROR_OK;
-    
+
     switch (msg.msgid) {
         case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
             currParamListTxIdx = 0;
@@ -264,10 +264,10 @@ ZP_Error TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
             mavlink_msg_param_set_decode(&msg, &setMsg);
 
             result |= ZP_PARAM::setParamById(setMsg.param_id, setMsg.param_value);
-            
+
             int16_t idx = 0;
             result |= ZP_PARAM::getIndexById(setMsg.param_id, idx);
-            
+
             if (result == ZP_ERROR_OK) {
                 result |= enqueueParamValueTx(static_cast<uint16_t>(idx));
             }
@@ -277,7 +277,7 @@ ZP_Error TelemetryManager::processRxMsg(const mavlink_message_t &msg) {
         default:
             break;
     }
-    
+
     return result;
 }
 
@@ -312,13 +312,13 @@ ZP_Error TelemetryManager::processParamTx() {
         }
 
         result |= enqueueParamValueTx(currParamListTxIdx);
-        
+
         if (result != ZP_ERROR_OK) {
             break;
         }
 
         ++currParamListTxIdx;
     }
-    
+
     return result;
 }
