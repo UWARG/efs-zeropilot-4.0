@@ -10,6 +10,8 @@ osMutexId_t itmMutex;
 osMessageQueueId_t amQueueId;
 osMessageQueueId_t tmQueueId;
 osMessageQueueId_t messageBufferId;
+osMessageQueueId_t nvmTxQueueId;
+osMessageQueueId_t nvmRxQueueIds[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];
 osMessageQueueId_t sdRequestQueueId;
 osMessageQueueId_t sdBufferQueueId;
 osMessageQueueId_t sdResponseQueueId[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)];

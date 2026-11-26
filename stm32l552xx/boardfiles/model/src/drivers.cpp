@@ -43,6 +43,8 @@ PowerModule *pmHandle = nullptr;
 Rangefinder *rangefinderHandle = nullptr;
 NVMFlash *nvmHandle = nullptr;
 
+MessageQueue<NvmTxMsg> *nvmTxQueue = nullptr;
+MessageQueue<NvmRxMsg> *nvmRxQueues[static_cast<size_t>(ManagerId_e::NUM_MANAGERS)] = {nullptr};
 MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle = nullptr;
 MessageQueue<TMMessage_t> *tmQueueHandle = nullptr;
 MessageQueue<mavlink_message_t> *messageBufferHandle = nullptr;
@@ -134,8 +136,13 @@ void initDrivers()
     messageBufferHandle = new MessageQueue<mavlink_message_t>(&messageBufferId);
     sdRequestQueueHandle = new MessageQueue<SdReqMsg>(&sdRequestQueueId);
     sdBufferQueueHandle = new MessageQueue<SdReqBuf>(&sdBufferQueueId);
+    nvmTxQueue = new MessageQueue<NvmTxMsg>(&nvmTxQueueId);
     for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
         sdResponseQueuesHandle[i] = new MessageQueue<PollResult>(&sdResponseQueueId[i]);
+    }
+
+    for (int i = 0; i < static_cast<int>(ManagerId_e::NUM_MANAGERS); ++i) {
+    	nvmRxQueues[i] = new MessageQueue<NvmRxMsg>(&nvmRxQueueIds[i]);
     }
 
     // File system

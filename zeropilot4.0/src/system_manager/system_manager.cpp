@@ -40,7 +40,6 @@ SystemManager::SystemManager(
 }
 
 void SystemManager::smUpdate() {
-	nvmDriver -> test_message();
     Logger::sync();
 
     systemUtilsDriver->profilerBegin(profilerId);
