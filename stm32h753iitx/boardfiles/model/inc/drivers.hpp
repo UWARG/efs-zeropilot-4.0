@@ -41,6 +41,7 @@ extern GPS *gps1Handle;
 extern GPS *gps2Handle;
 extern FusedIMU *imuHandle;
 extern RFD *telemLinkHandle;
+extern RFD *virtualTelemPortHandle;
 extern PowerModule *pmHandle;
 extern Magnetometer *magHandle;
 extern Rangefinder *rangefinderHandle;
