@@ -24,6 +24,7 @@
 #include "tf02pro.hpp"
 #include "icp_20100.hpp"
 #include "safety_switch.hpp"
+#include "led_is31fl3195.hpp"
 
 extern SystemUtils *systemUtilsHandle;
 extern MathUtils *mathUtilsHandle;
@@ -45,6 +46,7 @@ extern PowerModule *pmHandle;
 extern Ist8310 *magHandle;
 extern Rangefinder *rangefinderHandle;
 extern Barometer *barometerHandle;
+extern IS31FL3195 *statusLedHandle;
 
 extern MessageQueue<RCMotorControlMessage_t> *amRCQueueHandle;
 extern MessageQueue<char[100]> *smLoggerQueueHandle;

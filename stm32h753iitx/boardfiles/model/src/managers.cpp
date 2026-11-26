@@ -40,7 +40,8 @@ void initManagers()
         pmHandle,
         amRCQueueHandle,
         tmQueueHandle,
-        smLoggerQueueHandle
+        smLoggerQueueHandle,
+        statusLedHandle
     );
 
     // TM initialization

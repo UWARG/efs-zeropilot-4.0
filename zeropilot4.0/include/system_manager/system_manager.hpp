@@ -8,6 +8,7 @@
 #include "rc_motor_control.hpp"
 #include "iwdg_iface.hpp"
 #include "safety_switch_iface.hpp"
+#include "status_led_iface.hpp"
 #include "tm_queue.hpp"
 #include "queue_iface.hpp"
 #include "power_module_iface.hpp"
@@ -43,6 +44,10 @@ static constexpr float SM_FLIGHTMODE5_MAX = 75.0f; // (1685 + 1815) / 2 = 1750 -
 static constexpr uint32_t SM_SAFETY_SWITCH_HOLD_THRESHOLD_MS = 2000;
 static constexpr uint32_t SM_SAFETY_SWITCH_BLINK_RATE_HZ = 2;
 
+// Status LED brightness (0-255) and flash rate
+static constexpr uint8_t SM_STATUS_LED_LEVEL = 64;
+static constexpr uint32_t SM_STATUS_LED_BLINK_RATE_HZ = 2;
+
 class SystemManager {
     friend class SMParamSetup;
 
@@ -56,7 +61,8 @@ class SystemManager {
             IPowerModule *pmDriver,
             IMessageQueue<RCMotorControlMessage_t> *amRCQueue,
             IMessageQueue<TMMessage_t> *tmQueue,
-            IMessageQueue<char[100]> *smLoggerQueue
+            IMessageQueue<char[100]> *smLoggerQueue,
+            IStatusLed *statusLedDriver = nullptr
         );
 
         void smUpdate(); // This function is the main function of SM, it should be called in the main loop of the system.
@@ -73,6 +79,7 @@ class SystemManager {
         IMessageQueue<RCMotorControlMessage_t> *amRCQueue; // Queue driver for tx communication to the Attitude Manager
         IMessageQueue<TMMessage_t> *tmQueue; // Queue driver for tx communication to the Telemetry Manager
         IMessageQueue<char[100]> *smLoggerQueue; // Queue driver for rx communication from other modules to the System Manager for logging
+        IStatusLed *statusLedDriver; // Status LED driver, nullptr if the board has none
 
         uint8_t smSchedulingCounter;
 
@@ -81,6 +88,17 @@ class SystemManager {
         bool isSafetySwitchEngaged;         // Flag to indicate if the safety switch is engaged
         uint32_t safetySwitchHoldCounterMs; // Counter to track how long the safety switch has been held
         bool safetySwitchTriggered;         // Flag to prevent toggling multiple times during a single long press
+
+        enum class StatusLedState_e : uint8_t {
+            NONE,        // Nothing written yet
+            PREARM_FAIL, // Pre-arm checks failing
+            DISARMED,    // Pre-arm checks passing, not armed
+            ARMED        // Armed
+        };
+
+        StatusLedState_e statusLedState; // Last state written to the status LED
+        bool statusLedLit;               // Whether the last write turned the LED on or off
+        ZP_Error updateStatusLed(bool armed, bool prearmFailing);
         
         // Ordered by severity so arbitration can pick the highest
         enum class BitFailsafe_e : uint8_t {
